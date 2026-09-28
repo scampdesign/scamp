@@ -136,9 +136,10 @@ As of 2026-09-28 that is ten secrets and one variable:
 `WIN_CERTS` / `WIN_CERTS_PASSWORD` are absent, which is why Windows
 builds ship unsigned today. Nothing about this migration changes that.
 
-**You cannot read a secret's value back out of GitHub.** If you don't
-still have the `.p12` files and passwords somewhere, find them before
-the transfer, not after.
+**You cannot read a secret's value back out of GitHub.** If the `.p12`
+and the passwords aren't in a backup you can still open, see
+[A.4](#a4-if-youve-lost-the-values) — most of the list is a lookup, and
+the certificate has two cases.
 
 ### A.3 Check what kind of token `GH_TOKEN` is
 
@@ -160,6 +161,110 @@ This is the one credential that can quietly stop working in an org.
 Either way the fix is cheap: after the transfer, mint a fresh token
 whose resource owner is the org and give it write access to `scamp`
 only. Tell me if you'd rather do that than debug the existing one.
+
+### A.4 If you've lost the values
+
+The live secrets still work — `v0.8.5` built, signed, and notarized on
+2026-09-28 — so nothing is broken. GitHub just won't show you a secret's
+value again, which only matters when you have to type it somewhere new.
+Recover what's missing before Phase C, not before Phase B.
+
+Most of the list is a lookup rather than a loss:
+
+| Secret | How to get it back |
+|---|---|
+| `APPLE_ID` | Your Apple ID email |
+| `APPLE_TEAM_ID` | developer.apple.com → **Membership details**. Or, with no login at all, `codesign -dv --verbose=4 /Applications/Scamp.app` on any Mac with Scamp installed — it prints `TeamIdentifier=` |
+| `APPLE_ID_PASSWORD` | Not readable, but disposable: appleid.apple.com → **Sign-In and Security** → **App-Specific Passwords** → generate a new one. Revoke the old if you can identify it |
+| `MAC_CERTS_PASSWORD` | You chose it on export. Forgotten is fine — re-export the `.p12` with a new password |
+| `R2_SECRET_ACCESS_KEY` | Shown once at creation. Create a **new** R2 API token (Cloudflare → R2 → **Manage API tokens**), with Object Read & Write on `scamp-releases`, and delete the old one after the first green release |
+| `R2_ACCESS_KEY_ID` | Comes with that new token |
+| `R2_ENDPOINT`, `R2_BUCKET` | Cloudflare R2 dashboard — the account ID is on the R2 overview page |
+| `GH_TOKEN` | Mint a new one. You need an org-scoped token anyway — see A.3 |
+| `UPDATE_FEED_URL` | `https://updates.scamp.club` |
+
+`MAC_CERTS` is the only one with a real question behind it.
+
+**Apple does not have your private key.** It was generated on the Mac
+that made the certificate request and has only ever lived in that Mac's
+keychain; Apple stores the certificate, which is the public half. So
+there is no re-download that gives you a usable signing identity. What
+happens next depends on whether that key is still there.
+
+**Case A — the key is still in a keychain.** The common case, if you
+still have the Mac you set this up on.
+
+1. On that Mac, open **Keychain Access**.
+2. Select the **login** keychain, then the **My Certificates** category.
+3. Find **Developer ID Application: … (TEAMID)**.
+4. Click its disclosure triangle. **A private key must be listed under
+   it.** No triangle, or no key, means the key is gone — go to case B.
+5. Right-click the **certificate** row, not the key, and choose
+   **Export**. Saving from the certificate row is what puts both halves
+   in the file.
+6. Save as **Personal Information Exchange (.p12)** and set a password.
+   That password is `MAC_CERTS_PASSWORD`.
+7. Turn it into the secret:
+
+   ```bash
+   base64 -i certificate.p12 | pbcopy
+   ```
+
+   macOS `base64` emits one unwrapped line, which is what a GitHub secret
+   needs. Paste it as `MAC_CERTS`.
+
+Nothing about the identity changes in this case. Same certificate, same
+team, same everything.
+
+**Case B — the key is gone.** Then the old certificate is dead weight and
+you make a new one. This is routine: Developer ID certificates expire
+every five years and get replaced without stranding anyone.
+
+1. On a Mac, open **Keychain Access** → **Certificate Assistant** →
+   **Request a Certificate From a Certificate Authority**. Enter your
+   email, leave the CA field alone, choose **Saved to disk**, and save the
+   `.certSigningRequest`. This generates the new private key **on that
+   Mac** — so do this on the machine that will hold it.
+2. Go to
+   [developer.apple.com/account/resources/certificates](https://developer.apple.com/account/resources/certificates)
+   and click **+**.
+3. Choose **Developer ID Application**, and where it asks, select
+   **Developer ID Application (Xcode 11 or later)** if offered.
+4. Upload the `.certSigningRequest`, then download the `.cer`.
+5. Double-click the `.cer` to install it into the login keychain, then
+   export the `.p12` exactly as in case A steps 2–7.
+
+**Caution:** Don't revoke the old certificate unless you have to. Creating
+a new one doesn't require it, and revocation is not the same as letting a
+certificate expire — a signature whose certificate was revoked can stop
+validating on machines that have already downloaded the build, while an
+expired one keeps working because of the secure timestamp. Apple caps
+Developer ID Application certificates per account (five, historically),
+so revoke only if you're at the cap and the creation button is disabled.
+
+**Why case B does not break auto-updates.** A new certificate on the
+**same team** is safe. Squirrel.Mac checks an update against the installed
+app's *designated requirement*, which pins the signing identity by team —
+the leaf certificate's common name, `Developer ID Application: Name
+(TEAMID)` — not by that specific certificate's serial number. That is why
+a five-year renewal doesn't strand installed apps. The thing that does
+break them is a different **Team ID**, which is the trap in the caution at
+the top of this document, and it is not what losing a `.p12` causes.
+
+Don't take that on trust. On a Mac with the current Scamp installed:
+
+```bash
+codesign -d --requirements - /Applications/Scamp.app
+```
+
+The requirement it prints should name the identity by common name or team,
+with no serial number in it. If it somehow pins a serial, say so before
+you release with a new certificate, because then the rule above doesn't
+hold and the next release needs its own bridge.
+
+The full original procedure, for reference, is
+`docs/archive/auto-update-prd.md` section 1.1 — steps 2 through 6 are what
+you are redoing.
 
 ---
 
