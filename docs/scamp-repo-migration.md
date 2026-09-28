@@ -276,8 +276,11 @@ at once, with manual re-download as the only recovery.
   Phase 1.
 - **Windows signing decision (SignPath vs Certum)** is a soft blocker on the
   Windows half of the pipeline. SignPath is CI-native, which helps here.
-- **The BSL license consideration:** going fully private means the source is no
-  longer visible, so the "source-available" benefit of the Business Source
-  License (transparency, eventual AGPL conversion) goes dormant while private.
-  Not a blocker, just a conscious trade to confirm — the private move should be
-  deliberate, since it changes what the license is doing for you.
+- **The license consideration is settled** (2026-09-28). This said the BSL's
+  source-available benefit — transparency now, AGPL conversion later — would
+  go dormant behind a private repo, and asked for that to be a deliberate
+  choice. It was made the other way instead: the project relicensed to the
+  proprietary **Scamp Software License**, which grants free personal and
+  commercial *use*, gives the user everything Scamp generates, and grants no
+  right to copy, modify, or redistribute the Software. There is no longer a
+  conversion date to lose, so going private costs nothing on this axis.

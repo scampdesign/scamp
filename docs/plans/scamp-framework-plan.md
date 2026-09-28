@@ -357,10 +357,13 @@ dependency. The plan implied this; it's a decision, so it's stated.
   to be an npm package regardless. Publishing from inside the app repo
   would tie every framework release to an app release, and the two move
   at different speeds.
-- **The licenses differ.** The app is BSL. The framework ends up inside
-  every user's shipped app, and the standalone story only works if it's
-  MIT or Apache. Two licenses in one repo is confusing; two repos is
-  clean.
+- **The licenses differ.** The app is proprietary under the Scamp
+  Software License, which forbids copying and redistribution. The
+  framework ends up inside every user's shipped app, and the standalone
+  story only works if it's MIT or Apache. Two licenses in one repo is
+  confusing; two repos is clean — and more so now than when this was
+  written, because the app's licence no longer permits what the
+  framework's has to.
 - **The size target depends on it.** "Small enough to read in an
   afternoon" is only true when the package is visible on its own, not
   buried under Electron, node-pty, patch-package, and the shim system.

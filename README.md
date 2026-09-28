@@ -177,4 +177,7 @@ The config lives in `electron-builder.yml` at the repo root.
 
 ## License
 
-Business Source License 1.1 (BSL). See `LICENSE` for the full terms.
+Scamp Software License — proprietary, free to use for both personal and
+commercial work, and you own everything Scamp generates from your designs.
+The source is published for transparency, not for copying or
+redistribution. See `LICENSE` for the full terms.

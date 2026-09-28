@@ -1,116 +1,162 @@
-Business Source License 1.1
+Scamp Software License
 
-Licensor: Angie Hemans
-Licensed Work: Scamp
-The Licensed Work is (c) 2026 Angie Hemans
-Change Date: Five years from the date the Licensed Work is first
-publicly distributed under this License
-Change License: GNU Affero General Public License v3.0 (AGPL-3.0)
+Copyright (c) 2026 Scamp Design, Inc. All rights reserved.
 
----
+This license governs use of the Scamp software application and its source
+code (together, the "Software"). By downloading, installing, or using the
+Software, you agree to this license. If you do not agree, do not use the
+Software.
 
-Terms
+The Software is proprietary. It is made available free of charge for use as
+described below, but it is not open source. The source code is provided for
+transparency and to enable the Software to function; it is not licensed for
+you to copy, modify, or redistribute except as expressly permitted here.
 
-The Licensor hereby grants you the right to copy, modify, create derivative
-works, redistribute, and make non-production use of the Licensed Work. The
-Licensor may make an Additional Use Grant, below, permitting limited
-production use.
+--------------------------------------------------------------------------
+1. DEFINITIONS
+--------------------------------------------------------------------------
 
-Effective on the Change Date, or the fourth anniversary of the first publicly
-available distribution of a specific version of the Licensed Work under this
-License, whichever comes first, the Licensor hereby grants you rights under
-the terms of the Change License, and the rights granted in the paragraph
-above terminate.
+"Licensor" means Scamp Design, Inc., the owner of the Software.
 
----
+"You" means the individual or entity that downloads, installs, or uses the
+Software.
 
-Additional Use Grant
+"Software" means the Scamp application, in object and source form, together
+with any updates, documentation, and related materials the Licensor makes
+available under this license.
 
-You may use the Licensed Work in production for any of the following purposes
-without restriction:
+"Community Use" means use of the Software by an individual for personal,
+educational, non-commercial, or evaluation purposes.
 
-1. Personal use — using Scamp for your own private projects.
+"Commercial Use" means use of the Software by or on behalf of a business,
+organization, or individual in a professional or commercial setting,
+including producing work for clients, for an employer, or for commercial
+products.
 
-2. Internal business use — using Scamp within an organisation to design
-   and build products, client work, or internal tooling, provided the
-   Licensed Work itself is not redistributed externally or made available
-   to third parties as a product or service.
+"Your Output" means the files, designs, code, and other materials that the
+Software generates from your use of it (for example, the TSX, CSS, and other
+project files Scamp produces from your designs). Your Output does not include
+the Software itself or any part of its source code.
 
-3. Open source projects — using, modifying, or distributing Scamp as part
-   of a project that is itself released under an OSI-approved open source
-   license, provided the full source of all modifications is made publicly
-   available under the same or a compatible open source license.
+--------------------------------------------------------------------------
+2. LICENSE GRANT
+--------------------------------------------------------------------------
 
-4. Educational and non-commercial use — using or modifying Scamp for
-   teaching, research, personal learning, or any other non-commercial
-   purpose.
+Subject to your compliance with this license, Licensor grants you a
+worldwide, royalty-free, non-exclusive, non-transferable, non-sublicensable
+license to download, install, and use the Software for both Community Use and
+Commercial Use, free of charge.
 
-The following uses are NOT permitted under this Additional Use Grant and
-require a separate commercial license from the Licensor:
+This grant is a license to run the Software as intended. It does not grant
+you any rights in the source code beyond what is necessary to run the
+Software, and it does not grant any of the rights withheld in Section 4.
 
-(a) Selling, sublicensing, or distributing the Licensed Work or any
-derivative work as a standalone product, whether modified or
-unmodified, in exchange for a fee or as part of a commercial offering.
+--------------------------------------------------------------------------
+3. WHAT YOU MAY DO
+--------------------------------------------------------------------------
 
-(b) Providing the Licensed Work or any derivative work as a hosted or
-managed service to third parties, where third parties interact with
-the functionality of the Licensed Work.
+- Use the Software free of charge for both Community Use and Commercial Use.
+- Use the Software to design, build, and produce Your Output.
+- Use, modify, distribute, sell, and otherwise exploit Your Output. Your
+  Output belongs to you (see Section 5).
+- Install the Software on the devices you use.
 
-(c) Bundling or integrating the Licensed Work or any derivative work into
-a commercial product that is sold or licensed to third parties, where
-the Licensed Work or derivative forms a material part of the value of
-that product.
+--------------------------------------------------------------------------
+4. WHAT YOU MAY NOT DO
+--------------------------------------------------------------------------
 
-If you are uncertain whether your intended use falls within this Additional
-Use Grant, contact the Licensor at the repository listed below before
-proceeding.
+Except to the extent this restriction is prohibited by applicable law that
+cannot be waived, you may not:
 
----
+- Copy, modify, adapt, translate, or create derivative works of the Software
+  or its source code.
+- Redistribute, republish, sublicense, sell, rent, lease, or lend the
+  Software or its source code.
+- Reverse engineer, decompile, or disassemble the Software, except and only
+  to the extent applicable law expressly permits despite this limitation.
+- Remove, obscure, or alter any proprietary notices in the Software.
+- Use the Software to build a competing or substantially similar product.
+- Use the name "Scamp," or any Licensor trademarks or branding, except as
+  necessary to identify the Software.
 
-Notice
+None of the restrictions in this Section 4 apply to Your Output. They apply
+only to the Software and its source code.
 
-The Business Source License (this document, or the "License") is not an Open
-Source license. However, the Licensed Work will eventually be made available
-under an Open Source License, as stated in this License. On the Change Date,
-this License will convert automatically to the Change License specified above,
-and from that date forward the Licensed Work will be governed solely by the
-Change License.
+--------------------------------------------------------------------------
+5. YOUR OUTPUT BELONGS TO YOU
+--------------------------------------------------------------------------
 
----
+Licensor claims no ownership of Your Output. You are free to use, modify,
+distribute, sell, and otherwise exploit Your Output for any purpose,
+including Commercial Use, with no fee owed to Licensor, whether Your Output
+was created under Community Use or Commercial Use.
 
-Redistribution and Contribution
+--------------------------------------------------------------------------
+6. FEES AND PAID FEATURES
+--------------------------------------------------------------------------
 
-You may fork, modify, and redistribute the Licensed Work provided that:
+The Software is free to use under this license. Licensor may offer paid
+features, paid tiers, or hosted and cloud services (for example,
+subscriptions, hosted deployments, or team features). Those are governed by
+separate terms and may carry separate fees. This license does not grant
+access to any paid feature or service.
 
-1. You retain this License and all copyright notices in all copies or
-   substantial portions of the Licensed Work.
+--------------------------------------------------------------------------
+7. OWNERSHIP
+--------------------------------------------------------------------------
 
-2. Any modified version you distribute must itself be licensed under this
-   License (Business Source License 1.1) with the same Licensor, Change
-   Date, and Change License, or you must release the modified version
-   under the Change License (AGPL-3.0) with full source available.
+The Software is licensed, not sold. Licensor and its licensors retain all
+right, title, and interest in and to the Software, including all
+intellectual property rights. All rights not expressly granted in this
+license are reserved.
 
-3. You do not represent your fork or derivative work as the original
-   Scamp, and you clearly identify that your version is a modification.
+--------------------------------------------------------------------------
+8. UPDATES
+--------------------------------------------------------------------------
 
-4. Your distribution does not violate the restrictions set out in the
-   Additional Use Grant above — in particular, you may not sell or
-   commercially distribute a fork or derivative work without a separate
-   commercial license from the Licensor.
+Licensor may, but is not obligated to, provide updates to the Software.
+Updates are governed by this license unless they are accompanied by
+different terms, in which case those terms apply to the update.
 
----
+--------------------------------------------------------------------------
+9. TERMINATION
+--------------------------------------------------------------------------
 
-Disclaimer
+This license applies while you comply with it. It terminates automatically
+if you breach it. On termination, you must stop using the Software and
+destroy all copies in your possession or control. Your Output created before
+termination remains yours. Sections 5, 7, 10, and 11 survive termination.
 
-THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
-IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF, OR IN CONNECTION WITH THE LICENSED WORK OR THE USE OR OTHER
-DEALINGS IN THE LICENSED WORK.
+--------------------------------------------------------------------------
+10. DISCLAIMER OF WARRANTY
+--------------------------------------------------------------------------
 
----
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+LICENSOR DOES NOT WARRANT THAT THE SOFTWARE WILL BE UNINTERRUPTED, ERROR
+FREE, OR FREE OF HARMFUL COMPONENTS.
 
-For commercial licensing inquiries, contact: angie@scampdesign.app
-Source repository: https://github.com/scampdesign/scamp
+--------------------------------------------------------------------------
+11. LIMITATION OF LIABILITY
+--------------------------------------------------------------------------
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, LICENSOR WILL NOT BE LIABLE FOR ANY
+INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR EXEMPLARY DAMAGES, OR FOR
+ANY LOSS OF PROFITS, DATA, OR GOODWILL, ARISING OUT OF OR RELATED TO YOUR USE
+OF OR INABILITY TO USE THE SOFTWARE, WHETHER IN CONTRACT, TORT, OR OTHERWISE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. LICENSOR'S TOTAL
+LIABILITY UNDER THIS LICENSE WILL NOT EXCEED THE AMOUNT YOU PAID FOR THE
+SOFTWARE UNDER THIS LICENSE, WHICH FOR THE FREE GRANT IS ZERO.
+
+--------------------------------------------------------------------------
+12. GOVERNING LAW
+--------------------------------------------------------------------------
+
+This license is governed by the laws of the State of [State], without regard
+to its conflict-of-laws rules.
+
+--------------------------------------------------------------------------
+
+For questions about this license, or to request rights beyond its scope,
+contact [contact email].

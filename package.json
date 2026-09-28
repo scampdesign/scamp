@@ -8,7 +8,7 @@
     "email": "angie@scampdesign.app"
   },
   "homepage": "https://github.com/scampdesign/scamp",
-  "license": "BSL",
+  "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "electron-vite build",

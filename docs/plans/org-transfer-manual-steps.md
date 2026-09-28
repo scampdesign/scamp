@@ -493,7 +493,7 @@ Once you give me the org name, in one commit:
 | `electron-builder.yml` | `publish[1].owner` → `scampdesign` | The GitHub half of dual-publish; wrong owner fails the release upload |
 | `package.json` | `homepage` | Cosmetic, but it's what npm and tooling show |
 | `src/main/menu.ts` | `REPO_URL` | **Help → Report a bug** and the repo menu item |
-| `LICENSE` | `Source repository:` | The BSL names the repo it applies to |
+| `LICENSE` | `Source repository:` | The BSL named the repo it applied to. Moot since the 2026-09-28 relicense — the Scamp Software License names no repository, so there is nothing here to keep in step |
 
 Plus the note updates: `auto-update.md`, `update-feed-migration.md`, and
 this file's assumptions table.
