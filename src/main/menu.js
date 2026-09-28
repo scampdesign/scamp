@@ -14,7 +14,7 @@ import * as os from 'os';
  * OS. The bug-report template lives at
  * `.github/ISSUE_TEMPLATE/bug_report.md` in the repo.
  */
-const REPO_URL = 'https://github.com/angiehemans/scamp';
+const REPO_URL = 'https://github.com/scampdesign/scamp';
 /**
  * Build the GitHub new-issue URL with version + OS pre-filled in
  * the body. The renderer never sees this URL — we open it from

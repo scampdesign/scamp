@@ -51,7 +51,7 @@ publish:
   - provider: generic
     url: https://updates.scamp.club
   - provider: github
-    owner: angiehemans
+    owner: scampdesign
     repo: scamp
 
 mac:

@@ -7,7 +7,7 @@
     "name": "Angie Hemans",
     "email": "angie@scampdesign.app"
   },
-  "homepage": "https://github.com/angiehemans/scamp",
+  "homepage": "https://github.com/scampdesign/scamp",
   "license": "BSL",
   "scripts": {
     "dev": "node scripts/dev.mjs",

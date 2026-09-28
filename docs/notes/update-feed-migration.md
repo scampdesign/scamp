@@ -1,6 +1,6 @@
 # Migrating the update feed off GitHub
 
-Goal: make `angiehemans/scamp` **fully private** without stranding installed
+Goal: make `scampdesign/scamp` **fully private** without stranding installed
 copies. Runtime wiring this modifies is described in
 [`auto-update.md`](./auto-update.md). The step-by-step version of phases 1–2,
 split into manual and in-repo tasks, is `docs/plans/update-feed-r2-plan.md`
@@ -40,6 +40,13 @@ https://github.com/angiehemans/scamp/releases.atom               ← version dis
 https://github.com/angiehemans/scamp/releases/download/<tag>/…   ← latest*.yml, then the installer
 ```
 
+The **old** owner, deliberately: those URLs were baked into those installs
+before the repo moved to `scampdesign` on 2026-09-28, and a build cannot be
+repointed after the fact. GitHub redirects the old path to the new one and
+electron-updater follows redirects, so they still resolve — but that
+redirect is now load-bearing for every un-migrated client, and it is one
+more thing that disappears when the repo goes private.
+
 Both 404 the moment the repo is private. So a version pointing at the new feed
 has to be **installed** before the old feed disappears.
 
@@ -63,7 +70,7 @@ publish:
   - provider: generic          # ← must be first: this is what ships in app-update.yml
     url: https://updates.scamp.club
   - provider: github           # ← still receives artifacts, for un-migrated clients
-    owner: angiehemans
+    owner: scampdesign
     repo: scamp
 ```
 
@@ -184,7 +191,7 @@ either way — this protects future source, not what is already out.
 
 ## If this stalls
 
-Alternative considered and rejected here: keep `angiehemans/scamp` public as a
+Alternative considered and rejected here: keep `scampdesign/scamp` public as a
 **releases-only shell** — source moved to a private repo, public repo gutted to a
 README with its tags force-moved to an empty commit. Release assets survive that
 (they attach to the release, not the tag tree), so old installs keep updating

@@ -3,7 +3,7 @@
 Scamp ships background auto-updates via **electron-updater**. The feed
 baked into the app is the **R2 bucket at `https://updates.scamp.club`**
 (the `generic` provider); releases are also published to **GitHub
-Releases** (`angiehemans/scamp`) for installs that predate the R2 feed —
+Releases** (`scampdesign/scamp`) for installs that predate the R2 feed —
 see [`update-feed-migration.md`](./update-feed-migration.md) for why
 there are two and when the GitHub one goes away. Full product context
 and the one-time signing prerequisites live in
