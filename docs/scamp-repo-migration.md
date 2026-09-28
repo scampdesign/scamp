@@ -4,6 +4,20 @@ Moving the Scamp repository from a **public personal GitHub repo** to a
 **private organization repo**, without breaking auto-updates for users who
 have already installed the app.
 
+> **Status (2026-09-28).** This was written before any of it was built, and
+> Phases 0–2 are now done: the R2 feed is live at
+> `https://updates.scamp.club`, the bridge release was `v0.7.1`, and every
+> install from then on reads R2 rather than GitHub Releases. So the
+> inviolable rule below is already satisfied — which is what makes the org
+> move safe to do now.
+>
+> For the steps actually being followed, use
+> [`plans/org-transfer-manual-steps.md`](plans/org-transfer-manual-steps.md)
+> (the transfer, with the repo staying public) and
+> [`notes/update-feed-migration.md`](notes/update-feed-migration.md) (the
+> measurement that gates going private). Keep this document for the
+> reasoning; it is no longer the checklist.
+
 ---
 
 ## The one thing that can go wrong

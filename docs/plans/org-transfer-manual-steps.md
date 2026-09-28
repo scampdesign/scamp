@@ -1,0 +1,356 @@
+# Moving the repo to an organization — step-by-step
+
+Transferring `angiehemans/scamp` into a GitHub **organization** without
+breaking auto-updates or macOS signing.
+
+Every click and command is here. Do the phases top to bottom; each one
+says what to hand back to me. Phases A–D keep the repo **public** and
+are safe to do this week. Phase E (going private) is deliberately
+separate and gated on a measurement — see
+[`update-feed-migration.md`](../notes/update-feed-migration.md).
+
+| Value | Assumed |
+|---|---|
+| New owner | `<ORG>` — tell me the final name and I'll put it in the config |
+| Repo name | `scamp` (unchanged) |
+| Update feed | `https://updates.scamp.club` — **unchanged, and unaffected by all of this** |
+
+---
+
+## Why this is safe now, and what the real risks are
+
+The thing that used to make this dangerous is already fixed. The feed
+baked into every recent install is the R2 bucket, not GitHub: the
+`generic` provider is first in `electron-builder.yml`, so
+`app-update.yml` inside the app says `updates.scamp.club`. R2 doesn't
+know or care who owns the source repo. **Moving the repo cannot break a
+migrated client**, because a migrated client never contacts GitHub.
+
+Three things genuinely need attention, and one thing that sounds
+frightening does not:
+
+**1. The un-migrated tail still reads GitHub.** `electron-builder.yml`
+still publishes to GitHub second, and that copy is the only way installs
+from before `v0.7.1` find a new version. Those clients poll
+`github.com/angiehemans/scamp/releases.atom`. A transfer leaves a
+redirect at the old path and electron-updater follows redirects, so they
+should keep working — but "should" is doing real work in that sentence,
+so Phase C verifies it instead of assuming.
+
+**2. CI credentials.** Ten secrets and one variable drive the release.
+Treat them as not surviving the transfer and check, rather than find out
+on a tag push.
+
+**3. Four hardcoded strings** name the personal account: the `owner:`
+in the publish block, `homepage` in `package.json`, `REPO_URL` in the
+app menu (**Help → Report a bug**), and a line in `LICENSE`. I change
+these; the menu one has a user-visible consequence in Phase E.
+
+**What is NOT at risk: macOS signing.** The Developer ID certificate,
+the Team ID, and the notarization credentials are **Apple** things. They
+live in your Apple Developer account and in the `MAC_CERTS` /
+`MAC_CERTS_PASSWORD` / `APPLE_ID` / `APPLE_ID_PASSWORD` /
+`APPLE_TEAM_ID` secrets. GitHub ownership has no bearing on any of them.
+Copy those five secrets across unchanged and macOS signing continues
+exactly as it does today.
+
+**Caution:** The one way to break macOS updates is to change the Apple
+signing identity, and a GitHub org can tempt you into also converting
+the *Apple* account to an organization. Don't — not in the same change.
+Squirrel.Mac validates that an update's code signature matches the
+installed app's, so a new Team ID makes every existing macOS install
+reject the update with a validation error, and no later fix reaches
+them. Keep the same Developer ID throughout. If the Apple account ever
+moves, that is its own migration with its own bridge release.
+
+---
+
+## Step 0 — publish the v0.8.5 release draft
+
+Do this first, before anything else, because it's the one thing on this
+page that is currently wrong.
+
+electron-builder leaves the GitHub release as a **draft**, and GitHub
+doesn't list drafts in `releases.atom`. So un-migrated clients cannot
+see `0.8.5` at all — they're pinned at `0.8.0`. That also makes the
+Phase E measurement meaningless, because the count stops moving for the
+wrong reason.
+
+1. Open the [releases page](https://github.com/angiehemans/scamp/releases).
+2. `0.8.5` shows as **Draft**. Click it, then click **Edit**.
+3. Check that all 12 assets are attached.
+4. Click **Publish release**.
+
+Or ask me and I'll run `gh release edit v0.8.5 --draft=false`, and set
+the body from the `docs/CHANGELOG.md` entry at the same time.
+
+Then confirm an un-migrated client can see it:
+
+```bash
+curl -s https://github.com/angiehemans/scamp/releases.atom | grep -m1 '<title>'
+```
+
+It should name `0.8.5`.
+
+---
+
+## Phase A — before you touch anything
+
+### A.1 Create the organization
+
+1. Go to [github.com/organizations/new](https://github.com/organizations/new).
+2. Pick a plan. **Free** is fine for now; note the Actions quota in E.4
+   before you rely on it for private releases.
+3. Enter the organization name and your email, and choose **My personal
+   account** for who it belongs to.
+4. Skip adding members for now — you can add them after the transfer.
+
+Tell me the final organization name.
+
+### A.2 Record what the release needs
+
+Run this and keep the output. It's your checklist for Phase C:
+
+```bash
+gh secret list && gh variable list
+```
+
+As of 2026-09-28 that is ten secrets and one variable:
+
+| Name | What it does | Where the value comes from |
+|---|---|---|
+| `MAC_CERTS` | Developer ID cert, base64 `.p12` | Your keychain export — **keep identical** |
+| `MAC_CERTS_PASSWORD` | Password for that `.p12` | Same |
+| `APPLE_ID` | Notarization account | Apple Developer |
+| `APPLE_ID_PASSWORD` | App-specific password | appleid.apple.com |
+| `APPLE_TEAM_ID` | Signing team | Apple Developer — **keep identical** |
+| `R2_ACCESS_KEY_ID` | R2 API token | Cloudflare R2 |
+| `R2_SECRET_ACCESS_KEY` | R2 API token secret | Cloudflare R2 |
+| `R2_ENDPOINT` | `https://<account>.r2.cloudflarestorage.com` | Cloudflare R2 |
+| `R2_BUCKET` | `scamp-releases` | Cloudflare R2 |
+| `GH_TOKEN` | Publishes the GitHub release | A PAT — see A.3 |
+| `UPDATE_FEED_URL` (variable) | `https://updates.scamp.club` | The feed host |
+
+`WIN_CERTS` / `WIN_CERTS_PASSWORD` are absent, which is why Windows
+builds ship unsigned today. Nothing about this migration changes that.
+
+**You cannot read a secret's value back out of GitHub.** If you don't
+still have the `.p12` files and passwords somewhere, find them before
+the transfer, not after.
+
+### A.3 Check what kind of token `GH_TOKEN` is
+
+This is the one credential that can quietly stop working in an org.
+
+1. Go to
+   [Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
+2. Find the token used for releases. Note whether it's under **Tokens
+   (classic)** or **Fine-grained tokens**.
+
+- **Classic**, with `repo` scope: keeps working against an org repo as
+  long as you have write access — unless the org turns on the personal
+  access token policy that blocks classic tokens.
+- **Fine-grained**: scoped to a single resource owner. A token owned by
+  your personal account **cannot reach an org repo at all** until the
+  org opts in, under **Organization settings → Personal access tokens →
+  Settings**, and you then grant the token access to the new repo.
+
+Either way the fix is cheap: after the transfer, mint a fresh token
+whose resource owner is the org and give it write access to `scamp`
+only. Tell me if you'd rather do that than debug the existing one.
+
+---
+
+## Phase B — the transfer, with the repo still public
+
+Transfer and going private are separate steps. Don't combine them.
+
+1. Open
+   [repo settings](https://github.com/angiehemans/scamp/settings) and
+   scroll to **Danger Zone**.
+2. Click **Transfer** next to **Transfer ownership**.
+3. For the new owner, enter the organization name.
+4. Type `angiehemans/scamp` to confirm, and click **I understand, transfer
+   this repository**.
+
+The transfer keeps history, tags, releases and their assets, issues, PRs,
+and the 11 stars, and leaves a redirect at the old path. There are **0
+forks**, so nobody holds a GitHub-side copy that could go stale.
+
+Then, on your machine:
+
+```bash
+cd ~/Documents/github/scamp
+git remote set-url origin git@github.com:<ORG>/scamp.git
+git remote -v
+git fetch origin && git status
+```
+
+The redirect means the old URL keeps working, but leaving it pointing at
+a redirect is the kind of thing that confuses someone in six months.
+
+Hand back: the new `nameWithOwner`, from `gh repo view --json nameWithOwner`.
+
+---
+
+## Phase C — put CI back together and prove it works
+
+### C.1 Check what survived
+
+```bash
+gh secret list && gh variable list
+```
+
+Compare against A.2. Re-add anything missing under **Settings → Secrets
+and variables → Actions** in the new repo — **Secrets** tab for the ten,
+**Variables** tab for `UPDATE_FEED_URL`.
+
+If you'd rather put the credentials at the organization level so a
+future second repo shares them, that works too: add them under
+**Organization settings → Secrets and variables → Actions**, and set
+each one's repository access to include `scamp`. Repo-level secrets win
+over org-level ones with the same name, so don't keep both.
+
+### C.2 Check Actions is allowed to run
+
+New organizations can default to restricting workflows.
+
+1. Go to **Organization settings → Actions → General**.
+2. Under **Actions permissions**, confirm **Allow all actions and reusable
+   workflows** is selected. The release uses `actions/checkout@v5` and
+   `actions/setup-node@v5`; if you'd rather be strict, the narrower
+   **Allow enterprise, and select non-enterprise, actions** setting with
+   *Allow actions created by GitHub* ticked covers both.
+3. Under **Workflow permissions**, **Read repository contents** is enough
+   — the release publishes with `GH_TOKEN`, not the built-in token.
+
+### C.3 Prove it end to end with a real release
+
+A throwaway patch version is the only honest test. Ask me for `v0.8.6`
+and I'll bump, write the changelog entry, run the suite, and tag; you
+push the tag as we did for `0.8.5`.
+
+What has to be true when it finishes:
+
+1. All six jobs green — `check`, three platform builds, `verify-feed`.
+2. The macOS build is **signed and notarized**. The build log's
+   `notarize` step succeeds, and on a Mac:
+
+   ```bash
+   codesign -dv --verbose=4 /Applications/Scamp.app 2>&1 | grep -i 'authority\|teamid'
+   spctl -a -vvv /Applications/Scamp.app
+   ```
+
+   The Team ID must match the one in the `0.8.5` build. A different one
+   means the wrong cert went into the new secrets — stop and fix it
+   before any user sees that build.
+3. The feed is complete:
+
+   ```bash
+   npm run verify:feed
+   ```
+
+4. A real Mac running `0.8.5` takes the update from R2.
+5. The un-migrated path still works through the redirect:
+
+   ```bash
+   curl -sI https://github.com/angiehemans/scamp/releases.atom | head -3
+   curl -s https://github.com/angiehemans/scamp/releases.atom | grep -m1 '<title>'
+   ```
+
+   Expect a `301` and, after the redirect, `0.8.6`. If the feed does
+   **not** resolve, un-migrated clients are stranded early — tell me and
+   I'll keep the old path alive rather than let them find out silently.
+
+---
+
+## Phase D — the in-repo strings (I do these)
+
+Once you give me the org name, in one commit:
+
+| File | Change | Why it matters |
+|---|---|---|
+| `electron-builder.yml` | `publish[1].owner` → `<ORG>` | The GitHub half of dual-publish; wrong owner fails the release upload |
+| `package.json` | `homepage` | Cosmetic, but it's what npm and tooling show |
+| `src/main/menu.ts` | `REPO_URL` | **Help → Report a bug** and the repo menu item |
+| `LICENSE` | `Source repository:` | The BSL names the repo it applies to |
+
+Plus the note updates: `auto-update.md`, `update-feed-migration.md`, and
+this file's assumptions table.
+
+The `owner:` change is the only one that affects a build. Note that it
+lands in the same release as C.3 — which is why C.3 is a real release and
+not a dry run.
+
+---
+
+## Phase E — going private (later, and gated)
+
+Not part of the move. The transfer above works fine with the repo public,
+and public is what keeps the un-migrated tail alive.
+
+### E.1 The gate
+
+Drop GitHub only when the tail has flattened. The metric is GitHub's
+download count on the newest release's `latest*.yml`, which only
+un-migrated clients fetch:
+
+```bash
+gh release view <newest-tag> --json assets \
+  -q '.assets[] | select(.name|startswith("latest")) | "\(.name) \(.downloadCount)"'
+```
+
+Where it stood on 2026-09-28, before `0.8.5` was published:
+
+| Release | `latest-mac.yml` | `latest.yml` |
+|---|---|---|
+| v0.7.1 (bridge) | 63 | 4 |
+| v0.7.2 | 111 | 9 |
+| v0.8.0 | 41 | 0 |
+
+Falling, and not yet flat. At roughly six checks a day per client, 41
+fetches over two days is a handful of installs still on the old feed —
+small, but not zero. Watch `0.8.5` and `0.8.6` before deciding.
+
+### E.2 The order
+
+1. I drop the `github` entry from `publish` in `electron-builder.yml`.
+2. Ship one release on R2 only. Confirm migrated clients still update.
+3. You flip the repo private: **Settings → Danger Zone → Change
+   visibility**.
+4. Rotate `GH_TOKEN` if its scope was ever broader than this repo.
+
+### E.3 What breaks for users the moment it's private
+
+**Help → Report a bug** opens
+`github.com/<ORG>/scamp/issues/new`, and a private repo returns 404 for
+anyone outside the org. Every user who clicks it sees a dead page. Decide
+before flipping where bug reports should go — a form on the site, an
+email address, or a small public issues-only repo — and ask me to
+repoint `REPO_URL`. This is the only user-facing regression on the list,
+and it's easy to forget because it isn't the updater.
+
+Also repoint anything that assumed a public repo: README badges, and any
+"download latest" link pointing at GitHub Releases rather than the site.
+
+### E.4 Actions minutes
+
+Public repos get unlimited Actions minutes. Private repos draw from a
+quota, and **macOS runners bill at 10x, Windows at 2x**. A three-platform
+release is the expensive part; `ci.yml` is Linux-only at 1x, and the e2e
+suite stays local, which is why it isn't in CI. Check the org plan's
+included minutes before the first private release, so a release doesn't
+fail on a billing wall.
+
+---
+
+## What this does not touch
+
+Worth stating plainly, because it's most of the anxiety:
+
+- **Cloudflare, R2, the bucket, and `updates.scamp.club`.** Not GitHub
+  resources. Nothing about them changes.
+- **The Apple Developer account, the Developer ID cert, and the Team
+  ID.** See the caution at the top.
+- **Every installed copy of Scamp from `v0.7.1` on.** Its feed is R2 and
+  it will not notice any of this happened.

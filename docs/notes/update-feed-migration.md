@@ -6,11 +6,27 @@ copies. Runtime wiring this modifies is described in
 split into manual and in-repo tasks, is `docs/plans/update-feed-r2-plan.md`
 and `docs/plans/update-feed-r2-manual-steps.md`.
 
-**Where this stands (2026-09-10):** Phase 1 is done — the bucket is public
-at `https://updates.scamp.club`. The bridge release (Phase 2) is `v0.7.1`:
+**Where this stands (2026-09-28):** Phases 1 and 2 are done — the bucket is
+public at `https://updates.scamp.club`, and the bridge release was `v0.7.1`:
 `electron-builder.yml` publishes `generic` first and `github` second, and
-`release.yml` copies artifacts to R2 and verifies the feed. Phase 3
-(measure) starts once `v0.7.1` is verified on a real machine.
+`release.yml` copies artifacts to R2 and verifies the feed. Verified on a
+real machine, and every release since has gone out this way through
+`v0.8.5`.
+
+Phase 3 (measure) is where this sits. The un-migrated count is falling and
+has not flattened: `latest-mac.yml` drew 111 fetches on `v0.7.2` and 41 on
+`v0.8.0`. **Do not drop the `github` entry yet.**
+
+The repo is also moving to an organization, which is independent of all of
+this — R2 does not care who owns the source. The steps for that, and the
+one macOS-signing trap in them, are in
+[`../plans/org-transfer-manual-steps.md`](../plans/org-transfer-manual-steps.md).
+
+**One live gotcha:** electron-builder leaves the GitHub release as a
+**draft**, and `releases.atom` does not list drafts — so until the draft is
+published, un-migrated clients cannot see that version at all, and the
+count above stops moving for a reason that has nothing to do with
+adoption. Publish the draft as part of every release.
 
 ## Why it needs a migration at all
 
