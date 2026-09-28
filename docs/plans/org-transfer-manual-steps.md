@@ -117,7 +117,10 @@ Run this and keep the output. It's your checklist for Phase C:
 gh secret list && gh variable list
 ```
 
-As of 2026-09-28 that is ten secrets and one variable:
+As of 2026-09-28 that is ten secrets and one variable. This is the
+inventory — **[C.2](#c2-every-value-and-where-to-get-it) is where each
+value comes from**, and the place to work from when you're re-entering
+them:
 
 | Name | What it does | Where the value comes from |
 |---|---|---|
@@ -167,7 +170,8 @@ only. Tell me if you'd rather do that than debug the existing one.
 The live secrets still work — `v0.8.5` built, signed, and notarized on
 2026-09-28 — so nothing is broken. GitHub just won't show you a secret's
 value again, which only matters when you have to type it somewhere new.
-Recover what's missing before Phase C, not before Phase B.
+Recover what's missing before Phase C, not before Phase B. C.2 is the
+ordered checklist; this section is the detail behind the certificate.
 
 Most of the list is a lookup rather than a loss:
 
@@ -327,21 +331,86 @@ Hand back: the new `nameWithOwner`, from `gh repo view --json nameWithOwner`.
 gh secret list && gh variable list
 ```
 
-Compare against A.2. Re-add anything missing under **Settings → Secrets
-and variables → Actions** in the new repo — **Secrets** tab for the ten,
-**Variables** tab for `UPDATE_FEED_URL`.
+Compare against the table in C.2. Anything listed there is already in
+place — leave it alone. Anything missing, work through C.2.
 
-The org already holds a second repo (`scampjs`), so the **organization
-level** is probably the better home for these: add them under
-**Organization settings → Secrets and variables → Actions**, and set each
-one's repository access to include `scamp`. Repo-level secrets win over
-org-level ones with the same name, so don't keep both — pick one place.
+### C.2 Every value, and where to get it
 
-Keep the five Apple secrets together wherever they go. They are the
-signing identity, and splitting them across two scopes is how one of them
-gets rotated alone.
+This is the whole list, in the order it's easiest to collect. None of it
+needs the lost backup. Tick as you go.
 
-### C.2 Check Actions is allowed to run
+Add secrets under **Settings → Secrets and variables → Actions →
+Secrets** and the one variable under the **Variables** tab. The org
+already holds `scampjs`, so **Organization settings → Secrets and
+variables → Actions** is probably the better home — set each one's
+repository access to include `scamp`. Repo-level secrets win over
+org-level ones of the same name, so pick one place, not both. Keep the
+five Apple secrets together wherever they go: they are the signing
+identity, and splitting them across two scopes is how one gets rotated
+alone.
+
+**From the certificate, in Keychain Access** — you have this open already:
+
+- [ ] `APPLE_TEAM_ID` — the ten characters in the certificate's own name,
+      `Developer ID Application: Your Name (ABCDE12345)`. Write them down
+      before you close the window.
+- [ ] `MAC_CERTS_PASSWORD` — the password you set when exporting the
+      `.p12`. You choose it; there is nothing to recover.
+- [ ] `MAC_CERTS` — the `.p12` as one base64 line:
+
+      ```bash
+      base64 -i certificate.p12 | pbcopy
+      ```
+
+      Export the **certificate** row, not the key row, and run the two
+      checks in [A.4](#a4-if-youve-lost-the-values) first — both failure
+      modes here are silent until a release is twenty minutes in.
+
+**From Apple** — [appleid.apple.com](https://appleid.apple.com):
+
+- [ ] `APPLE_ID` — the Apple ID email the Developer Program is enrolled
+      under.
+- [ ] `APPLE_ID_PASSWORD` — **Sign-In and Security** → **App-Specific
+      Passwords** → **+**. Name it something like `scamp-notarize-ci`.
+      These are disposable, so a new one costs nothing; revoke the old if
+      you can tell which it was.
+
+**From Cloudflare** — the R2 section of the dashboard:
+
+- [ ] `R2_BUCKET` — the bucket name. Should be `scamp-releases`; read it
+      off the dashboard rather than trusting this line.
+- [ ] `R2_ENDPOINT` — `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`,
+      where the account ID is in the right column of the R2 overview page.
+      No bucket in the path — the release's preflight fails with a clear
+      message if you include it.
+- [ ] `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` — **R2** → **Manage
+      API tokens** → **Create API token**, with **Object Read & Write** on
+      `scamp-releases`. **The secret half is shown once**, so paste both
+      into GitHub before leaving the page. Delete the old token after the
+      first green release, not before.
+
+**From GitHub:**
+
+- [ ] `GH_TOKEN` — mint a new one whose **resource owner is the
+      organization**, with write access to `scamp` only. See
+      [A.3](#a3-check-what-kind-of-token-gh_token-is) for why the old one
+      may not work in an org at all.
+
+**Already known:**
+
+- [ ] `UPDATE_FEED_URL` — `https://updates.scamp.club`. A **variable**,
+      not a secret; it goes on the other tab.
+
+Then confirm the shape matches what the workflows read — ten secrets and
+one variable:
+
+```bash
+gh secret list && gh variable list
+```
+
+Nothing verifies the *values* until C.4 builds with them.
+
+### C.3 Check Actions is allowed to run
 
 New organizations can default to restricting workflows.
 
@@ -354,7 +423,7 @@ New organizations can default to restricting workflows.
 3. Under **Workflow permissions**, **Read repository contents** is enough
    — the release publishes with `GH_TOKEN`, not the built-in token.
 
-### C.3 Prove it end to end with a real release
+### C.4 Prove it end to end with a real release
 
 A throwaway patch version is the only honest test. Ask me for `v0.8.6`
 and I'll bump, write the changelog entry, run the suite, and tag; you
@@ -409,7 +478,7 @@ Plus the note updates: `auto-update.md`, `update-feed-migration.md`, and
 this file's assumptions table.
 
 The `owner:` change is the only one that affects a build. Note that it
-lands in the same release as C.3 — which is why C.3 is a real release and
+lands in the same release as C.4 — which is why C.4 is a real release and
 not a dry run.
 
 ---
