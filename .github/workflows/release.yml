@@ -52,6 +52,20 @@ jobs:
     # tag stays pushed: fix, then move it or bump to the next version.
     needs: check
     runs-on: ${{ matrix.os }}
+    # The release is created with the built-in GITHUB_TOKEN, which needs
+    # `contents: write` to POST /releases and attach assets. Declared here
+    # rather than left to the org default, which is read-only.
+    #
+    # It used to be a personal access token, and the org transfer is what
+    # killed that: a fine-grained PAT is scoped to ONE resource owner, so
+    # a token owned by a personal account cannot reach an org repo at all.
+    # v0.8.6's first attempt failed on all three platforms with
+    # `403 Resource not accessible by personal access token`. The built-in
+    # token has no such problem — it is minted for this repository — and
+    # there is nothing left to expire, rotate, or re-scope the next time
+    # ownership changes. The release's author becomes github-actions[bot].
+    permissions:
+      contents: write
     # WIN_CERTS is surfaced as an env var so the Windows signing step can
     # gate on it (secrets can't be referenced directly in `if:`). When the
     # secret is absent the import step is skipped and electron-builder
@@ -120,7 +134,9 @@ jobs:
       - name: Build and publish
         run: npm run build && npx electron-builder --config electron-builder.yml --publish always
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          # electron-builder's github provider reads GH_TOKEN; the value is
+          # the built-in token, not the old PAT. See `permissions` above.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # macOS notarization (notarytool). electron-builder reads these
           # when `mac.notarize` is enabled.
           APPLE_ID: ${{ secrets.APPLE_ID }}

@@ -161,9 +161,28 @@ This is the one credential that can quietly stop working in an org.
   org opts in, under **Organization settings → Personal access tokens →
   Settings**, and you then grant the token access to the new repo.
 
-Either way the fix is cheap: after the transfer, mint a fresh token
-whose resource owner is the org and give it write access to `scamp`
-only. Tell me if you'd rather do that than debug the existing one.
+**This is what happened (2026-09-28).** `GH_TOKEN` was a fine-grained PAT
+owned by the personal account, and `v0.8.6`'s first attempt failed on all
+three platforms:
+
+```
+403 Forbidden  POST /repos/scampdesign/scamp/releases
+"Resource not accessible by personal access token"
+x-accepted-github-permissions: contents=write
+```
+
+A clean failure — the build stops before the R2 upload, so the feed was
+untouched and no half-release existed.
+
+The fix was to stop using a PAT here. `release.yml` now publishes with the
+built-in `GITHUB_TOKEN` and a job-level `permissions: contents: write`.
+That token is minted for the repository it runs in, so there is nothing to
+expire, rotate, or re-scope the next time ownership changes — the class of
+failure is gone rather than patched. The visible difference is that the
+GitHub release's author is now `github-actions[bot]`.
+
+`secrets.GH_TOKEN` is therefore unused. Leave it until a release has gone
+out green, then delete it.
 
 ### A.4 If you've lost the values
 
@@ -420,8 +439,10 @@ New organizations can default to restricting workflows.
    `actions/setup-node@v5`; if you'd rather be strict, the narrower
    **Allow enterprise, and select non-enterprise, actions** setting with
    *Allow actions created by GitHub* ticked covers both.
-3. Under **Workflow permissions**, **Read repository contents** is enough
-   — the release publishes with `GH_TOKEN`, not the built-in token.
+3. **Workflow permissions** sets only the *default* for
+   `GITHUB_TOKEN`; `release.yml` asks for `contents: write` explicitly at
+   the job level, which is what lets it create the release. Leaving the
+   org default at **Read repository contents** is fine.
 
 ### C.4 Prove it end to end with a real release
 
