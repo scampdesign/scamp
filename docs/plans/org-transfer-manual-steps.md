@@ -11,8 +11,8 @@ separate and gated on a measurement — see
 
 | Value | Assumed |
 |---|---|
-| New owner | `<ORG>` — tell me the final name and I'll put it in the config |
-| Repo name | `scamp` (unchanged) |
+| New owner | `scampdesign` — the org already holds `scampdesign/scampjs` |
+| Repo name | `scamp` (unchanged), so `scampdesign/scamp` |
 | Update feed | `https://updates.scamp.club` — **unchanged, and unaffected by all of this** |
 
 ---
@@ -65,10 +65,12 @@ moves, that is its own migration with its own bridge release.
 
 ---
 
-## Step 0 — publish the v0.8.5 release draft
+## Step 0 — publish the v0.8.5 release draft — DONE 2026-09-28
 
-Do this first, before anything else, because it's the one thing on this
-page that is currently wrong.
+`0.8.5` is published and shows as **Latest**, and `releases.atom` names it,
+so un-migrated clients can see it. Left here because it has to be repeated
+for every release: electron-builder always leaves the GitHub release a
+draft.
 
 electron-builder leaves the GitHub release as a **draft**, and GitHub
 doesn't list drafts in `releases.atom`. So un-migrated clients cannot
@@ -181,7 +183,7 @@ Then, on your machine:
 
 ```bash
 cd ~/Documents/github/scamp
-git remote set-url origin git@github.com:<ORG>/scamp.git
+git remote set-url origin git@github.com:scampdesign/scamp.git
 git remote -v
 git fetch origin && git status
 ```
@@ -205,11 +207,15 @@ Compare against A.2. Re-add anything missing under **Settings → Secrets
 and variables → Actions** in the new repo — **Secrets** tab for the ten,
 **Variables** tab for `UPDATE_FEED_URL`.
 
-If you'd rather put the credentials at the organization level so a
-future second repo shares them, that works too: add them under
-**Organization settings → Secrets and variables → Actions**, and set
-each one's repository access to include `scamp`. Repo-level secrets win
-over org-level ones with the same name, so don't keep both.
+The org already holds a second repo (`scampjs`), so the **organization
+level** is probably the better home for these: add them under
+**Organization settings → Secrets and variables → Actions**, and set each
+one's repository access to include `scamp`. Repo-level secrets win over
+org-level ones with the same name, so don't keep both — pick one place.
+
+Keep the five Apple secrets together wherever they go. They are the
+signing identity, and splitting them across two scopes is how one of them
+gets rotated alone.
 
 ### C.2 Check Actions is allowed to run
 
@@ -270,7 +276,7 @@ Once you give me the org name, in one commit:
 
 | File | Change | Why it matters |
 |---|---|---|
-| `electron-builder.yml` | `publish[1].owner` → `<ORG>` | The GitHub half of dual-publish; wrong owner fails the release upload |
+| `electron-builder.yml` | `publish[1].owner` → `scampdesign` | The GitHub half of dual-publish; wrong owner fails the release upload |
 | `package.json` | `homepage` | Cosmetic, but it's what npm and tooling show |
 | `src/main/menu.ts` | `REPO_URL` | **Help → Report a bug** and the repo menu item |
 | `LICENSE` | `Source repository:` | The BSL names the repo it applies to |
@@ -323,7 +329,7 @@ small, but not zero. Watch `0.8.5` and `0.8.6` before deciding.
 ### E.3 What breaks for users the moment it's private
 
 **Help → Report a bug** opens
-`github.com/<ORG>/scamp/issues/new`, and a private repo returns 404 for
+`github.com/scampdesign/scamp/issues/new`, and a private repo returns 404 for
 anyone outside the org. Every user who clicks it sees a dead page. Decide
 before flipping where bug reports should go — a form on the site, an
 email address, or a small public issues-only repo — and ask me to
