@@ -174,7 +174,7 @@ Most of the list is a lookup rather than a loss:
 | Secret | How to get it back |
 |---|---|
 | `APPLE_ID` | Your Apple ID email |
-| `APPLE_TEAM_ID` | developer.apple.com → **Membership details**. Or, with no login at all, `codesign -dv --verbose=4 /Applications/Scamp.app` on any Mac with Scamp installed — it prints `TeamIdentifier=` |
+| `APPLE_TEAM_ID` | **It is in the certificate's own name.** Keychain Access shows `Developer ID Application: Name (TEAMID)` — the ten characters in the parentheses. Also developer.apple.com → **Membership details**, or `codesign -dv --verbose=4 /Applications/Scamp.app` on any Mac with Scamp installed, which prints `TeamIdentifier=` with no Apple login at all |
 | `APPLE_ID_PASSWORD` | Not readable, but disposable: appleid.apple.com → **Sign-In and Security** → **App-Specific Passwords** → generate a new one. Revoke the old if you can identify it |
 | `MAC_CERTS_PASSWORD` | You chose it on export. Forgotten is fine — re-export the `.p12` with a new password |
 | `R2_SECRET_ACCESS_KEY` | Shown once at creation. Create a **new** R2 API token (Cloudflare → R2 → **Manage API tokens**), with Object Read & Write on `scamp-releases`, and delete the old one after the first green release |
@@ -215,6 +215,25 @@ still have the Mac you set this up on.
 
 Nothing about the identity changes in this case. Same certificate, same
 team, same everything.
+
+Two things to confirm while you are in there, both of which cost nothing
+now and cost a failed release later:
+
+- **It says `Developer ID Application`.** An `Apple Development` or `Mac
+  Developer` certificate looks almost identical in the list and cannot
+  sign a distributed build. Double-click it to check the expiry date at
+  the same time.
+- **The `.p12` really has both halves.** Exporting the key row instead of
+  the certificate row produces a file that imports without complaint and
+  then fails in CI twenty minutes in:
+
+  ```bash
+  openssl pkcs12 -info -in certificate.p12 -nodes -passin pass:YOUR_PASSWORD \
+    | grep -E 'friendlyName|PRIVATE KEY'
+  ```
+
+  You want to see both a `friendlyName` naming the Developer ID
+  certificate and a `PRIVATE KEY` line.
 
 **Case B — the key is gone.** Then the old certificate is dead weight and
 you make a new one. This is routine: Developer ID certificates expire
