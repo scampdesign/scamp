@@ -22,6 +22,18 @@ release time.
 
 ## Releases
 
+### 0.8.6 (2026-09-28)
+
+**Changed**
+
+- **Scamp's source repository moved to the `scampdesign` organization.**
+  **Help → Report a bug** and the repository link in the **Help** menu now
+  point to
+  [github.com/scampdesign/scamp](https://github.com/scampdesign/scamp).
+  Nothing about updates changes: Scamp has taken them from
+  `updates.scamp.club` since 0.7.1, and that doesn't depend on where the
+  source lives.
+
 ### 0.8.5 (2026-09-25)
 
 **Added**
