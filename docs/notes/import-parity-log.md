@@ -146,6 +146,75 @@ reported on the CANVAS are not coming from there.
 
 ---
 
+## NOT REPRODUCED — "the canvas looks nothing like the site"
+
+**Measured.** `scripts/canvas-oracle.mjs`, the third oracle, built for
+exactly this report. Three screenshots of gainwix.com, canvas captured at
+1440x5384 with zoom pinned to 1.000:
+
+| | match |
+|---|---|
+| source ↔ export | 93.42% |
+| source ↔ canvas | **92.98%** |
+| export ↔ canvas | **95.93%** |
+
+The canvas is within half a point of the export. Wrong background colours
+are not reproduced at all: queried live, the canvas root is 5383px tall
+with `rgb(250, 250, 252)` — gainwix's own body colour — and the tokens
+resolve correctly on the frame (`--color-text: #13111c`,
+`--color-background: #e8e6f0`, `--color-9: #fafafc`).
+
+**What the canvas DOES cost**, from `export ↔ canvas`: every line of text
+is ghosted by about a pixel, the whole canvas is 1px taller than the
+export, and the footer block differs more than anything else. Worth
+chasing, and not what was reported.
+
+**So the report stands unexplained**, and the difference is in the setup,
+not the page. This oracle writes generated files into a FRESH project and
+opens it. A real import goes through the app into an EXISTING project,
+which differs in at least three ways worth testing next:
+
+1. **`canvasWidth`.** The capture is taken at 1440 and this oracle pins
+   the project to 1440. A project whose canvas is 1200 renders a design
+   laid out for 1440 inside a narrower frame — which would look nothing
+   like the site, and is the leading candidate.
+2. **Token collision.** An existing theme already holding `--color-text`
+   and `--color-background` triggers the `-imported` rename, which this
+   oracle never exercises because its theme is the template's.
+3. **Timing.** Images download after the view opens, so a canvas looked
+   at early is missing them.
+
+**Ask before chasing further:** what is the project's canvas width, and
+was the project new or existing?
+
+---
+
+## HARNESS — the canvas oracle reported a catastrophic bug that was its own
+
+First run of `canvas-oracle.mjs` on gainwix: `source ↔ canvas` **20.67%**,
+with one cluster of 5.85M pixels — `1440x4080 at 0,1312` — showing the
+page correct to y=1312 and **solid black** below. It looked exactly like
+the reported bug, and it was entirely the harness.
+
+The window was 1400px tall and the canvas 5383px. Playwright's element
+screenshot cannot paint what was never on screen, so everything past the
+viewport came back black. The giveaway was in the numbers all along: the
+black starts at 1312, which is 1400 less the app chrome.
+
+The DOM said so too — root 5383px tall, correct background — which is why
+querying the live canvas beat reasoning about the screenshot. Fixed by
+sizing the window to the canvas before capturing.
+
+Two smaller ones from the same build: the crash-reporting consent prompt
+covers the whole app on a fresh `userData` dir, so the canvas never
+appeared behind it and a selector timeout said nothing about why; and a
+hand-rolled project directory the app would not open at all, fixed by
+using `projectTemplate` as the e2e fixtures do. Both were found by
+screenshotting the window on failure instead of trusting the timeout —
+which is now what the script does.
+
+---
+
 ## NOTICED (not fixed) — the canvas is not measured by anything
 
 Both harnesses compare the source page against the **exported HTML**. A
@@ -161,8 +230,8 @@ untested: gainwix's page background sits on `<body>`
 (`rgb(250, 250, 252)`) with `<main>` transparent, and if the import roots
 below `<body>` that background has nowhere to live.
 
-Needs a third oracle: source ↔ canvas. `test/e2e/parity/` is the shape to
-copy, including its rule that the oracle must not import from `src/`.
+**Superseded** by `scripts/canvas-oracle.mjs` — see the entry above. The
+gap this described is closed; what it was chasing is not.
 
 ---
 
