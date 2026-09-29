@@ -61,11 +61,37 @@ async function addPage(window: Win, name: string): Promise<void> {
   await nameInput.fill(name);
   await nameInput.press('Enter');
   await expect(nameInput).toBeHidden();
-  // And wait for the new page's canvas, not just for the dialog. The
-  // callers gate on `rects === 0`, which is ALSO true in the gap where
-  // the old page has gone and the new one has not arrived — so a paste
-  // straight after it had no root to land on and produced nothing.
-  await expect(pageRoot(window)).toBeVisible();
+  // Wait for the store to say the NEW page is the open one.
+  //
+  // Two weaker gates were tried and both have holes. `rects === 0` is
+  // also true in the gap where the old page has gone and the new one
+  // has not arrived. And `pageRoot` is
+  // `[data-element-id="root"][data-scamp-id="root"]` — the SAME on
+  // every page — so waiting for it matches the old page's root
+  // immediately and proves nothing at all.
+  //
+  // The store is the only thing that actually knows. `activePage` in a
+  // Next.js or legacy project, `activeComponent` in a scamp one, where
+  // every page is a view.
+  await expect
+    .poll(
+      async () =>
+        window.evaluate((wanted) => {
+          const w = window as unknown as {
+            __scampCanvasStore?: {
+              getState: () => {
+                activePage?: { name?: string } | null;
+                activeComponent?: { name?: string } | null;
+              };
+            };
+          };
+          const state = w.__scampCanvasStore?.getState();
+          const open = state?.activePage?.name ?? state?.activeComponent?.name ?? '';
+          return open.toLowerCase().replace(/[^a-z0-9]/g, '') === wanted;
+        }, name.toLowerCase().replace(/[^a-z0-9]/g, '')),
+      { timeout: 15_000 }
+    )
+    .toBe(true);
   await waitForSaved(window);
 }
 

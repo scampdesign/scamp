@@ -153,13 +153,26 @@ test.describe('website import', () => {
     expect(css).toMatch(/@media \(max-width: (768|390)px\)/);
   });
 
-  test('lifts repeated colours into theme tokens the panel can change', async ({
+  test('writes literal colours and adds no theme tokens', async ({
     app,
     window,
     project,
   }) => {
+    // The importer used to lift repeated colours into theme tokens. It
+    // does not any more, deliberately: a design system is a set of
+    // decisions about what SHOULD be shared, and an importer counting
+    // occurrences cannot make those. It produced a theme nobody chose,
+    // and — with two sites in one project — a view painted in the other
+    // site's palette.
+    //
+    // Two tests were removed for this one. They asserted the tokens
+    // existed, and the second had started passing for the wrong reason:
+    // the template's own `--color-brand-*` satisfied "the theme contains
+    // --color-".
+    // see docs/notes/import-token-collisions.md
     await expect(pageRoot(window)).toBeVisible();
     await openPagesSection(window);
+    const before = await project.readTheme();
 
     const opened = app.waitForEvent('window');
     await window.getByRole('button', { name: /Import a page/ }).click();
@@ -171,64 +184,21 @@ test.describe('website import', () => {
     await expect(btn).toBeEnabled();
     await btn.click();
     await expect(importWindow.getByText(/Imported/)).toBeVisible({ timeout: 20_000 });
-
-    // The point of the tokens: the view references them, so changing one
-    // in the theme panel changes the design.
-    await expect
-      .poll(async () => project.readTheme(), { timeout: 15_000 })
-      .toMatch(/--color-(text|background|accent|border|\d)/);
-    const { css } = await project.readView('NorthwindShipFaster');
-    expect(css).toMatch(/var\(--color-/);
-  });
-
-  test('reuses a token it already wrote rather than writing a second one', async ({
-    app,
-    window,
-    project,
-  }) => {
-    // Importing the same site twice generates the same names for the
-    // same colours. Comparing only names wrote `--color-1-imported`
-    // beside the identical `--color-1` already there — a second palette
-    // nothing referenced. see docs/notes/import-svg-jsx.md
-    await expect(pageRoot(window)).toBeVisible();
-    await openPagesSection(window);
-
-    const importOnce = async (): Promise<void> => {
-      const opened = app.waitForEvent('window');
-      await window.getByRole('button', { name: /Import a page/ }).click();
-      const importWindow = await opened;
-      await importWindow.waitForLoadState('domcontentloaded');
-      await importWindow.getByLabel('Address').fill(FIXTURE_URL);
-      await importWindow.getByLabel('Address').press('Enter');
-      const btn = importWindow.getByRole('button', { name: 'Import', exact: true });
-      await expect(btn).toBeEnabled();
-      await btn.click();
-      await expect(importWindow.getByText(/Imported/)).toBeVisible({ timeout: 30_000 });
-      await importWindow.close();
-    };
-
-    await importOnce();
     await expect
       .poll(async () => project.viewExists('NorthwindShipFaster'), { timeout: 15_000 })
       .toBe(true);
-    const first = await project.readTheme();
-    expect(first).toContain('--color-');
 
-    await importOnce();
-    await expect
-      .poll(async () => project.viewExists('NorthwindShipFaster2'), { timeout: 15_000 })
-      .toBe(true);
+    const { css } = await project.readView('NorthwindShipFaster');
+    expect(css).not.toMatch(/var\(--color-/);
+    // A real colour, written out.
+    expect(css).toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
 
+    // The theme gains fonts, which an import legitimately installs, and
+    // no colour tokens.
     const after = await project.readTheme();
-    // No token declared twice. A `-imported` suffix is still right when
-    // the name clashes with a DIFFERENT value — the default theme's
-    // `--color-text` is not this page's — so the test is about
-    // duplicates, not about the suffix.
-    const names = [...after.matchAll(/^\s*(--[\w-]+):/gm)].map((m) => m[1]);
-    expect(new Set(names).size).toBe(names.length);
-    // And the font import is fetched once, not once per import.
-    const imports = [...after.matchAll(/^@import /gm)];
-    expect(imports).toHaveLength(1);
+    const colourNames = (theme: string): string[] =>
+      [...theme.matchAll(/^\s*(--color-[\w-]+):/gm)].map((m) => m[1] ?? '');
+    expect(colourNames(after)).toEqual(colourNames(before));
   });
 
   test('reports an image it could not fetch instead of failing the import', async ({
