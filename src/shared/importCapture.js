@@ -150,6 +150,13 @@ export const CAPTURED_PROPERTIES = [
     'color', 'font-family', 'font-size', 'font-weight', 'font-style',
     'line-height', 'letter-spacing', 'text-align', 'text-transform',
     'text-decoration-line', 'white-space', 'list-style-type',
+    // A variable font is not one drawing. `font-variation-settings` is
+    // how a page picks a custom axis — Fraunces' `SOFT`, say — and
+    // `font-optical-sizing` decides whether `opsz` tracks the font size,
+    // which changes glyph WIDTHS and so where every line wraps. Losing
+    // them silently is a page whose headings wrap one line early.
+    // see docs/notes/import-variable-fonts.md
+    'font-variation-settings', 'font-optical-sizing', 'font-stretch',
     // Motion — round-trips verbatim, and losing it loses the design's feel
     'transform', 'transform-origin', 'transition',
 ];
@@ -188,6 +195,14 @@ export const INITIAL_VALUES = {
     'justify-items': 'normal', 'align-items': 'normal',
     'align-content': 'normal', 'justify-content': 'normal',
     'flex-direction': 'row', 'flex-wrap': 'nowrap',
+    // Chromium reports the initial keyword's RESOLVED value, so the
+    // keyword alone never matches: `font-stretch: normal` reads back as
+    // `100%` and `font-variation-settings: normal` stays `normal`. Both
+    // spellings are listed, or every imported element carries three type
+    // declarations that say nothing.
+    'font-variation-settings': 'normal',
+    'font-optical-sizing': 'auto',
+    'font-stretch': ['normal', '100%'],
     'background-color': 'rgba(0, 0, 0, 0)',
     'background-image': 'none',
     'background-size': 'auto', 'background-position': '0% 0%',
@@ -222,6 +237,10 @@ export const INHERITED_PROPERTIES = new Set([
     'color', 'font-family', 'font-size', 'font-weight', 'font-style',
     'line-height', 'letter-spacing', 'text-align', 'text-transform',
     'white-space', 'list-style-type',
+    // All three inherit, so they belong here for the same reason
+    // `font-family` does: repeating them on every descendant of the
+    // element that set them is noise, not fidelity.
+    'font-variation-settings', 'font-optical-sizing', 'font-stretch',
 ]);
 /**
  * Properties whose computed value is a RESULT rather than a decision,

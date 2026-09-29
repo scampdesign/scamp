@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { captureFn, capturePolicy, prepareFn } from '@shared/captureScript';
-import type { Breakpoint, ImportResultPayload } from '@shared/types';
+import type { Breakpoint, ImportFidelity, ImportResultPayload } from '@shared/types';
 
 import styles from './ImportApp.module.css';
 
@@ -15,6 +15,37 @@ import styles from './ImportApp.module.css';
  * project, a file, or the element model.
  * see docs/plans/website-import-plan.md
  */
+
+/**
+ * How each fidelity level reads in the report.
+ *
+ * `~` for a fallback is deliberately not `!`: nothing is missing, so an
+ * alarm would be wrong — but it is not free either, and `·` would hide
+ * it among the bookkeeping. see docs/agent-native-review.md
+ */
+const FIDELITY_MARK: Record<ImportFidelity, string> = {
+  lost: '!',
+  'rendered-fallback': '~',
+  approximated: '≈',
+  exact: '·',
+};
+
+const FIDELITY_TITLE: Record<ImportFidelity, string> = {
+  lost: 'Did not come across',
+  'rendered-fallback': 'Renders, but you cannot edit it the way you could on the page',
+  approximated: 'Close, but not identical',
+  exact: 'Changed shape, changed nothing you can see',
+};
+
+const REPORT_CLASS: Record<
+  ImportFidelity,
+  (s: Record<string, string>) => string | undefined
+> = {
+  lost: (s) => s['reportLost'],
+  'rendered-fallback': (s) => s['reportFallback'],
+  approximated: (s) => s['reportFallback'],
+  exact: (s) => s['reportKept'],
+};
 
 type Status =
   | { kind: 'idle' }
@@ -59,9 +90,14 @@ export const ImportApp = (): JSX.Element => {
     });
     const offResult = window.scampImport.onResult((result) => {
       setStatus({ kind: 'done', result });
-      // Opened by default when something was lost, so a real problem is
-      // not one click away from being missed.
-      setReportOpen((result.findings ?? []).some((f) => f.lost));
+      // Opened by default when anything did not come across whole — a
+      // loss OR a fallback that renders but cannot be edited. The second
+      // is the one a screenshot will never tell you about.
+      setReportOpen(
+        (result.findings ?? []).some(
+          (f) => f.fidelity === 'lost' || f.fidelity === 'rendered-fallback'
+        )
+      );
     });
     return () => {
       offOpen();
@@ -257,19 +293,22 @@ export const ImportApp = (): JSX.Element => {
                 )}
               </div>
               {reportOpen && (
-                // An import is a lossy translation. Losses come first
-                // and are marked; the rest is what it did on purpose.
+                // An import is a lossy translation, and it is lossy in
+                // more than one way. Worst first, each marked with how
+                // faithfully it survived.
                 <ul className={styles.report}>
                   {status.result.findings?.map((f) => (
-                    <li
-                      key={f.kind}
-                      className={f.lost ? styles.reportLost : styles.reportKept}
-                    >
-                      <span className={styles.reportMark}>{f.lost ? '!' : '·'}</span>
+                    <li key={f.kind} className={REPORT_CLASS[f.fidelity](styles)}>
+                      <span className={styles.reportMark} title={FIDELITY_TITLE[f.fidelity]}>
+                        {FIDELITY_MARK[f.fidelity]}
+                      </span>
                       <span>
                         {f.label}
                         {f.examples.length > 0 && (
                           <span className={styles.reportWhere}> — {f.examples.join(', ')}</span>
+                        )}
+                        {f.editable !== undefined && (
+                          <span className={styles.reportEditable}>{f.editable}</span>
                         )}
                       </span>
                     </li>

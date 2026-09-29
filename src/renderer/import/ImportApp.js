@@ -2,6 +2,41 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { captureFn, capturePolicy, prepareFn } from '@shared/captureScript';
 import styles from './ImportApp.module.css';
+/**
+ * The import window: a URL bar, a page, and an Import button.
+ *
+ * The capture runs here rather than in main, because `executeJavaScript`
+ * on the `<webview>` tag is what reaches the live document — and the
+ * live document, after cascade and scripts, is the thing worth reading.
+ * What comes back is handed straight to main; this window never sees a
+ * project, a file, or the element model.
+ * see docs/plans/website-import-plan.md
+ */
+/**
+ * How each fidelity level reads in the report.
+ *
+ * `~` for a fallback is deliberately not `!`: nothing is missing, so an
+ * alarm would be wrong — but it is not free either, and `·` would hide
+ * it among the bookkeeping. see docs/agent-native-review.md
+ */
+const FIDELITY_MARK = {
+    lost: '!',
+    'rendered-fallback': '~',
+    approximated: '≈',
+    exact: '·',
+};
+const FIDELITY_TITLE = {
+    lost: 'Did not come across',
+    'rendered-fallback': 'Renders, but you cannot edit it the way you could on the page',
+    approximated: 'Close, but not identical',
+    exact: 'Changed shape, changed nothing you can see',
+};
+const REPORT_CLASS = {
+    lost: (s) => s['reportLost'],
+    'rendered-fallback': (s) => s['reportFallback'],
+    approximated: (s) => s['reportFallback'],
+    exact: (s) => s['reportKept'],
+};
 /** `https://` in front of a bare host, so typing `stripe.com` works. */
 const normalizeUrl = (raw) => {
     const trimmed = raw.trim();
@@ -39,9 +74,10 @@ export const ImportApp = () => {
         });
         const offResult = window.scampImport.onResult((result) => {
             setStatus({ kind: 'done', result });
-            // Opened by default when something was lost, so a real problem is
-            // not one click away from being missed.
-            setReportOpen((result.findings ?? []).some((f) => f.lost));
+            // Opened by default when anything did not come across whole — a
+            // loss OR a fallback that renders but cannot be edited. The second
+            // is the one a screenshot will never tell you about.
+            setReportOpen((result.findings ?? []).some((f) => f.fidelity === 'lost' || f.fidelity === 'rendered-fallback'));
         });
         return () => {
             offOpen();
@@ -181,9 +217,10 @@ export const ImportApp = () => {
                                 ? `Reading at ${status.at}…`
                                 : 'Reading the page…'
                             : 'Import' })] }), status.kind !== 'idle' && status.kind !== 'capturing' && (_jsx("div", { className: `${styles.banner} ${status.kind === 'failed' || !status.result?.ok ? styles.bannerBad : styles.bannerGood}`, children: status.kind === 'failed' ? (_jsx("span", { children: status.message })) : status.result.ok ? (_jsxs(_Fragment, { children: [_jsxs("div", { className: styles.bannerHead, children: [_jsxs("span", { children: ["Imported ", _jsx("strong", { children: status.result.viewName }), " \u2014", ' ', status.result.elementCount, " elements"] }), (status.result.findings?.length ?? 0) > 0 && (_jsxs("button", { className: styles.reportToggle, onClick: () => setReportOpen((v) => !v), type: "button", children: [reportOpen ? 'Hide' : 'What changed', " (", status.result.findings?.length, ")"] }))] }), reportOpen && (
-                        // An import is a lossy translation. Losses come first
-                        // and are marked; the rest is what it did on purpose.
-                        _jsx("ul", { className: styles.report, children: status.result.findings?.map((f) => (_jsxs("li", { className: f.lost ? styles.reportLost : styles.reportKept, children: [_jsx("span", { className: styles.reportMark, children: f.lost ? '!' : '·' }), _jsxs("span", { children: [f.label, f.examples.length > 0 && (_jsxs("span", { className: styles.reportWhere, children: [" \u2014 ", f.examples.join(', ')] }))] })] }, f.kind))) }))] })) : (_jsx("span", { children: status.result.error ?? 'The import failed.' })) })), _jsx("div", { className: styles.viewport, children: loadedUrl ? (_jsx("webview", { 
+                        // An import is a lossy translation, and it is lossy in
+                        // more than one way. Worst first, each marked with how
+                        // faithfully it survived.
+                        _jsx("ul", { className: styles.report, children: status.result.findings?.map((f) => (_jsxs("li", { className: REPORT_CLASS[f.fidelity](styles), children: [_jsx("span", { className: styles.reportMark, title: FIDELITY_TITLE[f.fidelity], children: FIDELITY_MARK[f.fidelity] }), _jsxs("span", { children: [f.label, f.examples.length > 0 && (_jsxs("span", { className: styles.reportWhere, children: [" \u2014 ", f.examples.join(', ')] })), f.editable !== undefined && (_jsx("span", { className: styles.reportEditable, children: f.editable }))] })] }, f.kind))) }))] })) : (_jsx("span", { children: status.result.error ?? 'The import failed.' })) })), _jsx("div", { className: styles.viewport, children: loadedUrl ? (_jsx("webview", { 
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     ref: webviewRef, src: loadedUrl, className: styles.webview })) : (_jsxs("div", { className: styles.empty, children: [_jsx("p", { className: styles.emptyTitle, children: "Import a page" }), _jsxs("p", { className: styles.emptyBody, children: ["Paste a URL above and navigate to the page you want. Clicking", _jsx("strong", { children: " Import" }), " reads the page as it is on screen and makes a new view from it."] })] })) })] }));
 };

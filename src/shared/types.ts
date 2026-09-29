@@ -645,6 +645,25 @@ export type ImportCapturedArgs = {
 };
 
 /** One kind of thing the import changed or dropped. */
+/**
+ * How faithfully one kind of thing survived the import.
+ *
+ * Four levels rather than lost/kept, because pixels and editability are
+ * separate axes and a boolean hides that. An inline icon kept as markup
+ * renders perfectly and cannot be edited as shapes — a pixel diff scores
+ * it 100%, which is exactly the loss a boolean cannot express.
+ * see docs/agent-native-review.md
+ */
+export type ImportFidelity =
+  /** Pixels and editable semantics both survived. */
+  | 'exact'
+  /** Representable, but not identically. */
+  | 'approximated'
+  /** It renders, but you cannot edit it the way you could on the page. */
+  | 'rendered-fallback'
+  /** It did not come across at all. */
+  | 'lost';
+
 export type ImportReportGroup = {
   kind: string;
   /** One sentence, already pluralised for `count`. */
@@ -652,8 +671,9 @@ export type ImportReportGroup = {
   count: number;
   /** Where, as the capture described it. A few, not all. */
   examples: string[];
-  /** True when it is a loss rather than a translation. */
-  lost: boolean;
+  fidelity: ImportFidelity;
+  /** For a fallback: what you CAN still change. Absent otherwise. */
+  editable?: string;
 };
 
 /** What became of an import, sent back so the import window can say so. */

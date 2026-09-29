@@ -181,8 +181,23 @@
   color: #e08b87;
 }
 
+/* Renders, but not editable as it was — between a loss and a
+   translation, and coloured that way. */
+.reportFallback {
+  color: #d8b072;
+}
+
 .reportKept {
   color: #a9aeb7;
+}
+
+/* What you CAN still change about a fallback. Its own line: the point is
+   that the entry is not simply bad news. */
+.reportEditable {
+  display: block;
+  opacity: 0.75;
+  font-size: 11px;
+  margin-top: 2px;
 }
 
 .reportWhere {

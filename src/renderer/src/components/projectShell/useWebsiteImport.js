@@ -152,6 +152,33 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     const assets = payload.assets.filter((a) => a.kind === 'image');
                     const downloaded = new Map();
                     const failedAssets = [];
+                    // How much of the page an image occupied, so a failed fetch can
+                    // be graded by what it costs. A hero that did not arrive is a
+                    // visibly broken page; a 16px icon is not.
+                    //
+                    // Read off the element model rather than the capture, which
+                    // carries rects only for the fidelity harness. A size the
+                    // reducer replaced with `fill` is not a number here and counts
+                    // as small — under-reporting, which is the safe direction for a
+                    // grade that opens the report.
+                    const areaOf = (url) => {
+                        let biggest = 0;
+                        for (const el of Object.values(result.elements)) {
+                            const refs = el.src === url ||
+                                (typeof el.customProperties?.['background-image'] === 'string' &&
+                                    el.customProperties['background-image'].includes(url));
+                            if (!refs)
+                                continue;
+                            // Only a fixed size is a real measurement. `fill` and the
+                            // rest are relative to a parent this cannot resolve here.
+                            if (el.widthMode !== 'fixed' || el.heightMode !== 'fixed')
+                                continue;
+                            biggest = Math.max(biggest, el.widthValue * el.heightValue);
+                        }
+                        return biggest;
+                    };
+                    /** 200x200. Big enough that its absence is the first thing you see. */
+                    const BIG_IMAGE_AREA = 40_000;
                     for (const asset of assets) {
                         if (downloaded.has(asset.url) || !/^https?:/.test(asset.url))
                             continue;
@@ -161,8 +188,12 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                         });
                         if (got.ok)
                             downloaded.set(asset.url, got.relativePath);
-                        else
-                            failedAssets.push(`${new URL(asset.url).pathname.split('/').pop()}: ${got.error}`);
+                        else {
+                            failedAssets.push({
+                                label: `${new URL(asset.url).pathname.split('/').pop()}: ${got.error}`,
+                                big: areaOf(asset.url) >= BIG_IMAGE_AREA,
+                            });
+                        }
                     }
                     if (downloaded.size > 0) {
                         const localised = Object.fromEntries(Object.entries(result.elements).map(([id, el]) => {
@@ -264,19 +295,30 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     // ordered losses-first. see lib/importReport.ts
                     const grouped = buildReport(result.findings);
                     const extras = [];
-                    const note = (kind, label, count, lost) => {
+                    const note = (kind, label, count, fidelity) => {
                         if (count > 0)
-                            extras.push({ kind, label, count, examples: [], lost });
+                            extras.push({ kind, label, count, examples: [], fidelity });
                     };
-                    note('font-embedded', `${embedded.map((f) => f.family).join(', ')} embedded from Google Fonts`, embedded.length, false);
-                    note('font-missing', `install ${missingFonts.map((f) => f.family).join(', ')} — not on Google Fonts and not on this machine`, missingFonts.length, true);
-                    note('image-downloaded', `${downloaded.size} images downloaded into the project`, downloaded.size, false);
-                    note('image-failed', `${failedAssets.length} images could not be fetched (${failedAssets[0] ?? ''})`, failedAssets.length, true);
-                    note('token', `${renamed.length} repeated colours lifted into theme tokens`, renamed.length, false);
+                    note('font-embedded', `${embedded.map((f) => f.family).join(', ')} embedded from Google Fonts`, embedded.length, 'exact');
+                    note('font-missing', `install ${missingFonts.map((f) => f.family).join(', ')} — not on Google Fonts and not on this machine`, missingFonts.length, 'lost');
+                    note('image-downloaded', `${downloaded.size} images downloaded into the project`, downloaded.size, 'exact');
+                    // A missing image is graded by how much of the page it was.
+                    // A hero that failed to fetch is a visibly broken page; a
+                    // decorative icon is not, and grading them the same is how a
+                    // real break gets buried. see docs/agent-native-review.md
+                    const failedBig = failedAssets.filter((a) => a.big).length;
+                    const failedSmall = failedAssets.length - failedBig;
+                    note('image-failed-large', `${failedBig} large ${failedBig === 1 ? 'image' : 'images'} could not be fetched — the page will look broken where ${failedBig === 1 ? 'it was' : 'they were'} (${failedAssets.find((a) => a.big)?.label ?? ''})`, failedBig, 'lost');
+                    note('image-failed', `${failedSmall} smaller ${failedSmall === 1 ? 'image' : 'images'} could not be fetched (${failedAssets.find((a) => !a.big)?.label ?? ''})`, failedSmall, 'approximated');
+                    note('token', `${renamed.length} repeated colours lifted into theme tokens`, renamed.length, 'exact');
+                    // `buildReport` has already ordered its own groups worst-first;
+                    // the extras are merged at the ends rather than interleaved so
+                    // that ordering survives.
+                    const bad = (e) => e.fidelity === 'lost' || e.fidelity === 'rendered-fallback';
                     const findings = [
-                        ...extras.filter((e) => e.lost),
+                        ...extras.filter(bad),
                         ...grouped,
-                        ...extras.filter((e) => !e.lost),
+                        ...extras.filter((e) => !bad(e)),
                     ];
                     log('info', `Imported ${name} from ${payload.url} — ` +
                         `${Object.keys(result.elements).length} elements` +
