@@ -19,7 +19,6 @@ import {
   type FontResolution,
 } from '@lib/importFonts';
 import { buildReport } from '@lib/importReport';
-import { extractTokens, resolveTokenNames } from '@lib/importTokens';
 import { useFontsStore } from '@store/fontsSlice';
 import { parseThemeFile, serializeThemeFile } from '@lib/parseTheme';
 import { useAppLogStore } from '@store/appLogSlice';
@@ -99,64 +98,22 @@ export const useWebsiteImport = ({
             }))
           );
 
-          // Lift repeated colours into theme tokens before generating,
-          // so the view references `var(--color-accent)` rather than the
-          // same literal forty times. Without this an import is a
-          // snapshot: correct, and unchangeable from the theme panel.
-          const themeCss = await window.scamp.readTheme({ projectPath: project.path });
-          const parsedTheme = parseThemeFile(themeCss);
-          const existing = new Map(parsedTheme.tokens.map((t) => [t.name, t.value]));
-          const { tokens, elements } = extractTokens(reduced.elements);
-          // A name the project already uses means something else here;
-          // suffix rather than redefine someone's token.
+          // Literal colours, not tokens.
           //
-          // Unless it means the SAME thing. Importing a site twice
-          // generates the same names for the same colours, and
-          // comparing only names wrote `--color-1-imported` beside the
-          // identical `--color-1` already there — a second palette
-          // nothing referenced. A token whose value already matches is
-          // the one that was wanted, so it is reused.
-          // Escalating suffixes, not one fixed `-imported`. See
-          // `resolveTokenNames` for why: a second site imported into the
-          // same project used to land on a name the FIRST site already
-          // held, and was then skipped as "already held" and never
-          // written — leaving the new view painted in the old site's
-          // colours. see docs/notes/import-token-collisions.md
-          const renamed = resolveTokenNames(tokens, existing);
-          const byOld = new Map(tokens.map((t, i) => [t.name, renamed[i]?.name ?? t.name]));
-          const themed = Object.fromEntries(
-            Object.entries(elements).map(([id, el]) => {
-              let next = el;
-              for (const field of ['color', 'backgroundColor', 'borderColor'] as const) {
-                const value = next[field];
-                if (typeof value !== 'string' || !value.startsWith('var(')) continue;
-                const name = value.slice(4, -1);
-                const mapped = byOld.get(name);
-                if (mapped && mapped !== name) next = { ...next, [field]: `var(${mapped})` };
-              }
-              return [id, next];
-            })
-          );
-          const result = { ...reduced, elements: themed };
-
-          // Only what the theme does not already hold. A reused token is
-          // referenced by the view and declared once, where it was.
-          const added = renamed.filter((t) => !existing.has(t.name));
-          if (added.length > 0) {
-            await window.scamp.writeTheme({
-              projectPath: project.path,
-              content: serializeThemeFile(
-                {
-                  ...parsedTheme,
-                  tokens: [
-                    ...parsedTheme.tokens,
-                    ...added.map((t) => ({ name: t.name, value: t.value })),
-                  ],
-                },
-                themeCss
-              ),
-            });
-          }
+          // This used to lift repeated colours into theme tokens so a
+          // view referenced `var(--color-accent)` rather than the same
+          // value forty times. It is deliberately gone: a design system
+          // is a set of decisions about what SHOULD be shared, and an
+          // importer counting occurrences cannot make those. Guessing
+          // them produced a theme nobody chose and, when two sites were
+          // imported into one project, a view painted in the other
+          // site's palette.
+          //
+          // An import is now a faithful snapshot in literal values, and
+          // turning any of them into tokens is the user's call, made
+          // afterwards against a design they can see.
+          // see docs/notes/import-token-collisions.md
+          const result = reduced;
 
           const taken = new Set([
             ...project.components.map((c) => c.name),
@@ -394,7 +351,6 @@ export const useWebsiteImport = ({
             failedSmall,
             'approximated'
           );
-          note('token', `${renamed.length} repeated colours lifted into theme tokens`, renamed.length, 'exact');
           // `buildReport` has already ordered its own groups worst-first;
           // the extras are merged at the ends rather than interleaved so
           // that ordering survives.
@@ -409,7 +365,6 @@ export const useWebsiteImport = ({
             'info',
             `Imported ${name} from ${(payload as CapturePayload).url} — ` +
               `${Object.keys(result.elements).length} elements` +
-              (renamed.length > 0 ? `, ${renamed.length} colour tokens` : '') +
               (embedded.length > 0 ? `, ${embedded.length} fonts embedded` : '') +
               (findings.length > 0
                 ? `. ${findings.map((f) => f.label).join('; ')}.`

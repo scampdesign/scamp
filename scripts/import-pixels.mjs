@@ -64,10 +64,8 @@ const { reduceCapture } = await bundleOf('src/renderer/lib/importReduce.ts');
 const { generateCode } = await bundleOf('src/renderer/lib/generateCode.ts');
 const { buildHtmlExport } = await bundleOf('src/renderer/lib/htmlExport.ts');
 const { DEFAULT_THEME_CSS } = await bundleOf('src/shared/templates/themeCss.ts');
-// The app lifts repeated colours into theme tokens between reducing and
-// generating, so a harness that skips it is measuring a pipeline nobody
-// runs. see src/renderer/src/components/projectShell/useWebsiteImport.ts
-const { extractTokens } = await bundleOf('src/renderer/lib/importTokens.ts');
+// No token extraction: the import writes literal values, and a harness
+// that tokenised would be measuring a pipeline nobody runs.
 const { parseThemeFile, serializeThemeFile } = await bundleOf('src/renderer/lib/parseTheme.ts');
 const { fontsNeededBy, googleFontsUrlFor, needsResolving } = await bundleOf(
   'src/renderer/lib/importFonts.ts'
@@ -329,15 +327,7 @@ for (const url of urls) {
     const sourcePng = await page.screenshot({ fullPage: true });
 
     const reduced = reduceCapture(payload);
-    // Same order the app uses: tokens first, then generate from the
-    // tokenised elements, then render against a theme that declares them.
-    const { tokens, elements: tokenised } = extractTokens(reduced.elements);
-    const parsedTheme = parseThemeFile(DEFAULT_THEME_CSS);
-    const themeWithTokens = serializeThemeFile(
-      { ...parsedTheme, tokens: [...parsedTheme.tokens, ...tokens.map((t) => ({ name: t.name, value: t.value }))] },
-      DEFAULT_THEME_CSS
-    );
-    reduced.elements = tokenised;
+    const themeWithTokens = DEFAULT_THEME_CSS;
     const { tsx, css } = generateCode({
       elements: reduced.elements,
       rootId: reduced.rootId,

@@ -48,17 +48,31 @@ The more sites in a project, the worse it gets, and it is silent: the
 files are valid, every reference resolves, the colours are simply
 someone else's.
 
-## The fix
+## The fix, and then the better fix
 
-`resolveTokenNames` in `src/renderer/lib/importTokens.ts` — pure, and
-tested. The suffix escalates: `-imported`, `-imported-2`, `-imported-3`,
-until a name is free **or** holds this exact value. It also claims names
-as it goes, so two tokens within one import cannot collide either.
+**First**, `resolveTokenNames` made the suffix escalate — `-imported`,
+`-imported-2`, and on — until a name was free or held that exact value.
+That closed the collision.
 
-Reuse still works, and that is the part worth keeping: a name holding the
-same value is returned unchanged, so re-importing one site references the
-tokens it made the first time rather than growing a second identical
-palette.
+**Then the feature was removed entirely.** Escalating suffixes fix the
+symptom and leave the cause: an importer was choosing which values a
+project should share, by counting how often they repeated. A design
+system is a set of decisions about what SHOULD be shared, and occurrence
+counting cannot make those — it produces a theme nobody chose, named for
+roles it inferred, in a file the user now owns.
+
+The import writes literal values. Turning any of them into tokens is the
+user's call, made afterwards against a design they can see. The
+collision cannot happen because there is nothing to collide.
+
+`importTokens.ts` and its 29 tests are deleted; both are in git history
+if a user-triggered "lift these into tokens" action ever wants them, and
+that action would want different ergonomics anyway — a selection, a
+preview, and names the user picks.
+
+**Fidelity is unchanged.** gainwix stayed at 93.42% across the removal,
+which is the expected result: `var(--color-x)` resolving to a value and
+the literal value render identically.
 
 ## Why the harnesses did not catch it
 

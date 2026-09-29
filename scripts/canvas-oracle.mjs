@@ -67,7 +67,8 @@ const { reduceCapture } = await bundleOf('src/renderer/lib/importReduce.ts');
 const { generateCode } = await bundleOf('src/renderer/lib/generateCode.ts');
 const { buildHtmlExport } = await bundleOf('src/renderer/lib/htmlExport.ts');
 const { DEFAULT_THEME_CSS } = await bundleOf('src/shared/templates/themeCss.ts');
-const { extractTokens } = await bundleOf('src/renderer/lib/importTokens.ts');
+// No token extraction: the import writes literal values, and a harness
+// that tokenised would be measuring a pipeline nobody runs.
 const { parseThemeFile, serializeThemeFile } = await bundleOf('src/renderer/lib/parseTheme.ts');
 const { fontsNeededBy, googleFontsUrlFor, needsResolving } = await bundleOf(
   'src/renderer/lib/importFonts.ts'
@@ -236,7 +237,7 @@ await page.close();
 
 // ------------------------------------------------- reduce, token, generate
 const reduced = reduceCapture(payload);
-const { tokens, elements } = extractTokens(reduced.elements);
+const elements = reduced.elements;
 const parsedTheme = parseThemeFile(DEFAULT_THEME_CSS);
 const fontUrl = googleFontsUrlFor(
   fontsNeededBy(elements).map((n) => n.family).filter(needsResolving),
@@ -245,7 +246,6 @@ const fontUrl = googleFontsUrlFor(
 const themeCss = serializeThemeFile(
   {
     ...parsedTheme,
-    tokens: [...parsedTheme.tokens, ...tokens.map((t) => ({ name: t.name, value: t.value }))],
     fontImportUrls: fontUrl === null ? parsedTheme.fontImportUrls : [...parsedTheme.fontImportUrls, fontUrl],
   },
   DEFAULT_THEME_CSS
