@@ -93,3 +93,34 @@ export declare const styleOfRange: (runs: ReadonlyArray<TextRun>, start: number,
     shared: TextRunStyle;
     mixed: string[];
 };
+/**
+ * The class a styled run is written with: the element's own class, then
+ * `__r` and the run's index.
+ *
+ * A separate convention from an element's class on purpose. Element
+ * classes end in the element's id, and the CSS parser routes a rule to
+ * an element by reading that id — so a run needed a shape that cannot
+ * be mistaken for one, and that says which element it belongs to.
+ */
+export declare const runClassName: (elementClass: string, index: number) => string;
+/** `hero_004e__r1` → `{ elementClass: 'hero_004e', index: 1 }`, or null. */
+export declare const parseRunClassName: (className: string) => {
+    elementClass: string;
+    index: number;
+} | null;
+/** A run's style as CSS declarations, in a stable order. */
+export declare const runStyleDeclarations: (style: TextRunStyle) => string[];
+/** The inverse: CSS declarations back into a run style. */
+export declare const runStyleFromDeclarations: (declarations: ReadonlyArray<{
+    prop: string;
+    value: string;
+}>) => TextRunStyle;
+/**
+ * A run's style as a React inline style object.
+ *
+ * The canvas styles elements inline rather than through the CSS module —
+ * it has no stylesheet of the project's own — so a run needs the same
+ * treatment or it renders unstyled on the canvas while looking right in
+ * the preview.
+ */
+export declare const runInlineStyle: (run: TextRun) => Record<string, string | number>;

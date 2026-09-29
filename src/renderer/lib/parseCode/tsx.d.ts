@@ -16,9 +16,21 @@ export type SourceRange = {
     /** Just past the closing tag, or `openEnd` when self-closing. */
     end: number;
 };
+/** A run as the TSX gives it: words plus the class that styles them. */
+export type RawTextRun = {
+    text: string;
+    runClassName?: string;
+};
 export type RawElement = {
     id: string;
     type: ElementType;
+    /**
+     * Styled runs, when the element has any. Carries the CLASS rather
+     * than the style — the TSX only says which class each run wears, and
+     * the CSS pass attaches what it means.
+     * see docs/plans/inline-spans-plan.md
+     */
+    runs?: RawTextRun[];
     /** The HTML tag name as written in the source file. Captured so the
      *  generator can round-trip semantic tags like h1, section, header.
      *  For component instances, this is the PascalCase component name

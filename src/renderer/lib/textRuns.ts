@@ -207,3 +207,108 @@ export const styleOfRange = (
   }
   return { shared: shared as TextRunStyle, mixed: mixed.sort() };
 };
+
+/**
+ * The class a styled run is written with: the element's own class, then
+ * `__r` and the run's index.
+ *
+ * A separate convention from an element's class on purpose. Element
+ * classes end in the element's id, and the CSS parser routes a rule to
+ * an element by reading that id — so a run needed a shape that cannot
+ * be mistaken for one, and that says which element it belongs to.
+ */
+export const runClassName = (elementClass: string, index: number): string =>
+  `${elementClass}__r${index}`;
+
+/** `hero_004e__r1` → `{ elementClass: 'hero_004e', index: 1 }`, or null. */
+export const parseRunClassName = (
+  className: string
+): { elementClass: string; index: number } | null => {
+  const match = /^(.+)__r(\d+)$/.exec(className);
+  const elementClass = match?.[1];
+  const index = match?.[2];
+  if (elementClass === undefined || index === undefined) return null;
+  return { elementClass, index: Number.parseInt(index, 10) };
+};
+
+/** CSS property name for a run-style key. `fontWeight` → `font-weight`. */
+const cssProp = (key: string): string => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+
+/** A run's style as CSS declarations, in a stable order. */
+export const runStyleDeclarations = (style: TextRunStyle): string[] => {
+  const out: string[] = [];
+  for (const key of Object.keys(style).sort()) {
+    if (key === 'customProperties') continue;
+    const value = (style as Record<string, unknown>)[key];
+    if (value === undefined || value === null) continue;
+    out.push(`${cssProp(key)}: ${String(value)};`);
+  }
+  for (const [prop, value] of Object.entries(style.customProperties ?? {})) {
+    out.push(`${prop}: ${value};`);
+  }
+  return out;
+};
+
+/** The inverse: CSS declarations back into a run style. */
+export const runStyleFromDeclarations = (
+  declarations: ReadonlyArray<{ prop: string; value: string }>
+): TextRunStyle => {
+  const style: Record<string, unknown> = {};
+  const custom: Record<string, string> = {};
+  for (const { prop, value } of declarations) {
+    switch (prop) {
+      case 'color':
+        style['color'] = value;
+        break;
+      case 'background-image':
+        style['backgroundImage'] = value;
+        break;
+      case 'font-weight':
+        style['fontWeight'] = Number.parseInt(value, 10);
+        break;
+      case 'font-style':
+        style['fontStyle'] = value;
+        break;
+      case 'text-decoration-line':
+        style['textDecorationLine'] = value;
+        break;
+      default:
+        custom[prop] = value;
+    }
+  }
+  if (Object.keys(custom).length > 0) style['customProperties'] = custom;
+  return style as TextRunStyle;
+};
+
+/**
+ * A run's style as a React inline style object.
+ *
+ * The canvas styles elements inline rather than through the CSS module —
+ * it has no stylesheet of the project's own — so a run needs the same
+ * treatment or it renders unstyled on the canvas while looking right in
+ * the preview.
+ */
+export const runInlineStyle = (run: TextRun): Record<string, string | number> => {
+  const style = run.style;
+  if (style === undefined) return {};
+  const out: Record<string, string | number> = {};
+  if (style.color !== undefined) out['color'] = style.color;
+  if (style.fontWeight !== undefined) out['fontWeight'] = style.fontWeight;
+  if (style.fontStyle !== undefined) out['fontStyle'] = style.fontStyle;
+  if (style.textDecorationLine !== undefined) {
+    out['textDecorationLine'] = style.textDecorationLine;
+  }
+  if (style.backgroundImage !== undefined) {
+    // Gradient text is a background clipped to the glyphs, which only
+    // shows when the glyphs themselves are transparent. Emitting the
+    // image without the clip paints a coloured box behind the words.
+    out['backgroundImage'] = style.backgroundImage;
+    out['backgroundClip'] = 'text';
+    out['WebkitBackgroundClip'] = 'text';
+    if (style.color === undefined) out['color'] = 'transparent';
+  }
+  for (const [prop, value] of Object.entries(style.customProperties ?? {})) {
+    out[prop] = value;
+  }
+  return out;
+};

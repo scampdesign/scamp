@@ -1,4 +1,5 @@
 // generateCode/css.ts — split out of generateCode.ts (4.5).
+import { isStyled, runClassName, runStyleDeclarations, runsOf } from '../textRuns';
 import { ELEMENT_STATES, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride } from "../element";
 import { breakpointOverrideLines, elementDeclarationLines, sizeDeclarationLines } from "./declarations";
 import { classNameFor, computeElementsNeedingPositioningContext } from "./internal";
@@ -163,7 +164,21 @@ export const generateCss = (
   // pseudo-class blocks, in DFS order.
   const elementBlocks = ordered.flatMap((el) => {
     const parent = el.parentId ? elements[el.parentId] ?? null : null;
-    return elementCssChunks(el, parent, positioningContextIds.has(el.id));
+    const chunks = elementCssChunks(el, parent, positioningContextIds.has(el.id));
+    // A styled run's rule sits right after its element's, so the file
+    // reads in the order the page does.
+    // see docs/plans/inline-spans-plan.md
+    if (el.type !== 'text') return chunks;
+    const cls = classNameFor(el);
+    for (const [index, run] of runsOf(el).entries()) {
+      if (!isStyled(run)) continue;
+      const lines = runStyleDeclarations(run.style ?? {});
+      if (lines.length === 0) continue;
+      chunks.push(
+        `.${runClassName(cls, index)} {\n${lines.map((l) => `  ${l}`).join('\n')}\n}`
+      );
+    }
+    return chunks;
   });
 
   // @keyframes blocks — emitted after per-element chunks but before

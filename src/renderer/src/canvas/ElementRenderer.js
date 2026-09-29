@@ -4,6 +4,7 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { childBindingKey, expandChildren, resolveAttr, resolveInstanceOverrides, resolveText, } from '@lib/bindingEval';
 import { classNameFor, tagFor } from '@lib/generateCode';
+import { isStyled, runClassName, runInlineStyle, runsOf } from '@lib/textRuns';
 import { instanceClassPrefix } from '@lib/generateHtml';
 import { CANVAS_SKIP_ATTRS_BY_TAG, canvasRenderTag, elementToStyle, } from '@lib/elementToStyle';
 import { DEFAULT_ROOT_STYLES } from '@lib/defaults';
@@ -471,7 +472,22 @@ export const ElementRenderer = ({ elementId, row }) => {
      * swallow every child's words into the parent's `text`.
      * see docs/notes/import-inline-spans.md
      */
-    const isComposed = element.childIds.length > 0 || element.inlineFragments.length > 0;
+    // A text element whose content is more than one run paints part of
+    // itself differently, and the words have to be wrapped to do it —
+    // which means it is composed for the same reason children and
+    // fragments make it composed: `handleEditableBlur` commits
+    // `textContent`, which would flatten every run into one.
+    //
+    // The plan had this phase keeping `contentEditable`. It cannot, yet:
+    // editing a styled sentence would silently destroy its styling, which
+    // is worse than not being able to edit it in place. Phase 4 makes the
+    // commit path run-aware and takes this back off.
+    // see docs/plans/inline-spans-plan.md
+    const runs = isText ? runsOf(element) : [];
+    const hasStyledRuns = runs.length > 1 || runs.some(isStyled);
+    const isComposed = element.childIds.length > 0 ||
+        element.inlineFragments.length > 0 ||
+        hasStyledRuns;
     const projectDir = projectPath ? projectPath.replace(/\\/g, '/') : null;
     const baseStyle = elementToStyle(element, parentDisplay, parentDirection, themeTokens, projectDir, projectFormat, false, canvasMinHeight, inComponentEditor);
     // When the canvas is previewing a non-default state for this
@@ -828,7 +844,20 @@ export const ElementRenderer = ({ elementId, row }) => {
     // layers panel and drew nothing.
     const ownText = isText ? (resolveText(element, scope) ?? element.text ?? '') : '';
     let children;
-    if (!isComposed) {
+    if (hasStyledRuns && element.childIds.length === 0 && element.inlineFragments.length === 0) {
+        // Styled runs and nothing else: render the words as spans carrying
+        // each run's class. Only the STYLED ones get a wrapper — a plain
+        // run is emitted bare, exactly as the generator writes it, so a
+        // sentence with one coloured word is one span, not three.
+        children = runs.map((run, index) => isStyled(run)
+            ? createElement('span', {
+                key: `run-${index}`,
+                className: runClassName(classNameFor(element), index),
+                style: runInlineStyle(run),
+            }, run.text)
+            : run.text);
+    }
+    else if (!isComposed) {
         // The overwhelmingly common case, and the shape contentEditable
         // needs: a text element that is exactly its own words.
         children = ownText;

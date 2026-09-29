@@ -2,7 +2,7 @@
 import { WRITTEN_CONTRACT } from '@shared/projectConfig';
 import { PASSTHROUGH_PROP, rootClassNameAttribute } from "../classNamePassthrough";
 import { ROOT_ELEMENT_ID } from "../element";
-import { runsOf, textFromRuns } from "../textRuns";
+import { isStyled, runClassName, runsOf, textFromRuns } from "../textRuns";
 import { collectViewProps, isRowPath, propsTypeSource, viewEventNames, } from "../viewProps";
 import { sizeDeclarationLines } from "./declarations";
 import { classNameFor, escapeJsx, jsxText, tagFor } from "./internal";
@@ -284,7 +284,20 @@ const renderElement = (el, elements, level, isComponent, repeatRow) => {
         return `${indent(level)}${open} />`;
     }
     if (hasText && !hasChildren && !hasFragments) {
-        const body = propRef !== null ? `{${propRef}}` : jsxText(textFromRuns(runsOf(el)));
+        const runs = runsOf(el);
+        // Styled runs become spans carrying a run class, on one line. A
+        // plain run stays bare, so a sentence with one coloured word is one
+        // span rather than three. see docs/plans/inline-spans-plan.md
+        if (propRef === null && (runs.length > 1 || runs.some(isStyled))) {
+            const cls = classNameFor(el);
+            const body = runs
+                .map((run, index) => isStyled(run)
+                ? `<span className={styles.${runClassName(cls, index)}}>${escapeJsx(run.text)}</span>`
+                : jsxText(run.text))
+                .join('');
+            return `${indent(level)}${open}>${body}</${tag}>`;
+        }
+        const body = propRef !== null ? `{${propRef}}` : jsxText(textFromRuns(runs));
         return `${indent(level)}${open}>${body}</${tag}>`;
     }
     // Emit fragments before any element child, interleaved between

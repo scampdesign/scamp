@@ -1,4 +1,5 @@
 // parseCode/index.ts — split out of parseCode.ts (4.4).
+import { runStyleFromDeclarations } from '../textRuns';
 import { hoistBindingsWithMap, parsePropsDefaults } from './bindings';
 import { BOOLEAN_ATTRIBUTES, bindPropName, enclosingRepeat, isInvertedBinding, isRowPath, } from '../viewProps';
 import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, withAttributeSample } from "../element";
@@ -217,6 +218,18 @@ export const parseCode = (tsx, css, options) => {
                 decls = stripComponentRootMinHeightFloor(decls);
         }
         const applied = applyDeclarations(baseline, decls, isLayoutContainer(raw.parentId));
+        // Styled runs: the TSX said which class each run wears, and the CSS
+        // says what that class means. Attached here because this is the one
+        // place both halves are in hand.
+        // see docs/plans/inline-spans-plan.md
+        if (raw.runs !== undefined && raw.runs.length > 0) {
+            applied.runs = raw.runs.map((run) => run.runClassName === undefined
+                ? { text: run.text }
+                : {
+                    text: run.text,
+                    style: runStyleFromDeclarations(parsedCss.byClass.get(run.runClassName) ?? []),
+                });
+        }
         // If the file didn't actually declare a width or a height for this
         // element, treat the dimension as `auto` (no rendering hint, no
         // generator output). Without this we'd silently default to the

@@ -147,7 +147,7 @@ Using text runs collapsed the gap in `<b>a</b> <i>b</i>` to nothing —
 that run is the only text, so it counted as both edges and lost the
 space that IS its content.
 
-### Phase 3 — render styled runs
+### Phase 3 — render styled runs — **DONE**
 
 `ElementRenderer` renders runs as `<span>`s with their styles. A text
 element with multiple runs is still a text element — not composed, not
@@ -156,6 +156,36 @@ element with multiple runs is still a text element — not composed, not
 This is where the parity harness earns its keep: a fixture with styled
 runs, canvas against browser, geometry compared. A run must not change
 where any word sits.
+
+**Landed 2026-09-29**, and wider than this heading says: rendering alone
+would let a run be drawn but not SAVED, and styling that vanishes on the
+next reload is worse than styling you cannot apply. So the phase also
+persists.
+
+- **Emission.** A styled run becomes `<span className={styles.hero_t1__r1}>`
+  with a rule beside its element's. A plain run stays bare, so a
+  sentence with one coloured word is one span rather than three.
+- **Parsing.** The run span is recognised BEFORE the unclassed-tag skip,
+  which would otherwise capture it as verbatim JSX — it carries no
+  `data-scamp-id`, because it is not an element. The TSX says which
+  class each run wears; the CSS pass attaches what the class means.
+- **Canvas.** Runs render as spans with an inline style, because the
+  canvas has no stylesheet of the project's own. Gradient text carries
+  its own `background-clip: text`, or the image paints a box behind the
+  words instead of through them.
+
+**One correction to this plan.** It said a multi-run element keeps
+`contentEditable`. It cannot yet: `handleEditableBlur` commits
+`textContent`, so editing a styled sentence would silently flatten every
+run into one. Styled runs are treated as composed for now — visible, not
+editable in place — and Phase 4 makes the commit path run-aware and takes
+that back off. Silently destroying styling is worse than not being able
+to edit in place.
+
+`test/textRunsRoundTrip.test.ts` covers the round trip, including
+gradient text and two differently styled runs, and asserts that ordinary
+text gains neither a `__r` class nor a `runs` field. gainwix.com's
+generated output is unchanged byte-for-byte.
 
 ### Phase 4 — select a range and style it
 

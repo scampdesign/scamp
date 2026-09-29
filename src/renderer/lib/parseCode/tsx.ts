@@ -34,9 +34,19 @@ export type SourceRange = {
   end: number;
 };
 
+/** A run as the TSX gives it: words plus the class that styles them. */
+export type RawTextRun = { text: string; runClassName?: string };
+
 export type RawElement = {
   id: string;
   type: ElementType;
+  /**
+   * Styled runs, when the element has any. Carries the CLASS rather
+   * than the style — the TSX only says which class each run wears, and
+   * the CSS pass attaches what it means.
+   * see docs/plans/inline-spans-plan.md
+   */
+  runs?: RawTextRun[];
   /** The HTML tag name as written in the source file. Captured so the
    *  generator can round-trip semantic tags like h1, section, header.
    *  For component instances, this is the PascalCase component name
@@ -454,8 +464,54 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
   // Parallel to every onopentag event, regardless of whether we
   // pushed a RawElement onto `stack`. Lets onclosetag know whether to
   // pop the real stack or skip.
-  type FrameKind = 'pushed' | 'skipped' | 'svg-inner' | 'option' | 'wrapper';
+  type FrameKind = 'pushed' | 'skipped' | 'svg-inner' | 'option' | 'wrapper' | 'run';
   const frames: FrameKind[] = [];
+
+  /**
+   * Raw JSX text as the element's words.
+   *
+   * The generator indents a text element onto its own line, so what
+   * arrives is `\n      works \n    ` and the words are only
+   * recoverable by trimming. `{' '}` is how it writes a real edge
+   * space, and it survives the trim because it is not whitespace —
+   * so decode AFTER trimming, never before.
+   *
+   * `atStart` / `atEnd` say whether this piece sits at the element's
+   * own edge. A piece between two runs is trimmed at neither: the
+   * space around a styled word IS its content.
+   * see docs/plans/inline-spans-plan.md
+   */
+  const decodeJsxText = (raw: string, atStart: boolean, atEnd: boolean): string => {
+    let out = raw;
+    if (atStart) out = out.replace(/^\s+/, '');
+    if (atEnd) out = out.replace(/\s+$/, '');
+    if (!atStart && !atEnd) out = out.replace(/\s+/g, ' ');
+    return out.replace(/\{' '\}/g, ' ');
+  };
+
+  /**
+   * The styled run being read, if any. Runs are collected on the host
+   * as raw pieces and assembled when the host closes, because the text
+   * either side of a run arrives through `ontext` on the host.
+   */
+  let runTarget: { host: RawElement; className: string; text: string } | null = null;
+  /**
+   * Pieces of a text element's content, in source order: its own words
+   * and the styled runs between them. Kept beside the element rather
+   * than on it, because a host with no run never grows the field.
+   */
+  const runPieces = new Map<
+    RawElement,
+    Array<{ kind: 'text'; value: string } | { kind: 'run'; className: string; value: string }>
+  >();
+  const addPiece = (
+    host: RawElement,
+    piece: { kind: 'text'; value: string } | { kind: 'run'; className: string; value: string }
+  ): void => {
+    const list = runPieces.get(host);
+    if (list === undefined) runPieces.set(host, [piece]);
+    else list.push(piece);
+  };
 
   /** The opening tag's bounds, filled in on close. */
   const openRange = (): SourceRange => {
@@ -645,6 +701,29 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
           return;
         }
 
+        // A styled RUN, not an element: `<span className={styles.hero_004e__r1}>`
+        // inside its own text element. Checked BEFORE the unclassed-tag
+        // skip below, which would otherwise capture it as verbatim JSX —
+        // a run span carries no `data-scamp-id`, because it is not an
+        // element. `span` is also a text-capable tag, so without this it
+        // would parse as a child text element and split the sentence,
+        // which is the whole thing runs exist to avoid.
+        // see docs/plans/inline-spans-plan.md
+        {
+          const classForRun = attribs['className'] ?? attribs['classname'] ?? '';
+          const runClass =
+            /\{\s*styles\.([A-Za-z0-9_]+__r\d+)\s*\}|["']([^"']*__r\d+)["']/.exec(
+              classForRun
+            );
+          const runName = runClass?.[1] ?? runClass?.[2];
+          const host = stack[stack.length - 1];
+          if (name === 'span' && runName !== undefined && host?.type === 'text') {
+            runTarget = { host, className: runName, text: '' };
+            frames.push('run');
+            return;
+          }
+        }
+
         const rawId = attribs['data-scamp-id'];
         if (typeof rawId !== 'string' || rawId.length === 0) {
           // Unclassed JSX inside a Scamp parent — start capturing
@@ -673,6 +752,7 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
         // fall back to the lowercase form too in case a hand-written
         // file uses HTML-style `class`.
         const classRaw = attribs['className'] ?? attribs['classname'] ?? '';
+
         const match = classRaw.match(CLASS_NAME_RE);
         const className = match?.[1] ?? '';
         const type = inferElementType(className, name);
@@ -783,6 +863,10 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
         // Inside an unclassed JSX subtree — text is part of the
         // verbatim source captured on close.
         if (skippedDepth > 0) return;
+        if (runTarget) {
+          runTarget.text += text;
+          return;
+        }
         const top = stack[stack.length - 1];
         if (!top) return;
         if (top.type === 'text') {
@@ -791,6 +875,7 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
           // Normalised once on close, not here: a chunk boundary can
           // fall inside a `{' '}` token.
           top.text = (top.text ?? '') + text;
+          addPiece(top, { kind: 'text', value: text });
           return;
         }
         // Loose text inside a non-text Scamp parent — preserve as a
@@ -806,6 +891,17 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
       },
       onclosetag(name) {
         const frame = frames.pop();
+        if (frame === 'run') {
+          if (runTarget !== null) {
+            addPiece(runTarget.host, {
+              kind: 'run',
+              className: runTarget.className,
+              value: runTarget.text,
+            });
+            runTarget = null;
+          }
+          return;
+        }
         if (frame === 'svg-inner') return;
         if (frame === 'wrapper') return;
         if (frame === 'option') {
@@ -843,7 +939,31 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
         // svg/select capture state if this is the element that opened
         // them.
         const top = stack.pop();
-        if (top?.type === 'text' && typeof top.text === 'string') {
+        if (top !== undefined && runPieces.has(top)) {
+          // Assemble the runs in source order. Styles are attached
+          // later, from the CSS: the TSX only says which class each run
+          // wears. see docs/plans/inline-spans-plan.md
+          const pieces = runPieces.get(top) ?? [];
+          if (pieces.some((piece) => piece.kind === 'run')) {
+            const last = pieces.length - 1;
+            top.runs = pieces
+              .map((piece, index) => {
+                const value =
+                  piece.kind === 'text'
+                    ? decodeJsxText(piece.value, index === 0, index === last)
+                    : piece.value;
+                return piece.kind === 'run'
+                  ? { text: value, runClassName: piece.className }
+                  : { text: value };
+              })
+              .filter((run) => run.text.length > 0);
+            // The host's own `text` is the words with the styling
+            // dropped, so every existing reader keeps working.
+            top.text = top.runs.map((run) => run.text).join('');
+          }
+          runPieces.delete(top);
+        }
+        if (top?.type === 'text' && typeof top.text === 'string' && top.runs === undefined) {
           // The generator indents a text element onto its own line, so
           // what arrives here is `\n      works \n    ` and the words
           // are only recoverable by trimming. That trim used to live in
@@ -854,7 +974,7 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
           // survives the trim because it is not whitespace. Decode
           // after trimming, never before.
           // see docs/plans/inline-spans-plan.md
-          top.text = top.text.trim().replace(/\{' '\}/g, ' ');
+          top.text = decodeJsxText(top.text, true, true);
         }
         if (top?.range) {
           // A self-closing tag closes at its own open tag, which reads
