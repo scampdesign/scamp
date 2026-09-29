@@ -226,6 +226,57 @@ export const captureFn = (policy: CapturePolicy): CapturePayload => {
     }
   };
 
+  /**
+   * Keep one inset per axis on a positioned element.
+   *
+   * Insets read back as USED values, so `position: absolute; left: 0`
+   * reports `right: 251.656px` too — the leftover space, not a decision.
+   * Emitting both of an opposing pair does not position the element, it
+   * STRETCHES it between them, overriding the width or height beside it.
+   * A "skip to content" link hidden at `top: -100px` came back 4533px
+   * tall and painted a dark bar down the whole left edge of the page.
+   *
+   * There is no way to ask which one the author wrote, so keep the inset
+   * nearer its edge on each axis: in this idiom the authored one is the
+   * small or zero value and the resolved one is whatever was left over.
+   * A negative authored inset — which is how half the web hides
+   * accessibility affordances — still wins on absolute value.
+   * see docs/notes/import-positioned-insets.md
+   */
+  const dropResolvedInsets = (styles: Record<string, string>): void => {
+    const position = styles['position'];
+    if (position !== 'absolute' && position !== 'fixed') return;
+    for (const [start, end, mStart, mEnd] of [
+      ['left', 'right', 'margin-left', 'margin-right'],
+      ['top', 'bottom', 'margin-top', 'margin-bottom'],
+    ] as const) {
+      const a = styles[start];
+      const b = styles[end];
+      if (a === undefined || b === undefined) continue;
+      // Both insets plus auto margins is the CENTRING idiom — `left: 24px;
+      // right: 24px; margin: auto` with a max-width centres the box in
+      // what is left. Here both insets are authored and dropping either
+      // one slams the box against that edge. A cookie banner centred
+      // across the foot of the page moved to the top-left corner before
+      // this case was carved out.
+      if (styles[mStart] === 'auto' && styles[mEnd] === 'auto') continue;
+      const av = Math.abs(parseFloat(a));
+      const bv = Math.abs(parseFloat(b));
+      if (!Number.isFinite(av) || !Number.isFinite(bv)) continue;
+      // Only prune a pair that is LOPSIDED. Leftover space is asymmetric
+      // by nature — the skip link this was written for reads
+      // `left: 16px; right: 1278px` — while an authored pair is
+      // symmetric or close to it: `inset: 0` on a full-bleed overlay,
+      // `left: 24px; right: 24px` on a centred bar. Pruning those two
+      // slams the box against one edge, and doing it indiscriminately
+      // cost 2.5 points on one site while gaining 5 on another.
+      const big = Math.max(av, bv);
+      const small = Math.min(av, bv);
+      if (big - small < 100 || big < small * 4) continue;
+      delete styles[bv < av ? start : end];
+    }
+  };
+
   type PseudoOut = { text: string; styles: Record<string, string> };
 
   /**
@@ -411,6 +462,10 @@ export const captureFn = (policy: CapturePolicy): CapturePayload => {
     if (styles['-webkit-text-fill-color'] === computed.color) {
       delete styles['-webkit-text-fill-color'];
     }
+    // NOT called for real elements yet — only pseudo-elements, as
+    // before. Turning it on gains 5.2 points on one site and loses 1.7
+    // on another, for reasons not yet found.
+    // see docs/notes/import-positioned-insets.md
 
     // Scamp renders every box as `border-box` — its own reset says so —
     // but `getComputedStyle` reports `width` and `height` in whatever
@@ -526,24 +581,7 @@ export const captureFn = (policy: CapturePolicy): CapturePayload => {
       // width it happened to take in whatever face the page had.
       delete pseudoStyles['width'];
       delete pseudoStyles['height'];
-      // Insets on a positioned element read back as USED values, so a
-      // custom bullet written as `position: absolute; left: 0` reports
-      // `right: 251.656px; bottom: 21.6875px` as well — the leftover
-      // space, not a decision. There is no way to ask which one the
-      // author wrote, so keep the inset nearer its edge on each axis:
-      // in this idiom the authored one is the small or zero value and
-      // the resolved one is whatever was left over.
-      const position = pseudoStyles['position'];
-      if (position === 'absolute' || position === 'fixed') {
-        for (const [start, end] of [['left', 'right'], ['top', 'bottom']]) {
-          if (start === undefined || end === undefined) continue;
-          const a = pseudoStyles[start];
-          const b = pseudoStyles[end];
-          if (a === undefined || b === undefined) continue;
-          const loser = Math.abs(parseFloat(b)) < Math.abs(parseFloat(a)) ? start : end;
-          delete pseudoStyles[loser];
-        }
-      }
+      dropResolvedInsets(pseudoStyles);
       pseudo = pseudo ?? {};
       pseudo[which === '::before' ? 'before' : 'after'] = { text, styles: pseudoStyles };
     }
