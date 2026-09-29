@@ -416,9 +416,16 @@ export type GoogleFontAxis = {
 export type ResolveFontsResult = Record<string, false | GoogleFontAxis[]>;
 /** Fetch a remote image into the project's assets. see website-import-plan.md */
 export type FetchImageArgs = {
-    /** Absolute http(s) URL, as the capture resolved it. */
+    /** Absolute http(s) URL as the capture resolved it, or a `data:` URL. */
     url: string;
     projectPath: string;
+    /**
+     * File name to save under, without an extension. Only used for a
+     * `data:` URL, which carries no path to take a name from — an inline
+     * icon would otherwise land as `image.svg`, then `image-1.svg`, and
+     * nothing in the project would say which was which.
+     */
+    assetName?: string;
 };
 export type FetchImageResult = {
     ok: true;

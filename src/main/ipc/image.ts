@@ -69,6 +69,21 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
  * pulls forty images should not lose the other thirty-nine because one
  * host was down. see docs/plans/website-import-plan.md
  */
+/** `data:[<type>][;base64],<payload>` → bytes plus its media type. */
+const decodeDataUrl = (href: string): { bytes: Buffer; type: string } | null => {
+  const match = /^data:([^;,]*)(;base64)?,([\s\S]*)$/.exec(href);
+  if (match === null) return null;
+  const [, type, base64, payload] = match;
+  try {
+    const bytes = base64
+      ? Buffer.from(payload ?? '', 'base64')
+      : Buffer.from(decodeURIComponent(payload ?? ''), 'utf-8');
+    return { bytes, type: type || 'text/plain' };
+  } catch {
+    return null;
+  }
+};
+
 const fetchImage = async (args: FetchImageArgs): Promise<FetchImageResult> => {
   let parsed: URL;
   try {
@@ -76,22 +91,35 @@ const fetchImage = async (args: FetchImageArgs): Promise<FetchImageResult> => {
   } catch {
     return { ok: false, error: `Not a URL: ${args.url}` };
   }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    return { ok: false, error: `Refusing ${parsed.protocol} — only http and https.` };
+  // `data:` is allowed alongside http(s) so an INLINE svg can go through
+  // the same pipeline as a downloaded one — temp file, `copyImage`, the
+  // project's assets folder, one reference path. It reads no network and
+  // is still bounded by MAX_IMAGE_BYTES below.
+  const isData = parsed.protocol === 'data:';
+  if (!isData && parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return { ok: false, error: `Refusing ${parsed.protocol} — only http, https and data.` };
   }
   assertInsideActiveProject(args.projectPath);
 
   let tempPath: string | null = null;
   try {
-    const response = await net.fetch(parsed.href, { redirect: 'follow' });
-    if (!response.ok) {
+    // `net.fetch` does not do `data:`, so it is decoded here. The shape
+    // is deliberately the same from here down.
+    const fromData = isData ? decodeDataUrl(parsed.href) : null;
+    if (isData && fromData === null) {
+      return { ok: false, error: 'Could not read that data: URL.' };
+    }
+    const response = fromData === null ? await net.fetch(parsed.href, { redirect: 'follow' }) : null;
+    if (response !== null && !response.ok) {
       return { ok: false, error: `${response.status} from ${parsed.host}` };
     }
-    const type = (response.headers.get('content-type') ?? '').split(';')[0]?.trim() ?? '';
+    const type =
+      fromData?.type ??
+      ((response?.headers.get('content-type') ?? '').split(';')[0]?.trim() ?? '');
     if (!FETCHABLE.test(type)) {
       return { ok: false, error: `${parsed.pathname} is ${type || 'an unknown type'}` };
     }
-    const bytes = Buffer.from(await response.arrayBuffer());
+    const bytes = fromData?.bytes ?? Buffer.from(await response!.arrayBuffer());
     if (bytes.byteLength > MAX_IMAGE_BYTES) {
       return { ok: false, error: `${parsed.pathname} is ${Math.round(bytes.byteLength / 1e6)}MB` };
     }
@@ -100,8 +128,12 @@ const fetchImage = async (args: FetchImageArgs): Promise<FetchImageResult> => {
     // first. Named from the URL so the asset keeps a recognisable name.
     const ext = type === 'image/svg+xml' ? '.svg' : `.${type.split('/')[1]?.replace('jpeg', 'jpg')}`;
     const base =
-      (parsed.pathname.split('/').pop() ?? 'image').replace(/\.[^.]*$/, '').replace(/[^\w-]+/g, '-') ||
-      'image';
+      (isData
+        ? (args.assetName ?? 'icon')
+        : (parsed.pathname.split('/').pop() ?? 'image')
+      )
+        .replace(/\.[^.]*$/, '')
+        .replace(/[^\w-]+/g, '-') || 'image';
     tempPath = join(await fs.mkdtemp(join(tmpdir(), 'scamp-import-')), `${base}${ext}`);
     await fs.writeFile(tempPath, bytes);
 
