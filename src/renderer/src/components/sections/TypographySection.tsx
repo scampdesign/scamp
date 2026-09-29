@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { runsOf, styleOfRange } from '@lib/textRuns';
 import {
   IconAlignLeft,
   IconAlignCenter,
@@ -41,6 +42,21 @@ const isFontWeight = (n: number): boolean =>
 export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
   const patchElement = useCanvasStore((s) => s.patchElement);
+  const styleTextRange = useCanvasStore((s) => s.styleTextRange);
+  const textSelection = useCanvasStore((s) => s.textSelection);
+  /**
+   * The characters selected inside THIS element, if any.
+   *
+   * With a range selected, colour and weight apply to those words
+   * rather than the whole element — which is what makes a span.
+   * see docs/plans/inline-spans-plan.md
+   */
+  const range = textSelection?.elementId === elementId ? textSelection : null;
+  /** What the selected characters have in common, and what is mixed. */
+  const rangeStyle =
+    range === null || element === undefined
+      ? null
+      : styleOfRange(runsOf(element), range.start, range.end);
   const { presetColors, themeTokens, onOpenTheme } = useColorPickerContext();
   const allFonts = useFontsStore(selectAllFonts);
 
@@ -185,15 +201,28 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
           value={String(element.fontWeight ?? 400)}
           onChange={(value) => {
             const n = Number(value);
-            if (isFontWeight(n)) patchElement(elementId, { fontWeight: n });
+            if (!isFontWeight(n)) return;
+            if (range !== null) styleTextRange(elementId, range.start, range.end, { fontWeight: n });
+            else patchElement(elementId, { fontWeight: n });
           }}
           title="Font weight"
         />
       </Row>
       <Row label="">
         <ColorInput
-          value={element.color ?? '#000000'}
-          onChange={(value) => patchElement(elementId, { color: value })}
+          // A selection's own colour when the range agrees on one.
+          // `mixed` deliberately shows nothing rather than one run's
+          // answer: red for a red-and-blue selection is a lie the user
+          // then acts on.
+          value={
+            rangeStyle?.mixed.includes('color')
+              ? ''
+              : (rangeStyle?.shared.color ?? element.color ?? '#000000')
+          }
+          onChange={(value) => {
+            if (range !== null) styleTextRange(elementId, range.start, range.end, { color: value });
+            else patchElement(elementId, { color: value });
+          }}
           onPreview={previewStyle(elementId, 'color')}
           historyElementId={elementId}
           historyPropertyKey="color"

@@ -262,6 +262,9 @@ export type PanelMode = 'ui' | 'css' | 'data';
 
 export { MIN_ZOOM, MAX_ZOOM } from '@lib/zoom';
 
+/** A range of characters inside one text element. */
+export type TextSelection = { elementId: string; start: number; end: number };
+
 export type CanvasState = {
   elements: Record<string, ScampElement>;
   rootElementId: string;
@@ -277,6 +280,14 @@ export type CanvasState = {
   // The element currently in text-edit mode (contentEditable). Null when
   // nothing is being edited. Only ever a text element id.
   editingElementId: string | null;
+
+  /**
+   * Characters selected inside the element being edited, as offsets
+   * over its joined text. Null when there is no range — a bare caret
+   * is not a selection, and styling nothing is not an operation.
+   * see docs/plans/inline-spans-plan.md
+   */
+  textSelection: TextSelection | null;
   activeTool: Tool;
 
   // Active page sync — set when a page is loaded; null between project open
@@ -662,6 +673,19 @@ export type CanvasState = {
     pos?: { x: number; y: number }
   ) => void;
   setEditingElement: (id: string | null) => void;
+  setTextSelection: (selection: TextSelection | null) => void;
+  /**
+   * Style the selected characters of a text element.
+   *
+   * One call, one history entry: splitting the runs, applying the
+   * style and merging the seams is a single thing the user did.
+   */
+  styleTextRange: (
+    id: string,
+    start: number,
+    end: number,
+    style: Readonly<Record<string, string | number | null>>
+  ) => void;
   /** Inline contentEditable target for an instance's prop-text. see docs/notes/components-data-model.md */
   editingInstanceProp: { instanceId: string; propName: string } | null;
   setEditingInstanceProp: (

@@ -21,7 +21,8 @@ import {
   type RowScope,
 } from '@lib/bindingEval';
 import { classNameFor, tagFor } from '@lib/generateCode';
-import { isStyled, runClassName, runInlineStyle, runsOf } from '@lib/textRuns';
+import { isStyled, runClassName, runInlineStyle, runsOf, textFromRuns } from '@lib/textRuns';
+import { selectionOffsetsWithin } from './textSelectionOffsets';
 import { instanceClassPrefix } from '@lib/generateHtml';
 import {
   CANVAS_SKIP_ATTRS_BY_TAG,
@@ -494,6 +495,7 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
   const projectPath = useCanvasStore((s) => s.projectPath);
   const isEditing = useCanvasStore((s) => s.editingElementId === elementId);
   const setEditingElement = useCanvasStore((s) => s.setEditingElement);
+  const setTextSelection = useCanvasStore((s) => s.setTextSelection);
   const setElementText = useCanvasStore((s) => s.setElementText);
   const selectElement = useCanvasStore((s) => s.selectElement);
   // Component-tree lookup for `component-instance` elements. The
@@ -590,17 +592,15 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
   // fragments make it composed: `handleEditableBlur` commits
   // `textContent`, which would flatten every run into one.
   //
-  // The plan had this phase keeping `contentEditable`. It cannot, yet:
-  // editing a styled sentence would silently destroy its styling, which
-  // is worse than not being able to edit it in place. Phase 4 makes the
-  // commit path run-aware and takes this back off.
-  // see docs/plans/inline-spans-plan.md
+  // Styled runs do NOT make an element composed. Phase 3 had to treat
+  // them that way because `handleEditableBlur` committed `textContent`
+  // and would have flattened every run into one; the commit is now
+  // run-aware, so a styled sentence is editable in place like any
+  // other. see docs/plans/inline-spans-plan.md
   const runs = isText ? runsOf(element) : [];
   const hasStyledRuns = runs.length > 1 || runs.some(isStyled);
   const isComposed =
-    element.childIds.length > 0 ||
-    element.inlineFragments.length > 0 ||
-    hasStyledRuns;
+    element.childIds.length > 0 || element.inlineFragments.length > 0;
   const projectDir = projectPath ? projectPath.replace(/\\/g, '/') : null;
   const baseStyle = elementToStyle(
     element,
@@ -886,8 +886,25 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
 
   const handleEditableBlur = (e: FocusEvent<HTMLElement>): void => {
     const next = e.currentTarget.textContent ?? '';
-    setElementText(element.id, next);
+    // Unchanged words leave the runs alone. `setElementText` drops them
+    // — it has to, because their offsets describe text that no longer
+    // exists — so committing on every blur would strip the styling off
+    // any sentence the user merely clicked into.
+    if (next !== textFromRuns(runs)) setElementText(element.id, next);
     setEditingElement(null);
+    setTextSelection(null);
+  };
+
+  /**
+   * Remember what is selected, so the panel can style it.
+   *
+   * On key and pointer release rather than `selectionchange`: the
+   * latter fires during a drag, and a half-made selection reaching the
+   * panel makes every control flicker through values nobody chose.
+   */
+  const handleSelectionChange = (e: { currentTarget: HTMLElement }): void => {
+    const offsets = selectionOffsetsWithin(e.currentTarget, window.getSelection());
+    setTextSelection(offsets === null ? null : { elementId: element.id, ...offsets });
   };
 
   const handleEditableKeyDown = (e: KeyboardEvent<HTMLElement>): void => {
@@ -977,6 +994,8 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
     props['suppressContentEditableWarning'] = true;
     props['onBlur'] = handleEditableBlur;
     props['onKeyDown'] = handleEditableKeyDown;
+    props['onKeyUp'] = handleSelectionChange;
+    props['onMouseUp'] = handleSelectionChange;
     // Stop pointer events from bubbling so the user can place the
     // cursor / select text without triggering canvas interactions.
     props['onPointerDown'] = (e: PointerEvent<HTMLElement>) => e.stopPropagation();

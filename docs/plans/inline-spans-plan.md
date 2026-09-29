@@ -187,7 +187,7 @@ gradient text and two differently styled runs, and asserts that ordinary
 text gains neither a `__r` class nor a `runs` field. gainwix.com's
 generated output is unchanged byte-for-byte.
 
-### Phase 4 — select a range and style it
+### Phase 4 — select a range and style it — **DONE**
 
 The feature as asked for.
 
@@ -202,6 +202,40 @@ The feature as asked for.
   one of them. Agent-native's parity log records Figma showing
   "Click + to replace mixed content" for this; the panel needs its own
   answer, decided before the control is built.
+
+**Landed 2026-09-29.** Selecting words in a text element and setting a
+colour or weight writes a span around exactly those words:
+
+```jsx
+<p className={styles.text_116a}>works{' '}<span className={styles.text_116a__r1}>alongside</span>{' '}AI</p>
+```
+
+- `textSelection` in the store, beside `editingElementId` and cleared
+  with it — offsets into one element's text mean nothing in another's.
+- `styleTextRange` splits, applies and merges in **one** history entry,
+  which answers the undo question: it is one thing the user did.
+- Captured on key and pointer RELEASE, not `selectionchange` — the
+  latter fires mid-drag and a half-made selection makes every panel
+  control flicker through values nobody chose.
+- A collapsed caret is not a selection. Styling nothing is not an
+  operation, and a panel acting on a caret would restyle the last
+  selection on the next click.
+- **Mixed shows nothing**, not one run's value. Red for a red-and-blue
+  selection is a lie the user then acts on.
+
+**`contentEditable` is back on** for styled runs, which Phase 3 had to
+turn off. `handleEditableBlur` now commits only when the words actually
+changed, so clicking into a styled sentence and out leaves the file
+byte-identical — the e2e asserts exactly that, because it is the way
+this feature would quietly destroy someone's work.
+
+**Retyping a sentence drops its runs**, deliberately. The offsets they
+were split at describe text that no longer exists; keeping them would
+style the wrong words. A visible loss beats a silent mis-styling.
+
+Not done: **what Enter does inside a styled run** is still unanswered —
+typing at a run boundary continues whatever run the caret landed in,
+which is a browser default rather than a decision.
 
 ### Phase 5 — the importer stops splitting
 

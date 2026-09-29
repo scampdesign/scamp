@@ -1,4 +1,11 @@
 // store/canvas/slices/elementsEdit.ts — domain slice split from canvasSlice.ts (5.1).
+import {
+  applyStyleToRange,
+  isStyled,
+  runsOf,
+  textFromRuns,
+  type TextRun,
+} from '@lib/textRuns';
 import type { StateCreator } from 'zustand';
 import {
   cloneElementSubtree,
@@ -68,6 +75,7 @@ export const createElementsEditSlice: StateCreator<
   | 'setPropOverride'
   | 'clearPropOverride'
   | 'setElementText'
+  | 'styleTextRange'
   | 'togglePropOnText'
   | 'renamePropOnText'
   | 'toggleSlotOnRect'
@@ -142,14 +150,51 @@ export const createElementsEditSlice: StateCreator<
     set((state) => {
       const el = state.elements[id];
       if (!el) return state;
+      // Retyping the words invalidates the runs: the offsets they were
+      // split at describe text that no longer exists. Dropping them is
+      // a VISIBLE loss of styling, which is the honest outcome of
+      // replacing the sentence — silently keeping stale boundaries
+      // would style the wrong words.
+      // see docs/plans/inline-spans-plan.md
+      const { runs: _dropped, ...rest } = el;
       return {
-        elements: { ...state.elements, [id]: { ...el, text } },
+        elements: { ...state.elements, [id]: { ...rest, text } },
       };
     });
     commitElementsToHistory({
       kind: 'patch',
       elementIds: [id],
       propertyKeys: ['text'],
+    });
+  },
+
+  styleTextRange: (id, start, end, style) => {
+    if (useCanvasStore.getState().snapshotPreview !== null) return;
+    let changed = false;
+    set((state) => {
+      const el = state.elements[id];
+      if (!el || el.type !== 'text') return state;
+      const next = applyStyleToRange(runsOf(el), start, end, style);
+      // One unstyled run is what a plain text element already is, and
+      // storing it would put a `runs` field on every element anyone has
+      // ever styled and then un-styled.
+      const plain = next.length === 1 && !isStyled(next[0] as TextRun);
+      const { runs: _drop, ...rest } = el;
+      changed = true;
+      return {
+        elements: {
+          ...state.elements,
+          [id]: plain
+            ? { ...rest, text: textFromRuns(next) }
+            : { ...rest, runs: next, text: textFromRuns(next) },
+        },
+      };
+    });
+    if (!changed) return;
+    commitElementsToHistory({
+      kind: 'patch',
+      elementIds: [id],
+      propertyKeys: ['runs', 'text'],
     });
   },
 

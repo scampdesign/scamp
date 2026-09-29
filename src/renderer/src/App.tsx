@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useCanvasStore } from '@store/canvasSlice';
 import { StartScreen } from './components/StartScreen';
 import { flushPendingProjectThumbnail } from './lib/projectThumbnail';
 import { ProjectShell } from './components/ProjectShell';
@@ -193,6 +194,14 @@ export const App = (): JSX.Element => {
   useEffect(() => {
     void (async () => {
       const bootstrap = await window.scamp.getTestBootstrap();
+      // The canvas store, for specs that need to drive an action the UI
+      // reaches through a popover or a drag. Gated on the same flag as
+      // the auto-open below, so it is absent in normal use — the same
+      // shape as main's `__scampDisposeTerminals`.
+      if (bootstrap.e2e) {
+        (window as unknown as { __scampCanvasStore?: unknown }).__scampCanvasStore =
+          useCanvasStore;
+      }
       if (!bootstrap.e2e || !bootstrap.autoOpenProjectPath) return;
       const opened = await window.scamp.openProject({
         folderPath: bootstrap.autoOpenProjectPath,

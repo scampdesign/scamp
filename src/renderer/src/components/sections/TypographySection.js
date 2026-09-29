@@ -1,5 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useMemo } from 'react';
+import { runsOf, styleOfRange } from '@lib/textRuns';
 import { IconAlignLeft, IconAlignCenter, IconAlignRight, IconTypography, } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
@@ -26,6 +27,20 @@ const isFontWeight = (n) => Number.isInteger(n) && n >= 1 && n <= 1000;
 export const TypographySection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
     const patchElement = useCanvasStore((s) => s.patchElement);
+    const styleTextRange = useCanvasStore((s) => s.styleTextRange);
+    const textSelection = useCanvasStore((s) => s.textSelection);
+    /**
+     * The characters selected inside THIS element, if any.
+     *
+     * With a range selected, colour and weight apply to those words
+     * rather than the whole element — which is what makes a span.
+     * see docs/plans/inline-spans-plan.md
+     */
+    const range = textSelection?.elementId === elementId ? textSelection : null;
+    /** What the selected characters have in common, and what is mixed. */
+    const rangeStyle = range === null || element === undefined
+        ? null
+        : styleOfRange(runsOf(element), range.start, range.end);
     const { presetColors, themeTokens, onOpenTheme } = useColorPickerContext();
     const allFonts = useFontsStore(selectAllFonts);
     // Each input offers only the tokens that make sense for it — see
@@ -106,7 +121,28 @@ export const TypographySection = ({ elementId }) => {
                         fontFamily: value.length > 0 ? value : undefined,
                     }), title: "Font family" }) }), _jsxs(Row, { label: "", children: [_jsx(TokenOrNumberInput, { prefix: "Sz", title: "Font size", value: element.fontSize, tokens: fontSizeTokens, defaultUnit: "px", onChange: (value) => patchElement(elementId, { fontSize: value }), onOpenTheme: onOpenTheme, placeholder: "auto" }), _jsx(WeightSelect, { value: String(element.fontWeight ?? 400), onChange: (value) => {
                             const n = Number(value);
-                            if (isFontWeight(n))
+                            if (!isFontWeight(n))
+                                return;
+                            if (range !== null)
+                                styleTextRange(elementId, range.start, range.end, { fontWeight: n });
+                            else
                                 patchElement(elementId, { fontWeight: n });
-                        }, title: "Font weight" })] }), _jsxs(Row, { label: "", children: [_jsx(ColorInput, { value: element.color ?? '#000000', onChange: (value) => patchElement(elementId, { color: value }), onPreview: previewStyle(elementId, 'color'), historyElementId: elementId, historyPropertyKey: "color", presetColors: presetColors, tokens: themeTokens, onOpenTheme: onOpenTheme }), _jsx(SegmentedControl, { value: element.textAlign ?? 'left', options: TEXT_ALIGN_OPTIONS, onChange: (value) => patchElement(elementId, { textAlign: value }), title: "Text align" })] }), _jsxs(Row, { label: "", children: [_jsx(TokenOrNumberInput, { prefix: "LH", title: "Line height", value: element.lineHeight, tokens: lineHeightTokens, defaultUnit: "", onChange: (value) => patchElement(elementId, { lineHeight: value }), onOpenTheme: onOpenTheme, placeholder: "auto" }), _jsx(TokenOrNumberInput, { prefix: "LS", title: "Letter spacing", value: element.letterSpacing, tokens: letterSpacingTokens, defaultUnit: "px", onChange: (value) => patchElement(elementId, { letterSpacing: value }), onOpenTheme: onOpenTheme, placeholder: "0" })] })] }));
+                        }, title: "Font weight" })] }), _jsxs(Row, { label: "", children: [_jsx(ColorInput
+                    // A selection's own colour when the range agrees on one.
+                    // `mixed` deliberately shows nothing rather than one run's
+                    // answer: red for a red-and-blue selection is a lie the user
+                    // then acts on.
+                    , { 
+                        // A selection's own colour when the range agrees on one.
+                        // `mixed` deliberately shows nothing rather than one run's
+                        // answer: red for a red-and-blue selection is a lie the user
+                        // then acts on.
+                        value: rangeStyle?.mixed.includes('color')
+                            ? ''
+                            : (rangeStyle?.shared.color ?? element.color ?? '#000000'), onChange: (value) => {
+                            if (range !== null)
+                                styleTextRange(elementId, range.start, range.end, { color: value });
+                            else
+                                patchElement(elementId, { color: value });
+                        }, onPreview: previewStyle(elementId, 'color'), historyElementId: elementId, historyPropertyKey: "color", presetColors: presetColors, tokens: themeTokens, onOpenTheme: onOpenTheme }), _jsx(SegmentedControl, { value: element.textAlign ?? 'left', options: TEXT_ALIGN_OPTIONS, onChange: (value) => patchElement(elementId, { textAlign: value }), title: "Text align" })] }), _jsxs(Row, { label: "", children: [_jsx(TokenOrNumberInput, { prefix: "LH", title: "Line height", value: element.lineHeight, tokens: lineHeightTokens, defaultUnit: "", onChange: (value) => patchElement(elementId, { lineHeight: value }), onOpenTheme: onOpenTheme, placeholder: "auto" }), _jsx(TokenOrNumberInput, { prefix: "LS", title: "Letter spacing", value: element.letterSpacing, tokens: letterSpacingTokens, defaultUnit: "px", onChange: (value) => patchElement(elementId, { letterSpacing: value }), onOpenTheme: onOpenTheme, placeholder: "0" })] })] }));
 };
