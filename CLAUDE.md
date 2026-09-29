@@ -12,6 +12,40 @@ See `prd-scamp-poc.md` for full product context.
 
 ---
 
+## Where things are
+
+Read this before grepping. Everything below is a starting point, not the
+whole story — but starting in the wrong file is the most expensive thing
+you can do here, and a wrong guess costs more context than this table.
+
+| Task | Start at |
+|---|---|
+| Read a web page into the model | `src/shared/captureScript.ts` (runs IN the page), `src/shared/importCapture.ts` (the contract + `CAPTURED_PROPERTIES`) |
+| Change what an import produces | `src/renderer/lib/importReduce.ts` — the pure reducer |
+| The import's report of what it lost | `src/renderer/lib/importReport.ts` |
+| Import fonts, theme tokens, images | `importFonts.ts`, `importTokens.ts`, then `src/renderer/src/components/projectShell/useWebsiteImport.ts` for the orchestration |
+| Measure import fidelity | `scripts/import-fidelity.mjs` (geometry), `scripts/import-pixels.mjs` (pixels), findings in `docs/notes/import-parity-log.md` |
+| TSX / CSS output | `src/renderer/lib/generateCode/` — `declarations.ts` is where a property becomes CSS |
+| Read files back into the model | `src/renderer/lib/parseCode/` |
+| A CSS property's typed mapping | `src/renderer/lib/cssPropertyMap.ts`, `parsers/` for each shorthand |
+| Draw an element on the canvas | `src/renderer/src/canvas/ElementRenderer.tsx` |
+| Canvas frame, zoom, theme variables | `src/renderer/src/canvas/Viewport.tsx` |
+| Theme tokens reaching the canvas | `src/renderer/store/canvas/slices/designSystem.ts` (`setThemeData`), consumed in `Viewport.tsx` |
+| Canvas state, selection, elements | `src/renderer/store/canvas/slices/` — one slice per domain |
+| A properties-panel control | `src/renderer/src/components/sections/` — one file per section |
+| Pages, views, routes on disk | `src/main/ipc/componentOps.ts` |
+| Start-screen thumbnails | `src/renderer/src/lib/projectThumbnail.ts`, capture in `exportCapture.ts` |
+| An IPC channel | name in `src/shared/ipcChannels.ts`, handler in `src/main/ipc/<domain>.ts`, surface in `src/preload/index.ts` |
+| What an agent can do over MCP | `src/main/mcp/tools.ts`, answered in `src/renderer/src/syncBridge/mcpResponder.ts` |
+| Auto-update and releases | `electron-builder.yml`, `.github/workflows/release.yml`, `docs/notes/auto-update.md` |
+
+**Canvas / preview divergence** has its own harness: `test/e2e/parity/`.
+Read `docs/notes/parity-harness.md` first — its oracle deliberately shares
+no code with the thing it checks, and that rule is easy to break by
+accident.
+
+---
+
 ## Non-Negotiable Rules
 
 - **Never write `any`** in TypeScript — use proper types or `unknown` with a type guard
