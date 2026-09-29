@@ -788,6 +788,8 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
         if (top.type === 'text') {
           // Text element — concatenate raw chunks; htmlparser2 may
           // emit multiple ontext events around an entity boundary.
+          // Normalised once on close, not here: a chunk boundary can
+          // fall inside a `{' '}` token.
           top.text = (top.text ?? '') + text;
           return;
         }
@@ -841,6 +843,19 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
         // svg/select capture state if this is the element that opened
         // them.
         const top = stack.pop();
+        if (top?.type === 'text' && typeof top.text === 'string') {
+          // The generator indents a text element onto its own line, so
+          // what arrives here is `\n      works \n    ` and the words
+          // are only recoverable by trimming. That trim used to live in
+          // `makeBaseline` and took REAL edge spaces with it, which is
+          // why `works ` and `works` were the same file.
+          //
+          // `{' '}` is how the generator writes an edge space, and it
+          // survives the trim because it is not whitespace. Decode
+          // after trimming, never before.
+          // see docs/plans/inline-spans-plan.md
+          top.text = top.text.trim().replace(/\{' '\}/g, ' ');
+        }
         if (top?.range) {
           // A self-closing tag closes at its own open tag, which reads
           // as a close before `openEnd` — leave the range as it is.

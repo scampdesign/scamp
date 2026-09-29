@@ -41,6 +41,33 @@ export const escapeJsx = (raw: string): string =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
+/**
+ * A text element's words as a JSX child, with any space at the EDGES
+ * kept.
+ *
+ * Bare JSX text cannot carry an edge space through a round trip: the
+ * generator indents a text element onto its own line, so the parser
+ * reads `\n      works \n    ` and has to trim to recover the words —
+ * and the trim takes a real trailing space with it. `works alongside`
+ * and `works alongside ` became the same file.
+ *
+ * `{' '}` is the standard JSX answer and it is unambiguous in both
+ * directions: it survives the indentation because it is not whitespace,
+ * and the parser turns it back into a space after trimming. Only the
+ * edges need it; interior spaces are safe as they are.
+ * see docs/plans/inline-spans-plan.md
+ */
+export const jsxText = (raw: string): string => {
+  if (raw.length === 0) return '';
+  if (raw.trim().length === 0) return SPACE_TOKEN;
+  const lead = /^\s/.test(raw) ? SPACE_TOKEN : '';
+  const trail = /\s$/.test(raw) ? SPACE_TOKEN : '';
+  return `${lead}${escapeJsx(raw.trim())}${trail}`;
+};
+
+/** What `jsxText` writes for an edge space, and the parser reads back. */
+export const SPACE_TOKEN = "{' '}";
+
 
 /**
  * The CSS class name for an element. When the element has a custom name,

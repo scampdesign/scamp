@@ -522,15 +522,14 @@ const inlineToFragments = (
   // depends on that. The space computed here is discarded there. Kept
   // because it is the half that belongs in this file, and because the
   // fix for the other half needs it. see docs/plans/inline-spans-plan.md
-  const lastText = items.reduce(
-    (found, item, i) => (item.kind === 'text' ? i : found),
-    -1
-  );
-  const firstText = items.findIndex((item) => item.kind === 'text');
+  // Trimmed at the line's own edges, which is ITEM position, not text
+  // position. Using the first and last TEXT run instead collapsed the
+  // gap in `<b>a</b> <i>b</i>` to nothing: that run is the only text,
+  // so it counted as both edges and lost the space that IS its content.
   const runText = (value: string, index: number): string => {
     let out = value.replace(/\s+/g, ' ');
-    if (index === firstText) out = out.replace(/^ /, '');
-    if (index === lastText) out = out.replace(/ $/, '');
+    if (index === 0) out = out.replace(/^ /, '');
+    if (index === items.length - 1) out = out.replace(/ $/, '');
     return out;
   };
 

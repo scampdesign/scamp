@@ -12,7 +12,7 @@ import {
   type ViewProp,
 } from "../viewProps";
 import { sizeDeclarationLines } from "./declarations";
-import { classNameFor, escapeJsx, tagFor } from "./internal";
+import { classNameFor, escapeJsx, jsxText, tagFor } from "./internal";
 
 const componentNameFromPage = (pageName: string): string => {
   const parts = pageName.split(/[-_]/).filter((part) => part.length > 0);
@@ -335,7 +335,7 @@ const renderElement = (
   }
 
   if (hasText && !hasChildren && !hasFragments) {
-    const body = propRef !== null ? `{${propRef}}` : escapeJsx(textFromRuns(runsOf(el)));
+    const body = propRef !== null ? `{${propRef}}` : jsxText(textFromRuns(runsOf(el)));
     return `${indent(level)}${open}>${body}</${tag}>`;
   }
 
@@ -354,7 +354,7 @@ const renderElement = (
 
   const segments: string[] = [];
   if (hasText) {
-    const body = propRef !== null ? `{${propRef}}` : escapeJsx(textFromRuns(runsOf(el)));
+    const body = propRef !== null ? `{${propRef}}` : jsxText(textFromRuns(runsOf(el)));
     segments.push(`${indent(level + 1)}${body}`);
   }
   const before = fragmentsAt(-1);

@@ -173,7 +173,13 @@ export const makeBaseline = (raw, isComponent = false) => {
         y: 0,
         customProperties: {},
         inlineFragments: [...raw.inlineFragments],
-        ...(raw.type === 'text' && raw.text !== null ? { text: raw.text.trim() } : {}),
+        // NOT trimmed. The TSX parser trims what it reads, because only it
+        // knows the whitespace came from the generator's own indentation.
+        // Trimming here as well destroyed every real edge space, including
+        // the ones an import needs: `works <span>alongside</span> AI.`
+        // became `worksalongsideAI.`
+        // see docs/plans/inline-spans-plan.md
+        ...(raw.type === 'text' && raw.text !== null ? { text: raw.text } : {}),
         // Only store an explicit tag when it's NOT the type's default. Keeps
         // the round-trip text-stable: a `<div>` rectangle parses with no
         // `tag` field and the generator emits a `<div>` again. Component

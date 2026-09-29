@@ -5,7 +5,7 @@ import { ROOT_ELEMENT_ID } from "../element";
 import { runsOf, textFromRuns } from "../textRuns";
 import { collectViewProps, isRowPath, propsTypeSource, viewEventNames, } from "../viewProps";
 import { sizeDeclarationLines } from "./declarations";
-import { classNameFor, escapeJsx, tagFor } from "./internal";
+import { classNameFor, escapeJsx, jsxText, tagFor } from "./internal";
 const componentNameFromPage = (pageName) => {
     const parts = pageName.split(/[-_]/).filter((part) => part.length > 0);
     if (parts.length === 0)
@@ -284,7 +284,7 @@ const renderElement = (el, elements, level, isComponent, repeatRow) => {
         return `${indent(level)}${open} />`;
     }
     if (hasText && !hasChildren && !hasFragments) {
-        const body = propRef !== null ? `{${propRef}}` : escapeJsx(textFromRuns(runsOf(el)));
+        const body = propRef !== null ? `{${propRef}}` : jsxText(textFromRuns(runsOf(el)));
         return `${indent(level)}${open}>${body}</${tag}>`;
     }
     // Emit fragments before any element child, interleaved between
@@ -300,7 +300,7 @@ const renderElement = (el, elements, level, isComponent, repeatRow) => {
         .join('\n');
     const segments = [];
     if (hasText) {
-        const body = propRef !== null ? `{${propRef}}` : escapeJsx(textFromRuns(runsOf(el)));
+        const body = propRef !== null ? `{${propRef}}` : jsxText(textFromRuns(runsOf(el)));
         segments.push(`${indent(level + 1)}${body}`);
     }
     const before = fragmentsAt(-1);

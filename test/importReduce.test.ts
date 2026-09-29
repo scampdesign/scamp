@@ -516,9 +516,9 @@ describe('styled spans become elements in the line', () => {
     const span = Object.values(elements).find((e) => e.text === 'busywork');
     const host = Object.values(elements).find((e) => e.id === span?.parentId);
     expect((host?.childIds ?? []).map((id) => elements[id]?.text)).toEqual([
-      'Stop the',
+      'Stop the ',
       'busywork',
-      'today',
+      ' today',
     ]);
     expect(host?.text ?? null).toBeNull();
   });
@@ -528,7 +528,7 @@ describe('styled spans become elements in the line', () => {
       { kind: 'text', value: 'Stop the ' },
       { kind: 'element', node: styledSpan('busywork') }
     )] }));
-    const words = Object.values(elements).find((e) => e.text === 'Stop the');
+    const words = Object.values(elements).find((e) => e.text === 'Stop the ');
     expect(words?.customProperties['display']).toBe('inline');
   });
 
@@ -1804,7 +1804,7 @@ describe('against a page captured from a real browser', () => {
     // its inline children sit in, and stripping it made a paragraph
     // seven pixels taller than the one it copied.
     const { elements } = reduceCapture(payload, { randomId: seqIds() });
-    const word = Object.values(elements).find((e) => e.text === 'Ship the');
+    const word = Object.values(elements).find((e) => e.text === 'Ship the ');
     expect(word?.fontSize).toBe('56px');
     const host = Object.values(elements).find((e) => e.id === word?.parentId);
     expect(host?.fontSize).toBe('56px');
@@ -1837,11 +1837,14 @@ describe('against a page captured from a real browser', () => {
     const { elements } = reduceCapture(payload, { randomId: seqIds() });
     const mark = Object.values(elements).find((e) => e.text === 'thing');
     const host = Object.values(elements).find((e) => e.id === mark?.parentId);
+    // The spaces are the point: `Ship the thing you designed` reads as
+    // `Shipthingyoudesigned` without them, which is what this looked
+    // like before the runs work.
     expect((host?.childIds ?? []).map((id) => elements[id]?.text)).toEqual([
-      'Ship the',
+      'Ship the ',
       'thing',
-      'you',
-      'designed',
+      ' you ',
+      ' designed',
     ]);
   });
 
@@ -1929,16 +1932,13 @@ describe('whitespace around an inline span', () => {
    * The two text runs are `"…works "` and `" AI."`, and both boundary
    * spaces live there.
    *
-   * **These are KNOWN GAPS, asserted to fail.** The reducer computes the
-   * right value; `makeBaseline` then trims every text element, because
-   * the model has nowhere to keep a leading or trailing space and the
-   * generateCode ↔ parseCode round trip depends on that. Fixing it is a
-   * change to the two core functions, planned in
-   * `docs/plans/inline-spans-plan.md`.
+   * **Closed by Phase 2** of `docs/plans/inline-spans-plan.md`. These
+   * were `it.fails` while the model had nowhere to keep an edge space;
+   * the generator now writes one as `{' '}` and the parser reads it back
+   * after trimming its own indentation, so they assert normally.
    *
-   * The same convention as the parity harness's `knownGap`: the suite
-   * stays green while the divergence is recorded, and the day someone
-   * fixes it these flip to failing and have to be updated.
+   * That is the `knownGap` convention working as intended: the day the
+   * gap closed, the tests flipped to failing and had to be updated.
    * see docs/notes/parity-harness.md
    */
   const gradientSpan = (id: number, text: string): CapturedNode =>
@@ -1973,7 +1973,7 @@ describe('whitespace around an inline span', () => {
       .filter((t): t is string => typeof t === 'string' && t.length > 0)
       .join('|');
 
-  it.fails('keeps the space before and after a styled span', () => {
+  it('keeps the space before and after a styled span', () => {
     const joined = textOf(
       heading([
         { kind: 'text', value: 'An AI studio for what works ' },
@@ -1997,7 +1997,7 @@ describe('whitespace around an inline span', () => {
     expect(joined.endsWith(' ')).toBe(false);
   });
 
-  it.fails('keeps a run that is only a space between two elements', () => {
+  it('keeps a run that is only a space between two elements', () => {
     // `<b>a</b> <i>b</i>` — the gap IS the content, and dropping it
     // joins the two words.
     const joined = textOf(
@@ -2010,13 +2010,16 @@ describe('whitespace around an inline span', () => {
     expect(joined).toContain(' ');
   });
 
-  it.fails('collapses a run of whitespace to a single space', () => {
+  it('collapses a run of whitespace to a single space', () => {
     const joined = textOf(
       heading([
         { kind: 'text', value: 'a   \n  b ' },
         { kind: 'element', node: gradientSpan(3, 'x') },
       ])
     );
-    expect(joined).toContain('a b ');
+    // The interior `   \n  ` collapses to one space. The trailing one
+    // goes: this run is both the first text and the last, so both its
+    // edges are the element's edges.
+    expect(joined).toContain('a b');
   });
 });

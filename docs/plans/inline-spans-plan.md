@@ -113,7 +113,7 @@ What it front-loads is the part later phases cannot be written without —
 shared style AND the list of properties that are mixed. That last one is
 the Phase 4 panel's answer to showing red for a red-and-blue selection.
 
-### Phase 2 — whitespace survives
+### Phase 2 — whitespace survives — **DONE**
 
 With runs in place, `makeBaseline`'s trim becomes wrong rather than
 load-bearing: trim the *element's* first and last run at their outer
@@ -127,6 +127,25 @@ edges only, and leave interior boundaries alone.
 
 **The import bug is fixed at the end of this phase**, before any UI
 exists.
+
+**Landed 2026-09-29.** The trim MOVED rather than went away: it now
+lives in the TSX parser, which is the only place that knows the
+whitespace came from the generator's own indentation. `makeBaseline` no
+longer trims, so the importer's text keeps its spaces.
+
+The generator writes an edge space as `{' '}` — not whitespace, so it
+survives being indented onto its own line — and the parser decodes it
+*after* trimming. `test/textEdgeWhitespace.test.ts` pins both
+directions, including that ordinary text gains no token.
+
+gainwix.com's hero now renders `works alongside AI.` where it read
+`worksalongsideAI.`
+
+One correction to the rule as written above: trim at the line's own
+edges means the first and last ITEM, not the first and last text run.
+Using text runs collapsed the gap in `<b>a</b> <i>b</i>` to nothing —
+that run is the only text, so it counted as both edges and lost the
+space that IS its content.
 
 ### Phase 3 — render styled runs
 
