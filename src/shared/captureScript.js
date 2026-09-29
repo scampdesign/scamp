@@ -175,38 +175,26 @@ export const captureFn = (policy) => {
         const position = styles['position'];
         if (position !== 'absolute' && position !== 'fixed')
             return;
-        for (const [start, end, mStart, mEnd] of [
-            ['left', 'right', 'margin-left', 'margin-right'],
-            ['top', 'bottom', 'margin-top', 'margin-bottom'],
+        for (const [start, end, size, mStart, mEnd] of [
+            ['left', 'right', 'width', 'margin-left', 'margin-right'],
+            ['top', 'bottom', 'height', 'margin-top', 'margin-bottom'],
         ]) {
-            const a = styles[start];
-            const b = styles[end];
-            if (a === undefined || b === undefined)
+            if (styles[start] === undefined || styles[end] === undefined)
+                continue;
+            // With a size on this axis the box is already fully determined by
+            // ONE inset: left + width fixes both edges. The other inset is
+            // then redundant by construction rather than by guesswork, and
+            // dropping it reproduces the measured position exactly. Without a
+            // size the pair IS the size, so both have to stay.
+            if (styles[size] === undefined)
                 continue;
             // Both insets plus auto margins is the CENTRING idiom — `left: 24px;
             // right: 24px; margin: auto` with a max-width centres the box in
             // what is left. Here both insets are authored and dropping either
-            // one slams the box against that edge. A cookie banner centred
-            // across the foot of the page moved to the top-left corner before
-            // this case was carved out.
+            // one slams the box against that edge.
             if (styles[mStart] === 'auto' && styles[mEnd] === 'auto')
                 continue;
-            const av = Math.abs(parseFloat(a));
-            const bv = Math.abs(parseFloat(b));
-            if (!Number.isFinite(av) || !Number.isFinite(bv))
-                continue;
-            // Only prune a pair that is LOPSIDED. Leftover space is asymmetric
-            // by nature — the skip link this was written for reads
-            // `left: 16px; right: 1278px` — while an authored pair is
-            // symmetric or close to it: `inset: 0` on a full-bleed overlay,
-            // `left: 24px; right: 24px` on a centred bar. Pruning those two
-            // slams the box against one edge, and doing it indiscriminately
-            // cost 2.5 points on one site while gaining 5 on another.
-            const big = Math.max(av, bv);
-            const small = Math.min(av, bv);
-            if (big - small < 100 || big < small * 4)
-                continue;
-            delete styles[bv < av ? start : end];
+            delete styles[end];
         }
     };
     /**
@@ -383,10 +371,9 @@ export const captureFn = (policy) => {
         if (styles['-webkit-text-fill-color'] === computed.color) {
             delete styles['-webkit-text-fill-color'];
         }
-        // NOT called for real elements yet — only pseudo-elements, as
-        // before. Turning it on gains 5.2 points on one site and loses 1.7
-        // on another, for reasons not yet found.
+        // Every positioned element, not just pseudo-elements.
         // see docs/notes/import-positioned-insets.md
+        dropResolvedInsets(styles);
         // Scamp renders every box as `border-box` — its own reset says so —
         // but `getComputedStyle` reports `width` and `height` in whatever
         // box the page chose. A page without a border-box reset reports the
