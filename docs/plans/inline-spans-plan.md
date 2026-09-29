@@ -85,7 +85,7 @@ headline, it is three words that are a different colour.
 
 Each one ships on its own and leaves the round trip green.
 
-### Phase 1 — runs in the model, one run in practice
+### Phase 1 — runs in the model, one run in practice — **DONE**
 
 Add `runs` beside `text`. A text element with plain text has exactly one
 run and behaves identically; `text` becomes a derived convenience
@@ -98,6 +98,20 @@ run and behaves identically; `text` becomes a derived convenience
 
 **Stop here and make sure nothing moved.** This phase is deliberately
 invisible.
+
+**Landed 2026-09-29.** `src/renderer/lib/textRuns.ts` with 31 tests,
+`ScampElement.runs?` (absent means one unstyled run of `text`), and
+`generateCode` emitting through `textFromRuns(runsOf(el))`.
+
+Nothing writes `runs` yet, which is the point. Verified beyond the
+suite: gainwix.com generated before and after the change is
+**byte-identical**, 81,809 bytes of TSX and 65,154 of CSS.
+
+What it front-loads is the part later phases cannot be written without —
+`splitAt` over joined-text offsets (what a DOM selection reports),
+`applyStyleToRange`, `mergeRuns`, and `styleOfRange`, which returns the
+shared style AND the list of properties that are mixed. That last one is
+the Phase 4 panel's answer to showing red for a red-and-blue selection.
 
 ### Phase 2 — whitespace survives
 

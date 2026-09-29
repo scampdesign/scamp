@@ -3,13 +3,6 @@
  * §"Zustand State Shape". Both `generateCode` and `parseCode` (added in M3)
  * operate on a flat `Record<string, ScampElement>` keyed by id.
  */
-/**
- * Attribute that carries an imported inline SVG's source-file reference
- * (relative path under `public/assets`). Stored in the element's generic
- * `attributes` bag so it round-trips through the TSX verbatim, and read by
- * the file-watch reload to locate the on-disk source. see
- * docs/plans/svg-color-editing-plan.md
- */
 export const SVG_SRC_ATTR = 'data-scamp-svg-src';
 export const ELEMENT_STATES = [
     'hover',

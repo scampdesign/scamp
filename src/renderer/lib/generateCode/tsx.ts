@@ -3,6 +3,7 @@ import { WRITTEN_CONTRACT } from '@shared/projectConfig';
 
 import { PASSTHROUGH_PROP, rootClassNameAttribute } from "../classNamePassthrough";
 import { ROOT_ELEMENT_ID, type SampleRow, type SampleValue, type ScampElement } from "../element";
+import { runsOf, textFromRuns } from "../textRuns";
 import {
   collectViewProps,
   isRowPath,
@@ -334,7 +335,7 @@ const renderElement = (
   }
 
   if (hasText && !hasChildren && !hasFragments) {
-    const body = propRef !== null ? `{${propRef}}` : escapeJsx(el.text ?? '');
+    const body = propRef !== null ? `{${propRef}}` : escapeJsx(textFromRuns(runsOf(el)));
     return `${indent(level)}${open}>${body}</${tag}>`;
   }
 
@@ -353,7 +354,7 @@ const renderElement = (
 
   const segments: string[] = [];
   if (hasText) {
-    const body = propRef !== null ? `{${propRef}}` : escapeJsx(el.text ?? '');
+    const body = propRef !== null ? `{${propRef}}` : escapeJsx(textFromRuns(runsOf(el)));
     segments.push(`${indent(level + 1)}${body}`);
   }
   const before = fragmentsAt(-1);

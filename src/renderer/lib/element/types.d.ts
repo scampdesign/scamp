@@ -11,6 +11,7 @@ import type { SpaceValue, SpaceTuple } from '../spaceValue';
  * the file-watch reload to locate the on-disk source. see
  * docs/plans/svg-color-editing-plan.md
  */
+import type { TextRun } from '../textRuns';
 export declare const SVG_SRC_ATTR = "data-scamp-svg-src";
 export type WidthMode = 'fixed' | 'stretch' | 'fit-content' | 'auto';
 export type HeightMode = 'fixed' | 'stretch' | 'fit-content' | 'auto';
@@ -475,6 +476,22 @@ export type ScampElement = {
     backgroundBlendMode: BlendMode;
     text?: string;
     /**
+     * The same content as styled RUNS, when any part of it is styled
+     * differently from the rest.
+     *
+     * **Absent means one unstyled run of `text`**, which is every element
+     * in every project today — nothing writes this yet. `runsOf` in
+     * `@lib/textRuns` is the view that treats the two the same, so callers
+     * do not branch on which shape an element happens to have.
+     *
+     * It exists so `alongside` in "works alongside AI" can be three words
+     * of a different colour rather than a child element. Making it a child
+     * is what forces the "a host with children cannot also hold words"
+     * rule, which splits the sentence, which loses the spaces around it.
+     * see docs/plans/inline-spans-plan.md
+     */
+    runs?: ReadonlyArray<TextRun>;
+    /**
      * Component-side prop name (component editor only), or, inside a
      * repeat, a row path (`player.label`). see docs/notes/components-data-model.md
      * and docs/notes/view-bindings.md
@@ -677,7 +694,7 @@ export type ScampElement = {
  * (the matrix is deferred — see the element-states plan), and the
  * raw-selector passthrough lives only at the top level.
  */
-export type BreakpointOverride = Partial<Omit<ScampElement, 'id' | 'type' | 'parentId' | 'childIds' | 'breakpointOverrides' | 'stateOverrides' | 'customSelectorBlocks' | 'tag' | 'attributes' | 'selectOptions' | 'svgSource' | 'text' | 'name'>>;
+export type BreakpointOverride = Partial<Omit<ScampElement, 'id' | 'type' | 'parentId' | 'childIds' | 'breakpointOverrides' | 'stateOverrides' | 'customSelectorBlocks' | 'tag' | 'attributes' | 'selectOptions' | 'svgSource' | 'text' | 'runs' | 'name'>>;
 /**
  * The fixed set of CSS pseudo-classes Scamp models as first-class
  * "states" with typed per-field overrides. Other pseudo-classes
