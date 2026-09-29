@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { DEFAULT_RECT_STYLES } from '@lib/defaults';
 import { ROOT_ELEMENT_ID } from '@lib/element';
-import { extractTokens, normalizeColor } from '@lib/importTokens';
+import { extractTokens, normalizeColor, resolveTokenNames, } from '@lib/importTokens';
 /**
  * Lifting an imported page's repeated colours into tokens.
  *
@@ -126,5 +126,63 @@ describe('extractTokens — rewriting', () => {
     it('leaves fields it did not tokenise untouched', () => {
         const result = extractTokens(tree(el('a', { color: 'rgb(7, 7, 7)', borderColor: 'rgb(200, 100, 50)' }), el('b', { color: 'rgb(7, 7, 7)' })));
         expect(result.elements['a']?.borderColor).toBe('rgb(200, 100, 50)');
+    });
+});
+describe('resolveTokenNames', () => {
+    const token = (name, value) => ({
+        name,
+        value,
+        uses: 2,
+    });
+    it('keeps a name the theme does not hold', () => {
+        const out = resolveTokenNames([token('--color-text', '#111')], new Map());
+        expect(out[0]?.name).toBe('--color-text');
+    });
+    it('reuses a name the theme holds at the SAME value', () => {
+        // Importing one site twice should reference the tokens it made the
+        // first time, not grow a second identical palette beside them.
+        const out = resolveTokenNames([token('--color-text', '#111')], new Map([['--color-text', '#111']]));
+        expect(out[0]?.name).toBe('--color-text');
+    });
+    it('suffixes a name the theme holds at a different value', () => {
+        const out = resolveTokenNames([token('--color-text', '#111')], new Map([['--color-text', '#eee']]));
+        expect(out[0]?.name).toBe('--color-text-imported');
+    });
+    // The bug this function exists for. A single fixed `-imported` is
+    // unique against the template's palette and not against itself, so a
+    // second site imported into the same project landed on a name that
+    // already held the FIRST site's colour — and was then filtered out as
+    // "already held" and never written.
+    // see docs/notes/import-token-collisions.md
+    it('escalates when the suffixed name is also taken by another value', () => {
+        const out = resolveTokenNames([token('--color-text', '#111')], new Map([
+            ['--color-text', '#eee'],
+            ['--color-text-imported', '#9db0cc'],
+        ]));
+        expect(out[0]?.name).toBe('--color-text-imported-2');
+    });
+    it('keeps escalating for a third and fourth site', () => {
+        const existing = new Map([
+            ['--color-text', '#eee'],
+            ['--color-text-imported', '#9db0cc'],
+            ['--color-text-imported-2', '#13111c'],
+        ]);
+        expect(resolveTokenNames([token('--color-text', '#abc')], existing)[0]?.name).toBe('--color-text-imported-3');
+    });
+    it('reuses a suffixed name that already holds this exact value', () => {
+        // Re-importing the SAME site a second time must not create
+        // `-imported-2` beside an identical `-imported`.
+        const out = resolveTokenNames([token('--color-text', '#9db0cc')], new Map([
+            ['--color-text', '#eee'],
+            ['--color-text-imported', '#9db0cc'],
+        ]));
+        expect(out[0]?.name).toBe('--color-text-imported');
+    });
+    it('does not let two tokens in one import land on the same name', () => {
+        // Nothing in the theme, but the extraction itself can repeat a name.
+        const out = resolveTokenNames([token('--color-1', '#111'), token('--color-1', '#222')], new Map());
+        expect(out[0]?.name).toBe('--color-1');
+        expect(out[1]?.name).toBe('--color-1-imported');
+        expect(new Set(out.map((t) => t.name)).size).toBe(2);
     });
 });

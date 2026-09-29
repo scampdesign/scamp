@@ -19,7 +19,7 @@ import {
   type FontResolution,
 } from '@lib/importFonts';
 import { buildReport } from '@lib/importReport';
-import { extractTokens } from '@lib/importTokens';
+import { extractTokens, resolveTokenNames } from '@lib/importTokens';
 import { useFontsStore } from '@store/fontsSlice';
 import { parseThemeFile, serializeThemeFile } from '@lib/parseTheme';
 import { useAppLogStore } from '@store/appLogSlice';
@@ -116,11 +116,13 @@ export const useWebsiteImport = ({
           // identical `--color-1` already there — a second palette
           // nothing referenced. A token whose value already matches is
           // the one that was wanted, so it is reused.
-          const renamed = tokens.map((t) => {
-            const held = existing.get(t.name);
-            if (held === undefined || held === t.value) return t;
-            return { ...t, name: `${t.name}-imported` };
-          });
+          // Escalating suffixes, not one fixed `-imported`. See
+          // `resolveTokenNames` for why: a second site imported into the
+          // same project used to land on a name the FIRST site already
+          // held, and was then skipped as "already held" and never
+          // written — leaving the new view painted in the old site's
+          // colours. see docs/notes/import-token-collisions.md
+          const renamed = resolveTokenNames(tokens, existing);
           const byOld = new Map(tokens.map((t, i) => [t.name, renamed[i]?.name ?? t.name]));
           const themed = Object.fromEntries(
             Object.entries(elements).map(([id, el]) => {

@@ -52,3 +52,26 @@ export type ExtractOptions = {
  * theme it does not need.
  */
 export declare const extractTokens: (elements: Record<string, ScampElement>, options?: ExtractOptions) => TokenExtraction;
+/**
+ * Names for extracted tokens that do not collide with a theme's, and do
+ * not collide with each other across repeated imports.
+ *
+ * A name is kept when the theme does not hold it, or holds it with the
+ * SAME value — importing one site twice should reference the tokens it
+ * made the first time rather than grow a second identical palette.
+ *
+ * Otherwise it is suffixed. The suffix ESCALATES, and that is the whole
+ * point of this function. A single fixed `-imported` is unique against
+ * the template's palette and not against itself: import site A and
+ * `--color-text` becomes `--color-text-imported`; import site B into the
+ * same project and it becomes `--color-text-imported` again, which now
+ * exists — so it is filtered out as "already held" and never written,
+ * while B's elements have already been pointed at it. B is then painted
+ * in A's colours.
+ *
+ * That is not hypothetical: a project with several sites imported into
+ * it had a view referencing `var(--color-text-imported)` 51 times for a
+ * near-black text colour, resolving to another site's `#9db0cc`.
+ * see docs/notes/import-token-collisions.md
+ */
+export declare const resolveTokenNames: (tokens: ReadonlyArray<ExtractedToken>, existing: ReadonlyMap<string, string>) => ExtractedToken[];
