@@ -219,9 +219,18 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                         const onGoogle = unknown.length > 0
                             ? await window.scamp.resolveImportFonts({ families: unknown })
                             : {};
+                        // `false` means Google does not serve it; anything else is
+                        // the family's variable axes, which the URL has to name or
+                        // Google freezes them at their defaults.
+                        // see docs/notes/import-variable-fonts.md
+                        const axesByFamily = {};
+                        for (const [family, axes] of Object.entries(onGoogle)) {
+                            if (axes !== false)
+                                axesByFamily[family] = axes;
+                        }
                         const urls = {};
-                        for (const [family, available] of Object.entries(onGoogle)) {
-                            const url = available ? googleFontsUrlFor([family]) : null;
+                        for (const [family, axes] of Object.entries(onGoogle)) {
+                            const url = axes === false ? null : googleFontsUrlFor([family], axesByFamily);
                             if (url !== null)
                                 urls[family] = url;
                         }
@@ -232,7 +241,7 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                         const embeddable = fonts
                             .filter((f) => f.status === 'google')
                             .map((f) => f.family);
-                        const combined = googleFontsUrlFor(embeddable);
+                        const combined = googleFontsUrlFor(embeddable, axesByFamily);
                         if (combined !== null) {
                             const latest = parseThemeFile(await window.scamp.readTheme({ projectPath: project.path }));
                             // Appending blind wrote the same Google Fonts line twice

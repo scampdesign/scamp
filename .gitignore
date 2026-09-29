@@ -18,3 +18,4 @@ playwright-report
 # Scaffolded projects the framework parity harness serves through scamp dev
 test/e2e/parity/.tmp/
 .fidelity-tmp
+.pixels-tmp

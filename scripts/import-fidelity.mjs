@@ -72,6 +72,29 @@ const { fontsNeededBy, googleFontsUrlFor, needsResolving } = await bundleOf(
   'src/renderer/lib/importFonts.ts'
 );
 
+/**
+ * Google's public axis metadata, keyed by family. Google instances a
+ * variable font to whatever axes the URL names, so without this an
+ * optical-size face renders visibly wider than the source page.
+ * see docs/notes/import-variable-fonts.md
+ */
+const AXES = await (async () => {
+  try {
+    const res = await fetch('https://fonts.google.com/metadata/fonts');
+    if (!res.ok) return {};
+    const json = JSON.parse((await res.text()).replace(/^[^{]*/, ''));
+    const out = {};
+    for (const fam of json.familyMetadataList ?? []) {
+      if (Array.isArray(fam.axes) && fam.axes.length > 0) {
+        out[fam.family] = fam.axes.map((a) => ({ tag: a.tag, min: a.min, max: a.max }));
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+})();
+
 const VIEWPORT = { width: 1440, height: 900 };
 const urls = process.argv.slice(2);
 if (urls.length === 0) {
@@ -134,7 +157,8 @@ for (const url of urls) {
     const fontUrl = googleFontsUrlFor(
       fontsNeededBy(reduced.elements)
         .map((n) => n.family)
-        .filter(needsResolving)
+        .filter(needsResolving),
+      AXES
     );
     const fontLink = fontUrl === null ? '' : `<link rel="stylesheet" href="${fontUrl}">`;
     await shot.setContent(

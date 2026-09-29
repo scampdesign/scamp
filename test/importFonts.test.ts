@@ -5,6 +5,7 @@ import { ROOT_ELEMENT_ID, type ScampElement } from '@lib/element';
 import {
   fontsNeededBy,
   googleFontsUrlFor,
+  type FontAxis,
   needsResolving,
   primaryFamily,
   resolveFonts,
@@ -183,5 +184,46 @@ describe('googleFontsUrlFor', () => {
   it('returns null when there is nothing to ask for', () => {
     expect(googleFontsUrlFor([])).toBeNull();
     expect(googleFontsUrlFor(['  '])).toBeNull();
+  });
+
+  // Google INSTANCES the font to the axes you name, so asking for `wght`
+  // alone returns a file with every other axis frozen at its default.
+  // Fraunces defaults to opsz 14, and a 60px headline set in 14px-optical
+  // glyphs is ~7% wider — which wrapped a line that fits on the real site
+  // and pushed every section below it down the page.
+  // see docs/notes/import-variable-fonts.md
+  const FRAUNCES: FontAxis[] = [
+    { tag: 'SOFT', min: 0, max: 100 },
+    { tag: 'WONK', min: 0, max: 1 },
+    { tag: 'opsz', min: 9, max: 144 },
+    { tag: 'wght', min: 100, max: 900 },
+  ];
+
+  it('asks for every axis across its full range when the axes are known', () => {
+    const url = googleFontsUrlFor(['Fraunces'], { Fraunces: FRAUNCES });
+    expect(url).toContain('family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1');
+  });
+
+  it('orders registered axes before custom ones, which css2 requires', () => {
+    // Any other order is a 400 from Google, and a 400 is no font at all.
+    const url = googleFontsUrlFor(['Fraunces'], { Fraunces: FRAUNCES });
+    const spec = url?.match(/family=Fraunces:([^@]+)@/)?.[1];
+    expect(spec).toBe('opsz,wght,SOFT,WONK');
+  });
+
+  it('falls back to the weight list for a family whose axes are unknown', () => {
+    // A family Google has no metadata for still has to get a URL.
+    const url = googleFontsUrlFor(['Fraunces', 'Inter'], { Fraunces: FRAUNCES });
+    expect(url).toContain('family=Fraunces:opsz,wght,SOFT,WONK@');
+    expect(url).toContain('family=Inter:wght@300;400;500;600;700;800');
+  });
+
+  it('asks for the full weight range when weight is the only axis', () => {
+    // Better than the enumerated list: it keeps the variable font whole
+    // rather than pinning it to six instances.
+    const url = googleFontsUrlFor(['Inter'], {
+      Inter: [{ tag: 'wght', min: 100, max: 900 }],
+    });
+    expect(url).toContain('family=Inter:wght@100..900');
   });
 });

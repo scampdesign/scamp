@@ -42,9 +42,9 @@ that decides which fixes matter.
 
 | URL | What it stresses |
 |---|---|
-| | |
-| | |
-| | |
+| https://resovaiq.com/ | |
+| https://vercel.com/home | |
+| https://gainwix.com/ | |
 
 Keep them stable and public. A page behind a login, a cookie wall, or an
 A/B test is not a fixture — it is a different page on each load, and you

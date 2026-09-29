@@ -446,8 +446,21 @@ export type CopyImageArgs = {
 /** Ask Google Fonts which of these families it serves. */
 export type ResolveFontsArgs = { families: string[] };
 
-/** Family → true when Google Fonts has it. Absent means it does not. */
-export type ResolveFontsResult = Record<string, boolean>;
+/** One variable axis of a family, as Google's metadata describes it. */
+export type GoogleFontAxis = { tag: string; min: number; max: number };
+
+/**
+ * Family → false when Google does not serve it, or its variable axes
+ * when it does. An empty array means Google has the family but reports
+ * no axes, which is a static font.
+ *
+ * Axes are here rather than derived later because Google INSTANCES a
+ * font to whatever axes the stylesheet URL names — so a family whose
+ * axes we don't know gets frozen at its defaults, and an optical-size
+ * face renders visibly wider than the page it came from.
+ * see docs/notes/import-variable-fonts.md
+ */
+export type ResolveFontsResult = Record<string, false | GoogleFontAxis[]>;
 
 /** Fetch a remote image into the project's assets. see website-import-plan.md */
 export type FetchImageArgs = {

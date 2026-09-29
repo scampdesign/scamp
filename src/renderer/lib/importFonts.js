@@ -97,6 +97,18 @@ export const resolveFonts = (needs, installed, googleUrls) => {
     return out;
 };
 /**
+ * Axis tags in the order Google's `css2` endpoint demands: registered
+ * (lowercase) axes alphabetically, then custom (uppercase) ones. Any
+ * other order is a 400, and a 400 means no font at all.
+ */
+const axisOrder = (a, b) => {
+    const aCustom = a.tag[0] === a.tag[0]?.toUpperCase();
+    const bCustom = b.tag[0] === b.tag[0]?.toUpperCase();
+    if (aCustom !== bCustom)
+        return aCustom ? 1 : -1;
+    return a.tag.localeCompare(b.tag);
+};
+/**
  * One Google Fonts URL for every embeddable family.
  *
  * Google's `css2` endpoint takes repeated `family=` parameters, so the
@@ -104,13 +116,36 @@ export const resolveFonts = (needs, installed, googleUrls) => {
  * than one per face. A weight range is requested because a page that
  * used a bold heading and a light caption needs both, and asking for
  * the default would silently flatten them.
+ *
+ * `axesByFamily` is the same kind of argument as `installed` above: a
+ * fact about what Google serves, which this function cannot know and
+ * must not go and find out. Supply it and every axis is requested across
+ * its full range; omit it and only weights are, which is the old
+ * behaviour and still correct for a family whose only axis is weight.
+ *
+ * **Naming the axes matters more than it looks.** Google INSTANCES the
+ * font to the axes you ask for, so a request for `wght` alone returns a
+ * file with every other axis frozen at its default. Fraunces defaults to
+ * `opsz` 14, and a 60px headline set in 14px-optical glyphs is about 7%
+ * wider — enough to wrap a line that fits on the real site, which then
+ * pushes every section below it down the page. 158 of Google's ~1950
+ * families have an axis beyond weight, so this is not a curiosity.
+ * see docs/notes/import-variable-fonts.md
  */
-export const googleFontsUrlFor = (families) => {
+export const googleFontsUrlFor = (families, axesByFamily = {}) => {
     const wanted = families.filter((f) => f.trim().length > 0);
     if (wanted.length === 0)
         return null;
     const params = wanted
-        .map((f) => `family=${encodeURIComponent(f.trim()).replace(/%20/g, '+')}:wght@300;400;500;600;700;800`)
+        .map((f) => {
+        const name = encodeURIComponent(f.trim()).replace(/%20/g, '+');
+        const axes = [...(axesByFamily[f.trim()] ?? [])].sort(axisOrder);
+        if (axes.length === 0)
+            return `family=${name}:wght@300;400;500;600;700;800`;
+        const tags = axes.map((a) => a.tag).join(',');
+        const ranges = axes.map((a) => `${a.min}..${a.max}`).join(',');
+        return `family=${name}:${tags}@${ranges}`;
+    })
         .join('&');
     return `https://fonts.googleapis.com/css2?${params}&display=swap`;
 };

@@ -2,7 +2,12 @@ import { useEffect } from 'react';
 
 import { errorMessage } from '@shared/errorMessage';
 import type { CapturePayload } from '@shared/importCapture';
-import type { Breakpoint, ImportReportGroup, ProjectData } from '@shared/types';
+import type {
+  Breakpoint,
+  GoogleFontAxis,
+  ImportReportGroup,
+  ProjectData,
+} from '@shared/types';
 import { viewSlugFor } from '@shared/templates';
 import { generateCode } from '@lib/generateCode';
 import { applyBreakpointCaptures, reduceCapture, type ImportFinding } from '@lib/importReduce';
@@ -274,9 +279,17 @@ export const useWebsiteImport = ({
               unknown.length > 0
                 ? await window.scamp.resolveImportFonts({ families: unknown })
                 : {};
+            // `false` means Google does not serve it; anything else is
+            // the family's variable axes, which the URL has to name or
+            // Google freezes them at their defaults.
+            // see docs/notes/import-variable-fonts.md
+            const axesByFamily: Record<string, GoogleFontAxis[]> = {};
+            for (const [family, axes] of Object.entries(onGoogle)) {
+              if (axes !== false) axesByFamily[family] = axes;
+            }
             const urls: Record<string, string> = {};
-            for (const [family, available] of Object.entries(onGoogle)) {
-              const url = available ? googleFontsUrlFor([family]) : null;
+            for (const [family, axes] of Object.entries(onGoogle)) {
+              const url = axes === false ? null : googleFontsUrlFor([family], axesByFamily);
               if (url !== null) urls[family] = url;
             }
             fonts = resolveFonts(needs, systemFonts, urls);
@@ -287,7 +300,7 @@ export const useWebsiteImport = ({
             const embeddable = fonts
               .filter((f): f is Extract<FontResolution, { status: 'google' }> => f.status === 'google')
               .map((f) => f.family);
-            const combined = googleFontsUrlFor(embeddable);
+            const combined = googleFontsUrlFor(embeddable, axesByFamily);
             if (combined !== null) {
               const latest = parseThemeFile(
                 await window.scamp.readTheme({ projectPath: project.path })

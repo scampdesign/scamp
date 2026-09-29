@@ -7,6 +7,7 @@ import type {
   FetchImageArgs,
   FetchImageResult,
   ResolveFontsArgs,
+  GoogleFontAxis,
   ResolveFontsResult,
   CopyImageArgs,
   CopyImageResult,
@@ -130,10 +131,48 @@ const fetchImage = async (args: FetchImageArgs): Promise<FetchImageResult> => {
  * user should be told to install either way.
  * see docs/plans/website-import-plan.md
  */
+/**
+ * Every family's variable axes, from Google's public metadata.
+ *
+ * One request for the whole catalogue rather than one per family, and a
+ * failure degrades to "no axes known" — which yields the old
+ * weights-only URL rather than failing the import.
+ */
+const googleFontAxes = async (): Promise<Record<string, GoogleFontAxis[]>> => {
+  try {
+    const response = await net.fetch('https://fonts.google.com/metadata/fonts', {
+      headers: { 'user-agent': 'Mozilla/5.0' },
+    });
+    if (!response.ok) return {};
+    // The body carries an anti-JSON-hijacking prefix before the object.
+    const parsed: unknown = JSON.parse((await response.text()).replace(/^[^{]*/, ''));
+    const list = (parsed as { familyMetadataList?: unknown }).familyMetadataList;
+    if (!Array.isArray(list)) return {};
+    const out: Record<string, GoogleFontAxis[]> = {};
+    for (const entry of list) {
+      const fam = entry as { family?: unknown; axes?: unknown };
+      if (typeof fam.family !== 'string' || !Array.isArray(fam.axes)) continue;
+      const axes: GoogleFontAxis[] = [];
+      for (const raw of fam.axes) {
+        const a = raw as { tag?: unknown; min?: unknown; max?: unknown };
+        if (typeof a.tag !== 'string' || typeof a.min !== 'number' || typeof a.max !== 'number') {
+          continue;
+        }
+        axes.push({ tag: a.tag, min: a.min, max: a.max });
+      }
+      out[fam.family] = axes;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+};
+
 const resolveGoogleFonts = async (
   args: ResolveFontsArgs
 ): Promise<ResolveFontsResult> => {
   const out: ResolveFontsResult = {};
+  const axes = await googleFontAxes();
   await Promise.all(
     args.families.slice(0, 24).map(async (family) => {
       const name = encodeURIComponent(family.trim()).replace(/%20/g, '+');
@@ -144,7 +183,7 @@ const resolveGoogleFonts = async (
           // and the status is all we read.
           { headers: { 'user-agent': 'Mozilla/5.0' } }
         );
-        out[family] = response.ok;
+        out[family] = response.ok ? (axes[family.trim()] ?? []) : false;
       } catch {
         out[family] = false;
       }

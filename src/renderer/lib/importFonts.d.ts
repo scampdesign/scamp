@@ -61,6 +61,13 @@ export declare const needsResolving: (family: string) => boolean;
  * those as different fonts would embed one the user already has.
  */
 export declare const resolveFonts: (needs: ReadonlyArray<FontNeed>, installed: ReadonlyArray<string>, googleUrls: Readonly<Record<string, string>>) => FontResolution[];
+/** One variable axis of a family, as Google's metadata describes it. */
+export type FontAxis = {
+    /** Four-character axis tag: `wght`, `opsz`, `SOFT`, and so on. */
+    tag: string;
+    min: number;
+    max: number;
+};
 /**
  * One Google Fonts URL for every embeddable family.
  *
@@ -69,5 +76,20 @@ export declare const resolveFonts: (needs: ReadonlyArray<FontNeed>, installed: R
  * than one per face. A weight range is requested because a page that
  * used a bold heading and a light caption needs both, and asking for
  * the default would silently flatten them.
+ *
+ * `axesByFamily` is the same kind of argument as `installed` above: a
+ * fact about what Google serves, which this function cannot know and
+ * must not go and find out. Supply it and every axis is requested across
+ * its full range; omit it and only weights are, which is the old
+ * behaviour and still correct for a family whose only axis is weight.
+ *
+ * **Naming the axes matters more than it looks.** Google INSTANCES the
+ * font to the axes you ask for, so a request for `wght` alone returns a
+ * file with every other axis frozen at its default. Fraunces defaults to
+ * `opsz` 14, and a 60px headline set in 14px-optical glyphs is about 7%
+ * wider — enough to wrap a line that fits on the real site, which then
+ * pushes every section below it down the page. 158 of Google's ~1950
+ * families have an axis beyond weight, so this is not a curiosity.
+ * see docs/notes/import-variable-fonts.md
  */
-export declare const googleFontsUrlFor: (families: ReadonlyArray<string>) => string | null;
+export declare const googleFontsUrlFor: (families: ReadonlyArray<string>, axesByFamily?: Readonly<Record<string, ReadonlyArray<FontAxis>>>) => string | null;
