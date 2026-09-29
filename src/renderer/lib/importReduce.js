@@ -383,10 +383,38 @@ const inlineToFragments = (host, inline) => {
         children: [],
         notes: [],
     });
-    for (const item of items) {
+    // Collapse each run's whitespace the way CSS does, and keep the space
+    // at a run's EDGE. Trimming every run destroyed the spaces around an
+    // inline span: `works <span>alongside</span> AI.` came back as
+    // `worksalongsideAI.`, because the two text runs are
+    // `"…works "` and `" AI."` and both boundary spaces live there.
+    //
+    // Only the outermost edges are trimmed, which is what a line box does
+    // to its own leading and trailing space.
+    //
+    // **This is correct and currently has no effect.** `makeBaseline` in
+    // parseCode/apply.ts trims every text element, because the model has
+    // nowhere to keep a leading or trailing space and the round trip
+    // depends on that. The space computed here is discarded there. Kept
+    // because it is the half that belongs in this file, and because the
+    // fix for the other half needs it. see docs/plans/inline-spans-plan.md
+    const lastText = items.reduce((found, item, i) => (item.kind === 'text' ? i : found), -1);
+    const firstText = items.findIndex((item) => item.kind === 'text');
+    const runText = (value, index) => {
+        let out = value.replace(/\s+/g, ' ');
+        if (index === firstText)
+            out = out.replace(/^ /, '');
+        if (index === lastText)
+            out = out.replace(/ $/, '');
+        return out;
+    };
+    for (const [index, item] of items.entries()) {
         if (hasElement && item.kind === 'text') {
-            if (item.value.trim().length > 0) {
-                children.push(wordsAsChild(item.value.trim()));
+            const value = runText(item.value, index);
+            // A run that is ONLY a space still matters — it is the gap in
+            // `<b>a</b> <i>b</i>` — so the test is emptiness, not blankness.
+            if (value.length > 0) {
+                children.push(wordsAsChild(value));
                 afterChildIndex += 1;
             }
             continue;

@@ -1922,3 +1922,101 @@ describe('against a page captured from a real browser', () => {
     expect(reduceCapture(payload, { randomId: seqIds() }).suggestedName).toBe('NorthwindShipFaster');
   });
 });
+
+describe('whitespace around an inline span', () => {
+  /**
+   * `works <span>alongside</span> AI.` imports as `worksalongsideAI.`
+   * The two text runs are `"…works "` and `" AI."`, and both boundary
+   * spaces live there.
+   *
+   * **These are KNOWN GAPS, asserted to fail.** The reducer computes the
+   * right value; `makeBaseline` then trims every text element, because
+   * the model has nowhere to keep a leading or trailing space and the
+   * generateCode ↔ parseCode round trip depends on that. Fixing it is a
+   * change to the two core functions, planned in
+   * `docs/plans/inline-spans-plan.md`.
+   *
+   * The same convention as the parity harness's `knownGap`: the suite
+   * stays green while the divergence is recorded, and the day someone
+   * fixes it these flip to failing and have to be updated.
+   * see docs/notes/parity-harness.md
+   */
+  const gradientSpan = (id: number, text: string): CapturedNode =>
+    node({
+      id,
+      tag: 'span',
+      styles: {
+        display: 'inline',
+        'background-image': 'linear-gradient(90deg, red, blue)',
+      },
+      text,
+    });
+
+  const heading = (inline: CapturedNode['inline']): CapturedNode =>
+    node({
+      id: 1,
+      tag: 'div',
+      children: [
+        node({
+          id: 2,
+          tag: 'h1',
+          styles: { display: 'block', 'font-size': '48px' },
+          inline,
+        }),
+      ],
+    });
+
+  /** Every element's text, joined, so a missing space is visible. */
+  const textOf = (root: CapturedNode): string =>
+    Object.values(reduce(root).elements)
+      .map((el) => el.text)
+      .filter((t): t is string => typeof t === 'string' && t.length > 0)
+      .join('|');
+
+  it.fails('keeps the space before and after a styled span', () => {
+    const joined = textOf(
+      heading([
+        { kind: 'text', value: 'An AI studio for what works ' },
+        { kind: 'element', node: gradientSpan(3, 'alongside') },
+        { kind: 'text', value: ' AI.' },
+      ])
+    );
+    expect(joined).toContain('works ');
+    expect(joined).toContain(' AI.');
+  });
+
+  it('trims the outer edges, which is what a line box does', () => {
+    const joined = textOf(
+      heading([
+        { kind: 'text', value: '  leading ' },
+        { kind: 'element', node: gradientSpan(3, 'x') },
+        { kind: 'text', value: ' trailing  ' },
+      ])
+    );
+    expect(joined).not.toContain('|  leading');
+    expect(joined.endsWith(' ')).toBe(false);
+  });
+
+  it.fails('keeps a run that is only a space between two elements', () => {
+    // `<b>a</b> <i>b</i>` — the gap IS the content, and dropping it
+    // joins the two words.
+    const joined = textOf(
+      heading([
+        { kind: 'element', node: gradientSpan(3, 'one') },
+        { kind: 'text', value: ' ' },
+        { kind: 'element', node: gradientSpan(4, 'two') },
+      ])
+    );
+    expect(joined).toContain(' ');
+  });
+
+  it.fails('collapses a run of whitespace to a single space', () => {
+    const joined = textOf(
+      heading([
+        { kind: 'text', value: 'a   \n  b ' },
+        { kind: 'element', node: gradientSpan(3, 'x') },
+      ])
+    );
+    expect(joined).toContain('a b ');
+  });
+});

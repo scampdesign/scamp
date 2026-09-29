@@ -146,7 +146,44 @@ reported on the CANVAS are not coming from there.
 
 ---
 
-## NOT REPRODUCED — "the canvas looks nothing like the site"
+## DEFERRED — the spaces around an inline span are lost
+
+**Measured.** gainwix.com's hero is
+`An AI studio for what works <span class="gradient-text">alongside</span> AI.`
+Its child nodes are exactly three: `TEXT "An AI studio for what works "`,
+the span, `TEXT " AI."` — both boundary spaces live on the text runs.
+
+**Before.** The canvas and the export both render `worksalongsideAI.`
+Same on both sides, so not a canvas bug.
+
+**Cause.** Two halves, and only one is in the importer.
+
+The reducer split each text run into a sibling element and trimmed each
+one, because a styled span becomes an element and "a host with children
+cannot also hold words". That half is fixed: runs now collapse their
+whitespace the way CSS does and keep the space at a run's edge, trimming
+only the outermost edges as a line box would.
+
+It has **no effect**, because of the second half: `makeBaseline` in
+`parseCode/apply.ts` does `raw.text.trim()` on every text element, and
+`parseCode` shares it. The model has nowhere to keep a leading or
+trailing space, and the generateCode ↔ parseCode round trip depends on
+that being true.
+
+**Deferred**, because fixing it is a change to the two core functions
+rather than to the importer. Planned in
+[`../plans/inline-spans-plan.md`](../plans/inline-spans-plan.md), whose
+Phase 2 closes it — and which also builds what the bug is really a
+symptom of: styling a range of text inside a text element.
+
+**The acceptance test already exists.** Three `it.fails` cases in
+`test/importReduce.test.ts`, in the parity harness's `knownGap` style:
+the suite stays green while the divergence is recorded, and the day
+Phase 2 lands they flip to failing and have to be updated.
+
+---
+
+## NOT REPRODUCED — "the canvas looks nothing like the site
 
 **Measured.** `scripts/canvas-oracle.mjs`, the third oracle, built for
 exactly this report. Three screenshots of gainwix.com, canvas captured at

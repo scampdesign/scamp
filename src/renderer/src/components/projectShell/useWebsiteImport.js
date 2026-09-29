@@ -5,6 +5,7 @@ import { generateCode } from '@lib/generateCode';
 import { applyBreakpointCaptures, reduceCapture } from '@lib/importReduce';
 import { fontsNeededBy, googleFontsUrlFor, resolveFonts, } from '@lib/importFonts';
 import { buildReport } from '@lib/importReport';
+import { needsFileTreatment, svgAssetName, svgDocument, } from '@lib/importSvgAssets';
 import { useFontsStore } from '@store/fontsSlice';
 import { parseThemeFile, serializeThemeFile } from '@lib/parseTheme';
 import { useAppLogStore } from '@store/appLogSlice';
@@ -61,7 +62,63 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     // turning any of them into tokens is the user's call, made
                     // afterwards against a design they can see.
                     // see docs/notes/import-token-collisions.md
-                    const result = reduced;
+                    // An SVG that works by internal reference — a gradient, a
+                    // filter, a mask — cannot survive being inlined. The markup
+                    // goes through JSX for the TSX and back through HTML for the
+                    // canvas, and an HTML parser lowercases `stopColor` to
+                    // `stopcolor`, which means nothing: gainwix's wordmark lost
+                    // its gradient and rendered black on both the canvas AND the
+                    // export. Those are written out as .svg files and referenced
+                    // as images, where the real SVG parser reads them.
+                    //
+                    // Plain icons stay inline on purpose: an `<img>` cannot
+                    // inherit `currentColor`, so turning all of them into files
+                    // would freeze every icon that follows the colour around it.
+                    // see docs/notes/import-svg-as-file.md
+                    const svgSources = new Map();
+                    const collectSvgs = (node) => {
+                        if (node.svgSource !== undefined && needsFileTreatment(node.svgSource)) {
+                            svgSources.set(String(node.id), { attrs: node.attrs, inner: node.svgSource });
+                        }
+                        node.children.forEach(collectSvgs);
+                    };
+                    collectSvgs(payload.root);
+                    let elements = reduced.elements;
+                    let svgFiles = 0;
+                    const svgFailures = [];
+                    for (const [elementId, element] of Object.entries(elements)) {
+                        const sourceId = reduced.sourceNodes[elementId];
+                        const captured = sourceId === undefined ? undefined : svgSources.get(String(sourceId));
+                        if (captured === undefined)
+                            continue;
+                        const document = svgDocument(captured.attrs, captured.inner);
+                        const written = await window.scamp.fetchImportImage({
+                            url: `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(document)))}`,
+                            projectPath: project.path,
+                            assetName: svgAssetName(captured.inner, element.name ?? 'icon'),
+                        });
+                        if (!written.ok) {
+                            svgFailures.push(written.error ?? 'unknown');
+                            continue;
+                        }
+                        // An image, not an svg: the file is the artwork now, and
+                        // leaving `svgSource` behind would render it twice.
+                        // `svgSource` is dropped, not nulled: leaving it would
+                        // render the artwork twice, once as markup and once as the
+                        // file.
+                        const { svgSource: _dropped, ...rest } = element;
+                        elements = {
+                            ...elements,
+                            [elementId]: {
+                                ...rest,
+                                type: 'image',
+                                tag: 'img',
+                                src: written.relativePath,
+                            },
+                        };
+                        svgFiles += 1;
+                    }
+                    const result = { ...reduced, elements };
                     const taken = new Set([
                         ...project.components.map((c) => c.name),
                         ...project.pages.map((p) => p.name),
@@ -264,6 +321,8 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     note('font-embedded', `${embedded.map((f) => f.family).join(', ')} embedded from Google Fonts`, embedded.length, 'exact');
                     note('font-missing', `install ${missingFonts.map((f) => f.family).join(', ')} — not on Google Fonts and not on this machine`, missingFonts.length, 'lost');
                     note('image-downloaded', `${downloaded.size} images downloaded into the project`, downloaded.size, 'exact');
+                    note('svg-as-file', `${svgFiles} ${svgFiles === 1 ? 'icon uses' : 'icons use'} a gradient, filter or mask and ${svgFiles === 1 ? 'was' : 'were'} saved as .svg files`, svgFiles, 'rendered-fallback');
+                    note('svg-file-failed', `${svgFailures.length} ${svgFailures.length === 1 ? 'icon' : 'icons'} could not be saved (${svgFailures[0] ?? ''})`, svgFailures.length, 'lost');
                     // A missing image is graded by how much of the page it was.
                     // A hero that failed to fetch is a visibly broken page; a
                     // decorative icon is not, and grading them the same is how a

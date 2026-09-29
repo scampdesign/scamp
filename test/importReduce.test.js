@@ -1585,3 +1585,72 @@ describe('against a page captured from a real browser', () => {
         expect(reduceCapture(payload, { randomId: seqIds() }).suggestedName).toBe('NorthwindShipFaster');
     });
 });
+describe('whitespace around an inline span', () => {
+    /**
+     * `works <span>alongside</span> AI.` imported as `worksalongsideAI.`
+     * The two text runs are `"…works "` and `" AI."`, and trimming each
+     * one destroys both boundary spaces — the only place they exist.
+     * see docs/notes/import-parity-log.md
+     */
+    const gradientSpan = (id, text) => node({
+        id,
+        tag: 'span',
+        styles: {
+            display: 'inline',
+            'background-image': 'linear-gradient(90deg, red, blue)',
+        },
+        text,
+    });
+    const heading = (inline) => node({
+        id: 1,
+        tag: 'div',
+        children: [
+            node({
+                id: 2,
+                tag: 'h1',
+                styles: { display: 'block', 'font-size': '48px' },
+                inline,
+            }),
+        ],
+    });
+    /** Every element's text, joined, so a missing space is visible. */
+    const textOf = (root) => Object.values(reduce(root).elements)
+        .map((el) => el.text)
+        .filter((t) => typeof t === 'string' && t.length > 0)
+        .join('|');
+    it('keeps the space before and after a styled span', () => {
+        const joined = textOf(heading([
+            { kind: 'text', value: 'An AI studio for what works ' },
+            { kind: 'element', node: gradientSpan(3, 'alongside') },
+            { kind: 'text', value: ' AI.' },
+        ]));
+        expect(joined).toContain('works ');
+        expect(joined).toContain(' AI.');
+    });
+    it('trims the outer edges, which is what a line box does', () => {
+        const joined = textOf(heading([
+            { kind: 'text', value: '  leading ' },
+            { kind: 'element', node: gradientSpan(3, 'x') },
+            { kind: 'text', value: ' trailing  ' },
+        ]));
+        expect(joined).not.toContain('|  leading');
+        expect(joined.endsWith(' ')).toBe(false);
+    });
+    it('keeps a run that is only a space between two elements', () => {
+        // `<b>a</b> <i>b</i>` — the gap IS the content, and dropping it
+        // joins the two words.
+        const joined = textOf(heading([
+            { kind: 'element', node: gradientSpan(3, 'one') },
+            { kind: 'text', value: ' ' },
+            { kind: 'element', node: gradientSpan(4, 'two') },
+        ]));
+        expect(joined).toContain(' ');
+    });
+    it('collapses a run of whitespace to a single space', () => {
+        const joined = textOf(heading([
+            { kind: 'text', value: 'a   \n  b ' },
+            { kind: 'element', node: gradientSpan(3, 'x') },
+        ]));
+        expect(joined).toContain('a b ');
+    });
+});
