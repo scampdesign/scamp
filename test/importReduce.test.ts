@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { CAPTURE_VERSION, type CapturePayload, type CapturedNode } from '@shared/importCapture';
 import { generateCode } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
+import type { ScampElement } from '@lib/element';
 import {
   applyBreakpointCaptures,
   reduceCapture,
@@ -2021,5 +2022,138 @@ describe('whitespace around an inline span', () => {
     // goes: this run is both the first text and the last, so both its
     // edges are the element's edges.
     expect(joined).toContain('a b');
+  });
+});
+
+describe('a glyph-only span becomes a run, not an element', () => {
+  /**
+   * Phase 5 of `docs/plans/inline-spans-plan.md`. `works
+   * <span class="gradient">alongside</span> AI.` used to arrive as three
+   * sibling elements, which is what forced the words apart and lost the
+   * spaces between them. It is now one text element with three runs —
+   * one sentence, editable as a sentence.
+   */
+  const glyphSpan = (text: string, styles: Record<string, string>): CapturedNode =>
+    node({ id: 9, tag: 'span', text, styles: { display: 'inline', ...styles } });
+
+  const heading = (inline: CapturedNode['inline']): CapturedNode =>
+    node({
+      id: 1,
+      children: [node({ id: 2, tag: 'h1', styles: { display: 'block' }, inline })],
+    });
+
+  const textElements = (root: CapturedNode): ScampElement[] =>
+    Object.values(reduce(root).elements).filter((el) => el.type === 'text');
+
+  it('keeps the sentence as one element with runs', () => {
+    const els = textElements(
+      heading([
+        { kind: 'text', value: 'works ' },
+        { kind: 'element', node: glyphSpan('alongside', { color: 'rgb(10, 205, 149)' }) },
+        { kind: 'text', value: ' AI.' },
+      ])
+    );
+    expect(els).toHaveLength(1);
+    expect(els[0]?.runs).toEqual([
+      { text: 'works ' },
+      { text: 'alongside', style: { color: 'rgb(10, 205, 149)' } },
+      { text: ' AI.' },
+    ]);
+  });
+
+  it('keeps the spaces around the styled word', () => {
+    // The bug this whole plan started from.
+    const els = textElements(
+      heading([
+        { kind: 'text', value: 'works ' },
+        { kind: 'element', node: glyphSpan('alongside', { color: 'rgb(1, 2, 3)' }) },
+        { kind: 'text', value: ' AI.' },
+      ])
+    );
+    expect(els[0]?.text).toBe('works alongside AI.');
+  });
+
+  it('carries a gradient and the transparent fill that reveals it', () => {
+    const els = textElements(
+      heading([
+        { kind: 'text', value: 'An ' },
+        {
+          kind: 'element',
+          node: glyphSpan('AI studio', {
+            'background-image': 'linear-gradient(90deg, red, blue)',
+            'background-clip': 'text',
+            '-webkit-text-fill-color': 'transparent',
+          }),
+        },
+      ])
+    );
+    expect(els[0]?.runs?.[1]?.style).toEqual({
+      backgroundImage: 'linear-gradient(90deg, red, blue)',
+      color: 'transparent',
+    });
+  });
+
+  it('reads a numeric font-weight', () => {
+    const els = textElements(
+      heading([
+        { kind: 'text', value: 'a ' },
+        { kind: 'element', node: glyphSpan('bold', { 'font-weight': '700' }) },
+      ])
+    );
+    expect(els[0]?.runs?.[1]?.style).toEqual({ fontWeight: 700 });
+  });
+
+  it('leaves a span that is a BOX as an element', () => {
+    // The page's `.mark`: background, padding, radius. Turning that into
+    // a run would drop everything but its colour.
+    const els = textElements(
+      heading([
+        { kind: 'text', value: 'Stop the ' },
+        {
+          kind: 'element',
+          node: glyphSpan('busywork', {
+            color: 'rgb(1, 2, 3)',
+            'background-color': 'rgb(9, 9, 9)',
+            'padding-left': '4px',
+          }),
+        },
+      ])
+    );
+    expect(els.length).toBeGreaterThan(1);
+    expect(els.every((el) => el.runs === undefined)).toBe(true);
+  });
+
+  it('leaves a span with an attribute as an element', () => {
+    // A link, or something an agent put an id on: a thing in its own
+    // right, not three words that are a different colour.
+    const els = textElements(
+      heading([
+        { kind: 'text', value: 'see ' },
+        {
+          kind: 'element',
+          node: node({
+            id: 9,
+            tag: 'span',
+            text: 'the docs',
+            styles: { display: 'inline', color: 'rgb(1, 2, 3)' },
+            attrs: { id: 'docs-link' },
+          }),
+        },
+      ])
+    );
+    expect(els.length).toBeGreaterThan(1);
+  });
+
+  it('stores no runs when the span carried nothing worth keeping', () => {
+    // A bare `<span>` with no styling is not a run, it is just words.
+    const els = textElements(
+      heading([
+        { kind: 'text', value: 'plain ' },
+        { kind: 'element', node: glyphSpan('words', {}) },
+      ])
+    );
+    expect(els).toHaveLength(1);
+    expect(els[0]?.runs).toBeUndefined();
+    expect(els[0]?.text).toBe('plain words');
   });
 });

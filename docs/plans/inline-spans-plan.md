@@ -237,13 +237,42 @@ Not done: **what Enter does inside a styled run** is still unanswered —
 typing at a run boundary continues whatever run the caret landed in,
 which is a browser default rather than a decision.
 
-### Phase 5 — the importer stops splitting
+### Phase 5 — the importer stops splitting — **DONE**
 
 `inlineToFragments` becomes `inlineToRuns`: a styled span in a captured
 run becomes a styled run rather than a sibling element. The
 "container cannot also hold words" split goes away for the inline case,
 and `inlineFragments`' `jsx` kind can be retired once nothing produces
 it.
+
+**Landed 2026-09-29.** gainwix.com's hero is now one `<h1>`:
+
+```jsx
+works{' '}<span className={styles.title_0018__r1}>alongside</span>{' '}AI.
+```
+
+230 elements became 227 — three siblings collapsed back into one
+sentence, and the page reads `works alongside AI.` with the gradient on
+the word.
+
+**Not every span becomes a run**, which is the whole judgement here.
+`isRunnableSpan` allows only what paints GLYPHS: colour, weight, style,
+decoration, a gradient and its clip. A span with a background, padding,
+a border or `display: inline-block` is a box in the line and stays an
+element — the page's `.mark` is exactly that, and a run would have
+dropped everything but its colour. So does any span with an attribute:
+a link or an id is a thing in its own right, not three words of a
+different colour.
+
+Two values had to be let through as exceptions, and both are the
+ABSENCE of something: `display: inline`, and `width`/`height` at `auto`.
+The inline pass writes those onto every span it keeps, and rejecting
+them meant the real gainwix span never qualified while the unit
+fixtures did — output identical, 230 elements, nothing to show for the
+change.
+
+`inlineFragments`' `jsx` kind is NOT retired: verbatim markup still
+needs it, and a run cannot hold markup nobody has parsed.
 
 ---
 

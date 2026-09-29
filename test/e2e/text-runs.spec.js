@@ -44,9 +44,12 @@ test.describe('text runs', () => {
         }, styled);
         expect(applied).toMatchObject({ hook: true });
         await waitForSaved(window);
+        // The feature, in the file: a span around exactly the selected
+        // words, with its own class, and the spaces either side kept as
+        // `{' '}` rather than collapsed away.
         const before = await readPageFiles(project.dir, 'home');
-        expect(before.tsx).toContain('__r1');
-        expect(before.tsx).toContain('works alongside AI');
+        expect(before.tsx).toMatch(/works\{' '\}<span className=\{styles\.\w+__r1\}>alongside<\/span>\{' '\}AI/);
+        expect(before.css).toMatch(/__r1 \{[^}]*color: #0acd95/);
         // Click into it and straight back out, changing nothing.
         const metrics = await measureFrame(window);
         const at = frameToClient(metrics, { x: 210, y: 205 });
@@ -56,7 +59,7 @@ test.describe('text runs', () => {
         await waitForSaved(window);
         await window.waitForTimeout(500);
         const after = await readPageFiles(project.dir, 'home');
-        expect(after.tsx).toContain('__r1');
-        expect(after.tsx).toContain('works alongside AI');
+        expect(after.tsx).toBe(before.tsx);
+        expect(after.css).toBe(before.css);
     });
 });

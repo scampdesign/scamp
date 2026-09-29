@@ -185,6 +185,14 @@ const cssProp = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 /** A run's style as CSS declarations, in a stable order. */
 export const runStyleDeclarations = (style) => {
     const out = [];
+    // Gradient text is a background CLIPPED to the glyphs, and the clip
+    // is what makes it text rather than a coloured box behind the words.
+    // Emitted from the image's presence rather than stored, because the
+    // two are never meaningful apart. `runInlineStyle` does the same for
+    // the canvas. see docs/plans/inline-spans-plan.md
+    if (style.backgroundImage !== undefined) {
+        out.push('background-clip: text;', '-webkit-background-clip: text;');
+    }
     for (const key of Object.keys(style).sort()) {
         if (key === 'customProperties')
             continue;
@@ -218,6 +226,12 @@ export const runStyleFromDeclarations = (declarations) => {
                 break;
             case 'text-decoration-line':
                 style['textDecorationLine'] = value;
+                break;
+            // Derived from the image on the way out, so never stored on the
+            // way back in — otherwise it round-trips into customProperties
+            // and the run grows a copy of itself on every save.
+            case 'background-clip':
+            case '-webkit-background-clip':
                 break;
             default:
                 custom[prop] = value;

@@ -2,6 +2,7 @@ import { CAPTURE_VERSION, INHERITED_PROPERTIES, } from '@shared/importCapture';
 import { ROOT_ELEMENT_ID } from './element';
 import { makeBaseline, applyDeclarations, applyDeclarationsAsOverride } from './parseCode/apply';
 import { jsxAttributeName, svgSourceToJsx } from './svgJsx';
+import { isStyled, mergeRuns, textFromRuns, } from './textRuns';
 /**
  * Tags that become a text element. Mirrors `parseCode`'s own list —
  * a text element is one whose content is words rather than layout, and
@@ -341,6 +342,90 @@ const inheritedTypography = (styles) => {
     }
     return out;
 };
+/**
+ * Properties a span can carry and still be a RUN rather than an element.
+ *
+ * Only what paints glyphs. A span with padding, a background box, a
+ * border or `display: inline-block` is a box in the line and has to stay
+ * an element — the page's `.mark` is exactly that, and turning it into a
+ * run would drop everything but its colour.
+ * see docs/plans/inline-spans-plan.md
+ */
+const RUNNABLE_PROPERTIES = new Set([
+    'color',
+    'font-weight',
+    'font-style',
+    'text-decoration-line',
+    'background-image',
+    'background-clip',
+    '-webkit-background-clip',
+    '-webkit-text-fill-color',
+    'display',
+    // `auto` is the ABSENCE of a size, not a box property — and the
+    // inline pass writes both onto every span it keeps. Checked for the
+    // value below: a real width makes it a box.
+    'width',
+    'height',
+]);
+/** Can this span be a styled run instead of an element in the line? */
+const isRunnableSpan = (node) => {
+    if (node.children.length > 0 || node.inline !== undefined)
+        return false;
+    if (node.text === null || node.text.length === 0)
+        return false;
+    // Any attribute makes it a thing in its own right — a link, an id
+    // something references, a data attribute an agent wrote.
+    if (Object.keys(node.attrs).length > 0)
+        return false;
+    if (node.pseudo !== undefined || node.svgSource !== undefined)
+        return false;
+    for (const prop of Object.keys(node.styles)) {
+        if (!RUNNABLE_PROPERTIES.has(prop))
+            return false;
+    }
+    // `display` is allowed through only as an inline value: `inline-block`
+    // is a box, whatever else it carries.
+    const display = node.styles['display'];
+    if (display !== undefined && display !== 'inline')
+        return false;
+    for (const prop of ['width', 'height']) {
+        const value = node.styles[prop];
+        if (value !== undefined && value !== 'auto')
+            return false;
+    }
+    return true;
+};
+/** A captured span's styles as a run style. */
+const runStyleOf = (styles) => {
+    const style = {};
+    if (styles['color'] !== undefined)
+        style.color = styles['color'];
+    if (styles['font-style'] !== undefined)
+        style.fontStyle = styles['font-style'];
+    if (styles['text-decoration-line'] !== undefined) {
+        style.textDecorationLine = styles['text-decoration-line'];
+    }
+    const weight = styles['font-weight'];
+    if (weight !== undefined) {
+        const n = Number.parseInt(weight, 10);
+        if (Number.isFinite(n))
+            style.fontWeight = n;
+    }
+    if (styles['background-image'] !== undefined) {
+        style.backgroundImage = styles['background-image'];
+        // Gradient text: the fill is transparent so the background shows
+        // through the glyphs. Carried explicitly, because a run that kept
+        // the image without it paints a box behind the words.
+        // The fill that reveals the gradient. A page writes it either as
+        // `-webkit-text-fill-color` or by making `color` transparent, and
+        // both have to survive: without it the image paints a box behind
+        // the words instead of through them.
+        const fill = styles['-webkit-text-fill-color'];
+        if (fill !== undefined)
+            style.color = fill;
+    }
+    return style;
+};
 const inlineToFragments = (host, inline) => {
     const items = [...inline];
     // A host with children cannot also hold words — that is the rule
@@ -352,6 +437,48 @@ const inlineToFragments = (host, inline) => {
     // With no element in the run nothing changes: the leading text stays
     // on the host and the rest stay fragments, exactly as before.
     const hasElement = items.some((item) => item.kind === 'element');
+    // Every styled span in the line can be a RUN: keep the sentence as
+    // ONE text element instead of splitting it into siblings. That split
+    // is what forced the words apart, which is what lost the spaces
+    // between them, and what made an imported headline three layers
+    // nobody can edit as a sentence.
+    // see docs/plans/inline-spans-plan.md
+    if (hasElement &&
+        // `markup` is verbatim source and cannot be a run — it is kept
+        // whole precisely because nothing understands its insides.
+        items.every((item) => item.kind === 'text' ||
+            (item.kind === 'element' && isRunnableSpan(item.node)))) {
+        const last = items.length - 1;
+        const runs = [];
+        for (const [index, item] of items.entries()) {
+            if (item.kind === 'text') {
+                let value = item.value.replace(/\s+/g, ' ');
+                if (index === 0)
+                    value = value.replace(/^ /, '');
+                if (index === last)
+                    value = value.replace(/ $/, '');
+                if (value.length > 0)
+                    runs.push({ text: value });
+                continue;
+            }
+            if (item.kind !== 'element')
+                continue;
+            const style = runStyleOf(item.node.styles);
+            runs.push(Object.keys(style).length > 0
+                ? { text: item.node.text ?? '', style }
+                : { text: item.node.text ?? '' });
+        }
+        const merged = mergeRuns(runs);
+        return {
+            text: textFromRuns(merged),
+            fragments: [],
+            children: [],
+            // One plain run is what a plain text element already is.
+            ...(merged.length === 1 && !isStyled(merged[0])
+                ? {}
+                : { runs: merged }),
+        };
+    }
     let text = null;
     if (!hasElement && items[0]?.kind === 'text') {
         text = items[0].value.trim();
@@ -1006,7 +1133,14 @@ export const reduceCapture = (payload, options = {}) => {
             range: null,
         };
         const baseline = makeBaseline(raw, true);
-        const element = applyDeclarations(baseline, toDeclarations(styles), parentIsLayout);
+        const withStyles = applyDeclarations(baseline, toDeclarations(styles), parentIsLayout);
+        // `makeBaseline` builds from the PARSER's raw shape, whose runs
+        // carry a class rather than a style — so ours are attached here,
+        // the same way `parseCode/index.ts` attaches its own once the CSS
+        // is in hand. see docs/plans/inline-spans-plan.md
+        const element = inlineRun?.runs === undefined
+            ? withStyles
+            : { ...withStyles, runs: inlineRun.runs };
         // A size that was a layout result needs the mode that reproduces how
         // the element got that size, not merely the absence of a number.
         //
