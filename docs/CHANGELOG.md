@@ -22,6 +22,66 @@ release time.
 
 ## Releases
 
+### 0.8.7 (2026-09-30)
+
+**Added**
+
+- **Style part of a text element.** Select some words on the canvas and
+  change their color or weight, and Scamp wraps exactly those words in a
+  `<span>` with its own class — the rest of the sentence is untouched.
+  The properties panel shows the selection's own style while a range is
+  selected, and shows nothing at all when the selection covers two
+  different values, rather than picking one of them.
+
+**Fixed**
+
+- **Imported headings no longer wrap a line early.** Scamp asked Google
+  Fonts for weights only, and Google serves a variable font with every
+  other axis frozen at its default — so a heading set in Fraunces came
+  back about 7% wider than the page it was copied from, wrapped one line
+  sooner, and pushed every section below it down. Scamp now asks for
+  each family's full set of axes. Around 158 Google families have an
+  axis beyond weight.
+- **A hidden "skip to content" link no longer paints a bar down the
+  page.** Most accessible sites hide one above the top of the window.
+  Scamp read its position as a stretch instead of an offset, so it
+  imported as a dark bar thousands of pixels tall, over the text.
+- **An icon with a gradient renders.** Gradients, filters, and masks
+  inside an inline SVG are saved as an `.svg` file in your project and
+  referenced as an image, because they can't survive being rewritten as
+  JSX. They were rendering solid black. Plain icons are still imported
+  inline, so they still follow the color around them.
+- **Words keep the spaces around a styled word.** `works
+  <span>alongside</span> AI.` imported as `worksalongsideAI.`
+- **Importing two sites into one project no longer repaints the first
+  one.** See the color note below.
+
+**Changed**
+
+- **An import writes literal colors instead of creating theme tokens.**
+  Scamp used to lift any color it saw more than once into a theme token.
+  A design system is a set of decisions about what should be shared, and
+  counting how often a color appears can't make those — it produced a
+  theme you didn't choose, and importing a second site into the same
+  project could repaint the first one in the new site's palette.
+  Turning imported colors into tokens is now yours to do, against a
+  design you can see.
+
+  **Note:** Views imported before this release may still reference
+  tokens that hold another site's colors. Import those pages again to
+  fix them.
+- **The import report grades what it changed in four levels**, not two.
+  An icon kept as markup renders perfectly and can't be edited as
+  shapes — neither a loss nor a clean translation — so the report now
+  separates *lost*, *renders but not editable*, *approximated*, and
+  *exact*, worst first, and says what you can still change about a
+  fallback.
+- **Scamp is now under the Scamp Software License.** Free to use for
+  personal and commercial work, and everything Scamp generates from your
+  designs is yours. The source is published for transparency, not for
+  copying or redistribution. See
+  [LICENSE](https://github.com/scampdesign/scamp/blob/main/LICENSE).
+
 ### 0.8.6 (2026-09-28)
 
 **Changed**
@@ -714,6 +774,9 @@ Everything Scamp does today. Each entry links to its user documentation.
 - Import a live web page as a view, with a report of what the
   translation changed and what it could not carry.
   [Import a page from the web](user_docs/website-import.md)
+- Style part of a text element: select words on the canvas and give them
+  their own color or weight, written as a `<span>`.
+  [Typography](user_docs/typography.md)
 
 ### Output and preview
 

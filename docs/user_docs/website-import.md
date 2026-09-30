@@ -64,15 +64,18 @@ a family on Google Fonts gets one `@import` line in the project's
 named in the report so you can install it. See
 [Typography](typography.md).
 
-**Repeated colors as tokens.** A color the page uses more than once
-becomes a theme token named for its role, such as `--color-accent`, and
-the view references the token. One-off colors stay literal, because a
-theme full of `--color-11` is worse than no theme. A token whose value
-already exists in your theme is reused rather than duplicated. See
-[Design system](design-system.md).
+**Colors, exactly as the page wrote them.** An import writes literal
+color values and doesn't create theme tokens. Deciding which colors your
+project should share is a design decision, and it's yours to make
+against a design you can see — see [Design system](design-system.md) for
+turning values into tokens afterwards.
 
 **Inline markup.** A link or a bold run inside a sentence stays part of
-that sentence, rather than being broken into separate elements.
+that sentence, rather than being broken into separate elements. A word
+the page styled differently — a colored word in a heading, say — arrives
+as a styled run inside the same text element, so the sentence stays one
+element you can edit as a sentence. See
+[Style part of a text element](typography.md#style-part-of-a-text-element).
 
 ## The import report
 
