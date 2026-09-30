@@ -84,17 +84,26 @@ and how many elements it came to. Click **What changed** to open the
 report. Because Scamp brings the main window forward when an import
 lands, switch back to the import window to read it.
 
-Entries are grouped, counted, and sorted so the losses come first:
+Entries are grouped, counted, and sorted worst first, and each is marked
+with how faithfully it survived:
 
-- **`!` a loss.** Something didn't come across, and you might need to
-  rebuild it. A `<canvas>` drawn by script, an embedded frame, a web
-  component Scamp couldn't read into.
-- **`·` a translation.** Something changed shape but nothing changed on
-  screen. A block container became a flex column; a `::before` glyph
-  became a real text element you can edit.
+- **`!` Lost.** It didn't come across, and you might need to rebuild it.
+  A `<canvas>` drawn by script, an embedded frame, a web component Scamp
+  couldn't read into.
+- **`~` Renders, but you can't edit it the way you could on the page.**
+  An icon kept as markup draws perfectly and can't be edited as shapes.
+  These entries also say what you *can* still change.
+- **`≈` Close, but not identical.** A measured size replaced with fill
+  so the design still reflows, or content that fades in on scroll,
+  captured visible.
+- **`·` Exact.** It changed shape and changed nothing you can see. A
+  block container became a flex column; a `::before` glyph became a real
+  text element you can edit.
 
-The report opens on its own whenever there's a loss in it, so a real
-problem is never one click away from being missed.
+The report opens on its own whenever there's a loss *or* a fallback in
+it. A fallback is the one a screenshot will never tell you about — the
+page looks right, and something in it isn't editable the way you'd
+expect.
 
 ## What doesn't come across
 
@@ -107,8 +116,12 @@ problem is never one click away from being missed.
   overrides, but it can't say an element is absent at a narrower width.
   Where the page hid something, the report says so and the element stays
   visible.
-- **Inline SVG as shapes.** An icon is kept as markup, so it renders and
-  keeps its color, but you can't edit its paths on the canvas.
+- **Inline SVG as shapes.** A simple icon is kept as markup, so it
+  renders and still follows the color around it, but you can't edit its
+  paths on the canvas. An icon that uses a gradient, a filter, or a mask
+  is saved as an `.svg` file in your project instead, because that
+  artwork can't survive being rewritten—so it keeps its appearance
+  exactly, and its color is fixed.
 - **Behavior.** Scripts, state, and anything that happens on a click.
   Import brings the design, not the app.
 
