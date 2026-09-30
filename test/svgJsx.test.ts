@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { jsxAttributeName, jsxStyleObject, svgSourceToJsx } from '@lib/svgJsx';
+import { jsxAttributeName, jsxStyleObject, svgSourceToJsx, svgSourceToHtml } from '@lib/svgJsx';
 
 /**
  * Captured SVG markup, made safe for the `.tsx` file it is written into.
@@ -106,5 +106,70 @@ describe('svgSourceToJsx', () => {
 
   it('returns an empty string unchanged', () => {
     expect(svgSourceToJsx('')).toBe('');
+  });
+});
+
+describe('svgSourceToHtml', () => {
+  /**
+   * The inverse. `svgSource` is JSX because it is emitted into a `.tsx`
+   * file, and two consumers are not React — the canvas injects it as
+   * HTML, and `buildHtmlExport` writes it into an HTML document.
+   *
+   * Three bugs came from that one gap: `stopColor` read as `stopcolor`,
+   * camelCase tag names, and `style={{…}}` read as an attribute whose
+   * value is `{{` — which turned every line icon into a solid black
+   * blob. see docs/notes/import-parity-log.md
+   */
+  it('turns a style object back into a style attribute', () => {
+    expect(
+      svgSourceToHtml(`<path style={{ fill: 'none', strokeWidth: '1.6' }} />`)
+    ).toBe('<path style="fill: none; stroke-width: 1.6" />');
+  });
+
+  it('un-camel-cases an attribute name', () => {
+    expect(svgSourceToHtml('<path strokeWidth="2" />')).toBe('<path stroke-width="2" />');
+    expect(svgSourceToHtml('<stop stopColor="#0ACD95" />')).toBe(
+      '<stop stop-color="#0ACD95" />'
+    );
+  });
+
+  it('keeps an attribute that is the same in both', () => {
+    expect(svgSourceToHtml('<path d="M0 0h24" fill="none" />')).toBe(
+      '<path d="M0 0h24" fill="none" />'
+    );
+  });
+
+  it('keeps viewBox, which HTML parses case-insensitively anyway', () => {
+    // `viewbox` is what an HTML parser lowercases it to, and SVG's own
+    // fix-up table restores it. Either spelling renders.
+    expect(svgSourceToHtml('<svg viewBox="0 0 24 24" />')).toContain('0 0 24 24');
+  });
+
+  it('leaves data- and aria- alone', () => {
+    expect(svgSourceToHtml('<path data-x="1" aria-hidden="true" />')).toBe(
+      '<path data-x="1" aria-hidden="true" />'
+    );
+  });
+
+  it('is idempotent, like its inverse', () => {
+    // The canvas converts on every render; converting twice must not
+    // change anything.
+    const once = svgSourceToHtml(`<path style={{ fill: 'none' }} strokeWidth="2" />`);
+    expect(svgSourceToHtml(once)).toBe(once);
+  });
+
+  it('round-trips the line icon that started this', () => {
+    const html = '<path d="M6 11.5a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="1.6"></path>';
+    expect(svgSourceToHtml(svgSourceToJsx(html))).toBe(html);
+  });
+
+  it('drops an empty style rather than leaving a broken attribute', () => {
+    expect(svgSourceToHtml('<path style={{  }} />')).toBe('<path  />');
+  });
+
+  it('keeps a custom property name intact', () => {
+    expect(svgSourceToHtml(`<path style={{ '--x': 'red' }} />`)).toBe(
+      '<path style="--x: red" />'
+    );
   });
 });

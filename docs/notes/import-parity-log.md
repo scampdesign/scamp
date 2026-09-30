@@ -38,7 +38,7 @@ log with no retractions in it is a log nobody is checking.
 
 ---
 
-## DIAGNOSED — line icons import as solid black blobs
+## FIXED — line icons import as solid black blobs
 
 **Measured.** `resova-health6` in the website-import project. Of its 36
 inline svgs: 26 carry a `fill`, **none carries a `stroke`**, and 10 carry
@@ -79,11 +79,36 @@ in HTML *and* in JSX, need no case folding, and keep `currentColor`
 working, so the icons stay recolourable. Measured above as correct in
 both forms.
 
-**The fix behind the fix.** Store `svgSource` as HTML and convert to JSX
-only in the generator, where the output actually is React. Today the
-conversion happens in the reducer and every consumer that is not React
-has to undo it — which none of them does. That would retire this whole
-class rather than its third instance.
+**Fixed, both halves.**
+
+**The capture no longer writes paint inline.** Paint-carrying
+declarations move onto presentation attributes before `svgSource` is
+taken — `fill="none" stroke="currentColor" stroke-width="1.6"` — which
+are valid in HTML *and* in JSX, need no case folding, and keep
+`currentColor` working so the icon stays recolourable. Measured on
+resovaiq.com: 37 svgs captured, **0 still carrying an inline style**.
+Anything that is not paint is left where it was; a transform is not
+this function's business.
+
+**And the class is retired.** `svgSourceToHtml` is the inverse of
+`svgSourceToJsx`, and the two consumers that are not React now use it —
+the canvas's `dangerouslySetInnerHTML` and `generateHtml`'s export.
+
+Storing HTML instead, as first suggested, would have been wrong:
+`svgSource` is JSX *by contract*, because a hand-written `<svg>` in a
+file already contains JSX and has to round-trip byte-for-byte. The gap
+was never the storage, it was two readers pretending JSX was HTML.
+
+The inverse needs a list, which is the part worth knowing. It cannot
+simply un-camel every name: `strokeWidth` came from `stroke-width` and
+must go back, while `viewBox` and `gradientUnits` are spelled that way
+in SVG itself and lowercasing them breaks the attribute. Measured on the
+real markup, before and after:
+
+| | computed fill | computed stroke |
+|---|---|---|
+| JSX injected as HTML | `rgb(0, 0, 0)` | `none` |
+| converted back | `none` | `rgb(8, 145, 178)` |
 
 ---
 

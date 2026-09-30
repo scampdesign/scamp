@@ -5,6 +5,12 @@ import { ROOT_ELEMENT_ID } from '@lib/element';
 import { childBindingKey, expandChildren, resolveAttr, resolveInstanceOverrides, resolveText, } from '@lib/bindingEval';
 import { classNameFor, tagFor } from '@lib/generateCode';
 import { isStyled, runClassName, runInlineStyle, runsOf, textFromRuns } from '@lib/textRuns';
+// `svgSource` is JSX, because it is emitted into a .tsx file. The canvas
+// is not React here — it injects the string as HTML — so it has to be
+// converted back, or `style={{…}}` is an attribute named `style` whose
+// value is `{{` and every line icon renders as a solid black blob.
+// see docs/notes/import-parity-log.md
+import { svgSourceToHtml } from '@lib/svgJsx';
 import { selectionOffsetsWithin } from './textSelectionOffsets';
 import { instanceClassPrefix } from '@lib/generateHtml';
 import { CANVAS_SKIP_ATTRS_BY_TAG, canvasRenderTag, elementToStyle, } from '@lib/elementToStyle';
@@ -179,7 +185,7 @@ row = null) => {
             ...props,
             key: element.id,
             dangerouslySetInnerHTML: {
-                __html: sanitizeSvgInner(element.svgSource ?? ''),
+                __html: sanitizeSvgInner(svgSourceToHtml(element.svgSource ?? '')),
             },
         });
     }
@@ -840,7 +846,7 @@ export const ElementRenderer = ({ elementId, row }) => {
         return createElement('svg', {
             ...props,
             dangerouslySetInnerHTML: {
-                __html: sanitizeSvgInner(element.svgSource ?? ''),
+                __html: sanitizeSvgInner(svgSourceToHtml(element.svgSource ?? '')),
             },
         });
     }

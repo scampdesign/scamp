@@ -103,3 +103,100 @@ const convertTag = (tag: string): string =>
  */
 export const svgSourceToJsx = (source: string): string =>
   source.replace(/<[A-Za-z][^>]*>/g, (tag) => convertTag(tag));
+
+/**
+ * SVG attributes that are genuinely camelCase IN THE MARKUP.
+ *
+ * The inverse of `jsxAttributeName` cannot simply un-camel every name:
+ * `strokeWidth` came from `stroke-width` and has to go back, but
+ * `viewBox` and `gradientUnits` are spelled that way in SVG itself and
+ * lowercasing them breaks the attribute. The rule needs to know which
+ * is which, and only a list can tell it.
+ */
+const CAMEL_SVG_ATTRIBUTES: ReadonlySet<string> = new Set([
+  'viewBox', 'preserveAspectRatio', 'gradientTransform', 'gradientUnits',
+  'patternUnits', 'patternContentUnits', 'patternTransform', 'spreadMethod',
+  'textLength', 'lengthAdjust', 'markerWidth', 'markerHeight', 'markerUnits',
+  'refX', 'refY', 'clipPathUnits', 'maskUnits', 'maskContentUnits',
+  'filterUnits', 'primitiveUnits', 'startOffset', 'pathLength',
+  'baseFrequency', 'numOctaves', 'stitchTiles', 'xChannelSelector',
+  'yChannelSelector', 'tableValues', 'kernelMatrix', 'diffuseConstant',
+  'specularConstant', 'specularExponent', 'surfaceScale', 'stdDeviation',
+  'attributeName', 'repeatCount', 'keyTimes', 'keySplines', 'calcMode',
+]);
+
+/** React spellings that are NOT camelCase in HTML. */
+const HTML_SPELLING: Readonly<Record<string, string>> = {
+  className: 'class',
+  htmlFor: 'for',
+  dateTime: 'datetime',
+  tabIndex: 'tabindex',
+  readOnly: 'readonly',
+  maxLength: 'maxlength',
+  colSpan: 'colspan',
+  rowSpan: 'rowspan',
+};
+
+/** The inverse of `jsxAttributeName`. `strokeWidth` → `stroke-width`. */
+const htmlAttributeName = (name: string): string => {
+  const spelled = HTML_SPELLING[name];
+  if (spelled !== undefined) return spelled;
+  if (CAMEL_SVG_ATTRIBUTES.has(name)) return name;
+  if (name.startsWith('data-') || name.startsWith('aria-')) return name;
+  // Already hyphenated or a single lowercase word: nothing to undo.
+  if (!/[A-Z]/.test(name)) return name;
+  return name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+};
+
+/** `{{ fill: 'none', strokeWidth: '2' }}` → `fill: none; stroke-width: 2`. */
+const htmlStyleString = (expression: string): string => {
+  const body = expression.replace(/^\{\{/, '').replace(/\}\}$/, '');
+  const out: string[] = [];
+  for (const pair of body.matchAll(
+    /(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][\w$]*))\s*:\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")/g
+  )) {
+    const key = pair[1] ?? pair[2] ?? pair[3] ?? '';
+    const value = (pair[4] ?? pair[5] ?? '').replace(/\\(['"\\])/g, '$1');
+    if (key.length === 0) continue;
+    const prop = key.startsWith('--') ? key : htmlAttributeName(key);
+    out.push(`${prop}: ${value}`);
+  }
+  return out.join('; ');
+};
+
+const convertTagToHtml = (tag: string): string =>
+  tag
+    // `style={{ … }}` first: its value contains quotes and colons that
+    // the attribute pattern below would misread.
+    .replace(/\bstyle\s*=\s*\{\{[\s\S]*?\}\}/g, (whole) => {
+      const declarations = htmlStyleString(whole.slice(whole.indexOf('{')));
+      return declarations.length === 0 ? '' : `style="${declarations.replace(/"/g, '&quot;')}"`;
+    })
+    .replace(ATTRIBUTE, (whole, rawName: string, rawValue: string) => {
+      if (rawValue.startsWith('{')) return whole;
+      const quoted = rawValue.startsWith('"') || rawValue.startsWith("'");
+      const value = quoted ? rawValue.slice(1, -1) : rawValue;
+      return `${htmlAttributeName(rawName)}="${value.replace(/"/g, '&quot;')}"`;
+    });
+
+/**
+ * Convert JSX SVG markup back to HTML.
+ *
+ * `svgSource` is stored as JSX because it is emitted into a `.tsx` file
+ * and a hand-written `<svg>` already contains JSX — that is the contract
+ * the field promises. But TWO consumers are not React: the canvas
+ * injects it with `dangerouslySetInnerHTML`, and `buildHtmlExport`
+ * writes it into an HTML document. Both were rendering JSX as HTML,
+ * where it silently means something else.
+ *
+ * Three bugs came from that one gap, each found separately: `stopColor`
+ * read as `stopcolor` and gradients rendered black; camelCase tag names,
+ * saved only by the HTML parser's own fix-up table; and `style={{ … }}`
+ * read as an attribute whose value is `{{`, which turned every line icon
+ * into a solid black blob.
+ *
+ * Idempotent, like its inverse: markup that is already HTML comes back
+ * unchanged. see docs/notes/import-parity-log.md
+ */
+export const svgSourceToHtml = (source: string): string =>
+  source.replace(/<[A-Za-z][^>]*>/g, (tag) => convertTagToHtml(tag));

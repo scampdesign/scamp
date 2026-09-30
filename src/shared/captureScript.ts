@@ -227,6 +227,66 @@ export const captureFn = (policy: CapturePolicy): CapturePayload => {
   };
 
   /**
+   * An svg's inner markup with paint moved OUT of inline `style` and
+   * onto presentation attributes.
+   *
+   * A line icon carries its paint inline —
+   * `style="fill:none;stroke:currentColor;stroke-width:1.6"` — and that
+   * string cannot survive the trip. `svgSource` is emitted into a `.tsx`
+   * file, so it is converted to JSX, where `style` becomes an OBJECT;
+   * the canvas and the HTML exporter then render that string as HTML,
+   * where `style={{…}}` is an attribute whose value is `{{` and is
+   * discarded. The path falls back to the SVG default — fill black, no
+   * stroke — which is a line icon imported as a solid blob.
+   *
+   * Presentation attributes have no such problem: `fill="none"` is
+   * valid in HTML and in JSX, needs no case folding, and keeps
+   * `currentColor` working, so the icon stays recolourable rather than
+   * becoming a flat picture.
+   *
+   * Only paint is moved. Anything else in the style is left where it is
+   * — a transform or an opacity is not this function's business, and
+   * guessing would be a second bug.
+   * see docs/notes/import-parity-log.md
+   */
+  const svgPaintAsAttributes = (svg: Element): string => {
+    const PAINT = [
+      'fill',
+      'stroke',
+      'stroke-width',
+      'stroke-linecap',
+      'stroke-linejoin',
+      'stroke-dasharray',
+      'stroke-opacity',
+      'fill-opacity',
+      'fill-rule',
+      'clip-rule',
+      'stop-color',
+      'stop-opacity',
+    ];
+    const clone = svg.cloneNode(true) as Element;
+    for (const node of [clone, ...Array.from(clone.querySelectorAll('*'))]) {
+      const style = node.getAttribute('style');
+      if (style === null || style.length === 0) continue;
+      const kept: string[] = [];
+      for (const part of style.split(';')) {
+        const at = part.indexOf(':');
+        if (at < 0) continue;
+        const prop = part.slice(0, at).trim().toLowerCase();
+        const value = part.slice(at + 1).trim();
+        if (prop.length === 0 || value.length === 0) continue;
+        // An inline style beats a presentation attribute in the
+        // cascade, so it wins here too.
+        if (PAINT.includes(prop)) node.setAttribute(prop, value);
+        else kept.push(`${prop}: ${value}`);
+      }
+      if (kept.length > 0) node.setAttribute('style', kept.join('; '));
+      else node.removeAttribute('style');
+    }
+    return clone.innerHTML;
+  };
+
+  /**
    * Keep one inset per axis on a positioned element.
    *
    * Insets read back as USED values, so `position: absolute; left: 0`
@@ -592,7 +652,7 @@ export const captureFn = (policy: CapturePolicy): CapturePayload => {
     // preserved, it just isn't editable as elements.
     let svgSource: string | null = null;
     if (tag === 'svg') {
-      svgSource = el.innerHTML;
+      svgSource = svgPaintAsAttributes(el);
       for (const name of ['viewBox', 'fill', 'stroke', 'stroke-width', 'xmlns']) {
         const value = el.getAttribute(name);
         if (value !== null) attrs[name] = value;

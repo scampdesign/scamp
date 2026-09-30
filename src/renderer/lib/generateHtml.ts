@@ -17,6 +17,7 @@
  * see docs/plans/html-export-plan.md
  */
 
+import { svgSourceToHtml } from './svgJsx';
 import { type ScampElement } from './element';
 import { sizeDeclarationLines } from './generateCode/declarations';
 import { classNameFor, escapeHtml, tagFor } from './generateCode/internal';
@@ -246,7 +247,12 @@ const renderElement = (
   }
 
   if (tag === 'svg') {
-    const source = el.svgSource ?? '';
+    // `svgSource` is stored as JSX, because it is emitted into a .tsx
+    // file. This is an HTML document, where `style={{…}}` is an
+    // attribute whose value is `{{` and `stopColor` lowercases to
+    // nothing — so it is converted back.
+    // see docs/notes/import-parity-log.md
+    const source = svgSourceToHtml(el.svgSource ?? '');
     return source.length === 0
       ? `${indent(level)}${open}></${tag}>`
       : `${indent(level)}${open}>${source}</${tag}>`;
