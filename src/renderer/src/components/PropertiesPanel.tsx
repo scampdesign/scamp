@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ChecksSection } from './projectShell/ChecksSection';
 import { useCanvasStore } from '@store/canvasSlice';
 import { PanelHeader } from './PanelHeader';
 import { PanelModeToggle } from './PanelModeToggle';
@@ -78,6 +79,9 @@ export const PropertiesPanel = ({
         data-panel-mode="empty"
       >
         <div className={styles.emptyBody}>
+          {/* Before Routes: what is WRONG with the open view outranks
+              what it is wired to. see ChecksSection.tsx */}
+          <ChecksSection />
           {routesSection}
           {isComponentEditing && (
             <div data-testid="view-data-section">

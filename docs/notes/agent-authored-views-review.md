@@ -152,10 +152,16 @@ is the `rendered-fallback` problem again, one level up.
 
 ## What I would do
 
-1. **Surface `lintView` in the app.** The findings already exist and
-   already name the element and the fix. A badge on a view that has
-   undeclared tokens would have caught this on screen one instead of
-   screen sixty. This is the highest-value change and the smallest.
+1. ~~**Surface `lintView` in the app.**~~ **Done.** A **Checks**
+   section now sits at the top of the view-level properties panel — the
+   panel you see with nothing selected — grouped by kind, worst first,
+   with the hint said once per group and each finding clickable to
+   select the element it is on. It carries a count badge and is open by
+   default, because a collapsed warning is one nobody reads.
+
+   It is **absent entirely** when a view is clean, which an e2e control
+   case asserts: a section that is always on screen is chrome nobody
+   reads on the day it finally has something to say.
 2. **Make the canvas render an undeclared token visibly wrong**, or at
    least report it — silently falling back to black is what let 6,339 of
    these accumulate. A missing token is a mistake; it should not look

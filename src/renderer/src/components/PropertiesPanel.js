@@ -1,4 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { ChecksSection } from './projectShell/ChecksSection';
 import { useCanvasStore } from '@store/canvasSlice';
 import { PanelHeader } from './PanelHeader';
 import { PanelModeToggle } from './PanelModeToggle';
@@ -38,7 +39,7 @@ export const PropertiesPanel = ({ routesSection, migrationNotice, }) => {
     // as a reference the user can open. Visual and CSS are element-level
     // and have nothing to say here, so the mode toggle stays out of it.
     if (!selectedId) {
-        return (_jsx("aside", { className: styles.panel, "data-testid": "properties-panel", "data-panel-mode": "empty", children: _jsxs("div", { className: styles.emptyBody, children: [routesSection, isComponentEditing && (_jsx("div", { "data-testid": "view-data-section", children: _jsx(Section, { title: "Data", collapsible: true, defaultOpen: false, count: dataCount, children: _jsx(ViewDataSection, {}) }) })), migrationNotice, _jsx(Section, { title: "Keyboard Shortcuts", collapsible: true, defaultOpen: false, children: _jsx(ShortcutsTable, {}) })] }) }));
+        return (_jsx("aside", { className: styles.panel, "data-testid": "properties-panel", "data-panel-mode": "empty", children: _jsxs("div", { className: styles.emptyBody, children: [_jsx(ChecksSection, {}), routesSection, isComponentEditing && (_jsx("div", { "data-testid": "view-data-section", children: _jsx(Section, { title: "Data", collapsible: true, defaultOpen: false, count: dataCount, children: _jsx(ViewDataSection, {}) }) })), migrationNotice, _jsx(Section, { title: "Keyboard Shortcuts", collapsible: true, defaultOpen: false, children: _jsx(ShortcutsTable, {}) })] }) }));
     }
     return (_jsxs("aside", { className: styles.panel, "data-testid": "properties-panel", "data-panel-mode": panelMode, children: [_jsx(PanelHeader, {}), _jsx(PanelModeToggle, {}), panelMode === 'ui' && _jsx(StateSwitcher, {}), panelMode === 'data' ? (_jsx(DataPanel, {})) : panelMode === 'ui' ? (_jsx(UiPanel, {})) : (_jsx(CssPanel, {}))] }));
 };
