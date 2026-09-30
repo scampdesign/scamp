@@ -22,6 +22,19 @@ release time.
 
 ## Releases
 
+### 0.8.8 (2026-09-30)
+
+**Fixed**
+
+- **Imported line icons keep their outline and their color.** An icon
+  drawn as strokes rather than fills — most icon sets — arrived as a
+  solid black shape. Scamp writes an imported icon's markup into your
+  `.tsx` file, which means converting it to JSX, and the canvas and the
+  HTML export were then reading that JSX as HTML, where the icon's paint
+  means nothing and it falls back to a black fill. Icons now keep their
+  paint in a form both can read, and existing imported pages render
+  correctly without being imported again.
+
 ### 0.8.7 (2026-09-30)
 
 **Added**
