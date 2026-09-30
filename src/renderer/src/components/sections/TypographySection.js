@@ -119,7 +119,17 @@ export const TypographySection = ({ elementId }) => {
             'letter-spacing',
         ], children: [_jsx(Row, { label: "", children: _jsx(FontPicker, { value: element.fontFamily ?? '', fonts: allFonts, fontTokens: fontFamilyTokens, onChange: (value) => patchElement(elementId, {
                         fontFamily: value.length > 0 ? value : undefined,
-                    }), title: "Font family" }) }), _jsxs(Row, { label: "", children: [_jsx(TokenOrNumberInput, { prefix: "Sz", title: "Font size", value: element.fontSize, tokens: fontSizeTokens, defaultUnit: "px", onChange: (value) => patchElement(elementId, { fontSize: value }), onOpenTheme: onOpenTheme, placeholder: "auto" }), _jsx(WeightSelect, { value: String(element.fontWeight ?? 400), onChange: (value) => {
+                    }), title: "Font family" }) }), _jsxs(Row, { label: "", children: [_jsx(TokenOrNumberInput, { prefix: "Sz", title: "Font size", value: element.fontSize, tokens: fontSizeTokens, defaultUnit: "px", onChange: (value) => patchElement(elementId, { fontSize: value }), onOpenTheme: onOpenTheme, placeholder: "auto" }), _jsx(WeightSelect
+                    // The SELECTION's weight when a range is selected, so the
+                    // control shows what it is about to change. Empty for a
+                    // mixed range rather than one run's answer.
+                    , { 
+                        // The SELECTION's weight when a range is selected, so the
+                        // control shows what it is about to change. Empty for a
+                        // mixed range rather than one run's answer.
+                        value: rangeStyle?.mixed.includes('fontWeight')
+                            ? ''
+                            : String(rangeStyle?.shared.fontWeight ?? element.fontWeight ?? 400), onChange: (value) => {
                             const n = Number(value);
                             if (!isFontWeight(n))
                                 return;

@@ -198,7 +198,14 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
           placeholder="auto"
         />
         <WeightSelect
-          value={String(element.fontWeight ?? 400)}
+          // The SELECTION's weight when a range is selected, so the
+          // control shows what it is about to change. Empty for a
+          // mixed range rather than one run's answer.
+          value={
+            rangeStyle?.mixed.includes('fontWeight')
+              ? ''
+              : String(rangeStyle?.shared.fontWeight ?? element.fontWeight ?? 400)
+          }
           onChange={(value) => {
             const n = Number(value);
             if (!isFontWeight(n)) return;

@@ -93,7 +93,13 @@ export const createSelectionSlice: StateCreator<
   setTool: (tool) => set({ activeTool: tool }),
 
   selectElement: (id) =>
-    set({ selectedElementIds: id === null ? [] : [id] }),
+    set((state) => ({
+      selectedElementIds: id === null ? [] : [id],
+      // Selecting something else drops the range. Without this a stale
+      // selection styles words the user is no longer looking at, the
+      // next time they touch a control.
+      textSelection: id === state.textSelection?.elementId ? state.textSelection : null,
+    })),
 
   toggleSelectElement: (id) =>
     set((state) => {
@@ -107,9 +113,19 @@ export const createSelectionSlice: StateCreator<
     }),
 
   setEditingElement: (id) =>
-    // A new edit target invalidates the old selection — offsets into
-    // one element's text mean nothing in another's.
-    set({ editingElementId: id, textSelection: null }),
+    set((state) => ({
+      editingElementId: id,
+      // LEAVING edit mode keeps the selection, because reaching the
+      // properties panel IS leaving edit mode: clicking a control
+      // blurs the contentEditable. Clearing here meant selecting a
+      // word and clicking Bold emboldened the whole element, since the
+      // range was gone before the control fired.
+      //
+      // Moving to a DIFFERENT element still clears it — offsets into
+      // one element's text mean nothing in another's.
+      textSelection:
+        id === null || id === state.textSelection?.elementId ? state.textSelection : null,
+    })),
 
   setTextSelection: (selection) => set({ textSelection: selection }),
 

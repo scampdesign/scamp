@@ -107,3 +107,56 @@ describe('textSelection', () => {
     expect(useCanvasStore.getState().textSelection).toBeNull();
   });
 });
+
+describe('the selection outlives leaving edit mode', () => {
+  /**
+   * Reported: selecting a word and clicking Bold in the panel emboldened
+   * the WHOLE element.
+   *
+   * Clicking a panel control blurs the contentEditable, which ends edit
+   * mode — and ending edit mode cleared the selection, so by the time
+   * the control fired there was no range left and it fell back to the
+   * element. The selection has to survive the blur, because reaching the
+   * panel IS a blur.
+   */
+  beforeEach(() => seed('make this bold'));
+
+  it('survives leaving edit mode, which is how the panel is reached', () => {
+    useCanvasStore.getState().setTextSelection({ elementId: 't1', start: 10, end: 14 });
+    useCanvasStore.getState().setEditingElement(null);
+    expect(useCanvasStore.getState().textSelection).toEqual({
+      elementId: 't1',
+      start: 10,
+      end: 14,
+    });
+  });
+
+  it('is still there to style after the blur', () => {
+    useCanvasStore.getState().setTextSelection({ elementId: 't1', start: 10, end: 14 });
+    useCanvasStore.getState().setEditingElement(null);
+    const range = useCanvasStore.getState().textSelection;
+    expect(range).not.toBeNull();
+    useCanvasStore
+      .getState()
+      .styleTextRange('t1', range!.start, range!.end, { fontWeight: 700 });
+    expect(useCanvasStore.getState().elements['t1']?.runs).toEqual([
+      { text: 'make this ' },
+      { text: 'bold', style: { fontWeight: 700 } },
+    ]);
+  });
+
+  it('still clears when a DIFFERENT element is edited', () => {
+    // Offsets into one element's text mean nothing in another's.
+    useCanvasStore.getState().setTextSelection({ elementId: 't1', start: 0, end: 4 });
+    useCanvasStore.getState().setEditingElement('other');
+    expect(useCanvasStore.getState().textSelection).toBeNull();
+  });
+
+  it('clears when another element is selected on the canvas', () => {
+    // Otherwise a stale range styles words the user is no longer
+    // looking at, the next time they touch a control.
+    useCanvasStore.getState().setTextSelection({ elementId: 't1', start: 0, end: 4 });
+    useCanvasStore.getState().selectElement('other');
+    expect(useCanvasStore.getState().textSelection).toBeNull();
+  });
+});

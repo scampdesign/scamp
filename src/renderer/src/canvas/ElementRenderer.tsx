@@ -891,8 +891,10 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
     // exists — so committing on every blur would strip the styling off
     // any sentence the user merely clicked into.
     if (next !== textFromRuns(runs)) setElementText(element.id, next);
+    // The selection is deliberately NOT cleared. Blurring is how the
+    // properties panel is reached, and a control that fires with no
+    // range falls back to styling the whole element.
     setEditingElement(null);
-    setTextSelection(null);
   };
 
   /**
