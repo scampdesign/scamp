@@ -38,6 +38,55 @@ log with no retractions in it is a log nobody is checking.
 
 ---
 
+## DIAGNOSED — line icons import as solid black blobs
+
+**Measured.** `resova-health6` in the website-import project. Of its 36
+inline svgs: 26 carry a `fill`, **none carries a `stroke`**, and 10 carry
+no paint at all. Those 10 are the line icons, and each one's paths hold
+their paint inline:
+
+```jsx
+<path d="M6 11.5a6 6 0 0 0 12 0…" style={{ fill: 'none', stroke: 'currentcolor', strokeWidth: '1.6' }} />
+```
+
+**Cause.** `style={{ … }}` is JSX. The canvas injects `svgSource` as
+HTML through `dangerouslySetInnerHTML`, and `buildHtmlExport` writes it
+into an HTML document — and in HTML that is an attribute named `style`
+whose value is `{{`, which is not CSS and is discarded. The path then
+takes the SVG default: **fill black, no stroke.** Measured on the real
+markup:
+
+| form | computed fill | computed stroke |
+|---|---|---|
+| JSX style object — what we write | `rgb(0, 0, 0)` | `none` |
+| HTML `style` attribute | `none` | `rgb(8, 145, 178)` |
+| presentation attributes | `none` | `rgb(8, 145, 178)` |
+
+**This is the third instance of one class of bug**, and that is the
+finding worth keeping. `svgSource` is stored in JSX spelling and then
+rendered as HTML in two places that are not React:
+
+1. `stopColor` → `stopcolor`, gradients rendered black
+   ([import-svg-as-file.md](import-svg-as-file.md))
+2. camelCase SVG tag names, saved by the HTML parser's own fix-up table
+   — which is why the markup *looked* right and only the paint was wrong
+3. `style={{ … }}` → an inert attribute, line icons rendered black
+
+**Suggested fix, smallest first.** Convert paint-carrying inline styles
+into presentation ATTRIBUTES at reduce time —
+`fill="none" stroke="currentColor" stroke-width="1.6"`. Those are valid
+in HTML *and* in JSX, need no case folding, and keep `currentColor`
+working, so the icons stay recolourable. Measured above as correct in
+both forms.
+
+**The fix behind the fix.** Store `svgSource` as HTML and convert to JSX
+only in the generator, where the output actually is React. Today the
+conversion happens in the reducer and every consumer that is not React
+has to undo it — which none of them does. That would retire this whole
+class rather than its third instance.
+
+---
+
 ## FIXED — insets: a hidden skip link painted a bar down the page
 
 **Measured.** gainwix.com hides its "Skip to content" link the ordinary
