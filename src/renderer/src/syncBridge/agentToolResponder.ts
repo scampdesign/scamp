@@ -1,5 +1,6 @@
 import {
   addElement,
+  deleteElement,
   moveElement,
   setAttributes,
   setStyles,
@@ -35,6 +36,7 @@ const EDITS: Readonly<Record<string, Edit>> = {
   scamp_set_attributes: (ctx, a) => setAttributes(ctx, { element: a['element'], attributes: a['attributes'] }),
   scamp_move_element: (ctx, a) => moveElement(ctx, { ...a, element: a['element'], parent: a['parent'] }),
   scamp_wrap_elements: (ctx, a) => wrapElements(ctx, { ...a, elements: a['elements'] }),
+  scamp_delete_element: (ctx, a) => deleteElement(ctx, { element: a['element'] }),
 };
 
 export type AgentEditAnswer = { ok: boolean; text: string; summary?: string };

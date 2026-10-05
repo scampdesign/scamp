@@ -1,0 +1,20 @@
+/**
+ * When the Scamp Agent stops and asks before editing.
+ *
+ * Deterministic, in the harness, not left to the model: a destructive edit
+ * always asks, and so does a burst of edits big enough that the user
+ * should see the list before it lands. The model is also told to describe
+ * and ask first for large changes; this is what holds when it doesn't.
+ * see docs/plans/builtin-agent-plan.md
+ */
+/** Edits that always ask. */
+export declare const ALWAYS_CONFIRM: ReadonlySet<string>;
+/** More edits than this in one reply, and the reply asks first. */
+export declare const BATCH_LIMIT = 5;
+export type ToolCall = {
+    name: string;
+    input: unknown;
+};
+export declare const needsConfirmation: (calls: ReadonlyArray<ToolCall>) => boolean;
+/** One edit, said as the confirmation card lists it. */
+export declare const describeToolCall: ({ name, input }: ToolCall) => string;

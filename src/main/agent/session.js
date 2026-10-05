@@ -1,4 +1,6 @@
+import { describeToolCall, needsConfirmation } from './confirmPolicy';
 import { runTurn } from './harness';
+import { WRITE_TOOL_NAMES } from './writeTools';
 /** The user's words, with the lines Scamp adds in front of them. */
 export const userContentFor = (text, context, note = null) => {
     const lines = [
@@ -12,6 +14,9 @@ export const createAgentSession = (deps) => {
     let inFlight = null;
     let generation = 0;
     let pendingNote = null;
+    /** Confirmations waiting on the user, by id. */
+    const waiting = new Map();
+    let confirmCounter = 0;
     return {
         send: async (text, context, turnId) => {
             if (inFlight !== null) {
@@ -47,6 +52,24 @@ export const createAgentSession = (deps) => {
                         effort: 'medium',
                         signal: controller.signal,
                         emit: (event) => deps.emit({ ...event, turnId }),
+                        review: async (calls) => {
+                            if (!needsConfirmation(calls))
+                                return true;
+                            if (controller.signal.aborted)
+                                return false;
+                            confirmCounter += 1;
+                            const confirmId = `${turnId}:confirm_${confirmCounter}`;
+                            const items = calls.filter((c) => WRITE_TOOL_NAMES.has(c.name)).map(describeToolCall);
+                            deps.emit({ kind: 'confirm-request', turnId, confirmId, items });
+                            const approved = await new Promise((resolve) => {
+                                waiting.set(confirmId, resolve);
+                                // Stop and New conversation decline anything still asked.
+                                controller.signal.addEventListener('abort', () => resolve(false), { once: true });
+                            });
+                            waiting.delete(confirmId);
+                            deps.emit({ kind: 'confirm-resolved', turnId, confirmId, approved });
+                            return approved;
+                        },
                     });
                     // A reset during the turn started a new conversation; this turn's
                     // history belongs to the old one.
@@ -91,6 +114,9 @@ export const createAgentSession = (deps) => {
             pendingNote = null;
         },
         isBusy: () => inFlight !== null,
+        answer: (confirmId, approved) => {
+            waiting.get(confirmId)?.(approved);
+        },
         noteNextTurn: (note) => {
             pendingNote = note;
         },

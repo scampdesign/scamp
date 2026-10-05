@@ -51,6 +51,19 @@ const reduceAssistant = (entry, event) => {
                             : call),
                     }),
             };
+        case 'confirm-request':
+            return {
+                ...entry,
+                progress: '',
+                parts: [...entry.parts, { kind: 'confirm', id: event.confirmId, items: event.items, state: 'pending' }],
+            };
+        case 'confirm-resolved':
+            return {
+                ...entry,
+                parts: entry.parts.map((part) => part.kind === 'confirm' && part.id === event.confirmId
+                    ? { ...part, state: event.approved ? 'approved' : 'declined' }
+                    : part),
+            };
         case 'turn-end':
             return {
                 ...entry,
@@ -90,6 +103,7 @@ const TOOL_LABELS = {
     scamp_set_attributes: 'Edit attributes',
     scamp_move_element: 'Move an element',
     scamp_wrap_elements: 'Wrap elements',
+    scamp_delete_element: 'Delete an element',
 };
 export const toolLabel = (name) => TOOL_LABELS[name] ?? name.replace(/^scamp_/, '').replace(/_/g, ' ');
 /**

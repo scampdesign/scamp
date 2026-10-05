@@ -10,7 +10,7 @@ import postcss from 'postcss';
 import { DESKTOP_BREAKPOINT_ID } from '@shared/types';
 import { patchClassBlock } from '@shared/patchClass';
 import { ROOT_ELEMENT_ID } from './element';
-import { generateElementId, groupSiblings, reorderElementPure, slugifyName, } from './element/tree';
+import { generateElementId, groupSiblings, removeSubtree, reorderElementPure, slugifyName, } from './element/tree';
 import { TAG_OPTIONS } from './elementTags';
 import { classNameFor, generateCode } from './generateCode';
 import { parseCode } from './parseCode';
@@ -409,5 +409,22 @@ export const wrapElements = (ctx, args) => {
         summary: `Wrapped ${ids.length} element${ids.length === 1 ? '' : 's'} in ${wrapper ? classNameFor(wrapper) : groupId}`,
         touched: [groupId, ...ids],
         notes,
+    };
+};
+/** Remove an element and everything inside it. The harness confirms first. */
+export const deleteElement = (ctx, args) => {
+    const el = resolveElement(ctx, args.element);
+    if (el === null)
+        return fail(notFound(args.element));
+    const removed = removeSubtree(ctx.elements, el.id);
+    if (removed === null)
+        return fail('The root can’t be deleted.');
+    const inside = removed.removed.size - 1;
+    return {
+        ok: true,
+        elements: removed.elements,
+        summary: `Deleted ${classNameFor(el)}${inside > 0 ? ` and ${inside} element${inside === 1 ? '' : 's'} inside it` : ''}`,
+        touched: [el.id, ...(el.parentId !== null ? [el.parentId] : [])],
+        notes: [],
     };
 };

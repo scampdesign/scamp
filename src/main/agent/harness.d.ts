@@ -35,6 +35,14 @@ export type RunTurnOptions = {
     emit: (event: HarnessEvent) => void;
     /** Model calls allowed for one user message. */
     maxSteps?: number;
+    /**
+     * Asked before a reply's tools run. Resolves false when the user
+     * declines; omitted means everything runs.
+     */
+    review?: (calls: ReadonlyArray<{
+        name: string;
+        input: unknown;
+    }>) => Promise<boolean>;
 };
 export type RunTurnResult = {
     history: BetaMessageParam[];

@@ -141,6 +141,9 @@ export const registerAgentIpc = () => {
         // A new conversation gets its own restore point.
         forgetRestorePoint();
     });
+    ipcMain.handle(IPC.AgentConfirm, async (_e, args) => {
+        session?.agent.answer(args.confirmId, args.approved === true);
+    });
     ipcMain.handle(IPC.AgentUndoSession, async (_e, args) => {
         const current = session;
         if (current === null || current.projectPath !== args.projectPath || current.snapshotId === null) {

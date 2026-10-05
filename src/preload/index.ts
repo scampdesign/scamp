@@ -441,6 +441,8 @@ const api = {
   agentReset: (): Promise<void> => ipcRenderer.invoke(IPC.AgentReset),
   agentUndoSession: (args: { projectPath: string }): Promise<AgentUndoSessionResult> =>
     ipcRenderer.invoke(IPC.AgentUndoSession, args),
+  agentConfirm: (args: { confirmId: string; approved: boolean }): Promise<void> =>
+    ipcRenderer.invoke(IPC.AgentConfirm, args),
   onAgentEvent: (handler: (event: AgentEvent) => void): (() => void) => {
     const listener = (_e: unknown, event: AgentEvent): void => handler(event);
     ipcRenderer.on(IPC.AgentEvent, listener);

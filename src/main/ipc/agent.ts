@@ -176,6 +176,10 @@ export const registerAgentIpc = (): void => {
     forgetRestorePoint();
   });
 
+  ipcMain.handle(IPC.AgentConfirm, async (_e, args: { confirmId: string; approved: boolean }): Promise<void> => {
+    session?.agent.answer(args.confirmId, args.approved === true);
+  });
+
   ipcMain.handle(
     IPC.AgentUndoSession,
     async (_e, args: { projectPath: string }): Promise<AgentUndoSessionResult> => {

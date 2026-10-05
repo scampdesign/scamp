@@ -100,6 +100,16 @@ export const WRITE_TOOLS = [
         },
     },
     {
+        name: 'scamp_delete_element',
+        description: 'Delete an element and everything inside it. Scamp always asks the user to confirm first; if they decline, the result says so — ask what they want instead of retrying.',
+        input_schema: {
+            type: 'object',
+            properties: { element },
+            required: ['element'],
+            additionalProperties: false,
+        },
+    },
+    {
         name: 'scamp_wrap_elements',
         description: 'Wrap sibling elements in a new container, optionally with a tag, a name, and CSS — e.g. to group a heading and its text in a header with display: flex.',
         eager_input_streaming: true,

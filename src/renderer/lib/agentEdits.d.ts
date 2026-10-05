@@ -79,4 +79,8 @@ export declare const wrapElements: (ctx: AgentEditContext, args: {
     css?: unknown;
     name?: unknown;
 }) => AgentEditResult;
+/** Remove an element and everything inside it. The harness confirms first. */
+export declare const deleteElement: (ctx: AgentEditContext, args: {
+    element: unknown;
+}) => AgentEditResult;
 export {};

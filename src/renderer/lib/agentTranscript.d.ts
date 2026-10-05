@@ -19,6 +19,13 @@ export type TranscriptPart = {
 } | {
     kind: 'tools';
     calls: TranscriptToolCall[];
+}
+/** Edits waiting on the user's say-so, and what they said. */
+ | {
+    kind: 'confirm';
+    id: string;
+    items: string[];
+    state: 'pending' | 'approved' | 'declined';
 };
 export type TranscriptEntry = {
     role: 'user';

@@ -25,7 +25,13 @@ const fakeInvoke = (calls: string[] = []): ToolInvoker => async (name, args) => 
 
 const run = async (
   script: ScriptedTurn[],
-  over: { history?: BetaMessageParam[]; invoke?: ToolInvoker; maxSteps?: number; signal?: AbortSignal } = {}
+  over: {
+    history?: BetaMessageParam[];
+    invoke?: ToolInvoker;
+    maxSteps?: number;
+    signal?: AbortSignal;
+    review?: () => Promise<boolean>;
+  } = {}
 ): Promise<{ result: Awaited<ReturnType<typeof runTurn>>; events: HarnessEvent[] }> => {
   const events: HarnessEvent[] = [];
   const result = await runTurn({
@@ -39,6 +45,7 @@ const run = async (
     signal: over.signal ?? new AbortController().signal,
     emit: (e) => events.push(e),
     ...(over.maxSteps !== undefined ? { maxSteps: over.maxSteps } : {}),
+    ...(over.review !== undefined ? { review: over.review } : {}),
   });
   return { result, events };
 };
@@ -182,6 +189,42 @@ describe('runTurn', () => {
   });
 });
 
+describe('runTurn with a review', () => {
+  it('runs nothing the user declined, tells the model, and carries on', async () => {
+    const calls: string[] = [];
+    const { result } = await run(
+      [
+        { content: [{ type: 'tool_use', name: 'scamp_get_element_tree', input: {} }] },
+        { content: [{ type: 'echo_tool_result' }] },
+      ],
+      { invoke: fakeInvoke(calls), review: async () => false }
+    );
+    expect(calls).toEqual([]);
+    expect(result.outcome).toBe('done');
+    const declined = result.history[2]?.content;
+    expect(Array.isArray(declined) && declined[0]?.type === 'tool_result' && declined[0].is_error).toBe(true);
+    // The model saw why.
+    const last = result.history.at(-1)?.content;
+    expect(JSON.stringify(last)).toContain('declined');
+  });
+
+  it('ends cancelled, with a valid history, when stopped while asking', async () => {
+    const controller = new AbortController();
+    const { result } = await run(
+      [{ content: [{ type: 'tool_use', name: 'scamp_get_element_tree', input: {} }] }],
+      {
+        signal: controller.signal,
+        review: async () => {
+          controller.abort();
+          return false;
+        },
+      }
+    );
+    expect(result.outcome).toBe('cancelled');
+    expect(result.history.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
+  });
+});
+
 describe('createAgentSession', () => {
   const session = (script: ScriptedTurn[], events: AgentEvent[]) =>
     createAgentSession({
@@ -285,6 +328,67 @@ describe('createAgentSession', () => {
     await agent.send('Hello', '', 'turn_1');
     await agent.idle();
     expect(rejected).toBe(true);
+  });
+});
+
+describe('confirmation in a session', () => {
+  const deleteScript: ScriptedTurn[] = [
+    { content: [{ type: 'tool_use', name: 'scamp_delete_element', input: { element: 'card_a1b2' } }] },
+    { content: [{ type: 'text', text: 'Done.' }] },
+  ];
+  const sessionFor = (events: AgentEvent[], calls: string[]) =>
+    createAgentSession({
+      getProvider: async () => createScriptedProvider(deleteScript),
+      invoke: fakeInvoke(calls),
+      system: 'test',
+      tools: [],
+      emit: (e) => events.push(e),
+      onKeyRejected: () => {},
+    });
+  const request = async (events: AgentEvent[]): Promise<Extract<AgentEvent, { kind: 'confirm-request' }>> => {
+    for (let i = 0; i < 50; i += 1) {
+      const found = events.find((e) => e.kind === 'confirm-request');
+      if (found?.kind === 'confirm-request') return found;
+      await new Promise((r) => setTimeout(r, 1));
+    }
+    throw new Error('no confirm-request');
+  };
+
+  it('asks before a delete, and runs it once approved', async () => {
+    const events: AgentEvent[] = [];
+    const calls: string[] = [];
+    const agent = sessionFor(events, calls);
+    await agent.send('Delete the card', '', 't1');
+    const asked = await request(events);
+    expect(asked.items).toEqual(['Delete card_a1b2 and everything inside it']);
+    expect(calls).toEqual([]);
+    agent.answer(asked.confirmId, true);
+    await agent.idle();
+    expect(calls).toEqual(['scamp_delete_element({"element":"card_a1b2"})']);
+    expect(events).toContainEqual(expect.objectContaining({ kind: 'confirm-resolved', approved: true }));
+  });
+
+  it('runs nothing when declined', async () => {
+    const events: AgentEvent[] = [];
+    const calls: string[] = [];
+    const agent = sessionFor(events, calls);
+    await agent.send('Delete the card', '', 't1');
+    agent.answer((await request(events)).confirmId, false);
+    await agent.idle();
+    expect(calls).toEqual([]);
+    expect(events.at(-1)).toMatchObject({ kind: 'turn-end', outcome: 'done' });
+  });
+
+  it('treats Stop as declining, and ends the turn', async () => {
+    const events: AgentEvent[] = [];
+    const calls: string[] = [];
+    const agent = sessionFor(events, calls);
+    await agent.send('Delete the card', '', 't1');
+    await request(events);
+    agent.cancel();
+    await agent.idle();
+    expect(calls).toEqual([]);
+    expect(events.at(-1)).toMatchObject({ kind: 'turn-end', outcome: 'cancelled' });
   });
 });
 

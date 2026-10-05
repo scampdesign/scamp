@@ -82,6 +82,15 @@ describe('applyAgentEvent', () => {
     ]);
   });
 
+  it('adds a confirmation and records the answer', () => {
+    const asked = fold([{ kind: 'confirm-request', turnId: 't1', confirmId: 'c1', items: ['Delete card_a1b2'] }]);
+    expect(reply(asked).parts).toEqual([{ kind: 'confirm', id: 'c1', items: ['Delete card_a1b2'], state: 'pending' }]);
+    const answered = fold([{ kind: 'confirm-resolved', turnId: 't1', confirmId: 'c1', approved: false }], asked);
+    expect(reply(answered).parts).toEqual([
+      { kind: 'confirm', id: 'c1', items: ['Delete card_a1b2'], state: 'declined' },
+    ]);
+  });
+
   it('shows the progress note until the agent acts', () => {
     const working = fold([
       { kind: 'progress', turnId: 't1', text: 'Checking the ' },

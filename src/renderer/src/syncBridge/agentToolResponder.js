@@ -1,4 +1,4 @@
-import { addElement, moveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
+import { addElement, deleteElement, moveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
 import { classNameFor } from '@lib/generateCode';
 import { lintView } from '@lib/viewLint';
 import { useCanvasStore } from '@store/canvasSlice';
@@ -11,6 +11,7 @@ const EDITS = {
     scamp_set_attributes: (ctx, a) => setAttributes(ctx, { element: a['element'], attributes: a['attributes'] }),
     scamp_move_element: (ctx, a) => moveElement(ctx, { ...a, element: a['element'], parent: a['parent'] }),
     scamp_wrap_elements: (ctx, a) => wrapElements(ctx, { ...a, elements: a['elements'] }),
+    scamp_delete_element: (ctx, a) => deleteElement(ctx, { element: a['element'] }),
 };
 /** The turn whose history transaction is open, and what it touched. */
 let open = null;

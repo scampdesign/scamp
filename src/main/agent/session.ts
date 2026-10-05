@@ -2,7 +2,9 @@ import type { BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages
 
 import type { AgentEvent, AgentSendResult } from '@shared/types';
 
+import { describeToolCall, needsConfirmation } from './confirmPolicy';
 import { runTurn, type AgentToolInvoker } from './harness';
+import { WRITE_TOOL_NAMES } from './writeTools';
 import type { AgentProvider } from './provider';
 
 /**
@@ -35,6 +37,8 @@ export type AgentSession = {
   reset: () => void;
   /** A turn is in flight. */
   isBusy: () => boolean;
+  /** The user's answer to a confirmation request. */
+  answer: (confirmId: string, approved: boolean) => void;
   /**
    * Something the agent should know before the user's next message — that
    * its edits were undone, say. Rides in front of that message, once.
@@ -60,6 +64,9 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
   let inFlight: { controller: AbortController; done: Promise<void> } | null = null;
   let generation = 0;
   let pendingNote: string | null = null;
+  /** Confirmations waiting on the user, by id. */
+  const waiting = new Map<string, (approved: boolean) => void>();
+  let confirmCounter = 0;
 
   return {
     send: async (text, context, turnId) => {
@@ -97,6 +104,22 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
             effort: 'medium',
             signal: controller.signal,
             emit: (event) => deps.emit({ ...event, turnId }),
+            review: async (calls) => {
+              if (!needsConfirmation(calls)) return true;
+              if (controller.signal.aborted) return false;
+              confirmCounter += 1;
+              const confirmId = `${turnId}:confirm_${confirmCounter}`;
+              const items = calls.filter((c) => WRITE_TOOL_NAMES.has(c.name)).map(describeToolCall);
+              deps.emit({ kind: 'confirm-request', turnId, confirmId, items });
+              const approved = await new Promise<boolean>((resolve) => {
+                waiting.set(confirmId, resolve);
+                // Stop and New conversation decline anything still asked.
+                controller.signal.addEventListener('abort', () => resolve(false), { once: true });
+              });
+              waiting.delete(confirmId);
+              deps.emit({ kind: 'confirm-resolved', turnId, confirmId, approved });
+              return approved;
+            },
           });
           // A reset during the turn started a new conversation; this turn's
           // history belongs to the old one.
@@ -140,6 +163,10 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
     },
 
     isBusy: () => inFlight !== null,
+
+    answer: (confirmId, approved) => {
+      waiting.get(confirmId)?.(approved);
+    },
 
     noteNextTurn: (note) => {
       pendingNote = note;

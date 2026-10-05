@@ -16,6 +16,7 @@ import { ROOT_ELEMENT_ID, type ScampElement } from './element';
 import {
   generateElementId,
   groupSiblings,
+  removeSubtree,
   reorderElementPure,
   slugifyName,
 } from './element/tree';
@@ -471,5 +472,21 @@ export const wrapElements = (
     summary: `Wrapped ${ids.length} element${ids.length === 1 ? '' : 's'} in ${wrapper ? classNameFor(wrapper) : groupId}`,
     touched: [groupId, ...ids],
     notes,
+  };
+};
+
+/** Remove an element and everything inside it. The harness confirms first. */
+export const deleteElement = (ctx: AgentEditContext, args: { element: unknown }): AgentEditResult => {
+  const el = resolveElement(ctx, args.element);
+  if (el === null) return fail(notFound(args.element));
+  const removed = removeSubtree(ctx.elements, el.id);
+  if (removed === null) return fail('The root can’t be deleted.');
+  const inside = removed.removed.size - 1;
+  return {
+    ok: true,
+    elements: removed.elements,
+    summary: `Deleted ${classNameFor(el)}${inside > 0 ? ` and ${inside} element${inside === 1 ? '' : 's'} inside it` : ''}`,
+    touched: [el.id, ...(el.parentId !== null ? [el.parentId] : [])],
+    notes: [],
   };
 };

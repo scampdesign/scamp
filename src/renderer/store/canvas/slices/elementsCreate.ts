@@ -7,6 +7,7 @@ import {
   reorderElementPure,
   reparentWithPositionPure,
   ROOT_ELEMENT_ID,
+  removeSubtree,
   ungroupSiblings,
   wrapElement,
   type BreakpointOverride,
@@ -483,43 +484,12 @@ export const createElementsCreateSlice: StateCreator<
     const beforeEl = useCanvasStore.getState().elements[id];
     const previousName = beforeEl ? classNameFor(beforeEl) : undefined;
     set((state) => {
-      // Root is the page frame and can't be removed.
-      if (id === ROOT_ELEMENT_ID) return state;
-      const target = state.elements[id];
-      if (!target) return state;
-
-      // Collect this element + all descendants so we can drop them in one
-      // pass. Walks childIds depth-first; safe because the canvas tree is
-      // a tree (no cycles).
-      const toRemove = new Set<string>();
-      const visit = (visitId: string): void => {
-        if (toRemove.has(visitId)) return;
-        toRemove.add(visitId);
-        const el = state.elements[visitId];
-        if (!el) return;
-        for (const childId of el.childIds) visit(childId);
-      };
-      visit(id);
-
-      const nextElements: Record<string, ScampElement> = {};
-      for (const [key, value] of Object.entries(state.elements)) {
-        if (toRemove.has(key)) continue;
-        nextElements[key] = value;
-      }
-
-      // Detach from parent's childIds.
-      if (target.parentId) {
-        const parent = nextElements[target.parentId];
-        if (parent) {
-          nextElements[target.parentId] = {
-            ...parent,
-            childIds: parent.childIds.filter((childId) => childId !== id),
-          };
-        }
-      }
-
+      // Root is the page frame and can't be removed (removeSubtree refuses).
+      const result = removeSubtree(state.elements, id);
+      if (result === null) return state;
+      const toRemove = result.removed;
       return {
-        elements: nextElements,
+        elements: result.elements,
         selectedElementIds: state.selectedElementIds.filter((s) => !toRemove.has(s)),
         editingElementId:
           state.editingElementId && toRemove.has(state.editingElementId)

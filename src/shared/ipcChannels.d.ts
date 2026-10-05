@@ -61,6 +61,8 @@ export declare const IPC: {
     readonly AgentToolCall: "agent:tool-call";
     /** Renderer → main: how that edit went. */
     readonly AgentToolResult: "agent:tool-result";
+    /** Renderer → main: the user's answer to a confirmation request. */
+    readonly AgentConfirm: "agent:confirm";
     /** Restore the project to before the conversation's first edit. */
     readonly AgentUndoSession: "agent:undo-session";
     readonly ThemeRead: "theme:read";

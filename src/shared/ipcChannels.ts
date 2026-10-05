@@ -116,6 +116,8 @@ export const IPC = {
   AgentToolCall: 'agent:tool-call',
   /** Renderer → main: how that edit went. */
   AgentToolResult: 'agent:tool-result',
+  /** Renderer → main: the user's answer to a confirmation request. */
+  AgentConfirm: 'agent:confirm',
   /** Restore the project to before the conversation's first edit. */
   AgentUndoSession: 'agent:undo-session',
 

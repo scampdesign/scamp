@@ -1214,6 +1214,18 @@ export type AgentEvent = {
     ok: boolean;
     /** What an edit changed, in one line — "Updated card_a1b2 — gap: 24px;". */
     summary?: string;
+}
+/** The agent wants to make these edits and is waiting for an answer. */
+ | {
+    kind: 'confirm-request';
+    turnId: string;
+    confirmId: string;
+    items: string[];
+} | {
+    kind: 'confirm-resolved';
+    turnId: string;
+    confirmId: string;
+    approved: boolean;
 } | {
     kind: 'turn-end';
     turnId: string;

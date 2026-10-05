@@ -15,6 +15,14 @@ export declare const generateElementId: () => string;
  */
 export declare const slugifyName: (name: string) => string;
 /**
+ * Remove an element and everything inside it. Pure: returns the new map
+ * and the ids it removed, or null for the root or a missing element.
+ */
+export declare const removeSubtree: (elements: Record<string, ScampElement>, id: string) => {
+    elements: Record<string, ScampElement>;
+    removed: ReadonlySet<string>;
+} | null;
+/**
  * Move an element to a new parent and/or position within its current parent.
  *
  * Pure: returns a new elements map. Returns null when the move isn't valid:

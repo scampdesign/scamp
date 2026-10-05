@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
-import { addElement, moveElement, parseDeclarationList, resolveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
+import { addElement, deleteElement, moveElement, parseDeclarationList, resolveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
 import { generateCode } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
 /**
@@ -242,5 +242,23 @@ describe('wrapElements', () => {
     it('refuses the root and an empty list', () => {
         expect(wrapElements(context(), { elements: ['root'] }).ok).toBe(false);
         expect(wrapElements(context(), { elements: [] }).ok).toBe(false);
+    });
+});
+describe('deleteElement', () => {
+    it('removes an element and everything inside it', () => {
+        const result = ok(deleteElement(context(), { element: 'card_a1b2' }));
+        expect(result.elements['a1b2']).toBeUndefined();
+        expect(result.elements['c3d4']).toBeUndefined();
+        expect(result.elements['e5f6']).toBeUndefined();
+        expect(result.elements['root']?.childIds).toEqual(['b7c8']);
+        expect(result.summary).toBe('Deleted card_a1b2 and 2 elements inside it');
+        expectRoundTrip(result.elements);
+    });
+    it('says a leaf has nothing inside it', () => {
+        expect(ok(deleteElement(context(), { element: 'b7c8' })).summary).toBe('Deleted rect_b7c8');
+    });
+    it('refuses the root and an unknown element', () => {
+        expect(deleteElement(context(), { element: 'root' }).ok).toBe(false);
+        expect(deleteElement(context(), { element: 'nope' }).ok).toBe(false);
     });
 });

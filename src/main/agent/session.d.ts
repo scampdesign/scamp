@@ -27,6 +27,8 @@ export type AgentSession = {
     reset: () => void;
     /** A turn is in flight. */
     isBusy: () => boolean;
+    /** The user's answer to a confirmation request. */
+    answer: (confirmId: string, approved: boolean) => void;
     /**
      * Something the agent should know before the user's next message — that
      * its edits were undone, say. Rides in front of that message, once.

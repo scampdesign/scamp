@@ -18,7 +18,9 @@ export type TranscriptToolCall = {
 /** A reply is text and tool calls interleaved, in the order they happened. */
 export type TranscriptPart =
   | { kind: 'text'; text: string }
-  | { kind: 'tools'; calls: TranscriptToolCall[] };
+  | { kind: 'tools'; calls: TranscriptToolCall[] }
+  /** Edits waiting on the user's say-so, and what they said. */
+  | { kind: 'confirm'; id: string; items: string[]; state: 'pending' | 'approved' | 'declined' };
 
 export type TranscriptEntry =
   | { role: 'user'; id: string; text: string; context: string }
@@ -105,6 +107,21 @@ const reduceAssistant = (entry: AssistantEntry, event: AgentEvent): AssistantEnt
               }
         ),
       };
+    case 'confirm-request':
+      return {
+        ...entry,
+        progress: '',
+        parts: [...entry.parts, { kind: 'confirm', id: event.confirmId, items: event.items, state: 'pending' }],
+      };
+    case 'confirm-resolved':
+      return {
+        ...entry,
+        parts: entry.parts.map((part) =>
+          part.kind === 'confirm' && part.id === event.confirmId
+            ? { ...part, state: event.approved ? 'approved' : 'declined' }
+            : part
+        ),
+      };
     case 'turn-end':
       return {
         ...entry,
@@ -152,6 +169,7 @@ const TOOL_LABELS: Readonly<Record<string, string>> = {
   scamp_set_attributes: 'Edit attributes',
   scamp_move_element: 'Move an element',
   scamp_wrap_elements: 'Wrap elements',
+  scamp_delete_element: 'Delete an element',
 };
 
 export const toolLabel = (name: string): string =>

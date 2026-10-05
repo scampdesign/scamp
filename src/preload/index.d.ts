@@ -148,6 +148,10 @@ declare const api: {
     agentUndoSession: (args: {
         projectPath: string;
     }) => Promise<AgentUndoSessionResult>;
+    agentConfirm: (args: {
+        confirmId: string;
+        approved: boolean;
+    }) => Promise<void>;
     onAgentEvent: (handler: (event: AgentEvent) => void) => (() => void);
     readTheme: (args: {
         projectPath: string;

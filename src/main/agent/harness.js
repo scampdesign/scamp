@@ -79,6 +79,32 @@ export const runTurn = async (options) => {
                 return end('done');
         }
         keep();
+        const approved = options.review === undefined
+            ? true
+            : await options.review(toolUses.map((use) => ({ name: use.name, input: use.input })));
+        if (!approved) {
+            // Every tool_use still gets its result — the history must stay
+            // valid — saying none of it ran, so the model can ask what instead.
+            history.push({
+                role: 'user',
+                content: toolUses.map((use) => ({
+                    type: 'tool_result',
+                    tool_use_id: use.id,
+                    is_error: true,
+                    content: [
+                        {
+                            type: 'text',
+                            text: signal.aborted
+                                ? 'Stopped by the user before this ran.'
+                                : 'The user declined these changes, so none of them were made. Ask what they would like instead.',
+                        },
+                    ],
+                })),
+            });
+            if (signal.aborted)
+                return end('cancelled');
+            continue;
+        }
         // Every tool result goes back in ONE user message. Splitting them
         // teaches the model to stop calling tools in parallel.
         const results = await Promise.all(toolUses.map(async (use) => {
