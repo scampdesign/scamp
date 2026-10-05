@@ -302,27 +302,64 @@ only; the MCP server is unchanged.
   confirmation gate, and the other three touch files the snapshot
   doesn't cover yet (`theme.css`, `DESIGN.md`, a new component folder).
 
-### Phase 4 — safety
+### Phase 4 — safety — **done**
 
-- **Pre-session snapshot**, taken in main before the first write of a
-  session, labelled with the request. A session that only reads takes
-  none.
-- **Snapshots grow to cover the agent's reach:** `theme.css` and
-  `DESIGN.md`, and a restore that removes a component folder the session
-  created. Check how `restoreSnapshot` treats files that didn't exist at
-  snapshot time before relying on it.
-- **Undo AI session** in the Agent panel restores that snapshot in one
-  click, with a confirm that names what it reverts. This is the PRD's
-  "one click"; the History panel's two-click restore stays as it is.
-- **The confirmation gate** lives in the harness. A destructive tool, or
-  any turn whose writes touch more than ~5 elements, pauses the loop and
-  sends `agent:confirm` with a summary; the tool result waits for
-  **Apply** or **Cancel**. Cancel returns a `tool_result` saying the user
-  declined, so the model can adjust rather than retry.
-- Writes the user makes while a turn is applying: lock canvas editing
-  during a write batch, and show it. Simpler than merging two writers.
-- No tool reaches outside the project, and none makes network requests —
-  the tool catalog has no file or fetch tool to misuse.
+**Undo AI changes.** The panel's header button restores the
+conversation's "Before Scamp Agent" snapshot in one confirmed click —
+pages, components, `theme.css` and `DESIGN.md` — and removes any
+component the agent created (a plain restore copies files back but never
+deletes new ones, so main tracks what the session created). The agent's
+next message carries a note that its edits were undone, so it doesn't
+describe a canvas that's gone. A History-panel restore is unchanged.
+
+Making that work found two restore bugs, both fixed:
+
+1. **Next.js and legacy snapshots skipped `theme.css` and `DESIGN.md`.**
+   Only Scamp-format projects captured them.
+2. **A restore never reloaded the theme.** It suppressed the watcher for
+   every file it copied, theme included, and the project re-read that
+   follows reads pages, not the theme — so a restored project showed its
+   old pages in the current colours. Restore now lets `theme.css` and
+   `DESIGN.md` through to the watcher, whose own events reload them.
+
+And one the History panel never hit: the project re-read skips a page
+whose file matches what it last read, and Scamp's own saves don't
+update that, so after an undo nothing reloaded the open page. The panel
+gets away with it because its preview had already put the snapshot on
+the canvas. Undo AI changes restores page files as Scamp's own
+*reloading* writes (`reloadOpenPage`), which go through the
+external-edit handler's audited reload.
+
+**The confirmation gate** is in the harness, as a small fixed policy
+(`confirmPolicy.ts`), not left to the model: a delete, a component or a
+theme change always asks, and so does any reply with more than five
+edits. The panel shows a card listing each edit in plain words —
+"Delete card_a1b2 and everything inside it" — with **Apply changes** and
+**Cancel**; Stop and New conversation decline. A declined batch still
+returns a result for every `tool_use` (the history stays valid), saying
+the user declined, so the model asks instead of retrying.
+
+**The deferred tools:**
+
+| Tool | Notes |
+|---|---|
+| `scamp_delete_element` | Shares `removeSubtree` with the store's own delete |
+| `scamp_extract_component` | Creates the files, swaps in an instance, and optionally replaces look-alikes (`alsoReplace`). Refused in legacy projects, which have no components — the agent is told why. Main triggers a project re-read so the sidebar picks it up |
+| `scamp_set_theme_tokens` | Reads `theme.css` fresh, merges, writes back. Not in Cmd+Z (the theme isn't element history); Undo AI changes reverts it |
+
+Pure halves in `@lib/agentEdits` (`mergeThemeTokens`, `planExtraction`
+— a name that differs only in case from an existing component is
+refused, for case-insensitive disks); the IO in the responder.
+
+**Not done:**
+
+- **`DESIGN.md` editing** — dropped from the beta's tools. The cleanup
+  skill doesn't need it, and the Design System panel already owns those
+  forms.
+- **A canvas lock while the agent edits.** Each edit recomputes from the
+  live store, so nothing a user does mid-turn is overwritten; the cost
+  is that an edit made during a turn folds into the agent's undo step.
+  Worth doing if that bites in testing.
 
 ### Phase 5 — the import cleanup skill
 

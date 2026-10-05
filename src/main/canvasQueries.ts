@@ -61,7 +61,7 @@ const editRegistry: QueryRegistry = createQueryRegistry({
 });
 
 /** What the renderer answers an edit with. */
-export type AgentEditAnswer = { ok: boolean; text: string; summary?: string };
+export type AgentEditAnswer = { ok: boolean; text: string; summary?: string; createdComponent?: string };
 
 const isAgentEditAnswer = (value: unknown): value is AgentEditAnswer =>
   value !== null &&

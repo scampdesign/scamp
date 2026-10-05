@@ -35,26 +35,43 @@ beforeEach(() => {
         snapshotPreview: null,
         activeComponent: null,
         selectedElementIds: [],
+        componentTrees: {},
     });
     const history = useHistoryStore.getState();
     history.setActivePageId('home.tsx');
     history.commitInitialIfEmpty(useCanvasStore.getState().elements);
 });
+/** The few main-process calls these edits make, recorded. */
+const calls = [];
+let themeOnDisk = ':root {\n  --color-text: #111111;\n}\n';
+globalThis.window = {
+    scamp: {
+        readTheme: async () => themeOnDisk,
+        writeTheme: async ({ content }) => {
+            calls.push('writeTheme');
+            themeOnDisk = content;
+        },
+        createComponent: async ({ componentName }) => {
+            calls.push(`createComponent ${componentName}`);
+            return { name: componentName };
+        },
+    },
+};
 const entries = () => useHistoryStore.getState().perPage['home.tsx']?.entries.length ?? 0;
 describe('executeAgentEdit', () => {
-    it('applies an edit to the canvas and says what changed', () => {
-        const answer = executeAgentEdit('scamp_set_styles', { element: 'card_a1b2', set: 'gap: 24px' }, 't1');
+    it('applies an edit to the canvas and says what changed', async () => {
+        const answer = await executeAgentEdit('scamp_set_styles', { element: 'card_a1b2', set: 'gap: 24px' }, 't1');
         expect(answer.ok).toBe(true);
         expect(answer.summary).toBe('Updated card_a1b2 — gap: 24px;');
         expect(answer.text).toContain('Touched: card_a1b2 (id a1b2)');
         expect(useCanvasStore.getState().elements['a1b2']?.gap).toBe(24);
         endAgentTurnHistory('t1');
     });
-    it('undoes every edit from one turn in a single step', () => {
+    it('undoes every edit from one turn in a single step', async () => {
         const before = entries();
-        executeAgentEdit('scamp_set_styles', { element: 'a1b2', set: 'gap: 24px' }, 't1');
-        executeAgentEdit('scamp_set_text', { element: 'e5f6', text: 'Changed' }, 't1');
-        executeAgentEdit('scamp_set_tag', { element: 'a1b2', tag: 'section' }, 't1');
+        await executeAgentEdit('scamp_set_styles', { element: 'a1b2', set: 'gap: 24px' }, 't1');
+        await executeAgentEdit('scamp_set_text', { element: 'e5f6', text: 'Changed' }, 't1');
+        await executeAgentEdit('scamp_set_tag', { element: 'a1b2', tag: 'section' }, 't1');
         endAgentTurnHistory('t1');
         expect(entries()).toBe(before + 1);
         const last = useHistoryStore.getState().perPage['home.tsx']?.entries.at(-1);
@@ -65,42 +82,87 @@ describe('executeAgentEdit', () => {
         expect(elements['a1b2']?.tag).not.toBe('section');
         expect(elements['e5f6']?.text).toBe('Body');
     });
-    it('keeps two turns as two undo steps', () => {
+    it('keeps two turns as two undo steps', async () => {
         const before = entries();
-        executeAgentEdit('scamp_set_styles', { element: 'a1b2', set: 'gap: 24px' }, 't1');
+        await executeAgentEdit('scamp_set_styles', { element: 'a1b2', set: 'gap: 24px' }, 't1');
         endAgentTurnHistory('t1');
-        executeAgentEdit('scamp_set_styles', { element: 'a1b2', set: 'gap: 32px' }, 't2');
+        await executeAgentEdit('scamp_set_styles', { element: 'a1b2', set: 'gap: 32px' }, 't2');
         endAgentTurnHistory('t2');
         expect(entries()).toBe(before + 2);
         useHistoryStore.getState().undo();
         expect(useCanvasStore.getState().elements['a1b2']?.gap).toBe(24);
     });
-    it('leaves no transaction open when a turn makes no edit', () => {
+    it('leaves no transaction open when a turn makes no edit', async () => {
         endAgentTurnHistory('never-edited');
         expect(useHistoryStore.getState().transactionDepth).toBe(0);
     });
-    it('reports a failed edit without touching the canvas or history', () => {
+    it('reports a failed edit without touching the canvas or history', async () => {
         const before = useCanvasStore.getState().elements;
-        const answer = executeAgentEdit('scamp_set_text', { element: 'a1b2', text: 'x' }, 't1');
+        const answer = await executeAgentEdit('scamp_set_text', { element: 'a1b2', text: 'x' }, 't1');
         expect(answer.ok).toBe(false);
         expect(useCanvasStore.getState().elements).toBe(before);
         expect(useHistoryStore.getState().transactionDepth).toBe(0);
     });
-    it('refuses to edit while a snapshot preview is showing', () => {
+    it('refuses to edit while a snapshot preview is showing', async () => {
         useCanvasStore.setState({
             snapshotPreview: {},
         });
-        const answer = executeAgentEdit('scamp_set_styles', { element: 'a1b2', set: 'gap: 1px' }, 't1');
+        const answer = await executeAgentEdit('scamp_set_styles', { element: 'a1b2', set: 'gap: 1px' }, 't1');
         expect(answer).toMatchObject({ ok: false });
         expect(answer.text).toContain('snapshot preview');
     });
-    it('refuses an edit it does not know', () => {
-        expect(executeAgentEdit('scamp_delete_everything', {}, 't1')).toMatchObject({ ok: false });
+    it('refuses an edit it does not know', async () => {
+        expect(await executeAgentEdit('scamp_delete_everything', {}, 't1')).toMatchObject({ ok: false });
     });
-    it('passes on what Scamp’s checks found on the touched element', () => {
-        const answer = executeAgentEdit('scamp_set_styles', { element: 'a1b2', set: 'color: var(--nowhere)' }, 't1');
+    it('passes on what Scamp’s checks found on the touched element', async () => {
+        const answer = await executeAgentEdit('scamp_set_styles', { element: 'a1b2', set: 'color: var(--nowhere)' }, 't1');
         endAgentTurnHistory('t1');
         expect(answer.text).toContain('Check: card_a1b2');
         expect(answer.text).toContain('--nowhere');
+    });
+});
+describe('theme tokens', () => {
+    it('writes them to theme.css and the store, outside the undo stack', async () => {
+        calls.length = 0;
+        const answer = await executeAgentEdit('scamp_set_theme_tokens', { tokens: { '--color-accent': '#ff6600' } }, 't1');
+        endAgentTurnHistory('t1');
+        expect(answer).toMatchObject({ ok: true, summary: 'Theme tokens — added --color-accent' });
+        expect(answer.text).toContain('Undo AI changes');
+        expect(calls).toEqual(['writeTheme']);
+        expect(themeOnDisk).toContain('--color-accent: #ff6600');
+        expect(themeOnDisk).toContain('--color-text: #111111');
+        expect(useCanvasStore.getState().themeTokens.map((t) => t.name)).toContain('--color-accent');
+    });
+    it('writes nothing when every value is already set', async () => {
+        calls.length = 0;
+        const answer = await executeAgentEdit('scamp_set_theme_tokens', { tokens: { '--color-text': '#111111' } }, 't1');
+        expect(answer.ok).toBe(true);
+        expect(calls).toEqual([]);
+    });
+});
+describe('extract component', () => {
+    it('creates the component, swaps in an instance, and reports it for undo', async () => {
+        calls.length = 0;
+        const before = entries();
+        const answer = await executeAgentEdit('scamp_extract_component', { element: 'card_a1b2', name: 'Card' }, 't1');
+        endAgentTurnHistory('t1');
+        expect(answer).toMatchObject({ ok: true, createdComponent: 'Card' });
+        expect(answer.summary).toBe('Made card_a1b2 into the component Card');
+        expect(calls).toEqual(['createComponent Card']);
+        const state = useCanvasStore.getState();
+        expect(state.componentTrees['Card']).toBeDefined();
+        const instances = Object.values(state.elements).filter((el) => el.type === 'component-instance');
+        expect(instances.map((el) => el.componentName)).toEqual(['Card']);
+        expect(state.elements['e5f6']).toBeUndefined();
+        // One undo step, which brings the original back.
+        expect(entries()).toBe(before + 1);
+        useHistoryStore.getState().undo();
+        expect(useCanvasStore.getState().elements['e5f6']?.text).toBe('Body');
+    });
+    it('writes nothing for a plan it refuses', async () => {
+        calls.length = 0;
+        const answer = await executeAgentEdit('scamp_extract_component', { element: 'card_a1b2', name: 'card' }, 't1');
+        expect(answer.ok).toBe(false);
+        expect(calls).toEqual([]);
     });
 });

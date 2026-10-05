@@ -119,6 +119,43 @@ export const WRITE_TOOLS: BetaTool[] = [
     },
   },
   {
+    name: 'scamp_extract_component',
+    description:
+      'Turn a container into a reusable component (PascalCase name, e.g. Card), replacing it with an instance. "alsoReplace" lists other containers that are the same design — they become instances of the new component too, so check they really match: their own content is replaced by the component’s. Scamp asks the user first.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        element,
+        name: { type: 'string', description: 'PascalCase component name.' },
+        alsoReplace: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Other matching containers to replace with instances.',
+        },
+      },
+      required: ['element', 'name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'scamp_set_theme_tokens',
+    description:
+      'Add or change base theme tokens in theme.css: { "--color-text": "#1a1a1a" }. Then reference them with var(--name) in styles. Reuse a token that already has the value rather than adding a duplicate. Scamp asks the user first; theme changes are undone by Undo AI changes, not Cmd+Z.',
+    eager_input_streaming: true,
+    input_schema: {
+      type: 'object',
+      properties: {
+        tokens: {
+          type: 'object',
+          description: 'Token name (--kebab-case) → value.',
+          additionalProperties: { type: 'string' },
+        },
+      },
+      required: ['tokens'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'scamp_wrap_elements',
     description:
       'Wrap sibling elements in a new container, optionally with a tag, a name, and CSS — e.g. to group a heading and its text in a header with display: flex.',

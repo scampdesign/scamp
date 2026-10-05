@@ -104,6 +104,8 @@ const TOOL_LABELS = {
     scamp_move_element: 'Move an element',
     scamp_wrap_elements: 'Wrap elements',
     scamp_delete_element: 'Delete an element',
+    scamp_extract_component: 'Make a component',
+    scamp_set_theme_tokens: 'Edit theme tokens',
 };
 export const toolLabel = (name) => TOOL_LABELS[name] ?? name.replace(/^scamp_/, '').replace(/_/g, ' ');
 /**

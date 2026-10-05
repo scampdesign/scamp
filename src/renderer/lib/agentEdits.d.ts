@@ -1,4 +1,4 @@
-import { type Breakpoint } from '@shared/types';
+import { type Breakpoint, type ThemeToken } from '@shared/types';
 import { type ScampElement } from './element';
 export type AgentEditContext = {
     elements: Record<string, ScampElement>;
@@ -83,4 +83,27 @@ export declare const wrapElements: (ctx: AgentEditContext, args: {
 export declare const deleteElement: (ctx: AgentEditContext, args: {
     element: unknown;
 }) => AgentEditResult;
+/**
+ * Add or change base theme tokens. Pure: the caller reads `theme.css`,
+ * merges with this, and writes it back. A value can't carry a `;`, a brace
+ * or a newline — it lands inside a declaration, and those would end it.
+ */
+export declare const mergeThemeTokens: (current: ReadonlyArray<ThemeToken>, updates: unknown) => {
+    tokens: ThemeToken[];
+    added: string[];
+    changed: string[];
+} | string;
+/**
+ * Check a component extraction before any file is written: what to
+ * extract, under what name, and which look-alikes become instances of it.
+ */
+export declare const planExtraction: (ctx: AgentEditContext, args: {
+    element: unknown;
+    name: unknown;
+    alsoReplace?: unknown;
+}, existingComponents: ReadonlyArray<string>) => {
+    id: string;
+    name: string;
+    replaceIds: string[];
+} | string;
 export {};

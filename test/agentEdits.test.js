@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
-import { addElement, deleteElement, moveElement, parseDeclarationList, resolveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
+import { addElement, deleteElement, mergeThemeTokens, planExtraction, moveElement, parseDeclarationList, resolveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
 import { generateCode } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
 /**
@@ -260,5 +260,67 @@ describe('deleteElement', () => {
     it('refuses the root and an unknown element', () => {
         expect(deleteElement(context(), { element: 'root' }).ok).toBe(false);
         expect(deleteElement(context(), { element: 'nope' }).ok).toBe(false);
+    });
+});
+describe('mergeThemeTokens', () => {
+    const current = [
+        { name: '--color-text', value: '#111111' },
+        { name: '--color-bg', value: '#ffffff' },
+    ];
+    it('adds new tokens and changes existing ones', () => {
+        const result = mergeThemeTokens(current, { '--color-text': '#222222', '--color-accent': '#ff6600' });
+        if (typeof result === 'string')
+            throw new Error(result);
+        expect(result.added).toEqual(['--color-accent']);
+        expect(result.changed).toEqual(['--color-text']);
+        expect(result.tokens).toEqual([
+            { name: '--color-text', value: '#222222' },
+            { name: '--color-bg', value: '#ffffff' },
+            { name: '--color-accent', value: '#ff6600' },
+        ]);
+    });
+    it('reports a value already set as no change', () => {
+        const result = mergeThemeTokens(current, { '--color-bg': '#ffffff' });
+        if (typeof result === 'string')
+            throw new Error(result);
+        expect(result.added).toEqual([]);
+        expect(result.changed).toEqual([]);
+    });
+    it('does not change the tokens it was given', () => {
+        mergeThemeTokens(current, { '--color-text': '#000000' });
+        expect(current[0]?.value).toBe('#111111');
+    });
+    it('refuses a bad name, a bad value, and a value that would end the declaration', () => {
+        expect(typeof mergeThemeTokens(current, { 'color-text': '#000' })).toBe('string');
+        expect(typeof mergeThemeTokens(current, { '--x': '' })).toBe('string');
+        expect(typeof mergeThemeTokens(current, { '--x': 4 })).toBe('string');
+        expect(typeof mergeThemeTokens(current, { '--x': 'red; } body { display: none' })).toBe('string');
+    });
+    it('refuses a shape that is not an object of tokens, and an empty one', () => {
+        expect(typeof mergeThemeTokens(current, ['--x'])).toBe('string');
+        expect(typeof mergeThemeTokens(current, null)).toBe('string');
+        expect(typeof mergeThemeTokens(current, {})).toBe('string');
+    });
+});
+describe('planExtraction', () => {
+    it('plans a container into a component, with look-alikes', () => {
+        expect(planExtraction(context(), { element: 'card_a1b2', name: 'Card', alsoReplace: ['b7c8'] }, [])).toEqual({
+            id: 'a1b2',
+            name: 'Card',
+            replaceIds: ['b7c8'],
+        });
+    });
+    it('refuses the root, a text element, and a name that is not PascalCase', () => {
+        expect(typeof planExtraction(context(), { element: 'root', name: 'Page' }, [])).toBe('string');
+        expect(typeof planExtraction(context(), { element: 'c3d4', name: 'Title' }, [])).toBe('string');
+        expect(typeof planExtraction(context(), { element: 'a1b2', name: 'card' }, [])).toBe('string');
+    });
+    it('refuses a name that only differs in case from an existing component', () => {
+        // On a case-insensitive disk these are one folder.
+        expect(typeof planExtraction(context(), { element: 'a1b2', name: 'Card' }, ['CARD'])).toBe('string');
+    });
+    it('refuses a look-alike that does not exist or is the source', () => {
+        expect(typeof planExtraction(context(), { element: 'a1b2', name: 'Card', alsoReplace: ['nope'] }, [])).toBe('string');
+        expect(typeof planExtraction(context(), { element: 'a1b2', name: 'Card', alsoReplace: ['a1b2'] }, [])).toBe('string');
     });
 });

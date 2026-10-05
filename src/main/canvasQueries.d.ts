@@ -5,6 +5,7 @@ export type AgentEditAnswer = {
     ok: boolean;
     text: string;
     summary?: string;
+    createdComponent?: string;
 };
 /** Ask the renderer to make one edit for the agent's turn `turnId`. */
 export declare const runAgentEdit: (tool: string, input: Record<string, unknown>, turnId: string) => Promise<AgentEditAnswer>;

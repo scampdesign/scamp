@@ -9,7 +9,8 @@
 
 import postcss from 'postcss';
 
-import { DESKTOP_BREAKPOINT_ID, type Breakpoint } from '@shared/types';
+import { DESKTOP_BREAKPOINT_ID, type Breakpoint, type ThemeToken } from '@shared/types';
+import { validateComponentName } from '@shared/componentName';
 import { patchClassBlock } from '@shared/patchClass';
 
 import { ROOT_ELEMENT_ID, type ScampElement } from './element';
@@ -489,4 +490,74 @@ export const deleteElement = (ctx: AgentEditContext, args: { element: unknown })
     touched: [el.id, ...(el.parentId !== null ? [el.parentId] : [])],
     notes: [],
   };
+};
+
+const TOKEN_NAME = /^--[A-Za-z][A-Za-z0-9_-]*$/;
+
+/**
+ * Add or change base theme tokens. Pure: the caller reads `theme.css`,
+ * merges with this, and writes it back. A value can't carry a `;`, a brace
+ * or a newline — it lands inside a declaration, and those would end it.
+ */
+export const mergeThemeTokens = (
+  current: ReadonlyArray<ThemeToken>,
+  updates: unknown
+): { tokens: ThemeToken[]; added: string[]; changed: string[] } | string => {
+  if (updates === null || typeof updates !== 'object' || Array.isArray(updates)) {
+    return '"tokens" must be an object of name → value, e.g. { "--color-text": "#1a1a1a" }.';
+  }
+  const entries = Object.entries(updates);
+  if (entries.length === 0) return 'No tokens given.';
+  const tokens = current.map((t) => ({ ...t }));
+  const added: string[] = [];
+  const changed: string[] = [];
+  for (const [name, raw] of entries) {
+    if (!TOKEN_NAME.test(name)) return `"${name}" isn't a token name. Use --kebab-case, like --color-text.`;
+    if (typeof raw !== 'string' || raw.trim().length === 0) return `The value of ${name} must be a non-empty string.`;
+    const value = raw.trim();
+    if (/[;{}\n]/.test(value)) return `The value of ${name} can't contain ; { } or a line break.`;
+    const existing = tokens.find((t) => t.name === name);
+    if (existing === undefined) {
+      tokens.push({ name, value });
+      added.push(name);
+    } else if (existing.value !== value) {
+      existing.value = value;
+      changed.push(name);
+    }
+  }
+  return { tokens, added, changed };
+};
+
+/**
+ * Check a component extraction before any file is written: what to
+ * extract, under what name, and which look-alikes become instances of it.
+ */
+export const planExtraction = (
+  ctx: AgentEditContext,
+  args: { element: unknown; name: unknown; alsoReplace?: unknown },
+  existingComponents: ReadonlyArray<string>
+): { id: string; name: string; replaceIds: string[] } | string => {
+  const el = resolveElement(ctx, args.element);
+  if (el === null) return notFound(args.element);
+  if (el.id === ctx.rootId) return 'The root can’t become a component.';
+  if (el.type !== 'rectangle') return `${classNameFor(el)} isn't a container. Extract the container around it.`;
+  if (typeof args.name !== 'string') return '"name" must be a PascalCase component name, like Card.';
+  const validated = validateComponentName(args.name, existingComponents);
+  if (!validated.ok) return validated.error;
+  // A case-insensitive disk holds Card and card in one folder.
+  const lower = validated.value.toLowerCase();
+  if (existingComponents.some((c) => c.toLowerCase() === lower)) {
+    return `A component named like ${validated.value} already exists.`;
+  }
+  const refs = Array.isArray(args.alsoReplace) ? args.alsoReplace : [];
+  const replaceIds: string[] = [];
+  for (const ref of refs) {
+    const other = resolveElement(ctx, ref);
+    if (other === null) return notFound(ref);
+    if (other.id === el.id || other.id === ctx.rootId || other.type !== 'rectangle') {
+      return `${String(ref)} can't be replaced with an instance.`;
+    }
+    replaceIds.push(other.id);
+  }
+  return { id: el.id, name: validated.value, replaceIds };
 };

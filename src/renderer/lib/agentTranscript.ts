@@ -170,6 +170,8 @@ const TOOL_LABELS: Readonly<Record<string, string>> = {
   scamp_move_element: 'Move an element',
   scamp_wrap_elements: 'Wrap elements',
   scamp_delete_element: 'Delete an element',
+  scamp_extract_component: 'Make a component',
+  scamp_set_theme_tokens: 'Edit theme tokens',
 };
 
 export const toolLabel = (name: string): string =>

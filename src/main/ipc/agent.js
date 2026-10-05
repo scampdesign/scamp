@@ -11,6 +11,7 @@ import { createAgentSession } from '../agent/session';
 import { AGENT_SYSTEM_PROMPT } from '../agent/systemPrompt';
 import { verifyAnthropicKey } from '../agent/verifyAnthropicKey';
 import { readE2eSeams } from '../e2eSeams';
+import { notifyPagesChanged } from '../watcher';
 import { TOOL_DESCRIPTORS } from '../mcp/tools';
 import { WRITE_TOOLS, WRITE_TOOL_NAMES } from '../agent/writeTools';
 import { deleteComponent } from './componentOps';
@@ -96,6 +97,12 @@ const sessionFor = (projectPath, target) => {
                 }
                 try {
                     const answer = await runAgentEdit(name, args, turnId);
+                    if (answer.ok && typeof answer.createdComponent === 'string') {
+                        // Undo AI session removes it; and the project re-read puts it
+                        // in the sidebar (the create itself is silent at the watcher).
+                        holder.createdComponents.push(answer.createdComponent);
+                        notifyPagesChanged();
+                    }
                     return {
                         content: [{ type: 'text', text: answer.text }],
                         ...(answer.ok ? {} : { isError: true }),
