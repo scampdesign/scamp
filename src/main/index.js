@@ -20,6 +20,7 @@ import { registerDesignMdIpc } from './ipc/designMd';
 import { registerImageIpc } from './ipc/image';
 import { registerClipboardIpc } from './ipc/clipboard';
 import { registerExportIpc } from './ipc/export';
+import { registerAgentIpc } from './ipc/agent';
 import { disposeAuth, registerAuthIpc } from './ipc/auth';
 import { registerHtmlExportIpc } from './ipc/htmlExport';
 import { registerUpdaterIpc } from './ipc/updater';
@@ -325,6 +326,7 @@ app.whenReady().then(() => {
     registerClipboardIpc();
     registerExportIpc();
     registerAuthIpc();
+    registerAgentIpc();
     registerHtmlExportIpc();
     registerImportIpc();
     registerUpdaterIpc();

@@ -168,6 +168,11 @@ const api = {
         ipcRenderer.on(IPC.AuthComplete, listener);
         return () => ipcRenderer.removeListener(IPC.AuthComplete, listener);
     },
+    // Scamp Agent provider key. Write-only from here: the key goes in, and
+    // only a status ever comes back. see docs/plans/builtin-agent-plan.md
+    agentKeySet: (key) => ipcRenderer.invoke(IPC.AgentKeySet, { key }),
+    agentKeyStatus: () => ipcRenderer.invoke(IPC.AgentKeyStatus),
+    agentKeyClear: () => ipcRenderer.invoke(IPC.AgentKeyClear),
     // Theme
     readTheme: (args) => ipcRenderer.invoke(IPC.ThemeRead, args),
     writeTheme: (args) => ipcRenderer.invoke(IPC.ThemeWrite, args),

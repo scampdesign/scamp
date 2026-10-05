@@ -13,6 +13,7 @@ import {
 } from '../auth/authService';
 import { authBaseUrl } from '../auth/desktopAuthFlow';
 import { sendHeartbeat, startHeartbeat } from '../auth/heartbeat';
+import { E2E_USER, readE2eSeams } from '../e2eSeams';
 
 /**
  * Sign-in handlers.
@@ -91,7 +92,9 @@ export const registerAuthIpc = (): void => {
   ipcMain.handle(IPC.AuthCancel, async (): Promise<void> => cancelSignIn());
 
   ipcMain.handle(IPC.AuthStatus, async (): Promise<AuthStatusResult> =>
-    getStatus(deps())
+    readE2eSeams(process.env, app.isPackaged).signedIn
+      ? { signedIn: true, user: { ...E2E_USER } }
+      : getStatus(deps())
   );
 
   ipcMain.handle(IPC.AuthSignOut, async (): Promise<void> => {

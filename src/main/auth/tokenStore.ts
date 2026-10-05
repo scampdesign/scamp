@@ -49,8 +49,6 @@ export type SaveResult =
 
 const FILE_NAME = 'auth-token.bin';
 
-const tokenPath = (dir: string): string => path.join(dir, FILE_NAME);
-
 /**
  * Persist the token, or refuse to.
  *
@@ -58,14 +56,23 @@ const tokenPath = (dir: string): string => path.join(dir, FILE_NAME);
  * will not survive a restart. Writing the token in the clear instead would
  * turn a minor inconvenience into a credential sitting readable on disk.
  */
-export const saveToken = async (
-  token: string,
+export const saveToken = (token: string, deps: TokenStoreDeps): Promise<SaveResult> =>
+  saveSecret(FILE_NAME, token, deps);
+
+/**
+ * Persist any secret under `fileName` in userData, with the same refusal
+ * as the session token: encrypted, or not at all. The Scamp Agent's
+ * provider key uses it too. see docs/plans/builtin-agent-plan.md
+ */
+export const saveSecret = async (
+  fileName: string,
+  secret: string,
   { safeStorage, userDataDir }: TokenStoreDeps
 ): Promise<SaveResult> => {
   if (!safeStorage.isEncryptionAvailable()) return { status: 'memory-only' };
-  const encrypted = safeStorage.encryptString(token);
+  const encrypted = safeStorage.encryptString(secret);
   await fs.mkdir(userDataDir, { recursive: true });
-  await fs.writeFile(tokenPath(userDataDir), encrypted);
+  await fs.writeFile(path.join(userDataDir, fileName), encrypted);
   return { status: 'saved' };
 };
 
@@ -77,14 +84,18 @@ export const saveToken = async (
  * differently-signed build — so the blob is intact and undecryptable. The
  * caller should clear it and ask the user to sign in again.
  */
-export const loadToken = async ({
-  safeStorage,
-  userDataDir,
-}: TokenStoreDeps): Promise<LoadResult> => {
+export const loadToken = (deps: TokenStoreDeps): Promise<LoadResult> =>
+  loadSecret(FILE_NAME, deps);
+
+/** Read a secret `saveSecret` wrote. `token` holds the secret on `ok`. */
+export const loadSecret = async (
+  fileName: string,
+  { safeStorage, userDataDir }: TokenStoreDeps
+): Promise<LoadResult> => {
   if (!safeStorage.isEncryptionAvailable()) return { status: 'unavailable' };
   let blob: Buffer;
   try {
-    blob = await fs.readFile(tokenPath(userDataDir));
+    blob = await fs.readFile(path.join(userDataDir, fileName));
   } catch {
     return { status: 'none' };
   }
@@ -98,8 +109,13 @@ export const loadToken = async ({
 };
 
 /** Remove the stored token. Safe to call when there isn't one. */
-export const clearToken = async ({
-  userDataDir,
-}: Pick<TokenStoreDeps, 'userDataDir'>): Promise<void> => {
-  await fs.rm(tokenPath(userDataDir), { force: true });
+export const clearToken = (deps: Pick<TokenStoreDeps, 'userDataDir'>): Promise<void> =>
+  clearSecret(FILE_NAME, deps);
+
+/** Remove a stored secret. Safe to call when there isn't one. */
+export const clearSecret = async (
+  fileName: string,
+  { userDataDir }: Pick<TokenStoreDeps, 'userDataDir'>
+): Promise<void> => {
+  await fs.rm(path.join(userDataDir, fileName), { force: true });
 };

@@ -1152,6 +1152,30 @@ export type AuthSignInResult = {
     status: 'failed';
     message: string;
 };
+/**
+ * The Scamp Agent's provider connection, as the renderer sees it. The key
+ * itself never leaves the main process.
+ *
+ * - `connected` — a key is stored and the provider accepted it.
+ * - `session-only` — accepted, but the OS could not encrypt it, so it is
+ *   held in memory and gone at the next launch.
+ * - `invalid` — a stored key the provider has since rejected.
+ * - `not-connected` — no key.
+ */
+export type AgentKeyStatus = 'connected' | 'session-only' | 'invalid' | 'not-connected';
+export type AgentKeyStatusResult = {
+    status: AgentKeyStatus;
+};
+/** Why a key was not accepted, in terms the panel can explain. */
+export type AgentKeyRejection = 'signed-out' | 'empty' | 'invalid-key' | 'no-model-access' | 'rate-limited' | 'network' | 'unknown';
+export type AgentKeySetResult = {
+    ok: true;
+    status: AgentKeyStatus;
+} | {
+    ok: false;
+    reason: AgentKeyRejection;
+    message: string;
+};
 /** One text file in an HTML export, at a path relative to the export root. */
 export type ExportHtmlFile = {
     path: string;

@@ -3,6 +3,7 @@ import { IPC } from '@shared/ipcChannels';
 import { cancelSignIn, currentAuthToken, getStatus, signIn, signOut, } from '../auth/authService';
 import { authBaseUrl } from '../auth/desktopAuthFlow';
 import { sendHeartbeat, startHeartbeat } from '../auth/heartbeat';
+import { E2E_USER, readE2eSeams } from '../e2eSeams';
 /**
  * Sign-in handlers.
  *
@@ -71,7 +72,9 @@ export const registerAuthIpc = () => {
         return outcome;
     });
     ipcMain.handle(IPC.AuthCancel, async () => cancelSignIn());
-    ipcMain.handle(IPC.AuthStatus, async () => getStatus(deps()));
+    ipcMain.handle(IPC.AuthStatus, async () => readE2eSeams(process.env, app.isPackaged).signedIn
+        ? { signedIn: true, user: { ...E2E_USER } }
+        : getStatus(deps()));
     ipcMain.handle(IPC.AuthSignOut, async () => {
         await signOut(deps());
         broadcast(IPC.AuthComplete, { signedIn: false });

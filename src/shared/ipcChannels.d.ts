@@ -47,6 +47,9 @@ export declare const IPC: {
     readonly AuthSignOut: "auth:signout";
     /** Broadcast to every window when the signed-in state changes. */
     readonly AuthComplete: "auth:complete";
+    readonly AgentKeySet: "agent:key-set";
+    readonly AgentKeyStatus: "agent:key-status";
+    readonly AgentKeyClear: "agent:key-clear";
     readonly ThemeRead: "theme:read";
     readonly ThemeChanged: "theme:changed";
     readonly ThemeWrite: "theme:write";

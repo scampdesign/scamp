@@ -56,7 +56,13 @@ export type SaveResult = {
  * will not survive a restart. Writing the token in the clear instead would
  * turn a minor inconvenience into a credential sitting readable on disk.
  */
-export declare const saveToken: (token: string, { safeStorage, userDataDir }: TokenStoreDeps) => Promise<SaveResult>;
+export declare const saveToken: (token: string, deps: TokenStoreDeps) => Promise<SaveResult>;
+/**
+ * Persist any secret under `fileName` in userData, with the same refusal
+ * as the session token: encrypted, or not at all. The Scamp Agent's
+ * provider key uses it too. see docs/plans/builtin-agent-plan.md
+ */
+export declare const saveSecret: (fileName: string, secret: string, { safeStorage, userDataDir }: TokenStoreDeps) => Promise<SaveResult>;
 /**
  * Read a stored token.
  *
@@ -65,6 +71,10 @@ export declare const saveToken: (token: string, { safeStorage, userDataDir }: To
  * differently-signed build — so the blob is intact and undecryptable. The
  * caller should clear it and ask the user to sign in again.
  */
-export declare const loadToken: ({ safeStorage, userDataDir, }: TokenStoreDeps) => Promise<LoadResult>;
+export declare const loadToken: (deps: TokenStoreDeps) => Promise<LoadResult>;
+/** Read a secret `saveSecret` wrote. `token` holds the secret on `ok`. */
+export declare const loadSecret: (fileName: string, { safeStorage, userDataDir }: TokenStoreDeps) => Promise<LoadResult>;
 /** Remove the stored token. Safe to call when there isn't one. */
-export declare const clearToken: ({ userDataDir, }: Pick<TokenStoreDeps, "userDataDir">) => Promise<void>;
+export declare const clearToken: (deps: Pick<TokenStoreDeps, "userDataDir">) => Promise<void>;
+/** Remove a stored secret. Safe to call when there isn't one. */
+export declare const clearSecret: (fileName: string, { userDataDir }: Pick<TokenStoreDeps, "userDataDir">) => Promise<void>;

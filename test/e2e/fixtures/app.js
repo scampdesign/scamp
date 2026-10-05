@@ -108,6 +108,7 @@ export const dismissSentryPrompt = async (window) => {
 const makeUserDataDir = async () => fs.mkdtemp(path.join(os.tmpdir(), 'scamp-e2e-userdata-'));
 export const test = base.extend({
     projectOptions: [{}, { option: true }],
+    appEnv: [{}, { option: true }],
     project: async ({ projectOptions }, use) => {
         const project = await createTestProject(projectOptions);
         try {
@@ -117,7 +118,7 @@ export const test = base.extend({
             await project.cleanup();
         }
     },
-    app: async ({ project }, use) => {
+    app: async ({ project, appEnv }, use) => {
         const userDataDir = await makeUserDataDir();
         const app = await electron.launch({
             args: [MAIN_ENTRY, `--user-data-dir=${userDataDir}`, ...OZONE_ARGS],
@@ -126,6 +127,7 @@ export const test = base.extend({
                 SCAMP_E2E: '1',
                 SCAMP_E2E_OPEN_PROJECT: project.dir,
                 NODE_ENV: 'test',
+                ...appEnv,
             },
         });
         try {

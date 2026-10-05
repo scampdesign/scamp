@@ -86,6 +86,12 @@ export const IPC = {
     AuthSignOut: 'auth:signout',
     /** Broadcast to every window when the signed-in state changes. */
     AuthComplete: 'auth:complete',
+    // Scamp Agent — the user's own provider key. The key goes in and never
+    // comes back out; the renderer only ever sees a status.
+    // see docs/plans/builtin-agent-plan.md
+    AgentKeySet: 'agent:key-set',
+    AgentKeyStatus: 'agent:key-status',
+    AgentKeyClear: 'agent:key-clear',
     // Theme
     ThemeRead: 'theme:read',
     ThemeChanged: 'theme:changed',

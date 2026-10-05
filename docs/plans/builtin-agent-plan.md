@@ -177,16 +177,32 @@ nobody can talk to can't be tested by hand.
   it tracks the sign-in *flow*, and both read the same broadcast.
 - **`@anthropic-ai/sdk`** added.
 
-### Phase 1 — provider connection
+### Phase 1 — provider connection — **done**
 
-- `src/main/agent/providerKeyStore.ts`, modelled on `tokenStore.ts`:
-  `anthropic-key.bin` in userData, `memory-only` when encryption is
-  unavailable, never plaintext. Unit tested with a fake `safeStorage`.
-- IPC `agent:key-set` (validates with a one-token request before
-  storing), `agent:key-status` (`connected | not-connected | invalid`),
-  `agent:key-clear`. The renderer never receives the key — only status.
-- An **AI provider** section on `SettingsPage.tsx`: paste field, where to
-  get a key, status, disconnect. Hidden when signed out.
+- **Storage reuses the session token's code.** `tokenStore.ts` gained
+  `saveSecret` / `loadSecret` / `clearSecret`, which take a file name;
+  the token functions wrap them. One encrypted-or-nothing path, already
+  tested, rather than a second copy of it.
+- **`createProviderKey`** (`src/main/agent/providerKey.ts`) holds the
+  key in main with everything injected: storage, the provider check, and
+  the sign-in check. A stored key is trusted until the provider rejects
+  it (`markInvalid`, for the harness), so launching Scamp costs no
+  request. `current()` returns null to a signed-out user — the gate is in
+  main, not only in the UI.
+- **The check costs no tokens:** `models.retrieve('claude-opus-5-5')`
+  proves the key authenticates *and* that its workspace can use the
+  agent's model. `describeProviderError` maps the SDK's typed errors to
+  plain language, and the harness will reuse it.
+- **IPC** `agent:key-set` / `agent:key-status` / `agent:key-clear`. The
+  key goes in once and nothing returns it.
+- **Settings → AI provider** (`AiProviderSection.tsx`): renders nothing
+  for a signed-out user. "Connected for this session" when the OS can't
+  encrypt — which is what a keyring-less Linux box gets, as the e2e run
+  showed.
+- **e2e seams** (`src/main/e2eSeams.ts`): `SCAMP_E2E_SIGNED_IN` and
+  `SCAMP_E2E_AGENT_VERIFY`, inert unless `SCAMP_E2E=1` *and* the app is
+  unpackaged. The e2e fixture takes an `appEnv` option to set them.
+  Phase 2's fake provider will hang off the same module.
 
 ### Phase 2 — harness and a read-only chat
 
