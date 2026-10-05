@@ -87,6 +87,13 @@ the inline layer holds only things the stylesheet cannot own:
 | `box-sizing` and `margin: 0` | mirror theme.css, which the canvas does not inject |
 | grid-item placement, `align-self` | read from the parent's model during a drag |
 
+`background` is still inline too, with one exception: the default
+`transparent` writes nothing. The generator omits the default, so the
+inline copy said nothing the sheet did not — but it outranked every rule
+that paints the element from somewhere other than its own class. A
+table's derived stripe (`:where(.t) > :where(tbody) > :where(tr:nth-child(even))`)
+showed in the preview and not on the canvas until this went.
+
 Sizing and position are the interesting entry. They are not *wrong*
 inline — they are genuinely dual-purpose. The stylesheet has the
 committed value; the inline layer has the value under the user's cursor

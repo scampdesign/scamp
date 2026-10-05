@@ -198,21 +198,69 @@ inside a table are a `caption`.
 Tests: `test/tableGrid.test.ts` (20). Each of the three fixes above was
 reverted in turn to confirm the tests fail without it.
 
-### Phase 3 — the styling a table actually needs
+### Phase 3 — the styling a table actually needs — **done**
 
-Small, specific, and each of these is something every table has:
+Dividers, striping, a sticky header, and cell padding and alignment, all
+set once on the table in a **Rows and cells** section.
 
-- **Header treatment** — the `thead`/`th` row as its own styleable thing.
-- **Row dividers** — a border on the row, not on every cell.
-- **Striping** — `:nth-child(even)`. Scamp models a fixed set of
-  pseudo-classes today; this needs one more, and it is worth checking
-  whether the existing state machinery takes it or whether striping
-  wants a dedicated control.
-- **Cell padding and alignment** — per column would be ideal and is
-  harder; per cell is what the model gives cheaply. Decide before
-  building.
-- **Sticky header** — `position: sticky; top: 0` on the header row. The
-  reviewed project hand-rolled this; it should be a toggle.
+**Decided before building.** Striping cannot use the state machinery:
+`.row_ab12:nth-child(even)` on each row fires only if *that* row is even,
+so striping is a table-level rule by nature. A divider on every `tr` is
+the per-row duplication Phase 2 removed. So all five live in one typed
+field, `tableStyle` on the table, and the generator derives one rule per
+setting, in `@lib/tableStyle` beside the subgrid rule. Cell padding and
+alignment are a table default plus the cell's own override; per-column
+is deferred, because `colspan` breaks the mapping from `:nth-child(n)`
+to a column.
+
+```css
+.rect_t1 :where(th, td)            { padding: 8px 12px; text-align: left; }
+:where(.rect_t1) :where(tr)        { border-bottom: 1px solid #e0e0e0; }
+:where(.rect_t1) > :where(tbody) > :where(tr:nth-child(even)),
+:where(.rect_t1) > :where(tr:nth-child(even of tr)) { background-color: #f5f5f5; }
+:where(.rect_t1) > :where(thead)   { position: sticky; top: 0; z-index: 1; }
+```
+
+Header treatment needed nothing new: the `thead` is a real element with
+its own class, so its background is already one control away.
+
+**Read back strictly.** The parser turns a rule into `tableStyle` only if
+re-emitting what it read gives the same declarations. An agent that adds
+a `color` to the stripe rule or writes `solid 1px` keeps its rule
+verbatim, as a `customSelectorBlocks` entry on the table, rather than
+having it rewritten.
+
+**What the phase turned on.** Three things, each found by measuring
+rather than by the unit tests, which all passed:
+
+1. **The cell rule cannot be zero-specificity.** In Chromium its padding
+   came out `0`: the table reset's `th, td { padding: 0 }` is (0,0,1)
+   and the canvas reset `.element:where(th, td)` is (0,1,0). The cell rule
+   is `.table :where(th, td)` at (0,1,0), and a cell's own rule still wins
+   the tie because the generator writes it later in the file. Every other
+   derived rule stays at zero.
+2. **The incremental writer never removed a `:where(` rule.** It treats
+   anything not starting with `.` as hand-written and leaves it on disk,
+   so a stripe switched off in the panel came straight back on the next
+   parse. Phase 2's subgrid rule had the same problem when a table stopped
+   being a grid. `cssRuleEdits` now recognises the derived table shapes
+   (and only those — a hand-written `:where(.card) p` still survives). It
+   also wrote every newly inserted rule's declarations at column zero;
+   new rules are now indented like the generator's.
+3. **The canvas hid the stripe.** It wrote an inline
+   `background-color: transparent` on every element, which outranks any
+   sheet rule. The default is no longer written inline.
+   [`../notes/canvas-inline-layer-peel.md`](../notes/canvas-inline-layer-peel.md)
+
+The stripe needs two selector arms: the exported page always has a
+`tbody` (the HTML parser inserts one), the canvas has only the ones the
+user drew, and `of tr` stops a `thead` sibling shifting the count there.
+Measured on all three shapes.
+
+Tests: `test/tableStyle.test.ts` (31), `test/cssRuleEdits.test.ts` (five
+new, each failing on the old writer), the `table-rows-and-cells` parity
+fixture (fails on the canvas without fix 3), and
+`test/e2e/properties-panel/table-style.spec.ts`.
 
 ### Phase 4 — the importer stops losing them
 

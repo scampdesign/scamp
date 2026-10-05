@@ -220,6 +220,7 @@ const collectCssClassNames = (parsed: ParsedCss): Set<string> => {
   for (const k of parsed.byClass.keys()) names.add(k);
   for (const k of parsed.rawByClass.keys()) names.add(k);
   for (const k of parsed.toggledOffByClass.keys()) names.add(k);
+  for (const k of parsed.tableStyleByClass.keys()) names.add(k);
   for (const m of parsed.byState.values()) for (const k of m.keys()) names.add(k);
   for (const m of parsed.byBreakpoint.values()) for (const k of m.keys()) names.add(k);
   return names;
@@ -483,6 +484,11 @@ export const parseCode = (
         ...finalElement,
         customSelectorBlocks: rawBlocks,
       };
+    }
+
+    const tableStyle = parsedCss.tableStyleByClass.get(cls);
+    if (tableStyle !== undefined) {
+      finalElement = { ...finalElement, tableStyle };
     }
 
     // Element-scoped property-group toggles. Any group labelled as

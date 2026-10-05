@@ -20,6 +20,7 @@ export const BASE_ONLY_PATCH_FIELDS = new Set<keyof ScampElement>([
   'breakpointOverrides',
   'stateOverrides',
   'customSelectorBlocks',
+  'tableStyle',
   'tag',
   'attributes',
   'selectOptions',

@@ -92,6 +92,8 @@ const collectCssClassNames = (parsed) => {
         names.add(k);
     for (const k of parsed.toggledOffByClass.keys())
         names.add(k);
+    for (const k of parsed.tableStyleByClass.keys())
+        names.add(k);
     for (const m of parsed.byState.values())
         for (const k of m.keys())
             names.add(k);
@@ -335,6 +337,10 @@ export const parseCode = (tsx, css, options) => {
                 ...finalElement,
                 customSelectorBlocks: rawBlocks,
             };
+        }
+        const tableStyle = parsedCss.tableStyleByClass.get(cls);
+        if (tableStyle !== undefined) {
+            finalElement = { ...finalElement, tableStyle };
         }
         // Element-scoped property-group toggles. Any group labelled as
         // off in any rule (base / state / breakpoint) is treated as off

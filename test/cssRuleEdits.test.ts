@@ -188,3 +188,44 @@ describe('applyCssChanges', () => {
     expect(patch(once, next)).toBe(once);
   });
 });
+
+describe('rules the incremental writer creates', () => {
+  it('indents a new rule the way the generator writes it', () => {
+    const out = patch('.a {\n  color: red;\n}\n', '.a {\n  color: red;\n}\n\n.b {\n  color: blue;\n  gap: 4px;\n}\n');
+    expect(out).toContain('.b {\n  color: blue;\n  gap: 4px;\n}');
+  });
+
+  it('indents a new rule inside a breakpoint block one level deeper', () => {
+    const out = patch(
+      '.a { color: red; }\n@media (max-width: 768px) {\n  .a { color: blue; }\n}\n',
+      '.a { color: red; }\n@media (max-width: 768px) {\n  .a { color: blue; }\n  .b { color: green; }\n}\n'
+    );
+    expect(out).toContain('  .b {\n    color: green;\n  }');
+  });
+});
+
+describe("a table's derived rules", () => {
+  const STRIPE =
+    ':where(.t1) > :where(tbody) > :where(tr:nth-child(even)),\n' +
+    ':where(.t1) > :where(tr:nth-child(even of tr)) {\n  background-color: #eee;\n}';
+
+  it('are removed when the model stops emitting them', () => {
+    // Left on disk, a stripe switched off in the panel would be read
+    // straight back in by the next parse.
+    const out = patch(`.t1 {\n  display: grid;\n}\n\n${STRIPE}\n`, '.t1 {\n  display: grid;\n}\n');
+    expect(out).not.toContain('nth-child');
+  });
+
+  it('remove the subgrid rule when a table stops being a grid', () => {
+    const disk =
+      '.t1 {\n  display: grid;\n}\n\n' +
+      ':where(.t1) > :where(thead, tbody, tfoot),\n:where(.t1) :where(tr) {\n  display: grid;\n}\n';
+    expect(patch(disk, '.t1 {}\n')).not.toContain('subgrid');
+    expect(patch(disk, '.t1 {}\n')).not.toContain(':where(tr)');
+  });
+
+  it('leave a hand-written :where rule alone', () => {
+    const disk = '.card {\n  color: red;\n}\n\n:where(.card) p {\n  margin: 0;\n}\n';
+    expect(patch(disk, '.card {\n  color: blue;\n}\n')).toContain(':where(.card) p');
+  });
+});

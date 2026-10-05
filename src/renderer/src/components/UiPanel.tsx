@@ -4,6 +4,7 @@ import { PositionSection } from './sections/PositionSection';
 import { SizeSection } from './sections/SizeSection';
 import { LayoutSection } from './sections/LayoutSection';
 import { SpacingSection } from './sections/SpacingSection';
+import { TableStyleSection } from './sections/TableStyleSection';
 import { BackgroundSection } from './sections/BackgroundSection';
 import { BorderSection } from './sections/BorderSection';
 import { ElementSection } from './sections/ElementSection';
@@ -83,6 +84,7 @@ export const UiPanel = (): JSX.Element => {
       {showPosition && <PositionSection elementId={elementId} />}
       <SizeSection elementId={elementId} />
       {!isText && !isInput && <LayoutSection elementId={elementId} />}
+      {element.tag === 'table' && <TableStyleSection elementId={elementId} />}
       <SpacingSection elementId={elementId} hideMargin={isRoot} />
       <BackgroundSection elementId={elementId} />
       <BorderSection elementId={elementId} />

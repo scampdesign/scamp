@@ -746,4 +746,98 @@ export default function Home() {
 }
 `,
     },
+    {
+        name: 'table-rows-and-cells',
+        why: "A table's row and cell styling is derived into :where() rules the canvas only sees through the injected sheet. An inline `background-color: transparent` on every canvas row hid the stripe while the preview showed it, and a zero-specificity cell rule lost its padding to the table reset. Empty fixed-height cells keep fonts out of it.",
+        computed: [
+            'background-color',
+            'border-bottom-width',
+            'border-bottom-style',
+            'padding-top',
+            'padding-left',
+            'text-align',
+        ],
+        tsx: page(`    <div data-scamp-id="root" className={styles.root}>
+      <table data-scamp-id="table_t101" className={styles.table_t101}>
+        <tbody data-scamp-id="body_t102" className={styles.body_t102}>
+          <tr data-scamp-id="row_t103" className={styles.row_t103}>
+            <td data-scamp-id="cell_t104" className={styles.cell_t104} />
+            <td data-scamp-id="cell_t105" className={styles.cell_t105} />
+          </tr>
+          <tr data-scamp-id="row_t106" className={styles.row_t106}>
+            <td data-scamp-id="cell_t107" className={styles.cell_t107} />
+            <td data-scamp-id="cell_t108" className={styles.cell_t108} />
+          </tr>
+        </tbody>
+      </table>
+    </div>`),
+        html: `    <div class="root">
+      <table class="table_t101">
+        <tbody class="body_t102">
+          <tr class="row_t103">
+            <td class="cell_t104"></td>
+            <td class="cell_t105"></td>
+          </tr>
+          <tr class="row_t106">
+            <td class="cell_t107"></td>
+            <td class="cell_t108"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`,
+        css: `.root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  padding: 20px;
+  align-items: flex-start;
+  position: relative;
+  background: #ffffff;
+}
+
+.table_t101 {
+  width: 300px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+}
+
+:where(.table_t101) > :where(thead, tbody, tfoot),
+:where(.table_t101) :where(tr) {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+}
+
+.table_t101 :where(th, td) {
+  padding: 4px 10px;
+  text-align: center;
+}
+
+:where(.table_t101) :where(tr) {
+  border-bottom: 2px solid #cc3344;
+}
+
+:where(.table_t101) > :where(tbody) > :where(tr:nth-child(even)),
+:where(.table_t101) > :where(tr:nth-child(even of tr)) {
+  background-color: #dde4ff;
+}
+
+.cell_t104 {
+  height: 20px;
+}
+
+.cell_t105 {
+  height: 20px;
+  padding: 2px;
+}
+
+.cell_t107 {
+  height: 20px;
+}
+
+.cell_t108 {
+  height: 20px;
+}
+`,
+    },
 ];

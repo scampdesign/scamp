@@ -1,4 +1,5 @@
 import postcss from 'postcss';
+import { isTableRuleSelector } from './tableStyle';
 /** postcss keeps the author's spacing inside selectors and params. */
 const norm = (text) => text.trim().replace(/\s+/g, ' ');
 const slotKey = (slot) => {
@@ -68,7 +69,9 @@ const isGenerated = (slot) => {
     if (slot.kind === 'atRule')
         return norm(slot.key).startsWith('@keyframes ');
     const selector = slot.kind === 'rule' ? slot.selector : slot.selector;
-    return norm(selector).startsWith('.');
+    // A table's derived rules start with `:where(` but are Scamp's: left
+    // behind, a stripe switched off would be read back on the next parse.
+    return norm(selector).startsWith('.') || isTableRuleSelector(selector);
 };
 /**
  * Every addressable slot in a stylesheet, in source order. A `@media`
@@ -174,9 +177,9 @@ const findAtRule = (root, key) => {
  * `raws.before`, so a rule indented with four spaces keeps its four
  * spaces instead of picking up the generator's two.
  */
-const setBody = (container, body) => {
+const setBody = (container, body, indent = '\n  ') => {
     const existing = container.nodes ?? [];
-    const before = existing[0]?.raws.before ?? '\n  ';
+    const before = existing[0]?.raws.before ?? indent;
     const after = container.raws.after;
     container.removeAll();
     if (body.trim().length === 0)
@@ -191,6 +194,17 @@ const setBody = (container, body) => {
     }
     if (after !== undefined)
         container.raws.after = after;
+};
+/**
+ * A rule that is not on disk yet, indented the way the generator writes
+ * it. Parsing the body straight after the brace left every declaration
+ * at column zero. `margin` is the rule's own indent inside a `@media`.
+ */
+const newRule = (selector, body, margin) => {
+    const rule = postcss.rule({ selector });
+    setBody(rule, body, `\n${margin}  `);
+    rule.raws.after = `\n${margin}`;
+    return rule;
 };
 /**
  * Apply changes to a stylesheet. A slot that exists is rewritten in
@@ -260,10 +274,7 @@ export const applyCssChanges = (source, changes, order) => {
                 setBody(existing, change.body);
                 continue;
             }
-            const created = postcss.parse(`${slot.selector} {\n${change.body}\n}`).first;
-            if (created && created.type === 'rule') {
-                insertInOrder(root, created, slotKey(slot));
-            }
+            insertInOrder(root, newRule(slot.selector, change.body, ''), slotKey(slot));
             continue;
         }
         if (slot.kind === 'ruleInMedia') {
@@ -287,10 +298,7 @@ export const applyCssChanges = (source, changes, order) => {
                 setBody(existing, change.body);
                 continue;
             }
-            const created = postcss.parse(`${slot.selector} {\n${change.body}\n}`).first;
-            if (created && created.type === 'rule') {
-                insertInOrder(container, created, slotKey(slot));
-            }
+            insertInOrder(container, newRule(slot.selector, change.body, '  '), slotKey(slot));
             continue;
         }
         const existing = findAtRule(root, slot.key);

@@ -1,6 +1,8 @@
 import postcss from 'postcss';
 import type { AtRule, Container, Root, Rule } from 'postcss';
 
+import { isTableRuleSelector } from './tableStyle';
+
 /**
  * Rule-level changes between two stylesheets, and how to apply them to
  * a third.
@@ -104,7 +106,9 @@ const bodiesAgree = (a: ReadonlyArray<string>, b: ReadonlyArray<string>): boolea
 const isGenerated = (slot: CssSlot): boolean => {
   if (slot.kind === 'atRule') return norm(slot.key).startsWith('@keyframes ');
   const selector = slot.kind === 'rule' ? slot.selector : slot.selector;
-  return norm(selector).startsWith('.');
+  // A table's derived rules start with `:where(` but are Scamp's: left
+  // behind, a stripe switched off would be read back on the next parse.
+  return norm(selector).startsWith('.') || isTableRuleSelector(selector);
 };
 
 type SlotEntry = {
@@ -220,9 +224,9 @@ const findAtRule = (root: Root, key: string): AtRule | null => {
  * `raws.before`, so a rule indented with four spaces keeps its four
  * spaces instead of picking up the generator's two.
  */
-const setBody = (container: Container, body: string): void => {
+const setBody = (container: Container, body: string, indent = '\n  '): void => {
   const existing = container.nodes ?? [];
-  const before = existing[0]?.raws.before ?? '\n  ';
+  const before = existing[0]?.raws.before ?? indent;
   const after = container.raws.after;
   container.removeAll();
   if (body.trim().length === 0) return;
@@ -234,6 +238,18 @@ const setBody = (container: Container, body: string): void => {
     container.append(clone);
   }
   if (after !== undefined) container.raws.after = after;
+};
+
+/**
+ * A rule that is not on disk yet, indented the way the generator writes
+ * it. Parsing the body straight after the brace left every declaration
+ * at column zero. `margin` is the rule's own indent inside a `@media`.
+ */
+const newRule = (selector: string, body: string, margin: string): Rule => {
+  const rule = postcss.rule({ selector });
+  setBody(rule, body, `\n${margin}  `);
+  rule.raws.after = `\n${margin}`;
+  return rule;
 };
 
 /**
@@ -310,10 +326,7 @@ export const applyCssChanges = (
         setBody(existing, change.body);
         continue;
       }
-      const created = postcss.parse(`${slot.selector} {\n${change.body}\n}`).first;
-      if (created && created.type === 'rule') {
-        insertInOrder(root, created, slotKey(slot));
-      }
+      insertInOrder(root, newRule(slot.selector, change.body, ''), slotKey(slot));
       continue;
     }
 
@@ -338,10 +351,7 @@ export const applyCssChanges = (
         setBody(existing, change.body);
         continue;
       }
-      const created = postcss.parse(`${slot.selector} {\n${change.body}\n}`).first;
-      if (created && created.type === 'rule') {
-        insertInOrder(container, created, slotKey(slot));
-      }
+      insertInOrder(container, newRule(slot.selector, change.body, '  '), slotKey(slot));
       continue;
     }
 

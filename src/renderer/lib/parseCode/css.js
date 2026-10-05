@@ -3,6 +3,7 @@ import postcss from 'postcss';
 import { ELEMENT_STATES } from "../element";
 import { matchesPreset } from "../keyframesMatch";
 import { canonicalizeGroupList, isPropertyGroup } from "../propertyGroups";
+import { matchTableRule } from "../tableStyle";
 import { DESKTOP_BREAKPOINT_ID } from "@shared/types";
 /**
  * Match a `<group> off` comment-body string (already trimmed and
@@ -203,6 +204,7 @@ export const parseCssDeclarations = (css, breakpoints) => {
     const customMediaBlocks = [];
     const keyframesBlocks = [];
     const toggledOffByClass = new Map();
+    const tableStyleByClass = new Map();
     /** Merge a freshly-parsed `toggledOff` list into the union map. */
     const mergeToggledOff = (className, groups) => {
         if (groups.length === 0)
@@ -221,17 +223,14 @@ export const parseCssDeclarations = (css, breakpoints) => {
         if (node.type !== 'rule')
             continue;
         const selector = node.selector.trim();
-        const classification = classifyClassSelector(selector);
-        if (classification === null)
-            continue;
-        if (classification.kind === 'raw') {
-            // Preserve verbatim. Format the body as a single string —
-            // postcss's `raws` give us original whitespace and comments.
-            // `Declaration.toString()` omits the trailing `;`, so re-append it
-            // for declarations: without it a raw block with two+ declarations
-            // re-emits as invalid CSS and the next parse fails for the whole
-            // page. See docs/plans/2026-06-19-style-loss-on-css-edit.md.
-            const decls = node.nodes
+        // Preserve verbatim. Format the body as a single string —
+        // postcss's `raws` give us original whitespace and comments.
+        // `Declaration.toString()` omits the trailing `;`, so re-append it
+        // for declarations: without it a raw block with two+ declarations
+        // re-emits as invalid CSS and the next parse fails for the whole
+        // page. See docs/plans/2026-06-19-style-loss-on-css-edit.md.
+        const keepRaw = (className) => {
+            const body = node.nodes
                 .map((child) => {
                 const s = child.toString().trim();
                 if (s.length === 0)
@@ -240,9 +239,33 @@ export const parseCssDeclarations = (css, breakpoints) => {
             })
                 .filter((s) => s.length > 0)
                 .join('\n');
-            const list = rawByClass.get(classification.className) ?? [];
-            list.push({ selector, body: decls });
-            rawByClass.set(classification.className, list);
+            const list = rawByClass.get(className) ?? [];
+            list.push({ selector, body });
+            rawByClass.set(className, list);
+        };
+        // A table's derived rules. The subgrid one is rebuilt from the
+        // columns, so it is dropped; styling ones become typed settings.
+        // see docs/plans/tables-plan.md
+        const tableRule = selector.includes(':where(')
+            ? matchTableRule(selector, collectRuleNodes(node).decls)
+            : null;
+        if (tableRule !== null) {
+            if (tableRule.kind === 'style') {
+                tableStyleByClass.set(tableRule.className, {
+                    ...tableStyleByClass.get(tableRule.className),
+                    ...tableRule.style,
+                });
+            }
+            else if (tableRule.kind === 'raw') {
+                keepRaw(tableRule.className);
+            }
+            continue;
+        }
+        const classification = classifyClassSelector(selector);
+        if (classification === null)
+            continue;
+        if (classification.kind === 'raw') {
+            keepRaw(classification.className);
             continue;
         }
         const { decls, toggledOff } = collectRuleNodes(node);
@@ -350,5 +373,6 @@ export const parseCssDeclarations = (css, breakpoints) => {
         customMediaBlocks,
         keyframesBlocks,
         toggledOffByClass,
+        tableStyleByClass,
     };
 };

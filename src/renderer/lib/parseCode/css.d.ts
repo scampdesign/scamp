@@ -1,4 +1,4 @@
-import { type ElementStateName, type KeyframesBlock, type PropertyGroup, type RawSelectorBlock } from "../element";
+import { type ElementStateName, type KeyframesBlock, type PropertyGroup, type RawSelectorBlock, type TableStyle } from "../element";
 import { type Breakpoint } from "@shared/types";
 export type RawDeclaration = {
     prop: string;
@@ -49,6 +49,11 @@ export type ParsedCss = {
      * blocks travel together at the page level rather than per-element.
      */
     keyframesBlocks: KeyframesBlock[];
+    /**
+     * A table's row and cell styling, read back from the `:where()` rules
+     * `@lib/tableStyle` derives. Keyed by the table's class name.
+     */
+    tableStyleByClass: Map<string, TableStyle>;
 };
 export declare const parseCssDeclarations: (css: string, breakpoints: ReadonlyArray<Breakpoint>) => ParsedCss;
 export {};

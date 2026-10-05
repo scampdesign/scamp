@@ -250,6 +250,14 @@ describe('elementToStyle — theme token resolution', () => {
         const el = makeEl({ backgroundColor: 'var(--color-brand)' });
         expect(style(el, { tokens }).backgroundColor).toBe('#3b82f6');
     });
+    it('writes no inline background for the default transparent', () => {
+        // Inline beats every stylesheet rule, so an inline `transparent`
+        // hid a table's derived stripe on the canvas while the preview
+        // showed it.
+        const style0 = style(makeEl({ backgroundColor: 'transparent' }), {});
+        expect(style0).not.toHaveProperty('backgroundColor');
+        expect(style0).not.toHaveProperty('background');
+    });
     it('renders a broken colour reference as transparent, not the raw var', () => {
         const tokens = [
             { name: '--color-brand-500', value: '#3b82f6' },

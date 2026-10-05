@@ -75,6 +75,32 @@ export type Position = 'auto' | 'static' | 'relative' | 'absolute' | 'fixed' | '
 /** Any CSS numeric font weight (1–1000); validated at the parse boundary. */
 export type FontWeight = number;
 export type TextAlign = 'left' | 'center' | 'right';
+/**
+ * A table's row and cell styling, set once on the `<table>`.
+ *
+ * Every row and cell would otherwise carry its own copy of these, the
+ * same per-row duplication a table's columns exist to remove. The
+ * generator derives one zero-specificity rule per setting, so anything
+ * set on a row or cell itself still wins.
+ * see docs/plans/tables-plan.md
+ */
+export type TableRowDivider = {
+    width: number;
+    style: Exclude<BorderStyle, 'none'>;
+    color: string;
+};
+export type TableStyle = {
+    /** `border-bottom` on every row. */
+    rowDivider?: TableRowDivider;
+    /** Background of every even body row. */
+    stripe?: string;
+    /** `position: sticky; top: 0` on the `thead`. */
+    stickyHeader?: boolean;
+    /** Padding on every `th` and `td`. */
+    cellPadding?: SpaceTuple;
+    /** `text-align` on every `th` and `td`. */
+    cellAlign?: TextAlign;
+};
 /** One row of a repeat's sample list. */
 export type SampleRow = Record<string, string | number>;
 /** A sample value stored on the view root: a show flag or a repeat's rows. */
@@ -680,6 +706,11 @@ export type ScampElement = {
      * had nothing exotic for this class.
      */
     customSelectorBlocks?: ReadonlyArray<RawSelectorBlock>;
+    /**
+     * Row and cell styling a `<table>` sets once for all of them. Not
+     * overridable per breakpoint or state.
+     */
+    tableStyle?: TableStyle;
 };
 /**
  * Which `ScampElement` fields a breakpoint can override. Excludes
@@ -694,7 +725,7 @@ export type ScampElement = {
  * (the matrix is deferred — see the element-states plan), and the
  * raw-selector passthrough lives only at the top level.
  */
-export type BreakpointOverride = Partial<Omit<ScampElement, 'id' | 'type' | 'parentId' | 'childIds' | 'breakpointOverrides' | 'stateOverrides' | 'customSelectorBlocks' | 'tag' | 'attributes' | 'selectOptions' | 'svgSource' | 'text' | 'runs' | 'name'>>;
+export type BreakpointOverride = Partial<Omit<ScampElement, 'id' | 'type' | 'parentId' | 'childIds' | 'breakpointOverrides' | 'stateOverrides' | 'customSelectorBlocks' | 'tableStyle' | 'tag' | 'attributes' | 'selectOptions' | 'svgSource' | 'text' | 'runs' | 'name'>>;
 /**
  * The fixed set of CSS pseudo-classes Scamp models as first-class
  * "states" with typed per-field overrides. Other pseudo-classes

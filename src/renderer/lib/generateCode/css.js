@@ -1,6 +1,7 @@
 // generateCode/css.ts — split out of generateCode.ts (4.5).
 import { isStyled, runClassName, runStyleDeclarations, runsOf } from '../textRuns';
 import { isGridTable, tableSubgridRule } from '../tableGrid';
+import { tableStyleRules } from '../tableStyle';
 import { ELEMENT_STATES } from "../element";
 import { breakpointOverrideLines, elementDeclarationLines, sizeDeclarationLines } from "./declarations";
 import { classNameFor, computeElementsNeedingPositioningContext } from "./internal";
@@ -102,6 +103,8 @@ const elementCssChunks = (el, parent, mustEstablishPositioningContext = false) =
     if (isGridTable(el)) {
         chunks.push(tableSubgridRule(classNameFor(el)));
     }
+    // Row and cell styling the table sets once, derived the same way.
+    chunks.push(...tableStyleRules(classNameFor(el), el.tableStyle));
     const overrides = el.stateOverrides;
     if (overrides) {
         for (const state of ELEMENT_STATES) {

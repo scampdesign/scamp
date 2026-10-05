@@ -113,7 +113,11 @@ const backgroundStyle = (
   off: boolean,
   tokens: ReadonlyArray<ThemeToken>
 ): CSSProperties => {
-  if (off) return {};
+  // The default writes nothing: the generator omits it too, and an inline
+  // `transparent` masked any sheet rule that paints this element — a
+  // table's stripe, a breakpoint's colour.
+  // see docs/notes/canvas-inline-layer-peel.md
+  if (off || value === 'transparent') return {};
   const kind = classifyBackgroundValue(value);
   if (kind === 'color') {
     return { backgroundColor: resolveTokenColor(value, tokens) };

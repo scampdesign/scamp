@@ -13,6 +13,7 @@ export const BASE_ONLY_PATCH_FIELDS = new Set([
     'breakpointOverrides',
     'stateOverrides',
     'customSelectorBlocks',
+    'tableStyle',
     'tag',
     'attributes',
     'selectOptions',
