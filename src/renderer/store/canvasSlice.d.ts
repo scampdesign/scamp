@@ -162,7 +162,7 @@ export type BottomPanel = 'code' | 'terminal' | 'none';
  * rail, so they aren't sidebar-panel sections.) Per-session preference —
  * not persisted to disk. see docs/plans/icon-sidebar-nav-plan.md
  */
-export type SidebarSection = 'pages' | 'components' | 'history';
+export type SidebarSection = 'pages' | 'components' | 'history' | 'agent';
 /** Properties panel display mode. 'data' is component-scoped. */
 export type PanelMode = 'ui' | 'css' | 'data';
 export { MIN_ZOOM, MAX_ZOOM } from '@lib/zoom';

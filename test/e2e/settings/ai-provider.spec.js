@@ -26,7 +26,9 @@ test.describe('signed in, with a key the provider accepts', () => {
         const field = window.getByLabel('Claude API key');
         await field.fill('sk-ant-e2e-key');
         await window.getByRole('button', { name: 'Connect' }).click();
-        await expect(status).toHaveText('Connected');
+        // `Connected for this session` where the OS has no keyring to encrypt
+        // with — which is a CI Linux box, and the right answer there.
+        await expect(status).toHaveText(/^Connected/);
         // The field is gone once connected: there is nothing to read back.
         await expect(field).toHaveCount(0);
         await window.getByRole('button', { name: 'Disconnect' }).click();

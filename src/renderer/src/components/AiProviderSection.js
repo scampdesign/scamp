@@ -1,6 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useIsSignedIn } from '@store/authSlice';
+import { useAgentKey } from './agent/useAgentKey';
 import settingsStyles from './SettingsPage.module.css';
 import styles from './AiProviderSection.module.css';
 /**
@@ -19,37 +20,16 @@ const STATUS_TEXT = {
 };
 export const AiProviderSection = () => {
     const signedIn = useIsSignedIn();
-    const [status, setStatus] = useState(null);
+    const { status, checking, error, connect, disconnect } = useAgentKey(signedIn);
     const [draft, setDraft] = useState('');
-    const [checking, setChecking] = useState(false);
-    const [error, setError] = useState(null);
-    const refresh = useCallback(async () => {
-        const result = await window.scamp.agentKeyStatus();
-        setStatus(result.status);
-    }, []);
-    useEffect(() => {
-        if (signedIn)
-            void refresh();
-    }, [signedIn, refresh]);
     if (!signedIn || status === null)
         return null;
     const handleConnect = async () => {
-        setChecking(true);
-        setError(null);
-        const result = await window.scamp.agentKeySet(draft);
-        setChecking(false);
-        if (result.ok) {
+        if (await connect(draft))
             setDraft('');
-            setStatus(result.status);
-        }
-        else {
-            setError(result.message);
-        }
     };
     const handleDisconnect = async () => {
-        await window.scamp.agentKeyClear();
-        setError(null);
-        setStatus('not-connected');
+        await disconnect();
     };
     const connected = status === 'connected' || status === 'session-only';
     return (_jsxs("div", { className: settingsStyles.section, children: [_jsx("h2", { className: settingsStyles.sectionTitle, children: "AI provider" }), _jsxs("div", { className: settingsStyles.row, children: [_jsxs("div", { className: settingsStyles.rowLabel, children: [_jsx("div", { children: "Claude API key" }), _jsx("div", { className: settingsStyles.rowHint, children: "The Scamp Agent runs on your own Anthropic account. Create a key in the Claude Console at console.anthropic.com, then paste it here. Scamp stores it encrypted on this computer." })] }), _jsxs("div", { className: `${settingsStyles.rowControl} ${styles.control}`, children: [_jsx("span", { className: `${styles.status} ${connected ? styles.statusOk : ''} ${status === 'invalid' ? styles.statusError : ''}`, "data-testid": "ai-provider-status", children: STATUS_TEXT[status] }), connected ? (_jsx("button", { type: "button", className: settingsStyles.smallButton, onClick: () => void handleDisconnect(), children: "Disconnect" })) : (_jsxs("form", { className: styles.form, onSubmit: (e) => {

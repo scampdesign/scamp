@@ -92,6 +92,13 @@ export const IPC = {
     AgentKeySet: 'agent:key-set',
     AgentKeyStatus: 'agent:key-status',
     AgentKeyClear: 'agent:key-clear',
+    /** Send a message; the reply streams back on `agent:event`. */
+    AgentSend: 'agent:send',
+    AgentCancel: 'agent:cancel',
+    /** Start a new conversation for the project. */
+    AgentReset: 'agent:reset',
+    /** Main → renderer: one step of a turn, as it happens. */
+    AgentEvent: 'agent:event',
     // Theme
     ThemeRead: 'theme:read',
     ThemeChanged: 'theme:changed',

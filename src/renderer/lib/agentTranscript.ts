@@ -1,0 +1,193 @@
+import type { AgentEvent, AgentTurnOutcome, AgentUsage } from '@shared/types';
+
+/**
+ * The Scamp Agent conversation as the panel shows it, built from the
+ * events main streams back. Pure, so the panel is a view of this and
+ * nothing else.
+ * see docs/plans/builtin-agent-plan.md
+ */
+
+export type TranscriptToolCall = {
+  id: string;
+  name: string;
+  status: 'running' | 'ok' | 'failed';
+};
+
+/** A reply is text and tool calls interleaved, in the order they happened. */
+export type TranscriptPart =
+  | { kind: 'text'; text: string }
+  | { kind: 'tools'; calls: TranscriptToolCall[] };
+
+export type TranscriptEntry =
+  | { role: 'user'; id: string; text: string; context: string }
+  | {
+      role: 'assistant';
+      /** The turn id main assigned. */
+      id: string;
+      parts: TranscriptPart[];
+      /** The agent's current note on what it's doing; cleared as it acts. */
+      progress: string;
+      status: 'working' | AgentTurnOutcome;
+      message?: string;
+      usage?: AgentUsage;
+    };
+
+type AssistantEntry = Extract<TranscriptEntry, { role: 'assistant' }>;
+
+/** A user message and the reply it's waiting for. */
+export const startTurn = (
+  entries: ReadonlyArray<TranscriptEntry>,
+  turnId: string,
+  text: string,
+  context: string
+): TranscriptEntry[] => [
+  ...entries,
+  { role: 'user', id: `${turnId}:user`, text, context },
+  { role: 'assistant', id: turnId, parts: [], progress: '', status: 'working' },
+];
+
+const withLastPart = (
+  parts: ReadonlyArray<TranscriptPart>,
+  kind: TranscriptPart['kind'],
+  update: (part: TranscriptPart | null) => TranscriptPart
+): TranscriptPart[] => {
+  const last = parts.at(-1);
+  if (last !== undefined && last.kind === kind) return [...parts.slice(0, -1), update(last)];
+  return [...parts, update(null)];
+};
+
+const reduceAssistant = (entry: AssistantEntry, event: AgentEvent): AssistantEntry => {
+  switch (event.kind) {
+    case 'text':
+      return {
+        ...entry,
+        progress: '',
+        parts: withLastPart(entry.parts, 'text', (part) => ({
+          kind: 'text',
+          text: (part?.kind === 'text' ? part.text : '') + event.text,
+        })),
+      };
+    case 'progress':
+      return { ...entry, progress: entry.progress + event.text };
+    case 'tool-start':
+      return {
+        ...entry,
+        progress: '',
+        parts: withLastPart(entry.parts, 'tools', (part) => ({
+          kind: 'tools',
+          calls: [
+            ...(part?.kind === 'tools' ? part.calls : []),
+            { id: event.toolId, name: event.name, status: 'running' },
+          ],
+        })),
+      };
+    case 'tool-end':
+      return {
+        ...entry,
+        parts: entry.parts.map((part) =>
+          part.kind !== 'tools'
+            ? part
+            : {
+                kind: 'tools',
+                calls: part.calls.map((call) =>
+                  call.id === event.toolId ? { ...call, status: event.ok ? 'ok' : 'failed' } : call
+                ),
+              }
+        ),
+      };
+    case 'turn-end':
+      return {
+        ...entry,
+        progress: '',
+        status: event.outcome,
+        usage: event.usage,
+        ...(event.message !== undefined ? { message: event.message } : {}),
+      };
+  }
+};
+
+/**
+ * Fold one event in. An event for a turn the transcript doesn't have — one
+ * from before a reset — is ignored.
+ */
+export const applyAgentEvent = (
+  entries: ReadonlyArray<TranscriptEntry>,
+  event: AgentEvent
+): TranscriptEntry[] =>
+  entries.map((entry) =>
+    entry.role === 'assistant' && entry.id === event.turnId ? reduceAssistant(entry, event) : entry
+  );
+
+/** What each read tool is doing, said as the panel says it. */
+const TOOL_LABELS: Readonly<Record<string, string>> = {
+  scamp_get_active_page: 'Looked at the open page',
+  scamp_get_selected_element: 'Looked at the selection',
+  scamp_get_element_by_id: 'Read an element',
+  scamp_get_element_tree: 'Read the layer tree',
+  scamp_get_canvas_state: 'Read the whole canvas',
+  scamp_list_pages: 'Listed the pages',
+  scamp_list_components: 'Listed the components',
+  scamp_get_view_props: 'Read the view’s props',
+  scamp_check_view: 'Checked the view',
+  scamp_list_routes: 'Listed the routes',
+  scamp_list_import_sources: 'Listed imported pages',
+  scamp_get_import_source: 'Read the imported original',
+  scamp_get_recent_edits: 'Read your recent edits',
+  scamp_get_conventions: 'Read the project’s conventions',
+  scamp_get_theme_tokens: 'Read the theme tokens',
+};
+
+export const toolLabel = (name: string): string =>
+  TOOL_LABELS[name] ?? name.replace(/^scamp_/, '').replace(/_/g, ' ');
+
+/** One element as the context line names it. */
+export type ContextSelection = { className: string; name?: string };
+
+/**
+ * The line that tells the agent — and the user, in the panel — what the
+ * agent is looking at.
+ */
+export const agentContextLine = (input: {
+  target: { kind: 'page' | 'component' | 'view'; name: string } | null;
+  selection: ReadonlyArray<ContextSelection>;
+}): string => {
+  const parts: string[] = [];
+  if (input.target !== null) {
+    const kind = input.target.kind === 'component' ? 'Component' : input.target.kind === 'view' ? 'View' : 'Page';
+    parts.push(`${kind}: ${input.target.name}`);
+  }
+  const [first, ...rest] = input.selection;
+  if (first !== undefined) {
+    const one = first.name !== undefined && first.name.length > 0 ? `${first.name} (${first.className})` : first.className;
+    parts.push(rest.length === 0 ? `Selected: ${one}` : `Selected: ${one} and ${rest.length} more`);
+  } else if (input.target !== null) {
+    parts.push('Nothing selected');
+  }
+  return parts.join(' · ');
+};
+
+/** Tokens for one exchange, for the line under a reply. */
+export const formatUsage = (usage: AgentUsage): string => {
+  const total = usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens;
+  return `${total.toLocaleString('en-US')} tokens`;
+};
+
+/**
+ * Split a reply on `backtick` spans so class names and CSS read as code.
+ * Returns plain segments, never markup — the panel renders each as a text
+ * node, so nothing in a reply can inject HTML. An unclosed backtick is
+ * left as written.
+ */
+export const splitInlineCode = (text: string): Array<{ code: boolean; text: string }> => {
+  const out: Array<{ code: boolean; text: string }> = [];
+  const pattern = /`([^`\n]+)`/g;
+  let last = 0;
+  for (const match of text.matchAll(pattern)) {
+    const index = match.index ?? 0;
+    if (index > last) out.push({ code: false, text: text.slice(last, index) });
+    out.push({ code: true, text: match[1] ?? '' });
+    last = index + match[0].length;
+  }
+  if (last < text.length) out.push({ code: false, text: text.slice(last) });
+  return out;
+};

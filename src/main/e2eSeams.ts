@@ -12,6 +12,11 @@ export type E2eSeams = {
   signedIn: boolean;
   /** Answer the provider-key check without calling the provider. */
   agentKeyVerify: 'accept' | 'reject' | null;
+  /**
+   * A JSON file of scripted agent turns. When set, the agent runs on the
+   * scripted provider and needs no key.
+   */
+  agentScript: string | null;
 };
 
 export const E2E_USER = {
@@ -27,8 +32,10 @@ export const readE2eSeams = (
 ): E2eSeams => {
   const active = env['SCAMP_E2E'] === '1' && !isPackaged;
   const verify = env['SCAMP_E2E_AGENT_VERIFY'];
+  const script = env['SCAMP_E2E_AGENT_SCRIPT'];
   return {
     signedIn: active && env['SCAMP_E2E_SIGNED_IN'] === '1',
     agentKeyVerify: active && (verify === 'accept' || verify === 'reject') ? verify : null,
+    agentScript: active && script !== undefined && script.length > 0 ? script : null,
   };
 };

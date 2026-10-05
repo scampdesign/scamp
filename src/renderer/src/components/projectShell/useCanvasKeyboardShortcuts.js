@@ -1,6 +1,7 @@
 import { copyContextToClipboard } from '../../lib/copyContext';
 import { useEffect } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
+import { useAuthStore } from '@store/authSlice';
 import { useHistoryStore } from '@store/historySlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { clampToParent } from '@lib/bounds';
@@ -225,6 +226,19 @@ export const useCanvasKeyboardShortcuts = (keyDeps, componentEditor) => {
                 else {
                     useHistoryStore.getState().undo();
                 }
+                return;
+            }
+            // Cmd/Ctrl+Shift+A — toggle the Scamp Agent, for signed-in users.
+            if ((e.metaKey || e.ctrlKey) &&
+                e.shiftKey &&
+                (e.key === 'a' || e.key === 'A')) {
+                if (isEditableTarget(e.target))
+                    return;
+                if (useAuthStore.getState().status !== 'signed-in')
+                    return;
+                e.preventDefault();
+                const canvas = useCanvasStore.getState();
+                canvas.setSidebarSection(canvas.sidebarSection === 'agent' ? 'pages' : 'agent');
                 return;
             }
             // Cmd/Ctrl+Shift+H — toggle the left sidebar between History and the

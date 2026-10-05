@@ -1237,6 +1237,62 @@ export type AgentKeySetResult =
   | { ok: true; status: AgentKeyStatus }
   | { ok: false; reason: AgentKeyRejection; message: string };
 
+/** What one user message to the agent cost, as the provider reported it. */
+export type AgentUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+};
+
+/**
+ * How a turn ended. Everything but `done` is something the panel says
+ * out loud — none of them is an error the user caused.
+ */
+export type AgentTurnOutcome =
+  | 'done'
+  | 'cancelled'
+  | 'refusal'
+  | 'max-tokens'
+  | 'too-many-steps'
+  | 'error';
+
+/** One step of an agent turn, streamed to the panel as it happens. */
+export type AgentEvent =
+  | { kind: 'text'; turnId: string; text: string }
+  /** A short note on what the agent is doing between tool calls. */
+  | { kind: 'progress'; turnId: string; text: string }
+  | { kind: 'tool-start'; turnId: string; toolId: string; name: string }
+  | { kind: 'tool-end'; turnId: string; toolId: string; name: string; ok: boolean }
+  | {
+      kind: 'turn-end';
+      turnId: string;
+      outcome: AgentTurnOutcome;
+      usage: AgentUsage;
+      /** Plain-language detail for anything but `done`. */
+      message?: string;
+    };
+
+export type AgentSendArgs = {
+  projectPath: string;
+  /**
+   * Chosen by the renderer, so the reply exists in the transcript before
+   * main can stream the first event for it.
+   */
+  turnId: string;
+  text: string;
+  /**
+   * What the user is looking at, in one or two lines — the page and the
+   * selection. Sent with each message rather than fetched, because the
+   * renderer already knows it and the panel shows the same line.
+   */
+  context: string;
+};
+
+export type AgentSendResult =
+  | { ok: true }
+  | { ok: false; reason: 'busy' | 'signed-out' | 'not-connected'; message: string };
+
 /** One text file in an HTML export, at a path relative to the export root. */
 export type ExportHtmlFile = {
   path: string;

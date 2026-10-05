@@ -23,6 +23,7 @@ import type { PreviewOpenArgs, ProjectData } from '@shared/types';
 import { viewSlugFor } from '@shared/templates';
 import { componentKindOf } from '@shared/types';
 import { useCanvasStore } from '@store/canvasSlice';
+import { useIsSignedIn } from '@store/authSlice';
 import { PropertiesPanel } from './PropertiesPanel';
 import { CodePanel } from './CodePanel';
 import { TerminalPanel } from './TerminalPanel';
@@ -41,6 +42,7 @@ import { CanvasArea } from './projectShell/CanvasArea';
 import { PageSidebar } from './projectShell/PageSidebar';
 import { ComponentSidebar } from './projectShell/ComponentSidebar';
 import { SidebarRail } from './projectShell/SidebarRail';
+import { AgentPanel } from './agent/AgentPanel';
 import { ThemeSectionNav } from './projectShell/ThemeSectionNav';
 import { ProjectModals } from './projectShell/ProjectModals';
 import { useCanvasKeyboardShortcuts } from './projectShell/useCanvasKeyboardShortcuts';
@@ -243,7 +245,12 @@ export const ProjectShell = ({
 
   const bottomPanel = useCanvasStore((s) => s.bottomPanel);
   const toggleBottomPanel = useCanvasStore((s) => s.toggleBottomPanel);
-  const sidebarSection = useCanvasStore((s) => s.sidebarSection);
+  const storedSidebarSection = useCanvasStore((s) => s.sidebarSection);
+  const signedIn = useIsSignedIn();
+  // The agent is for signed-in users; signing out mid-session falls back
+  // to the default section rather than leaving an empty panel.
+  const sidebarSection =
+    storedSidebarSection === 'agent' && !signedIn ? 'pages' : storedSidebarSection;
   const setSidebarSection = useCanvasStore((s) => s.setSidebarSection);
 
   // Once the user opens the terminal we keep TerminalPanel mounted for
@@ -451,9 +458,14 @@ export const ProjectShell = ({
           }}
           designSystemOpen={showThemePanel}
           settingsOpen={showProjectSettings}
+          agentAvailable={signedIn}
         />
         <div className={styles.bodyContent}>
-        <aside className={styles.sidebar}>
+        <aside
+          className={`${styles.sidebar} ${
+            sidebarSection === 'agent' && !showThemePanel ? styles.sidebarWide : ''
+          }`}
+        >
           {showThemePanel ? (
             <ThemeSectionNav />
           ) : (
@@ -461,6 +473,7 @@ export const ProjectShell = ({
           {sidebarSection === 'history' && (
             <HistoryPanel projectPath={project.path} />
           )}
+          {sidebarSection === 'agent' && <AgentPanel />}
           {sidebarSection === 'pages' && (
             <>
           <PageSidebar

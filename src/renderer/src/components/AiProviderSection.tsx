@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import type { AgentKeyStatus } from '@shared/types';
 import { useIsSignedIn } from '@store/authSlice';
 
+import { useAgentKey } from './agent/useAgentKey';
 import settingsStyles from './SettingsPage.module.css';
 import styles from './AiProviderSection.module.css';
 
@@ -24,39 +25,17 @@ const STATUS_TEXT: Record<AgentKeyStatus, string> = {
 
 export const AiProviderSection = (): JSX.Element | null => {
   const signedIn = useIsSignedIn();
-  const [status, setStatus] = useState<AgentKeyStatus | null>(null);
+  const { status, checking, error, connect, disconnect } = useAgentKey(signedIn);
   const [draft, setDraft] = useState('');
-  const [checking, setChecking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const refresh = useCallback(async (): Promise<void> => {
-    const result = await window.scamp.agentKeyStatus();
-    setStatus(result.status);
-  }, []);
-
-  useEffect(() => {
-    if (signedIn) void refresh();
-  }, [signedIn, refresh]);
 
   if (!signedIn || status === null) return null;
 
   const handleConnect = async (): Promise<void> => {
-    setChecking(true);
-    setError(null);
-    const result = await window.scamp.agentKeySet(draft);
-    setChecking(false);
-    if (result.ok) {
-      setDraft('');
-      setStatus(result.status);
-    } else {
-      setError(result.message);
-    }
+    if (await connect(draft)) setDraft('');
   };
 
   const handleDisconnect = async (): Promise<void> => {
-    await window.scamp.agentKeyClear();
-    setError(null);
-    setStatus('not-connected');
+    await disconnect();
   };
 
   const connected = status === 'connected' || status === 'session-only';

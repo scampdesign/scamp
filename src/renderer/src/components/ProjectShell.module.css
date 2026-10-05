@@ -376,6 +376,11 @@ font-size: 14px;
   min-height: 0;
 }
 
+/* The agent's chat needs more width than a layer list. */
+.sidebarWide {
+  width: 320px;
+}
+
 .sidebarSection {
   padding: 12px;
   border-bottom: 1px solid var(--border);

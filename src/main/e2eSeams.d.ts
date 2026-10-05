@@ -12,6 +12,11 @@ export type E2eSeams = {
     signedIn: boolean;
     /** Answer the provider-key check without calling the provider. */
     agentKeyVerify: 'accept' | 'reject' | null;
+    /**
+     * A JSON file of scripted agent turns. When set, the agent runs on the
+     * scripted provider and needs no key.
+     */
+    agentScript: string | null;
 };
 export declare const E2E_USER: {
     readonly id: "e2e-user";

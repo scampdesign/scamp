@@ -173,6 +173,14 @@ const api = {
     agentKeySet: (key) => ipcRenderer.invoke(IPC.AgentKeySet, { key }),
     agentKeyStatus: () => ipcRenderer.invoke(IPC.AgentKeyStatus),
     agentKeyClear: () => ipcRenderer.invoke(IPC.AgentKeyClear),
+    agentSend: (args) => ipcRenderer.invoke(IPC.AgentSend, args),
+    agentCancel: () => ipcRenderer.invoke(IPC.AgentCancel),
+    agentReset: () => ipcRenderer.invoke(IPC.AgentReset),
+    onAgentEvent: (handler) => {
+        const listener = (_e, event) => handler(event);
+        ipcRenderer.on(IPC.AgentEvent, listener);
+        return () => ipcRenderer.removeListener(IPC.AgentEvent, listener);
+    },
     // Theme
     readTheme: (args) => ipcRenderer.invoke(IPC.ThemeRead, args),
     writeTheme: (args) => ipcRenderer.invoke(IPC.ThemeWrite, args),

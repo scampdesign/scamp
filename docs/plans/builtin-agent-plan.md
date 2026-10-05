@@ -204,22 +204,53 @@ nobody can talk to can't be tested by hand.
   unpackaged. The e2e fixture takes an `appEnv` option to set them.
   Phase 2's fake provider will hang off the same module.
 
-### Phase 2 — harness and a read-only chat
+### Phase 2 — harness and a read-only chat — **done**
 
-- `src/main/agent/`: `provider.ts` (the interface), `anthropicProvider.ts`,
-  `harness.ts` (the loop), `session.ts` (one per open project; owns
-  history, abort, the confirmation gate), `systemPrompt.ts`.
-- The system prompt carries the PRD's conventions plus the project's
-  `scamp_get_conventions` summary and `DESIGN.md` — not all of agent.md,
-  which is 1,400+ lines in a real project.
-- Read tools only. The agent can answer "what's on this page" and "why
-  is this card not centred".
-- A minimal **Agent** rail section (signed-in only): message list, input,
-  streaming text, a stop button. `ControlOrMeta+Shift+A` in
-  `useCanvasKeyboardShortcuts.ts`.
-- Tests: the harness against a **fake provider** that replays scripted
-  responses — tool calls, a `refusal`, a 429, a `max_tokens` stop. No
-  network in CI. Lib tests for prompt assembly and history serialisation.
+**Main** (`src/main/agent/`), all Electron-free except the IPC file:
+
+- `provider.ts` — the seam: one streamed turn, in Anthropic's message
+  types (the history has to be stored in them anyway).
+- `anthropicProvider.ts` — `client.beta.messages.stream`: adaptive
+  thinking with `display: 'updates'` for the panel's progress line, effort
+  set explicitly, `fallbacks: 'default'`, a cache breakpoint on the
+  system prompt plus top-level automatic caching for the history.
+- `harness.ts` — the loop. Append-only history; nothing appended that
+  would leave it invalid (a refusal or a `max_tokens` cut never keeps a
+  `tool_use` with no result), so a turn that ends early still leaves a
+  conversation the next message continues. All tool results in one user
+  message. A step limit. Provider errors through `describeProviderError`;
+  a 401 marks the stored key invalid.
+- `session.ts` — one project's conversation, one turn at a time. The
+  busy slot is claimed *before* the first `await` — a test caught two
+  quick sends both getting through — and a turn always ends with
+  `turn-end`, even when a tool throws, so the panel can't hang.
+- `agentTools.ts` — the MCP descriptors, sorted (they head the cached
+  prefix), minus the component scaffold, which hands back files to write.
+- `systemPrompt.ts` — static, so it caches. Per-message context (page,
+  selection) rides in the user turn as a `[Scamp: …]` line. Conventions
+  are a `scamp_get_conventions` call, not pasted in.
+- `scriptedProvider.ts` — plays back a script, for unit tests and e2e
+  (`SCAMP_E2E_AGENT_SCRIPT`). `echo_tool_result` answers with the last
+  tool result, which is how a test proves a tool really ran.
+
+**Renderer:**
+
+- `@lib/agentTranscript` — the pure reducer from events to what the
+  panel draws, the context line, tool labels, and an inline-code
+  splitter that never produces markup.
+- `useAgentStore` — creates the turn id itself and sends it with the
+  message, so the reply exists before main can stream the first event
+  for it. (Main choosing the id raced: a fast provider's events could
+  arrive before the id did, and be dropped.)
+- **Agent** rail section, signed-in only, 320px wide; `Cmd/Ctrl+Shift+A`.
+  The not-connected state is the same connect form as Settings (shared
+  `useAgentKey`), because leaving the project for app Settings would
+  unmount the canvas.
+- The shortcut is deliberately not in the user docs yet: the PRD says
+  not to advertise the agent while it's in testing.
+
+**Left for Phase 7:** history persistence, a context override, Markdown
+beyond inline code.
 
 ### Phase 3 — write tools
 

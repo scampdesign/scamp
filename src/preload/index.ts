@@ -21,8 +21,11 @@ import type {
   CreateProjectArgs,
   ExportChooseSavePathArgs,
   ExportChooseSavePathResult,
+  AgentEvent,
   AgentKeySetResult,
   AgentKeyStatusResult,
+  AgentSendArgs,
+  AgentSendResult,
   AuthSignInResult,
   AuthStatusResult,
   ExportHtmlArgs,
@@ -419,6 +422,15 @@ const api = {
     ipcRenderer.invoke(IPC.AgentKeySet, { key }),
   agentKeyStatus: (): Promise<AgentKeyStatusResult> => ipcRenderer.invoke(IPC.AgentKeyStatus),
   agentKeyClear: (): Promise<void> => ipcRenderer.invoke(IPC.AgentKeyClear),
+  agentSend: (args: AgentSendArgs): Promise<AgentSendResult> =>
+    ipcRenderer.invoke(IPC.AgentSend, args),
+  agentCancel: (): Promise<void> => ipcRenderer.invoke(IPC.AgentCancel),
+  agentReset: (): Promise<void> => ipcRenderer.invoke(IPC.AgentReset),
+  onAgentEvent: (handler: (event: AgentEvent) => void): (() => void) => {
+    const listener = (_e: unknown, event: AgentEvent): void => handler(event);
+    ipcRenderer.on(IPC.AgentEvent, listener);
+    return () => ipcRenderer.removeListener(IPC.AgentEvent, listener);
+  },
 
   // Theme
   readTheme: (args: { projectPath: string }): Promise<string> =>

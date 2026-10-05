@@ -1,0 +1,58 @@
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { useEffect, useRef, useState } from 'react';
+import { IconMessagePlus, IconPlayerStop, IconSend } from '@tabler/icons-react';
+import { useAgentStore, currentAgentContext } from '@store/agentSlice';
+import { useCanvasStore } from '@store/canvasSlice';
+import { Tooltip } from '../controls/Tooltip';
+import { AgentConnect } from './AgentConnect';
+import { AgentReply } from './AgentReply';
+import { useAgentKey } from './useAgentKey';
+import styles from './AgentPanel.module.css';
+/**
+ * The Scamp Agent, in the left sidebar. Signed-in users only — the rail
+ * doesn't offer it otherwise.
+ * see docs/plans/builtin-agent-plan.md
+ */
+/** Starting points, which change with what's selected. */
+const SUGGESTIONS_WITH_SELECTION = [
+    'What styles does this element have?',
+    'Why isn’t this element where I expect it?',
+    'Which theme tokens could this element use?',
+];
+const SUGGESTIONS_WITHOUT_SELECTION = [
+    'What’s on this page?',
+    'Which elements don’t use theme tokens?',
+    'What did this page lose when it was imported?',
+];
+export const AgentPanel = () => {
+    const keyControls = useAgentKey(true);
+    const projectPath = useCanvasStore((s) => s.projectPath);
+    const hasSelection = useCanvasStore((s) => s.selectedElementIds.length > 0);
+    // Recomputed from the canvas on every store change; a string, so the
+    // panel only re-renders when the line actually changes.
+    const context = useCanvasStore(() => currentAgentContext());
+    const { entries, busy, sendError, send, cancel, reset } = useAgentStore();
+    const conversationProject = useAgentStore((s) => s.projectPath);
+    const visible = conversationProject === projectPath ? entries : [];
+    const [draft, setDraft] = useState('');
+    const listRef = useRef(null);
+    useEffect(() => {
+        const list = listRef.current;
+        if (list !== null)
+            list.scrollTop = list.scrollHeight;
+    }, [visible]);
+    const connected = keyControls.status === 'connected' || keyControls.status === 'session-only';
+    const handleSend = (text) => {
+        if (text.trim().length === 0 || busy)
+            return;
+        void send(text);
+        setDraft('');
+    };
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            handleSend(draft);
+        }
+    };
+    return (_jsxs("section", { className: styles.panel, "data-testid": "agent-panel", "aria-label": "Scamp Agent", children: [_jsxs("header", { className: styles.header, children: [_jsxs("h2", { className: styles.title, children: ["Agent ", _jsx("span", { className: styles.beta, children: "Beta" })] }), connected && (_jsx(Tooltip, { label: "New conversation", children: _jsx("button", { type: "button", className: styles.iconButton, onClick: reset, disabled: visible.length === 0, "aria-label": "New conversation", children: _jsx(IconMessagePlus, { size: 14 }) }) }))] }), keyControls.status === null ? null : !connected ? (_jsx(AgentConnect, { keyControls: keyControls })) : (_jsxs(_Fragment, { children: [_jsx("div", { className: styles.messages, ref: listRef, "data-testid": "agent-messages", children: visible.length === 0 ? (_jsxs("div", { className: styles.empty, children: [_jsx("p", { className: styles.emptyText, children: "Ask about the page you\u2019re designing. The agent can read the canvas; editing from the chat is coming next." }), _jsx("ul", { className: styles.suggestions, children: (hasSelection ? SUGGESTIONS_WITH_SELECTION : SUGGESTIONS_WITHOUT_SELECTION).map((s) => (_jsx("li", { children: _jsx("button", { type: "button", className: styles.suggestion, onClick: () => handleSend(s), children: s }) }, s))) })] })) : (visible.map((entry) => entry.role === 'user' ? (_jsx("div", { className: styles.userMessage, "data-testid": "agent-user-message", children: entry.text }, entry.id)) : (_jsx(AgentReply, { entry: entry }, entry.id)))) }), _jsxs("footer", { className: styles.composer, children: [_jsx("p", { className: styles.context, "data-testid": "agent-context", title: context, children: context.length > 0 ? context : 'No page open' }), sendError !== null && (_jsx("p", { className: styles.replyError, role: "alert", children: sendError })), _jsxs("div", { className: styles.inputRow, children: [_jsx("textarea", { className: styles.input, value: draft, onChange: (e) => setDraft(e.target.value), onKeyDown: handleKeyDown, placeholder: "Ask about this page\u2026", rows: 3, "aria-label": "Message the agent" }), busy ? (_jsx(Tooltip, { label: "Stop", children: _jsx("button", { type: "button", className: styles.sendButton, onClick: cancel, "aria-label": "Stop", children: _jsx(IconPlayerStop, { size: 14 }) }) })) : (_jsx(Tooltip, { label: "Send", children: _jsx("button", { type: "button", className: styles.sendButton, onClick: () => handleSend(draft), disabled: draft.trim().length === 0, "aria-label": "Send", children: _jsx(IconSend, { size: 14 }) }) }))] })] })] }))] }));
+};

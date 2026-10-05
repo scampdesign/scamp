@@ -1,37 +1,97 @@
-import { app, ipcMain, safeStorage } from 'electron';
+import { promises as fs } from 'fs';
+import { app, ipcMain, safeStorage, type WebContents } from 'electron';
 
 import { IPC } from '@shared/ipcChannels';
-import type { AgentKeySetResult, AgentKeyStatusResult } from '@shared/types';
+import type {
+  AgentEvent,
+  AgentKeySetResult,
+  AgentKeyStatusResult,
+  AgentSendArgs,
+  AgentSendResult,
+} from '@shared/types';
 
 import { currentAuthToken } from '../auth/authService';
+import { canvasToolInvoker } from '../canvasQueries';
+import { agentToolsFrom } from '../agent/agentTools';
+import { createAnthropicProvider } from '../agent/anthropicProvider';
+import type { AgentProvider } from '../agent/provider';
 import { createProviderKey, type ProviderKey } from '../agent/providerKey';
+import { createScriptedProvider, type ScriptedTurn } from '../agent/scriptedProvider';
+import { createAgentSession, type AgentSession } from '../agent/session';
+import { AGENT_SYSTEM_PROMPT } from '../agent/systemPrompt';
 import { verifyAnthropicKey } from '../agent/verifyAnthropicKey';
 import { readE2eSeams } from '../e2eSeams';
+import { TOOL_DESCRIPTORS } from '../mcp/tools';
 
 /**
  * Scamp Agent handlers. The key arrives once, on `agent:key-set`, and is
- * never sent back — every reply is a status.
+ * never sent back — every reply is a status. A message goes in on
+ * `agent:send` and the turn streams back on `agent:event`.
  * see docs/plans/builtin-agent-plan.md
  */
+
+const seams = (): ReturnType<typeof readE2eSeams> => readE2eSeams(process.env, app.isPackaged);
+
+const isSignedIn = (): boolean => seams().signedIn || currentAuthToken() !== null;
 
 let providerKey: ProviderKey | null = null;
 
 /** The one provider key, for the harness. */
 export const getProviderKey = (): ProviderKey => {
-  const seams = readE2eSeams(process.env, app.isPackaged);
+  const { agentKeyVerify } = seams();
   providerKey ??= createProviderKey({
     safeStorage,
     userDataDir: app.getPath('userData'),
     verify:
-      seams.agentKeyVerify === null
+      agentKeyVerify === null
         ? verifyAnthropicKey
         : async () =>
-            seams.agentKeyVerify === 'accept'
+            agentKeyVerify === 'accept'
               ? { ok: true }
               : { ok: false, reason: 'invalid-key', message: 'Anthropic didn’t accept that key. Check it was copied in full.' },
-    isSignedIn: () => seams.signedIn || currentAuthToken() !== null,
+    isSignedIn,
   });
   return providerKey;
+};
+
+/** The e2e suite's scripted provider, read once per session. */
+const scriptedProvider = async (path: string): Promise<AgentProvider> => {
+  const script = JSON.parse(await fs.readFile(path, 'utf-8')) as ScriptedTurn[];
+  return createScriptedProvider(script);
+};
+
+const AGENT_TOOLS = agentToolsFrom(TOOL_DESCRIPTORS);
+
+let session: { projectPath: string; agent: AgentSession; target: WebContents } | null = null;
+
+const sessionFor = (projectPath: string, target: WebContents): AgentSession => {
+  if (session !== null && session.projectPath === projectPath) {
+    session.target = target;
+    return session.agent;
+  }
+  session?.agent.reset();
+  const script = seams().agentScript;
+  let scripted: Promise<AgentProvider> | null = null;
+  const holder = {
+    projectPath,
+    target,
+    agent: createAgentSession({
+      getProvider: async () => {
+        if (script !== null) return (scripted ??= scriptedProvider(script));
+        const key = await getProviderKey().current();
+        return key === null ? null : createAnthropicProvider(key);
+      },
+      invoke: canvasToolInvoker(projectPath),
+      system: AGENT_SYSTEM_PROMPT,
+      tools: AGENT_TOOLS,
+      emit: (event: AgentEvent) => {
+        if (!holder.target.isDestroyed()) holder.target.send(IPC.AgentEvent, event);
+      },
+      onKeyRejected: () => getProviderKey().markInvalid(),
+    }),
+  };
+  session = holder;
+  return holder.agent;
 };
 
 export const registerAgentIpc = (): void => {
@@ -44,4 +104,17 @@ export const registerAgentIpc = (): void => {
       getProviderKey().set(typeof args?.key === 'string' ? args.key : '')
   );
   ipcMain.handle(IPC.AgentKeyClear, async (): Promise<void> => getProviderKey().clear());
+
+  ipcMain.handle(IPC.AgentSend, async (e, args: AgentSendArgs): Promise<AgentSendResult> => {
+    if (!isSignedIn()) {
+      return { ok: false, reason: 'signed-out', message: 'Sign in to Scamp to use the agent.' };
+    }
+    return sessionFor(args.projectPath, e.sender).send(args.text, args.context, args.turnId);
+  });
+  ipcMain.handle(IPC.AgentCancel, async (): Promise<void> => {
+    session?.agent.cancel();
+  });
+  ipcMain.handle(IPC.AgentReset, async (): Promise<void> => {
+    session?.agent.reset();
+  });
 };

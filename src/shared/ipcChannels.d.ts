@@ -50,6 +50,13 @@ export declare const IPC: {
     readonly AgentKeySet: "agent:key-set";
     readonly AgentKeyStatus: "agent:key-status";
     readonly AgentKeyClear: "agent:key-clear";
+    /** Send a message; the reply streams back on `agent:event`. */
+    readonly AgentSend: "agent:send";
+    readonly AgentCancel: "agent:cancel";
+    /** Start a new conversation for the project. */
+    readonly AgentReset: "agent:reset";
+    /** Main → renderer: one step of a turn, as it happens. */
+    readonly AgentEvent: "agent:event";
     readonly ThemeRead: "theme:read";
     readonly ThemeChanged: "theme:changed";
     readonly ThemeWrite: "theme:write";

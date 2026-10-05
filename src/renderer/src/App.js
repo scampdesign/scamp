@@ -11,6 +11,7 @@ import { initSyncBridge, flushPendingPageWrite } from './syncBridge';
 import { applyAppTheme } from './lib/applyAppTheme';
 import { CONSENT_VERSION, hasCurrentConsent } from '@shared/consent';
 import { useFontsStore } from '@store/fontsSlice';
+import { useAgentStore } from '@store/agentSlice';
 import { useAuthStore } from '@store/authSlice';
 import { useTerminalActivityStore } from '@store/terminalActivitySlice';
 export const App = () => {
@@ -72,6 +73,8 @@ export const App = () => {
             off();
         };
     }, []);
+    // Scamp Agent replies stream in whether or not the panel is open.
+    useEffect(() => window.scamp.onAgentEvent((event) => useAgentStore.getState().applyEvent(event)), []);
     // Phase 4.2: keep the terminal-activity slice in sync with main's
     // pty foreground-process events. The sync bridge subscribes to
     // this slice and pauses canvas writes when an agent is detected
