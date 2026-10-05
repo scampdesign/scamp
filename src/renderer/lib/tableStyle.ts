@@ -156,7 +156,7 @@ export const isTableRuleSelector = (selector: string): boolean =>
   matchTableRule(selector, []) !== null;
 
 export type TableRuleMatch =
-  /** The derived subgrid rule — owned by `@lib/tableGrid`, not stored. */
+  /** A rule derived from the columns (subgrid, caption) — owned by `@lib/tableGrid`, not stored. */
   | { kind: 'subgrid'; className: string }
   /** A derived styling rule, read back into typed settings. */
   | { kind: 'style'; className: string; style: TableStyle }
@@ -184,7 +184,10 @@ export const matchTableRule = (
   const match = normalized.match(/^(?::where\()?\.([A-Za-z_][\w-]*)/);
   if (!match) return null;
   const className = match[1] ?? '';
-  if (normalized === normalizeSelector(subgridSelector(className))) {
+  if (
+    normalized === normalizeSelector(subgridSelector(className)) ||
+    normalized === normalizeSelector(`:where(.${className}) > :where(caption)`)
+  ) {
     return { kind: 'subgrid', className };
   }
   const selectors = slotSelectors(className);

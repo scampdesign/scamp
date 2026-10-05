@@ -36,6 +36,14 @@ export declare const TABLE_SUBGRID_DECLARATIONS: ReadonlyArray<string>;
  */
 export declare const tableSubgridRule: (className: string) => string;
 /**
+ * The derived rule that stretches a caption across every column.
+ *
+ * A caption is a direct grid item of the table. Without this it lands in
+ * column one and wraps to that column's width — the whole title squeezed
+ * into the first cell's space.
+ */
+export declare const tableCaptionRule: (className: string) => string;
+/**
  * Tags that place their own children, so Scamp must not take those
  * children out of flow.
  *

@@ -160,8 +160,8 @@ export const TABLE_RESET_SENTINEL = '/* scamp: table reset — the browser style
  * and the preview agree on an unstyled element. The table family was
  * missed, and it is the loudest set of UA defaults left: `border-collapse:
  * separate` with `border-spacing: 2px` puts a gap between every cell
- * that no panel control shows, `th` comes out bold and centred, and
- * cells carry a UA padding. Switching a tag to `table` in Scamp would
+ * that no panel control shows, `th` comes out bold and centred, a
+ * `caption` comes out centred, and cells carry a UA padding. Switching a tag to `table` in Scamp would
  * change the element's appearance in ways the user did not ask for and
  * cannot see in the panel.
  *
@@ -178,6 +178,10 @@ table {
 
 th {
   font-weight: inherit;
+  text-align: inherit;
+}
+
+caption {
   text-align: inherit;
 }
 

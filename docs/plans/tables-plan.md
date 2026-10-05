@@ -262,20 +262,68 @@ new, each failing on the old writer), the `table-rows-and-cells` parity
 fixture (fails on the canvas without fix 3), and
 `test/e2e/properties-panel/table-style.spec.ts`.
 
-### Phase 4 — the importer stops losing them
+### Phase 4 — the importer stops losing them — **done**
 
-`unsupported-display` currently grades a captured table `lost`. With the
-shape above it becomes a translation:
+A captured `<table>` that the page lays out as a table (`display: table`
+or `inline-table`) now arrives as a Scamp grid table, graded
+`approximated` with one `table-to-grid` finding per table instead of a
+`lost` per cell. `@lib/importTable` plans each table before the walk:
+which node is the table, a section, a row, a cell, a caption or a column
+group, and what the columns are. The reducer then makes the table a grid
+with those columns, clears `display` on sections and rows so the derived
+subgrid reaches them, takes the size off every part, and drops
+`<colgroup>`.
 
-- `<table>` → grid, with the column tracks read from **what the page
-  actually measured**, the same way `normalizeGridTracks` already turns
-  filling px columns into `fr`.
-- `<tr>` → subgrid row. `<th>`/`<td>` → cells.
-- The finding changes from `lost` to `approximated`, and says what it
-  approximated.
+**What the measurement turned up.** The plan had the starting point
+wrong. Tables never reached the reducer as tables: `flowLayoutFor`
+rewrote every container in one into a flex column before the
+unsupported-display check ran, so a `<tr>` stacked its cells and only the
+leaf cells were reported. The translation has to run *instead of* the
+flow rewrite, not after it.
 
-An imported table then arrives editable rather than as a note saying it
-could not come.
+**Columns come from cell edges, not cell widths.** Column `i` runs from
+where its first cell starts to where column `i + 1`'s does. With
+collapsed borders each cell reports the half of the shared border it
+owns, so widths sum past the table; edges don't, and they find every
+column through a `colspan` too. Measured columns that fill the table go
+through the existing `normalizeGridTracks` and come back as `fr`.
+
+**Refused, not approximated badly.** A `rowspan` cannot be expressed: each
+`<tr>` is one row of the table's grid and a cell cannot reach into the
+next. Anything but sections, rows, a caption and column groups inside
+the table, or anything but cells in a row, is also refused. A refused
+table keeps today's behaviour and its `unsupported-display` finding now
+says why (`table: a cell spans rows`).
+
+`colspan` and `rowspan` were not captured at all — they were not in
+`KEPT_ATTRIBUTES`. They are now; `jsxAttributeName` already spelled them
+`colSpan` / `rowSpan`.
+
+Found on the way, both Phase 1–2 gaps:
+
+1. **A caption sat in column one** of a grid table, wrapped to that
+   column's width. It is a direct grid item of the table, so it gets a
+   derived `grid-column: 1 / -1` rule beside the subgrid one. Measured:
+   200px wide without it, 300 with it.
+2. **`parseCode` dropped a cell's own `position: absolute`.** It decided
+   "is the parent a layout container" from the parent's `display`
+   declaration alone, and a row has none — its subgrid is derived. It
+   now agrees with `effectiveDisplay`.
+3. **The table reset missed `caption`**, which the browser centres. An
+   imported caption's `text-align: left` is dropped as the default, so
+   the UA's centring leaked through — the one real pixel cluster on the
+   test page. Added to the Phase 1 reset on both surfaces; Phase 1 has
+   not shipped, so no new backfill sentinel is needed.
+
+Measured with `scripts/import-fidelity.mjs` and `import-pixels.mjs` on a
+three-column patient list with a caption, a `thead`, a `colspan` footer
+and collapsed borders: 9 elements off before (the table 720x213 →
+720x546), 25 of 25 within 2px after; pixels 99.99%, the remainder glyph
+anti-aliasing.
+
+Tests: `test/importTable.test.ts` (22), the caption and positioned-cell
+cases in `test/tableGrid.test.ts`, and the caption rule's removal in
+`test/cssRuleEdits.test.ts`.
 
 ---
 
@@ -320,7 +368,8 @@ like when nothing enforces it.
 ## How we will know it worked
 
 Re-import a page with a real data table — the reviewed project's patient
-list is one — and check three things:
+list is one — and check three things. Checked on a reconstruction of it
+(Phase 4 above); the reviewed project itself has not been re-imported:
 
 1. The column widths appear **once** in the CSS, not once per row.
 2. The import report grades the table `approximated`, not `lost`.

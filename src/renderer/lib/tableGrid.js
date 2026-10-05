@@ -56,6 +56,14 @@ export const tableSubgridRule = (className) => {
         `:where(.${className}) :where(tr) {\n${body}\n}`);
 };
 /**
+ * The derived rule that stretches a caption across every column.
+ *
+ * A caption is a direct grid item of the table. Without this it lands in
+ * column one and wraps to that column's width — the whole title squeezed
+ * into the first cell's space.
+ */
+export const tableCaptionRule = (className) => `:where(.${className}) > :where(caption) {\n  grid-column: 1 / -1;\n}`;
+/**
  * Tags that place their own children, so Scamp must not take those
  * children out of flow.
  *

@@ -44,6 +44,10 @@
   text-align: inherit;
 }
 
+.element:where(caption) {
+  text-align: inherit;
+}
+
 .element:where(th, td) {
   padding: 0;
 }

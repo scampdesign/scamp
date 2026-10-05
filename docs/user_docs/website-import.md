@@ -105,10 +105,26 @@ it. A fallback is the one a screenshot will never tell you about — the
 page looks right, and something in it isn't editable the way you'd
 expect.
 
+## Tables
+
+A table on the page arrives as a Scamp table. Its columns are defined
+once, on the table, with widths measured from the page, so you can edit
+them in the **Columns** section and the header and body move together.
+For more information, see [Tables](elements.md#tables).
+
+The report marks an imported table as close but not identical, because
+two things don't carry over: the spacing between cells
+(`border-spacing`), and vertical alignment inside a cell, which now
+starts at the top.
+
+A table that has a cell spanning more than one row can't be rebuilt
+this way. Its elements arrive, but its layout doesn't, and the report
+lists it as lost with the reason.
+
 ## What doesn't come across
 
-- **Tables and `display: contents`.** Scamp has no equivalent for
-  either. The elements arrive, the layout doesn't.
+- **`display: contents`, and tables with cells that span rows.** Scamp
+  has no equivalent for either. The elements arrive, the layout doesn't.
 - **`<canvas>` and `<iframe>`.** Both are drawn by something other than
   CSS—a script, or another page entirely—so they arrive empty.
 - **Web components.** A closed shadow root can't be read from outside.

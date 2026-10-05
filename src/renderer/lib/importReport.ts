@@ -64,8 +64,13 @@ const DESCRIPTIONS: Readonly<Record<string, Describe>> = {
   },
   'unsupported-display': {
     label: (n) =>
-      `${n} ${n === 1 ? 'element uses' : 'elements use'} a table or display:contents layout, which has no equivalent`,
+      `${n} ${n === 1 ? 'element uses' : 'elements use'} display:contents or a table layout Scamp can't rebuild, such as a cell that spans rows`,
     fidelity: 'lost',
+  },
+  'table-to-grid': {
+    label: (n) =>
+      `${n} ${n === 1 ? 'table' : 'tables'} rebuilt as a grid, with column widths measured from the page — cell spacing and vertical alignment aren't kept`,
+    fidelity: 'approximated',
   },
   'depth-capped': {
     label: (n) => `${n} ${n === 1 ? 'subtree' : 'subtrees'} nested too deeply to read`,

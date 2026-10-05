@@ -8,7 +8,7 @@ export declare const tableStyleRules: (className: string, style: TableStyle | un
  */
 export declare const isTableRuleSelector: (selector: string) => boolean;
 export type TableRuleMatch = 
-/** The derived subgrid rule — owned by `@lib/tableGrid`, not stored. */
+/** A rule derived from the columns (subgrid, caption) — owned by `@lib/tableGrid`, not stored. */
 {
     kind: 'subgrid';
     className: string;

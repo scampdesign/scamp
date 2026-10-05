@@ -1,6 +1,6 @@
 // generateCode/css.ts — split out of generateCode.ts (4.5).
 import { isStyled, runClassName, runStyleDeclarations, runsOf } from '../textRuns';
-import { isGridTable, tableSubgridRule } from '../tableGrid';
+import { isGridTable, tableCaptionRule, tableSubgridRule } from '../tableGrid';
 import { tableStyleRules } from '../tableStyle';
 import { ELEMENT_STATES, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride } from "../element";
 import { breakpointOverrideLines, elementDeclarationLines, sizeDeclarationLines } from "./declarations";
@@ -130,6 +130,7 @@ const elementCssChunks = (
   // exist to remove. see docs/plans/tables-plan.md
   if (isGridTable(el)) {
     chunks.push(tableSubgridRule(classNameFor(el)));
+    chunks.push(tableCaptionRule(classNameFor(el)));
   }
   // Row and cell styling the table sets once, derived the same way.
   chunks.push(...tableStyleRules(classNameFor(el), el.tableStyle));

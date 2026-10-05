@@ -27,7 +27,7 @@ import { type ScampElement } from './element';
  * uses, so an imported element and a hand-written one can't disagree.
  * see docs/plans/website-import-plan.md
  */
-export type ImportFindingKind = CaptureNote['kind'] | 'collapsed-wrapper' | 'dropped-computed-size' | 'wrapped-bare-text' | 'inline-kept' | 'block-to-flex' | 'breakpoint-captured' | 'breakpoint-absent' | 'restored-auto-margin' | 'grid-tracks-to-fr' | 'pseudo-materialized' | 'unsupported-display';
+export type ImportFindingKind = CaptureNote['kind'] | 'collapsed-wrapper' | 'dropped-computed-size' | 'wrapped-bare-text' | 'inline-kept' | 'block-to-flex' | 'breakpoint-captured' | 'breakpoint-absent' | 'restored-auto-margin' | 'grid-tracks-to-fr' | 'pseudo-materialized' | 'table-to-grid' | 'unsupported-display';
 export type ImportFinding = {
     kind: ImportFindingKind;
     /** Where in the source page, as the capture described it. */

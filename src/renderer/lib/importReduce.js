@@ -2,6 +2,7 @@ import { CAPTURE_VERSION, INHERITED_PROPERTIES, } from '@shared/importCapture';
 import { ROOT_ELEMENT_ID } from './element';
 import { makeBaseline, applyDeclarations, applyDeclarationsAsOverride } from './parseCode/apply';
 import { jsxAttributeName, svgSourceToJsx } from './svgJsx';
+import { planTable, TABLE_DISPLAYS } from './importTable';
 import { isStyled, mergeRuns, textFromRuns, } from './textRuns';
 /**
  * Tags that become a text element. Mirrors `parseCode`'s own list —
@@ -719,12 +720,42 @@ const foldShorthands = (styles) => {
     }
     return next;
 };
-const normalizedStyles = (node, isRoot, findings, at) => {
-    const flow = flowLayoutFor(node);
+/** Table parts that place their children; flow must not rewrite them. */
+const TABLE_LAYOUT_ROLES = new Set(['table', 'section', 'row']);
+/**
+ * A table part's own layout, in place of the flow rewrite.
+ *
+ * The table becomes a grid carrying the measured columns. Sections and
+ * rows lose their `display` so the subgrid rule Scamp derives from the
+ * table reaches them, and a cell or caption loses its `table-cell` /
+ * `table-caption`, which mean nothing inside a grid.
+ * see docs/plans/tables-plan.md
+ */
+const tablePartStyles = (styles, role, columns) => {
+    const next = { ...styles };
+    if (role === 'table') {
+        next['display'] = 'grid';
+        next['grid-template-columns'] = columns.map((w) => `${w}px`).join(' ');
+        delete next['grid-template-rows'];
+        return next;
+    }
+    const display = next['display'];
+    if (display !== undefined && (UNSUPPORTED_DISPLAYS.has(display) || display === 'table-caption')) {
+        delete next['display'];
+    }
+    // The column owns a cell's width, and a row or section spans them all.
+    delete next['width'];
+    delete next['height'];
+    return next;
+};
+const normalizedStyles = (node, isRoot, findings, at, table = null) => {
+    const flow = table !== null && TABLE_LAYOUT_ROLES.has(table.role) ? null : flowLayoutFor(node);
     if (flow !== null) {
         findings.push({ kind: 'block-to-flex', at, detail: flow['flex-direction'] });
     }
     let styles = flow === null ? node.styles : { ...node.styles, ...flow };
+    if (table !== null)
+        styles = tablePartStyles(styles, table.role, table.columns);
     styles = restoreAutoMargins(styles, findings, at);
     styles = normalizeGridTracks(node, styles, findings, at);
     styles = foldShorthands(styles);
@@ -1019,6 +1050,25 @@ export const reduceCapture = (payload, options = {}) => {
     const sourcePaths = {};
     const baseStyles = {};
     const used = new Set([ROOT_ELEMENT_ID]);
+    // Every table the page lays out as one, planned before the walk: a
+    // part's treatment depends on the whole table, not on the part.
+    const tableRoles = new Map();
+    const refusedTables = new Map();
+    const planTables = (node) => {
+        if (node.tag === 'table' && TABLE_DISPLAYS.has(node.styles['display'] ?? '')) {
+            const translation = planTable(node);
+            if (translation.ok) {
+                for (const [nodeId, role] of translation.plan.roles) {
+                    tableRoles.set(nodeId, { role, columns: translation.plan.columns });
+                }
+            }
+            else {
+                refusedTables.set(node.id, translation.reason);
+            }
+        }
+        node.children.forEach(planTables);
+    };
+    planTables(pruned);
     const build = (node, parentId, path, parentIsLayout, 
     /** How the parent arranges this child: down the page, or across it. */
     parentFlow, 
@@ -1097,9 +1147,21 @@ export const reduceCapture = (payload, options = {}) => {
         const needsTextChild = inlineRun === null && node.text !== null && hasElementChildren;
         const host = node;
         const sized = dropComputedSizes(host, parentRect, findings, at);
-        const styles = normalizedStyles({ ...host, styles: sized.styles }, isRoot, findings, at);
+        const tablePart = tableRoles.get(node.id) ?? null;
+        const styles = normalizedStyles({ ...host, styles: sized.styles }, isRoot, findings, at, tablePart);
         const display = styles['display'];
-        if (display !== undefined && UNSUPPORTED_DISPLAYS.has(display)) {
+        if (tablePart?.role === 'table') {
+            findings.push({
+                kind: 'table-to-grid',
+                at,
+                detail: `${tablePart.columns.length} columns`,
+            });
+        }
+        const refusal = refusedTables.get(node.id);
+        if (refusal !== undefined) {
+            findings.push({ kind: 'unsupported-display', at, detail: `table: ${refusal}` });
+        }
+        else if (display !== undefined && UNSUPPORTED_DISPLAYS.has(display)) {
             findings.push({ kind: 'unsupported-display', at, detail: display });
         }
         const raw = {
@@ -1162,6 +1224,12 @@ export const reduceCapture = (payload, options = {}) => {
         }
         if (sized.dropped.includes('height'))
             autoSized.heightMode = 'auto';
+        // A table part takes its size from the grid: its column, or every
+        // column. see `tablePartStyles`
+        if (tablePart !== null && tablePart.role !== 'table') {
+            autoSized.widthMode = 'auto';
+            autoSized.heightMode = 'auto';
+        }
         const selfIsLayoutForText = LAYOUT_DISPLAYS.has(display ?? '');
         // What this element does to ITS children, after the flow rewrite.
         const ownFlow = (styles['flex-direction'] ?? 'row').startsWith('column') ||
@@ -1206,7 +1274,10 @@ export const reduceCapture = (payload, options = {}) => {
             elements[textId] = applyDeclarations(makeBaseline(textRaw, true), lifted, selfIsLayoutForText);
             liftedTextId = textId;
         }
-        const selfIsLayout = LAYOUT_DISPLAYS.has(display ?? '');
+        // A section or row has no `display` of its own once imported — the
+        // subgrid is derived — but it places its children all the same.
+        const selfIsLayout = LAYOUT_DISPLAYS.has(display ?? '') ||
+            (tablePart !== null && TABLE_LAYOUT_ROLES.has(tablePart.role));
         // The lifted words go back where they were, not at the front. An
         // `<h1>` that reads icon-then-title had the title lifted ahead of
         // its own icon. see `textAfterChildIndex`
@@ -1216,7 +1287,8 @@ export const reduceCapture = (payload, options = {}) => {
         // An inline host's styled spans are its children. The capture
         // leaves `node.children` empty for such a host, so these are the
         // only ones, and their order is the order of the line.
-        const built = [...(inlineRun?.children ?? []), ...node.children];
+        // `<colgroup>` / `<col>` size columns the grid already carries.
+        const built = [...(inlineRun?.children ?? []), ...node.children].filter((child) => tableRoles.get(child.id)?.role !== 'column');
         built.forEach((child, index) => {
             childIds.push(build(child, id, [...path, node.tag], selfIsLayout, ownFlow, node.rect ?? null));
             if (liftedTextId !== null && wordsAfter === index)

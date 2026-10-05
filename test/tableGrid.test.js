@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generateCode } from '../src/renderer/lib/generateCode';
 import { parseCode } from '../src/renderer/lib/parseCode';
-import { isGridTable, tableSubgridRule } from '../src/renderer/lib/tableGrid';
+import { isGridTable, tableCaptionRule, tableSubgridRule } from '../src/renderer/lib/tableGrid';
 /**
  * Phase 2 of docs/plans/tables-plan.md: the columns are defined once,
  * on the table, and reach every row through `subgrid`.
@@ -247,5 +247,44 @@ describe('a cell that spans columns', () => {
         expect(blockOf(css, 'rect_g2')).not.toContain('grid-column');
         // And no subgrid rule, because a section is not a table.
         expect(css).not.toContain('subgrid');
+    });
+});
+describe('a positioned cell', () => {
+    it('keeps its own position: absolute through a reload', () => {
+        // The row has no `display` of its own — its subgrid is derived — so
+        // the parser read it as "not a layout parent", took the cell's
+        // absolute for Scamp's auto value, and dropped it. The generator
+        // treats the row as laying its cells out, so the two disagreed.
+        const css = `${gridTableCss('2fr 120px 100px')}
+.text_t9 {
+  position: absolute;
+  left: 10px;
+  top: 4px;
+}`;
+        const parsed = parseCode(TABLE_TSX, css);
+        expect(parsed.elements['t9']?.position).toBe('absolute');
+        const { css: out } = generateFrom(TABLE_TSX, css);
+        expect(blockOf(out, 'text_t9')).toContain('position: absolute;');
+    });
+});
+describe('the derived caption rule', () => {
+    const CAPTION_TSX = TABLE_TSX.replace('<thead', '<caption data-scamp-id="t0" className={styles.text_t0}>Patients</caption>\n        <thead');
+    it('stretches a grid table caption across every column', () => {
+        // A caption is a direct grid item of the table: without this it
+        // sits in column one, wrapped to that column's width.
+        const { css } = generateFrom(CAPTION_TSX, gridTableCss('2fr 120px 100px'));
+        expect(css).toContain(tableCaptionRule('rect_t1'));
+        expect(tableCaptionRule('rect_t1')).toContain('grid-column: 1 / -1;');
+    });
+    it('is not emitted for a table whose columns are not defined', () => {
+        const { css } = generateFrom(CAPTION_TSX, '.rect_t1 {}');
+        expect(css).not.toContain(':where(caption)');
+    });
+    it('is derived, not stored: reading it back adds nothing to the caption', () => {
+        const { tsx, css } = generateFrom(CAPTION_TSX, gridTableCss('2fr 120px 100px'));
+        const parsed = parseCode(tsx, css);
+        expect(parsed.elements['t0']?.customSelectorBlocks).toBeUndefined();
+        expect(parsed.elements['t1']?.customSelectorBlocks).toBeUndefined();
+        expect(parsed.elements['t0']?.customProperties).toEqual({});
     });
 });

@@ -12,6 +12,7 @@ import {
 import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, withAttributeSample, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride } from "../element";
 import { DEFAULT_RECT_STYLES } from '../defaults';
 import { composeMaps } from '../sourceMap';
+import { TABLE_LAYOUT_TAGS } from '../tableGrid';
 import { requireAt, requireGroup } from "../safeAccess";
 import { applyDeclarations, applyDeclarationsAsOverride, applyDeclarationsAsStateOverride, makeBaseline, makeRoot } from "./apply";
 import { parseCssDeclarations, type ParsedCss, type RawDeclaration } from "./css";
@@ -316,13 +317,19 @@ export const parseCode = (
     return isColumn ? 'height' : 'width';
   };
 
+  const tagById = new Map(rawElements.map((r) => [r.id, r.tag]));
   const isLayoutContainer = (id: string | null): boolean => {
     if (id === null) return false;
     const cls = classById.get(id);
     if (cls === undefined) return false;
-    return (parsedCss.byClass.get(cls) ?? []).some(
-      (d) => d.prop === 'display' && LAYOUT_DISPLAY.test(d.value.trim())
-    );
+    const displays = (parsedCss.byClass.get(cls) ?? []).filter((d) => d.prop === 'display');
+    if (displays.some((d) => LAYOUT_DISPLAY.test(d.value.trim()))) return true;
+    // A table row or section has no `display` of its own — its subgrid
+    // is derived — but it places its children, as `effectiveDisplay`
+    // says. Without this a cell's own `position: absolute` was read as
+    // Scamp's auto value and dropped on reload.
+    const tag = tagById.get(id);
+    return displays.length === 0 && tag !== undefined && TABLE_LAYOUT_TAGS.has(tag);
   };
 
   // Always start with a root, even if the TSX is missing one. Downstream

@@ -348,8 +348,13 @@ gap this described is closed; what it was chasing is not.
 
 ## NOT MATCHED, DELIBERATELY
 
-- **Tables and `display: contents`.** No equivalent in the model. Elements
-  arrive, layout does not. Graded `lost` and reported.
+- **`display: contents`, and tables with a `rowspan`.** No equivalent in
+  the model. Elements arrive, layout does not. Graded `lost` and reported.
+  Any other table is now translated into a grid table and graded
+  `approximated` — on a 3-column patient list with a caption, a `colspan`
+  footer and collapsed borders, geometry went from 9 elements off (the
+  table 720x213 → 720x546, every row stacking its cells) to 25 of 25
+  within 2px, and pixels to 99.99%. see `docs/plans/tables-plan.md`
 - **`<canvas>`, `<iframe>`, `<video>`.** Drawn by something other than
   CSS. Masked in the pixel harness, with the masked area printed, because
   diffing them measures nothing.

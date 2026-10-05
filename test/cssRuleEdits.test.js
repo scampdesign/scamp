@@ -167,3 +167,9 @@ describe("a table's derived rules", () => {
         expect(patch(disk, '.card {\n  color: blue;\n}\n')).toContain(':where(.card) p');
     });
 });
+describe("a table's caption rule", () => {
+    it('is removed when the model stops emitting it', () => {
+        const disk = '.t1 {\n  display: grid;\n}\n\n:where(.t1) > :where(caption) {\n  grid-column: 1 / -1;\n}\n';
+        expect(patch(disk, '.t1 {}\n')).not.toContain('caption');
+    });
+});

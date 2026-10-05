@@ -273,6 +273,9 @@ export const CONDITIONAL_PROPERTIES = {
 export const KEPT_ATTRIBUTES = new Set([
     'src', 'alt', 'href', 'target', 'rel', 'type', 'placeholder',
     'title', 'datetime', 'cite', 'value', 'rows', 'for',
+    // A cell's span is the record of which columns it covers; without it
+    // an imported table cannot find its column edges.
+    'colspan', 'rowspan',
 ]);
 /**
  * Tags never worth walking into: they carry no design, or their content

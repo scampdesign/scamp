@@ -461,6 +461,9 @@ export const CONDITIONAL_PROPERTIES: Readonly<Record<string, string | null>> = {
 export const KEPT_ATTRIBUTES: ReadonlySet<string> = new Set([
   'src', 'alt', 'href', 'target', 'rel', 'type', 'placeholder',
   'title', 'datetime', 'cite', 'value', 'rows', 'for',
+  // A cell's span is the record of which columns it covers; without it
+  // an imported table cannot find its column edges.
+  'colspan', 'rowspan',
 ]);
 
 /**

@@ -327,6 +327,9 @@ ${TABLE_RESET_SENTINEL}
             // still follow it. The point is to stop the browser deciding.
             expect(result.content).toContain('font-weight: inherit;');
             expect(result.content).toContain('text-align: inherit;');
+            // A caption is centred by the browser, and an import's
+            // `text-align: left` is dropped as the default, so it leaked.
+            expect(result.content).toContain('caption {\n  text-align: inherit;\n}');
         });
         it('adds every missing piece to a bare :root file', () => {
             const input = `:root {

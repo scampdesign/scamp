@@ -147,7 +147,8 @@ export const matchTableRule = (selector, decls) => {
     if (!match)
         return null;
     const className = match[1] ?? '';
-    if (normalized === normalizeSelector(subgridSelector(className))) {
+    if (normalized === normalizeSelector(subgridSelector(className)) ||
+        normalized === normalizeSelector(`:where(.${className}) > :where(caption)`)) {
         return { kind: 'subgrid', className };
     }
     const selectors = slotSelectors(className);
