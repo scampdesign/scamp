@@ -49,6 +49,15 @@ its hint says so.
 | `raw-text-fragment` | Non-whitespace text directly in a container | Not selectable, not editable, clutters the layers panel |
 | `repeat-rows-differ` | Sample rows disagree on their fields | The row type comes from the first row; later rows render blanks |
 | `missing-sample` | A bound prop with neither sample nor literal | Renders empty on the canvas, which reads as a broken binding |
+| `table-structure` | A table, section or row holds something a browser won't leave there | The HTML parser moves it in the exported page, while the canvas — built without that parser — shows it in place |
+| `table-cell-width` | A cell in a grid table has a width of its own | The column owns it; two widths disagree the moment either changes |
+| `table-rowspan` | A cell carries `rowSpan` > 1 | Each `<tr>` is one row of the table's grid, so it can't span |
+| `table-repeated-style` | Every row repeats one `border-bottom`, or every cell one `padding` | The per-row duplication tables exist to remove; the hint gives the one derived rule Scamp reads as the table's setting |
+
+A row's `border-bottom` is exempt from `side-not-typed`. Its advice —
+"write `border` with all four sides" — is wrong for a table row, whose
+divider belongs on the table; `table-repeated-style` says that instead.
+see `docs/plans/tables-plan.md`
 
 What the rules deliberately DON'T report is the larger set: a property
 with no typed field at all. `aspect-ratio`, `object-fit`, `overflow`,

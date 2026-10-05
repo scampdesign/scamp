@@ -47,7 +47,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   {
     name: 'scamp_get_element_by_id',
     description:
-      'Full details of any element by its Scamp id, whether or not it is selected. Use this to follow up on ids returned by scamp_get_element_tree or scamp_get_canvas_state. Returns null if no such element exists.',
+      'Full details of any element by its Scamp id, whether or not it is selected. Use this to follow up on ids returned by scamp_get_element_tree or scamp_get_canvas_state. For a <table>, `tableRules` lists the rules Scamp derives from it — the subgrid carrying its columns to every row, and its row dividers, stripes, sticky header and cell padding — so check there before styling rows or cells one by one. Returns null if no such element exists.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -119,7 +119,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   {
     name: 'scamp_check_view',
     description:
-      'What a view or component LOST on the way into Scamp: bindings kept as opaque text, declarations that render but leave the panel controls blank, tokens theme.css does not declare, loose text that is not an editable element, sample rows that disagree. Call this after writing or editing a view — a file can parse perfectly and still arrive degraded, and scamp_get_element_tree reports structure, so it looks correct in every one of those cases. An empty `findings` list means the view arrived intact. Takes the same names as scamp_get_view_props.',
+      'What a view or component LOST on the way into Scamp: bindings kept as opaque text, declarations that render but leave the panel controls blank, tokens theme.css does not declare, loose text that is not an editable element, sample rows that disagree, and tables built against the grain — an element in the wrong place in a table, a cell with its own width, a rowSpan, or a divider or padding repeated on every row or cell that belongs on the table once. Call this after writing or editing a view — a file can parse perfectly and still arrive degraded, and scamp_get_element_tree reports structure, so it looks correct in every one of those cases. An empty `findings` list means the view arrived intact. Takes the same names as scamp_get_view_props.',
     inputSchema: {
       type: 'object',
       properties: {

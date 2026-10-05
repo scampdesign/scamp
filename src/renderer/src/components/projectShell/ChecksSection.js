@@ -31,6 +31,10 @@ const KIND_ORDER = [
     'side-not-typed',
     'raw-text-fragment',
     'repeat-rows-differ',
+    'table-structure',
+    'table-rowspan',
+    'table-cell-width',
+    'table-repeated-style',
 ];
 /** A heading for a run of findings of one kind. */
 const KIND_LABEL = {
@@ -42,6 +46,10 @@ const KIND_LABEL = {
     'side-not-typed': 'One-sided values the panel cannot edit',
     'raw-text-fragment': 'Text outside a text element',
     'repeat-rows-differ': 'Repeat rows that are not alike',
+    'table-structure': 'Elements in the wrong place in a table',
+    'table-rowspan': 'Cells that span rows',
+    'table-cell-width': 'Cells with their own width',
+    'table-repeated-style': 'Styles repeated on every row or cell',
 };
 /** How many of each kind to list before saying "and N more". */
 const MAX_PER_KIND = 6;

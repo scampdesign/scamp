@@ -2,6 +2,8 @@ import { isMappedProperty } from './cssPropertyMap';
 import { BIND_MARK } from './parseCode/bindings';
 import { ROOT_ELEMENT_ID } from './element';
 import { classNameFor } from './generateCode/internal';
+import { formatSpaceShorthand, isZeroSpaceTuple, spaceTupleEquals } from './spaceValue';
+import { columnOwnsWidth, isGridTable } from './tableGrid';
 import { BOOLEAN_ATTRIBUTES, isRowPath } from './viewProps';
 /**
  * Longhands whose shorthand Scamp types. Writing the side renders
@@ -88,6 +90,40 @@ const scannableValues = (el) => {
 };
 /** The set of fields on a sample row, sorted so two rows compare. */
 const fieldsOf = (row) => Object.keys(row).sort().join(',');
+const SECTION_TAGS = new Set(['thead', 'tbody', 'tfoot']);
+const CELL_TAGS = new Set(['th', 'td']);
+/** What may sit directly inside each table tag, as a browser builds it. */
+const TABLE_CHILDREN = {
+    table: new Set(['thead', 'tbody', 'tfoot', 'tr', 'caption', 'colgroup']),
+    thead: new Set(['tr']),
+    tbody: new Set(['tr']),
+    tfoot: new Set(['tr']),
+    tr: CELL_TAGS,
+};
+/** A table's rows, through its sections, and their cells. */
+const tableParts = (table, elements) => {
+    const rows = [];
+    for (const childId of table.childIds) {
+        const child = elements[childId];
+        if (!child)
+            continue;
+        if (child.tag === 'tr')
+            rows.push(child);
+        if (child.tag !== undefined && SECTION_TAGS.has(child.tag)) {
+            for (const rowId of child.childIds) {
+                const row = elements[rowId];
+                if (row?.tag === 'tr')
+                    rows.push(row);
+            }
+        }
+    }
+    const cells = rows.flatMap((row) => row.childIds
+        .map((id) => elements[id])
+        .filter((c) => c !== undefined && CELL_TAGS.has(c.tag ?? '')));
+    return { rows, cells };
+};
+/** Is this element a row of some table? Its divider belongs to the table. */
+const isTableRow = (el) => el.tag === 'tr';
 /**
  * Read a parsed view and report what degraded. Pure: it reads the tree
  * the parser produced, never the file, so it says exactly what the
@@ -184,6 +220,11 @@ export const lintView = (input) => {
         // Declarations that render but leave the panel controls blank.
         for (const [prop, value] of Object.entries(el.customProperties ?? {})) {
             const shorthand = TYPED_SHORTHAND_FOR[prop];
+            // A row's bottom border is a table divider, and the table's own
+            // finding says where it belongs. "Write all four sides" would be
+            // the wrong advice here.
+            if (prop === 'border-bottom' && isTableRow(el))
+                continue;
             if (shorthand !== undefined) {
                 findings.push({
                     ...at,
@@ -224,6 +265,74 @@ export const lintView = (input) => {
                     kind: 'raw-text-fragment',
                     message: `${loose.length} run${loose.length === 1 ? '' : 's'} of text sit directly in this container, so they aren't selectable or editable.`,
                     hint: 'Wrap each in its own text element with a data-scamp-id and a matching class.',
+                });
+            }
+        }
+        // A table only works as the shape a browser builds: sections and
+        // rows inside the table, cells inside a row. Anything else is moved
+        // or dropped by the HTML parser in the exported page, while the
+        // canvas — built without that parser — shows it where it was.
+        // see docs/plans/tables-plan.md
+        const parent = el.parentId === null ? undefined : elements[el.parentId];
+        const allowed = parent?.tag === undefined ? undefined : TABLE_CHILDREN[parent.tag];
+        if (allowed !== undefined && !allowed.has(el.tag ?? '')) {
+            findings.push({
+                ...at,
+                kind: 'table-structure',
+                message: `A <${el.tag ?? 'div'}> directly inside <${parent?.tag ?? ''}> isn't a valid table part, so the exported page moves it.`,
+                hint: parent?.tag === 'tr'
+                    ? 'Put it inside a <td> or <th>.'
+                    : parent?.tag === 'table'
+                        ? 'Put rows in a <thead>, <tbody>, or <tfoot>, and anything else inside a cell or a <caption>.'
+                        : 'Only <tr> rows go here; put anything else inside a cell.',
+            });
+        }
+        if (columnOwnsWidth(el, elements) && el.widthMode !== 'auto') {
+            findings.push({
+                ...at,
+                kind: 'table-cell-width',
+                message: 'This cell sets its own width, but its column already does — the two disagree the moment either changes.',
+                hint: 'Remove `width` from the cell and size the column in `grid-template-columns` on the table.',
+            });
+        }
+        if (CELL_TAGS.has(el.tag ?? '')) {
+            const rowSpan = Number(el.attributes?.['rowSpan'] ?? '1');
+            if (Number.isInteger(rowSpan) && rowSpan > 1) {
+                findings.push({
+                    ...at,
+                    kind: 'table-rowspan',
+                    message: `\`rowSpan="${rowSpan}"\` can't span rows here: each <tr> is one row of the table's grid.`,
+                    hint: 'Restructure so no cell spans rows, or merge the rows it would have spanned into one.',
+                });
+            }
+        }
+        // Styling every row or every cell carries the same copy of is the
+        // duplication a table exists to remove, and it can be written once.
+        if (el.tag === 'table') {
+            const { rows, cells } = tableParts(el, elements);
+            const divider = rows[0]?.customProperties?.['border-bottom'];
+            if (rows.length > 1 &&
+                divider !== undefined &&
+                rows.every((row) => row.customProperties?.['border-bottom'] === divider)) {
+                findings.push({
+                    ...at,
+                    kind: 'table-repeated-style',
+                    message: `All ${rows.length} rows carry their own \`border-bottom: ${divider}\`.`,
+                    hint: `Set it once on the table — \`:where(.${className}) :where(tr) { border-bottom: ${divider}; }\` — and remove it from the rows. Scamp reads that rule as the table's row divider, editable under Rows and cells.`,
+                });
+            }
+            const padding = cells[0]?.padding;
+            if (isGridTable(el) &&
+                cells.length > 1 &&
+                padding !== undefined &&
+                !isZeroSpaceTuple(padding) &&
+                cells.every((cell) => spaceTupleEquals(cell.padding, padding))) {
+                const value = formatSpaceShorthand(padding);
+                findings.push({
+                    ...at,
+                    kind: 'table-repeated-style',
+                    message: `All ${cells.length} cells carry their own \`padding: ${value}\`.`,
+                    hint: `Set it once on the table — \`.${className} :where(th, td) { padding: ${value}; }\` — and remove it from the cells. Scamp reads that rule as the table's cell padding; a cell's own padding still wins.`,
                 });
             }
         }

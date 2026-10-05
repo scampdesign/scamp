@@ -8,7 +8,7 @@ import { type ScampElement } from './element';
  * follows the documented "confirm it parsed" step learns nothing.
  * see docs/notes/view-lint.md
  */
-export type ViewFindingKind = 'marker-leaked' | 'binding-not-parsed' | 'not-panel-editable' | 'side-not-typed' | 'undeclared-token' | 'raw-text-fragment' | 'repeat-rows-differ' | 'missing-sample';
+export type ViewFindingKind = 'marker-leaked' | 'binding-not-parsed' | 'not-panel-editable' | 'side-not-typed' | 'undeclared-token' | 'raw-text-fragment' | 'repeat-rows-differ' | 'missing-sample' | 'table-structure' | 'table-cell-width' | 'table-repeated-style' | 'table-rowspan';
 export type ViewFinding = {
     kind: ViewFindingKind;
     /** The element it sits on; null for a whole-view finding. */

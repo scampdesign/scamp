@@ -337,8 +337,13 @@ the reason on hover. Height, padding and alignment stay the cell's own.
 a table now lands on the shape the HTML parser would build, so
 `table > tr` is no longer the default path and the reparenting hazard in
 Phase 2's finding 2 is off the common route. It is not *refused* at the
-drop, though, and a `<div>` dragged into a `<tr>` is still accepted.
-Worth a lint finding — the Checks section is the surface for it.
+drop, though, and a `<div>` dragged into a `<tr>` is still accepted —
+but `lintView` now reports it as `table-structure`, in the Checks
+section and through `scamp_check_view`, alongside a cell with its own
+width, a `rowSpan`, and a divider or padding repeated on every row or
+cell. agent.md has a Tables section whose CSS examples are parsed in
+`test/agentMdTables.test.ts`, and `scamp_get_element_by_id` returns a
+table's derived rules as `tableRules`.
 
 **What dragging a cell means — still open.** Scamp's canvas moves boxes.
 Inside a table, moving a cell means moving it between columns: a

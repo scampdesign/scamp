@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import { DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from '@lib/defaults';
 import { ROOT_ELEMENT_ID, type ScampElement } from '@lib/element';
+import { parseCode } from '@lib/parseCode';
 import { BIND_MARK } from '@lib/parseCode/bindings';
 import { lintView, type ViewFinding, type ViewFindingKind } from '@lib/viewLint';
 
@@ -325,5 +326,113 @@ describe('lintView — reporting', () => {
     const elements = view(rect('a1b2', { color: 'var(--color-ink)' }));
     const found = lintView({ elements, rootId: ROOT_ELEMENT_ID, themeTokens: [] });
     expect(found.map((f) => f.kind)).toEqual(['undeclared-token']);
+  });
+});
+
+describe('tables', () => {
+  const tableTsx = (rows: string): string => `<div data-scamp-id="root" className={styles.root}>
+  <table data-scamp-id="t1" className={styles.rect_t1}>
+    <tbody data-scamp-id="t2" className={styles.rect_t2}>${rows}</tbody>
+  </table>
+</div>`;
+  const row = (id: string, cells: string): string =>
+    `<tr data-scamp-id="${id}" className={styles.rect_${id}}>${cells}</tr>`;
+  const td = (id: string, extra = ''): string =>
+    `<td data-scamp-id="${id}" className={styles.text_${id}}${extra}>x</td>`;
+  const GRID = '.rect_t1 { display: grid; grid-template-columns: 1fr 1fr; }';
+  const tableKinds = (tsx: string, css: string): ViewFindingKind[] =>
+    lintView({ elements: parseCode(tsx, css).elements, rootId: ROOT_ELEMENT_ID, themeTokens: [] })
+      .map((f) => f.kind)
+      .filter((k) => k.startsWith('table-') || k === 'side-not-typed');
+
+  it('says nothing about a well-formed table', () => {
+    const tsx = tableTsx(row('r1', td('c1') + td('c2')) + row('r2', td('c3') + td('c4')));
+    expect(tableKinds(tsx, GRID)).toEqual([]);
+  });
+
+  it('reports a div straight inside a row', () => {
+    const tsx = tableTsx(
+      row('r1', `${td('c1')}<div data-scamp-id="d1" className={styles.rect_d1} />`)
+    );
+    expect(tableKinds(tsx, GRID)).toEqual(['table-structure']);
+  });
+
+  it('reports a row written straight inside the table, not a section', () => {
+    // The HTML parser wraps it in a tbody of its own in the exported
+    // page only; the canvas never sees that element.
+    const tsx = `<div data-scamp-id="root" className={styles.root}>
+  <table data-scamp-id="t1" className={styles.rect_t1}>
+    <div data-scamp-id="d1" className={styles.rect_d1} />
+  </table>
+</div>`;
+    const findings = lintView({
+      elements: parseCode(tsx, GRID).elements,
+      rootId: ROOT_ELEMENT_ID,
+      themeTokens: [],
+    });
+    const structure = findings.filter((f) => f.kind === 'table-structure');
+    expect(structure).toHaveLength(1);
+    expect(structure[0]?.className).toBe('rect_d1');
+  });
+
+  it('reports a cell with its own width in a grid table', () => {
+    const tsx = tableTsx(row('r1', td('c1') + td('c2')));
+    expect(tableKinds(tsx, `${GRID}\n.text_c2 { width: 120px; }`)).toEqual(['table-cell-width']);
+  });
+
+  it('says nothing about a cell width in a table with no columns', () => {
+    // The browser's own table layout sizes a column from its cells, so
+    // a cell width is how such a table is sized at all.
+    const tsx = tableTsx(row('r1', td('c1') + td('c2')));
+    expect(tableKinds(tsx, '.text_c2 { width: 120px; }')).toEqual([]);
+  });
+
+  it('reports a rowSpan', () => {
+    const tsx = tableTsx(row('r1', td('c1', ' rowSpan="2"') + td('c2')));
+    expect(tableKinds(tsx, GRID)).toEqual(['table-rowspan']);
+  });
+
+  it('reports a divider repeated on every row, once, on the table', () => {
+    const tsx = tableTsx(row('r1', td('c1')) + row('r2', td('c2')));
+    const css = `${GRID}
+.rect_r1 { border-bottom: 1px solid #ddd; }
+.rect_r2 { border-bottom: 1px solid #ddd; }`;
+    const findings = lintView({
+      elements: parseCode(tsx, css).elements,
+      rootId: ROOT_ELEMENT_ID,
+      themeTokens: [],
+    });
+    const repeated = findings.filter((f) => f.kind === 'table-repeated-style');
+    expect(repeated).toHaveLength(1);
+    expect(repeated[0]?.className).toBe('rect_t1');
+    // The fix it names is the exact rule Scamp reads as the divider.
+    expect(repeated[0]?.hint).toContain(':where(.rect_t1) :where(tr) { border-bottom: 1px solid #ddd; }');
+    // …and the one-sided-border advice, wrong for a row, is not given.
+    expect(findings.map((f) => f.kind)).not.toContain('side-not-typed');
+  });
+
+  it('says nothing when only some rows carry a divider', () => {
+    const tsx = tableTsx(row('r1', td('c1')) + row('r2', td('c2')));
+    expect(tableKinds(tsx, `${GRID}\n.rect_r1 { border-bottom: 1px solid #ddd; }`)).toEqual([]);
+  });
+
+  it('reports padding repeated on every cell', () => {
+    const tsx = tableTsx(row('r1', td('c1') + td('c2')));
+    const css = `${GRID}
+.text_c1 { padding: 8px 12px; }
+.text_c2 { padding: 8px 12px; }`;
+    const findings = lintView({
+      elements: parseCode(tsx, css).elements,
+      rootId: ROOT_ELEMENT_ID,
+      themeTokens: [],
+    });
+    const repeated = findings.filter((f) => f.kind === 'table-repeated-style');
+    expect(repeated).toHaveLength(1);
+    expect(repeated[0]?.hint).toContain('.rect_t1 :where(th, td) { padding: 8px 12px; }');
+  });
+
+  it('says nothing about cells with no padding', () => {
+    const tsx = tableTsx(row('r1', td('c1') + td('c2')));
+    expect(tableKinds(tsx, GRID)).toEqual([]);
   });
 });

@@ -662,3 +662,37 @@ describe('getRecentEdits', () => {
     );
   });
 });
+
+describe('scamp_get_element_by_id on a table', () => {
+  const tableTree = (extra: Partial<ScampElement> = {}): Record<string, ScampElement> => ({
+    [ROOT_ELEMENT_ID]: el({ id: ROOT_ELEMENT_ID, parentId: null, childIds: ['t1t1'] }),
+    t1t1: el({ id: 't1t1', tag: 'table', display: 'grid', gridTemplateColumns: '1fr 1fr', ...extra }),
+  });
+
+  it('lists the rules Scamp derives from it, as the file has them', () => {
+    // An agent reading only the table's own rule sees no stripe and no
+    // subgrid, and styles every row by hand.
+    const out = answerSnapshotTool(
+      'scamp_get_element_by_id',
+      { id: 't1t1' },
+      build({ elements: tableTree({ tableStyle: { stripe: '#eee' } }) })
+    ) as { tableRules?: string[] };
+    expect(out.tableRules?.some((rule) => rule.includes('grid-template-columns: subgrid;'))).toBe(true);
+    expect(out.tableRules?.some((rule) => rule.includes('background-color: #eee;'))).toBe(true);
+  });
+
+  it('omits tableRules for a table with nothing derived', () => {
+    const out = answerSnapshotTool(
+      'scamp_get_element_by_id',
+      { id: 't1t1' },
+      build({ elements: tableTree({ display: 'none', gridTemplateColumns: '' }) })
+    );
+    expect(out).not.toHaveProperty('tableRules');
+  });
+
+  it('omits tableRules on anything that is not a table', () => {
+    expect(answerSnapshotTool('scamp_get_element_by_id', { id: 'a1b2' }, build())).not.toHaveProperty(
+      'tableRules'
+    );
+  });
+});

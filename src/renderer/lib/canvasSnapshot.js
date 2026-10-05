@@ -1,5 +1,7 @@
 import { viewSlugFor } from '@shared/templates';
 import { buildContextModel, } from './contextModel';
+import { isGridTable, tableCaptionRule, tableSubgridRule } from './tableGrid';
+import { tableStyleRules } from './tableStyle';
 import { lintView } from './viewLint';
 import { findGuidanceSection, guidanceFor, guidanceSectionTitles, guidanceSummary, } from '@shared/templates';
 import { classNameFor, tagFor } from './generateCode';
@@ -44,6 +46,17 @@ export const viewPathsRelative = (name) => ({
     tsx: `views/${name}/${name}.tsx`,
     css: `views/${name}/${name}.module.css`,
 });
+/** A table's derived rules, or nothing. see `ElementResult.tableRules` */
+const tableRulesOf = (el) => {
+    if (el.tag !== 'table')
+        return {};
+    const cls = classNameFor(el);
+    const rules = [
+        ...(isGridTable(el) ? [tableSubgridRule(cls), tableCaptionRule(cls)] : []),
+        ...tableStyleRules(cls, el.tableStyle),
+    ];
+    return rules.length > 0 ? { tableRules: rules } : {};
+};
 /** `ContextElement` → the tool's element shape. */
 const toElementResult = (el, source) => ({
     id: el.id,
@@ -54,6 +67,7 @@ const toElementResult = (el, source) => ({
     childIds: [...source.childIds],
     styles: el.styles,
     customProperties: Object.fromEntries(el.customProperties),
+    ...tableRulesOf(source),
 });
 /**
  * Describe one element by id, via the shared model.

@@ -105,6 +105,13 @@ export type ElementResult = {
     childIds: string[];
     styles: Record<string, string>;
     customProperties: Record<string, string>;
+    /**
+     * A table's derived rules, exactly as the file has them: the subgrid
+     * that carries its columns to the rows, and its row and cell styling.
+     * Scamp writes and owns these. Absent on anything but a table that
+     * has some.
+     */
+    tableRules?: string[];
 } | null;
 export type TreeNode = {
     id: string;

@@ -8,6 +8,8 @@ import {
 } from './contextModel';
 import type { SampleValue, ScampElement } from './element';
 import type { PatchEntry } from './patchLog';
+import { isGridTable, tableCaptionRule, tableSubgridRule } from './tableGrid';
+import { tableStyleRules } from './tableStyle';
 import { lintView, type ViewFinding } from './viewLint';
 import {
   findGuidanceSection,
@@ -131,6 +133,13 @@ export type ElementResult = {
   childIds: string[];
   styles: Record<string, string>;
   customProperties: Record<string, string>;
+  /**
+   * A table's derived rules, exactly as the file has them: the subgrid
+   * that carries its columns to the rows, and its row and cell styling.
+   * Scamp writes and owns these. Absent on anything but a table that
+   * has some.
+   */
+  tableRules?: string[];
 } | null;
 
 export type TreeNode = {
@@ -216,6 +225,17 @@ export const viewPathsRelative = (
   css: `views/${name}/${name}.module.css`,
 });
 
+/** A table's derived rules, or nothing. see `ElementResult.tableRules` */
+const tableRulesOf = (el: ScampElement): { tableRules?: string[] } => {
+  if (el.tag !== 'table') return {};
+  const cls = classNameFor(el);
+  const rules = [
+    ...(isGridTable(el) ? [tableSubgridRule(cls), tableCaptionRule(cls)] : []),
+    ...tableStyleRules(cls, el.tableStyle),
+  ];
+  return rules.length > 0 ? { tableRules: rules } : {};
+};
+
 /** `ContextElement` → the tool's element shape. */
 const toElementResult = (
   el: ContextElement,
@@ -229,6 +249,7 @@ const toElementResult = (
   childIds: [...source.childIds],
   styles: el.styles,
   customProperties: Object.fromEntries(el.customProperties),
+  ...tableRulesOf(source),
 });
 
 /**

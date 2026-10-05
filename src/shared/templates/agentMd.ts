@@ -368,18 +368,18 @@ There are four element types, identified by the class-name prefix:
 - **Text** (\`text_\` prefix or custom name) — any text-bearing tag:
   \`p\`, \`h1\`–\`h6\`, \`span\`, \`a\`, \`label\`, \`blockquote\`, \`pre\`,
   \`code\`, \`strong\`, \`em\`, \`small\`, \`time\`, \`figcaption\`, \`legend\`,
-  \`li\`, \`button\`. Default: \`p\`.
+  \`li\`, \`button\`, \`th\`, \`td\`, \`caption\`. Default: \`p\`.
 - **Container** (\`rect_\` prefix or custom name) — block-level tags:
   \`div\`, \`section\`, \`article\`, \`aside\`, \`main\`, \`header\`,
   \`footer\`, \`nav\`, \`figure\`, \`form\`, \`fieldset\`, \`ul\`, \`ol\`,
-  \`li\`, \`details\`, \`summary\`, \`dialog\`, \`button\`, \`a\`. Default:
-  \`div\`.
+  \`li\`, \`details\`, \`summary\`, \`dialog\`, \`button\`, \`a\`, \`table\`,
+  \`thead\`, \`tbody\`, \`tfoot\`, \`tr\`, \`th\`, \`td\`. Default: \`div\`.
 - **Image / media** (\`img_\` prefix or custom name) — \`img\`, \`video\`,
   \`iframe\`, \`svg\`. Default: \`img\`.
 - **Input / form control** (\`input_\` prefix or custom name) — \`input\`,
   \`textarea\`, \`select\`. Default: \`input\`.
 
-Three tags — \`<button>\`, \`<a>\`, and \`<li>\` — are **dual-natured**.
+\`<button>\`, \`<a>\`, \`<li>\`, \`<th>\`, and \`<td>\` are **dual-natured**.
 A leaf holding only a text label (\`<button>Sign up</button>\`,
 \`<a href="/">Home</a>\`) is a TEXT element: Scamp reads and edits its
 label on the canvas like any other text. The SAME tag holding element
@@ -530,6 +530,108 @@ If you want any of those text fragments to be canvas-editable, wrap
 each one in its own classed element with a \`data-scamp-id\` and a
 matching CSS class.
 
+## Tables
+
+Tabular data — rows of records with aligned columns — is a real
+\`<table>\`, never flex rows that imitate one. Two flex rows (a header and
+a body row) each carrying \`flex-basis: 120px\` for the same column is the
+mistake this section exists to prevent: every column width is written
+twice, and nothing keeps the copies in step.
+
+**Structure.** Write the shape a browser builds, or the exported page
+moves your elements and the canvas won't match it:
+
+\`\`\`
+table
+├── caption        (optional, first)
+├── thead > tr > th
+├── tbody > tr > td
+└── tfoot > tr > td
+\`\`\`
+
+Rows go in a \`thead\`, \`tbody\`, or \`tfoot\` — not straight in the
+\`table\`. Anything that isn't a cell goes inside a \`th\` or \`td\`.
+
+**Columns are defined once, on the table.** The table is a grid, and its
+\`grid-template-columns\` is the only place a column's width lives:
+
+\`\`\`css
+.patients_a1b2 {
+  display: grid;
+  grid-template-columns: 2fr 120px 100px;
+}
+\`\`\`
+
+Scamp carries those columns to every section and row itself, with a
+rule it derives and writes after the table's own:
+
+\`\`\`css
+:where(.patients_a1b2) > :where(thead, tbody, tfoot),
+:where(.patients_a1b2) :where(tr) {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+}
+\`\`\`
+
+- **Never write \`display\`, \`subgrid\`, or \`grid-column\` on a section or
+  row yourself.** The derived rule does it. A row's own class rule can
+  stay empty.
+- **Never give a \`th\` or \`td\` a \`width\`.** Its column sets it. A cell
+  width fights the track and recreates the duplication tables exist to
+  remove; the panel shows a cell's width as \`Column\` and won't edit it.
+  Height, padding, and alignment are still the cell's own.
+- **A cell spans columns with the \`colSpan\` attribute**
+  (\`<td colSpan="2">\`), not with \`grid-column\`. Scamp derives the
+  placement from the attribute.
+- **No \`rowSpan\`.** Each \`<tr>\` is one row of the table's grid, so a cell
+  can't reach into the next one. Restructure instead.
+
+**Row and cell styling is set once, on the table**, not on every row or
+cell. Scamp reads exactly these rules — this form, with these
+selectors — as the table's settings, which the user edits under
+**Rows and cells** in the panel. Write only the ones you need:
+
+\`\`\`css
+/* Cell padding and text alignment, every th and td */
+.patients_a1b2 :where(th, td) {
+  padding: 8px 12px;
+  text-align: left;
+}
+
+/* A line under every row */
+:where(.patients_a1b2) :where(tr) {
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* A background on every second body row */
+:where(.patients_a1b2) > :where(tbody) > :where(tr:nth-child(even)),
+:where(.patients_a1b2) > :where(tr:nth-child(even of tr)) {
+  background-color: var(--color-neutral-50);
+}
+
+/* The header stays at the top while the page scrolls */
+:where(.patients_a1b2) > :where(thead) {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+\`\`\`
+
+- Keep each body to exactly those declarations, in that order. Add
+  anything else and Scamp still keeps the rule, verbatim, but the panel
+  can't edit it.
+- \`text-align\` takes \`left\`, \`center\`, or \`right\`. A divider is
+  \`<px> <solid|dashed|dotted> <color>\`, in that order. Padding is px or
+  \`var(--token)\` values.
+- A row's or cell's own rule still wins, so style the exception there:
+  the header row's background goes on the \`thead\`'s class, and one cell
+  that needs more room gets its own \`padding\`.
+
+After writing a table, call \`scamp_check_view\`: it reports elements in
+the wrong place, cells with their own width, a \`rowSpan\`, and a divider
+or padding repeated on every row or cell.
+
 ## CSS conventions
 
 ### Layout: flex first, always
@@ -554,8 +656,10 @@ all built around flex as the default container model.
   primary layout strategy for siblings inside a container; that's
   what flex is for. A row of cards is flex; an overlay on top of an
   image is absolute.
-- **No \`float\`, no table layout, no inline-block hacks.** Flex (or
-  grid when justified) covers every modern layout need.
+- **No \`float\`, no \`display: table\`, no inline-block hacks.** Flex (or
+  grid when justified) covers every modern layout need. Tabular data is
+  the exception: write a real \`<table>\`, laid out the way the Tables
+  section describes, rather than rebuilding one from flex rows.
 - Flex parents render correctly on the Scamp canvas AND are
   editable from the panel's Layout control. Grid and absolute
   layouts still render but expose fewer controls to the user.
@@ -1786,18 +1890,18 @@ There are four element types, identified by the class-name prefix:
 - **Text** (\`text_\` prefix or custom name) — any text-bearing tag:
   \`p\`, \`h1\`–\`h6\`, \`span\`, \`a\`, \`label\`, \`blockquote\`, \`pre\`,
   \`code\`, \`strong\`, \`em\`, \`small\`, \`time\`, \`figcaption\`, \`legend\`,
-  \`li\`, \`button\`. Default: \`p\`.
+  \`li\`, \`button\`, \`th\`, \`td\`, \`caption\`. Default: \`p\`.
 - **Container** (\`rect_\` prefix or custom name) — block-level tags:
   \`div\`, \`section\`, \`article\`, \`aside\`, \`main\`, \`header\`,
   \`footer\`, \`nav\`, \`figure\`, \`form\`, \`fieldset\`, \`ul\`, \`ol\`,
-  \`li\`, \`details\`, \`summary\`, \`dialog\`, \`button\`, \`a\`. Default:
-  \`div\`.
+  \`li\`, \`details\`, \`summary\`, \`dialog\`, \`button\`, \`a\`, \`table\`,
+  \`thead\`, \`tbody\`, \`tfoot\`, \`tr\`, \`th\`, \`td\`. Default: \`div\`.
 - **Image / media** (\`img_\` prefix or custom name) — \`img\`, \`video\`,
   \`iframe\`, \`svg\`. Default: \`img\`.
 - **Input / form control** (\`input_\` prefix or custom name) — \`input\`,
   \`textarea\`, \`select\`. Default: \`input\`.
 
-Three tags — \`<button>\`, \`<a>\`, and \`<li>\` — are **dual-natured**.
+\`<button>\`, \`<a>\`, \`<li>\`, \`<th>\`, and \`<td>\` are **dual-natured**.
 A leaf holding only a text label (\`<button>Sign up</button>\`,
 \`<a href="/">Home</a>\`) is a TEXT element: Scamp reads and edits its
 label on the canvas like any other text. The SAME tag holding element
@@ -1915,6 +2019,108 @@ ${v.linkingSection}
 
 ${v.assetsSection}
 
+## Tables
+
+Tabular data — rows of records with aligned columns — is a real
+\`<table>\`, never flex rows that imitate one. Two flex rows (a header and
+a body row) each carrying \`flex-basis: 120px\` for the same column is the
+mistake this section exists to prevent: every column width is written
+twice, and nothing keeps the copies in step.
+
+**Structure.** Write the shape a browser builds, or the exported page
+moves your elements and the canvas won't match it:
+
+\`\`\`
+table
+├── caption        (optional, first)
+├── thead > tr > th
+├── tbody > tr > td
+└── tfoot > tr > td
+\`\`\`
+
+Rows go in a \`thead\`, \`tbody\`, or \`tfoot\` — not straight in the
+\`table\`. Anything that isn't a cell goes inside a \`th\` or \`td\`.
+
+**Columns are defined once, on the table.** The table is a grid, and its
+\`grid-template-columns\` is the only place a column's width lives:
+
+\`\`\`css
+.patients_a1b2 {
+  display: grid;
+  grid-template-columns: 2fr 120px 100px;
+}
+\`\`\`
+
+Scamp carries those columns to every section and row itself, with a
+rule it derives and writes after the table's own:
+
+\`\`\`css
+:where(.patients_a1b2) > :where(thead, tbody, tfoot),
+:where(.patients_a1b2) :where(tr) {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+}
+\`\`\`
+
+- **Never write \`display\`, \`subgrid\`, or \`grid-column\` on a section or
+  row yourself.** The derived rule does it. A row's own class rule can
+  stay empty.
+- **Never give a \`th\` or \`td\` a \`width\`.** Its column sets it. A cell
+  width fights the track and recreates the duplication tables exist to
+  remove; the panel shows a cell's width as \`Column\` and won't edit it.
+  Height, padding, and alignment are still the cell's own.
+- **A cell spans columns with the \`colSpan\` attribute**
+  (\`<td colSpan="2">\`), not with \`grid-column\`. Scamp derives the
+  placement from the attribute.
+- **No \`rowSpan\`.** Each \`<tr>\` is one row of the table's grid, so a cell
+  can't reach into the next one. Restructure instead.
+
+**Row and cell styling is set once, on the table**, not on every row or
+cell. Scamp reads exactly these rules — this form, with these
+selectors — as the table's settings, which the user edits under
+**Rows and cells** in the panel. Write only the ones you need:
+
+\`\`\`css
+/* Cell padding and text alignment, every th and td */
+.patients_a1b2 :where(th, td) {
+  padding: 8px 12px;
+  text-align: left;
+}
+
+/* A line under every row */
+:where(.patients_a1b2) :where(tr) {
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* A background on every second body row */
+:where(.patients_a1b2) > :where(tbody) > :where(tr:nth-child(even)),
+:where(.patients_a1b2) > :where(tr:nth-child(even of tr)) {
+  background-color: var(--color-neutral-50);
+}
+
+/* The header stays at the top while the page scrolls */
+:where(.patients_a1b2) > :where(thead) {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+\`\`\`
+
+- Keep each body to exactly those declarations, in that order. Add
+  anything else and Scamp still keeps the rule, verbatim, but the panel
+  can't edit it.
+- \`text-align\` takes \`left\`, \`center\`, or \`right\`. A divider is
+  \`<px> <solid|dashed|dotted> <color>\`, in that order. Padding is px or
+  \`var(--token)\` values.
+- A row's or cell's own rule still wins, so style the exception there:
+  the header row's background goes on the \`thead\`'s class, and one cell
+  that needs more room gets its own \`padding\`.
+
+After writing a table, call \`scamp_check_view\`: it reports elements in
+the wrong place, cells with their own width, a \`rowSpan\`, and a divider
+or padding repeated on every row or cell.
+
 ## CSS conventions
 
 ### Layout: flex first, always
@@ -1939,8 +2145,10 @@ all built around flex as the default container model.
   primary layout strategy for siblings inside a container; that's
   what flex is for. A row of cards is flex; an overlay on top of an
   image is absolute.
-- **No \`float\`, no table layout, no inline-block hacks.** Flex (or
-  grid when justified) covers every modern layout need.
+- **No \`float\`, no \`display: table\`, no inline-block hacks.** Flex (or
+  grid when justified) covers every modern layout need. Tabular data is
+  the exception: write a real \`<table>\`, laid out the way the Tables
+  section describes, rather than rebuilding one from flex rows.
 - Flex parents render correctly on the Scamp canvas AND are
   editable from the panel's Layout control. Grid and absolute
   layouts still render but expose fewer controls to the user.
