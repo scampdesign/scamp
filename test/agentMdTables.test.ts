@@ -5,7 +5,9 @@ import {
   AGENT_MD_CONTENT_LEGACY,
   AGENT_MD_CONTENT_SCAMP,
   findGuidanceSection,
+  guidanceSections,
 } from '@shared/agentMd';
+import { DEFAULT_THEME_CSS } from '@shared/templates';
 import { parseCode } from '@lib/parseCode';
 import { lintView } from '@lib/viewLint';
 
@@ -87,5 +89,26 @@ describe.each(VARIANTS)('agent.md (%s): Tables', (_name, md) => {
     for (const tag of ['table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption']) {
       expect(tags).toContain(`\`${tag}\``);
     }
+  });
+});
+
+describe.each(VARIANTS)('agent.md (%s): every example token', (_name, md) => {
+  it('is declared by a new project, or in the same section', () => {
+    // Agents copy examples verbatim, and an undeclared token renders as
+    // nothing — the failure the Checks section reports most. A section
+    // that wants a token a new project lacks has to show declaring it.
+    const declared = new Set(
+      [...DEFAULT_THEME_CSS.matchAll(/(--[A-Za-z0-9_-]+)\s*:/g)].map((m) => m[1])
+    );
+    const undeclared: string[] = [];
+    for (const section of guidanceSections(md)) {
+      const css = cssBlocksOf(section.body);
+      const local = new Set([...css.matchAll(/(--[A-Za-z0-9_-]+)\s*:/g)].map((m) => m[1]));
+      for (const match of css.matchAll(/var\(\s*(--[A-Za-z0-9_-]+)/g)) {
+        const name = match[1] ?? '';
+        if (!declared.has(name) && !local.has(name)) undeclared.push(`${section.title}: ${name}`);
+      }
+    }
+    expect(undeclared).toEqual([]);
   });
 });

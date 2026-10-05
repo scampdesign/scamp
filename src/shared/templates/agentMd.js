@@ -245,8 +245,8 @@ element whose class wasn't in the CSS yet.
 
 ## Worked example — a sticky navbar
 
-You want a navbar fixed to the top of the page with a token-driven
-padding and a circular brand badge.
+You want a navbar fixed to the top of the page with token-driven
+colours and a circular brand badge.
 
 Step 1: write the CSS (\`home.module.css\`):
 
@@ -262,10 +262,10 @@ Step 1: write the CSS (\`home.module.css\`):
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-5);
+  gap: 12px;
+  padding: 12px 20px;
   background: var(--color-surface);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--color-border);
   backdrop-filter: blur(8px);
 }
 
@@ -297,7 +297,7 @@ What Scamp does on save:
 - Parses both files.
 - Sees \`.site_nav_n123\` and \`.brand_b001\` already in the CSS — leaves
   them alone.
-- Renders the navbar with \`position: fixed\`, the token-driven padding,
+- Renders the navbar with \`position: fixed\`, the token-driven colours,
   the \`backdrop-filter\`, and the circular brand badge — all preserved
   byte-equivalent.
 
@@ -1141,9 +1141,20 @@ input, textarea, select { cursor: text; user-select: text; }
 \`\`\`
 
 Reference tokens in module CSS files using \`var()\` — anywhere a CSS
-value goes, including inside shorthands:
+value goes, including inside shorthands. A new project's \`theme.css\`
+declares colour and type tokens but no spacing or radius ones, so
+declare any you use in its \`:root\` first — a \`var()\` with no
+declaration resolves to nothing:
 
 \`\`\`css
+/* theme.css */
+:root {
+  --space-3: 12px;
+  --space-5: 20px;
+  --radius-md: 8px;
+}
+
+/* the module */
 .button {
   background-color: var(--color-primary);
   color: var(--color-text);
@@ -1173,9 +1184,11 @@ becomes \`0\`, \`background: var(--color-card-bg)\` becomes transparent,
 and the page looks broken on the canvas.
 
 **Before writing any module CSS, read \`theme.css\` and note what
-tokens exist.** A fresh project only ships \`--color-primary\`,
-\`--color-text\`, and \`--font-sans\` — most real layouts need more
-(spacing scale, surface / border / accent colors, max-width, etc.).
+tokens exist.** A fresh project ships colour and type tokens —
+\`--color-primary\`, \`--color-text\`, \`--color-surface\`,
+\`--color-border\`, \`--font-sans\`, a \`--text-*\` scale and so on —
+but no spacing scale, radii, or max-width. Most real layouts need some
+of those.
 
 **When you need a token that doesn't exist yet, add it to
 \`theme.css\` first, then reference it.** Adding tokens is fine and
@@ -1508,8 +1521,8 @@ element whose class wasn't in the CSS yet.
 
 ## Worked example — a sticky navbar
 
-You want a navbar fixed to the top of the page with a token-driven
-padding and a circular brand badge.
+You want a navbar fixed to the top of the page with token-driven
+colours and a circular brand badge.
 
 Step 1: write the CSS (\`${v.exampleCssPath}\`):
 
@@ -1525,10 +1538,10 @@ Step 1: write the CSS (\`${v.exampleCssPath}\`):
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-5);
+  gap: 12px;
+  padding: 12px 20px;
   background: var(--color-surface);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--color-border);
   backdrop-filter: blur(8px);
 }
 
@@ -1560,7 +1573,7 @@ What Scamp does on save:
 - Parses both files.
 - Sees \`.site_nav_n123\` and \`.brand_b001\` already in the CSS — leaves
   them alone.
-- Renders the navbar with \`position: fixed\`, the token-driven padding,
+- Renders the navbar with \`position: fixed\`, the token-driven colours,
   the \`backdrop-filter\`, and the circular brand badge — all preserved
   byte-equivalent.
 
@@ -2549,9 +2562,18 @@ The project includes an \`${v.themeCss}\` file with two sections:
 
 ${v.themeImportNote} Reference tokens in
 module CSS files using \`var()\` — anywhere a CSS value goes,
-including inside shorthands:
+including inside shorthands. Spacing and radius tokens aren't in a new
+project, so this example declares them first:
 
 \`\`\`css
+/* ${v.themeCss} */
+:root {
+  --space-3: 12px;
+  --space-5: 20px;
+  --radius-md: 8px;
+}
+
+/* the module */
 .button {
   background-color: var(--color-primary);
   color: var(--color-text);
@@ -2568,9 +2590,11 @@ becomes \`0\`, \`background: var(--color-card-bg)\` becomes transparent,
 and the page looks broken on the canvas.
 
 **Before writing any module CSS, read \`${v.themeCss}\` and note what
-tokens exist.** A fresh project only ships \`--color-primary\`,
-\`--color-text\`, and \`--font-sans\` — most real layouts need more
-(spacing scale, surface / border / accent colors, max-width, etc.).
+tokens exist.** A fresh project ships colour and type tokens —
+\`--color-primary\`, \`--color-text\`, \`--color-surface\`,
+\`--color-border\`, \`--font-sans\`, a \`--text-*\` scale and so on —
+but no spacing scale, radii, or max-width. Most real layouts need some
+of those.
 
 **When you need a token that doesn't exist yet, add it to
 \`${v.themeCss}\` first, then reference it.** Adding tokens is fine
