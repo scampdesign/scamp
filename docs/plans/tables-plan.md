@@ -68,7 +68,7 @@ the box model.
 
 ## Phases
 
-### Phase 1 — the tags
+### Phase 1 — the tags — **done**
 
 Add `table`, `thead`, `tbody`, `tfoot`, `tr`, `th`, `td`, `caption` to
 `TAG_OPTIONS`, and make sure nothing downstream trips on them:
@@ -81,7 +81,38 @@ Deliberately no layout work in this phase. A ported table keeps its
 meaning and its content immediately, and looks no worse than the `div`
 soup it replaces. Ship it alone.
 
-### Phase 2 — columns in one place
+What landed, and the two things that were not obvious going in:
+
+- **`th` and `td` are in both tag lists.** They are dual-natured exactly
+  like `li`: a plain `<td>Smith</td>` is a text element, one holding
+  elements is a container. `TEXT_TAGS` gets all three of `th`, `td`,
+  `caption`, and the structural-correction pass that already upgrades a
+  `<li>` with children to a rectangle covers cells for free.
+- **The reset needed its own sentinel.** Folding the table rules into
+  `BROWSER_RESET_BLOCK` would have reached no existing project — every
+  one of them already carries that sentinel. `TABLE_RESET_SENTINEL` is
+  a seventh backfill check, so a project created before today gets the
+  rules when it is opened. Mirrored in `ElementRenderer.module.css` with
+  `:where` for zero specificity, per
+  [`../notes/canvas-tag-reset-specificity.md`](../notes/canvas-tag-reset-specificity.md).
+
+A table keeps the browser's `display: table` on both surfaces: the
+model's `display: 'none'` is the "not a flex or grid container"
+sentinel and emits nothing. So the reset is doing real work rather than
+being shadowed by an inline style — the canvas writes no inline padding
+when it matches the tag default, and no inline `font-weight` at all.
+
+Cell padding is deliberately **not** added to `TAG_PADDING_DEFAULTS`.
+The UA's 1px on a cell is zeroed by the reset on both surfaces, so
+Scamp's universal `[0,0,0,0]` is already the truth — unlike `ul`, where
+the 40px inline-start default had to be modelled.
+
+Tests: `test/tablesRoundTrip.test.ts` (prefixed and unprefixed trees,
+round-trip and byte-stability), `test/elementTags.test.ts` (the picker
+and the parser agree on every tag, not just the table ones),
+`test/themeBackfill.test.ts` (the seventh check).
+
+### Phase 2 — columns in one place — **done**
 
 The table element becomes a grid; `tr` gets `grid-template-columns:
 subgrid` and `grid-column: 1 / -1`.
@@ -96,6 +127,76 @@ subgrid` and `grid-column: 1 / -1`.
   which Scamp already stores.
 
 This is the phase that pays for the plan.
+
+It does. A three-column table with a header, a body row and a footer
+now generates **one** `grid-template-columns`, and every row and cell
+rule comes out empty:
+
+```css
+.rect_t1 { width: 600px; display: grid; grid-template-columns: 2fr 120px 100px; }
+:where(.rect_t1) > :where(thead, tbody, tfoot),
+:where(.rect_t1) :where(tr) { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; }
+.rect_t2 {}  /* thead */
+.rect_t3 {}  /* tr    */
+.text_t4 {}  /* th    */
+```
+
+Measured through the real path — model → `generateCode` → `generateHtml`
+→ Chromium — header, body and footer land at `0/380  380/120  500/100`,
+and a `colSpan="2"` footer cell at `0/500` with the next at `500/100`.
+
+**What the phase actually turned on.** Three things, none of which were
+in the plan, and the first two would each have broken it silently:
+
+1. **The subgrid has to chain through the SECTION.** A row's parent is a
+   `tbody`, not the table, so `subgrid` on the row alone inherits
+   nothing: measured, every cell in a row collapsed to the same x and
+   the header and body rows sat at different offsets. `thead` / `tbody`
+   / `tfoot` need the same three declarations as `tr`.
+2. **The rule must match children by TAG, not by Scamp class.** The HTML
+   parser inserts a `<tbody>` of its own around any `<tr>` written
+   directly inside a `<table>`. That element carries no Scamp class, so
+   a per-class rule missed it, the chain was cut, and every cell stacked
+   in column one — **in the exported page only**, while the canvas
+   (built through the DOM API, which inserts nothing) rendered it
+   correctly. A canvas/preview divergence, from a rule that looked fine.
+3. **`effectiveDisplay` had to learn the table tags.** A `tbody`'s typed
+   `display` is the "neither" sentinel, so every caller answered no to
+   "does this lay its children out?" and Scamp gave the rows
+   `position: absolute`. An out-of-flow grid item is placed by nothing,
+   so the columns reached no cell at all. The same seam already existed
+   for `inline-grid`; table tags are the same problem from the other
+   side, and routing the two remaining raw `el.display` checks through
+   it fixed a latent `inline-grid` gap too.
+
+**How it is written down.** Nothing about subgrid is stored on a row —
+that copy is the duplication this exists to remove. The rule is derived
+from the table in `@lib/tableGrid`, emitted after the table's own block,
+and dropped on parse because its selector starts with `:where(` and is
+attributed to no class. `colSpan` / `rowSpan` work the same way: the
+attribute is the record, `grid-column: span n` is derived from it, and
+the parser folds a matching declaration back so the model never carries
+the span twice. An explicit placement a user typed still wins.
+
+Every compound in the derived selector sits inside `:where()`, so it has
+zero specificity and a row a user deliberately made a flex row stays
+one — verified, not assumed.
+[`../notes/canvas-tag-reset-specificity.md`](../notes/canvas-tag-reset-specificity.md)
+
+**The panel.** A `table` gets a **Columns** section instead of the
+layout-mode picker, since its mode is not a choice and its rows are
+elements rather than track-list entries; an undefined table offers
+"Define N columns", seeded from the row it already has. A cell's **W**
+field is shown disabled reading `Column`, with the reason on hover —
+said rather than silently removed, as the plan asked.
+
+**Drawing inside a table** lands on the shape the HTML parser would
+build: a child of `table` is a `tbody` (not a `tr`), of a section a
+`tr`, of a row a `td`. Text is handled separately — words directly
+inside a table are a `caption`.
+
+Tests: `test/tableGrid.test.ts` (20). Each of the three fixes above was
+reverted in turn to confirm the tests fail without it.
 
 ### Phase 3 — the styling a table actually needs
 
@@ -130,20 +231,24 @@ could not come.
 
 ---
 
-## Decisions to make before Phase 2
+## Decisions, and what is still open
 
-**What a cell's box controls do.** Width belongs to the column. Height,
-padding and alignment belong to the cell. The panel has to express that
-difference rather than show every control and let two of them fight.
+**What a cell's box controls do — decided.** Width belongs to the
+column: the **W** field on a cell is disabled and reads `Column`, with
+the reason on hover. Height, padding and alignment stay the cell's own.
 
-**What dragging a cell means.** Scamp's canvas moves boxes. Inside a
-table, moving a cell means moving it between columns — a different
-gesture with a different result. It may be right for cells to be
-selectable but not draggable, which no other element does.
+**Whether a `<table>` may hold anything else — partly.** Drawing inside
+a table now lands on the shape the HTML parser would build, so
+`table > tr` is no longer the default path and the reparenting hazard in
+Phase 2's finding 2 is off the common route. It is not *refused* at the
+drop, though, and a `<div>` dragged into a `<tr>` is still accepted.
+Worth a lint finding — the Checks section is the surface for it.
 
-**Whether a `<table>` may hold anything else.** A `<div>` inside a `<tr>`
-is invalid HTML that browsers silently reparent, which would move an
-element the user placed. Worth refusing at the point of the drop.
+**What dragging a cell means — still open.** Scamp's canvas moves boxes.
+Inside a table, moving a cell means moving it between columns: a
+different gesture with a different result. Cells are still draggable
+today. Selectable-but-not-draggable is probably right, and no other
+element does that, so it wants its own look.
 
 ---
 

@@ -18,6 +18,7 @@ import type {
   WidthMode,
 } from '@lib/element';
 import { shrinkGuardPatch } from '@lib/flexChild';
+import { columnOwnsWidth } from '@lib/tableGrid';
 import { parseSizeValue } from '@lib/parsers';
 import {
   combineTypedWithType,
@@ -188,6 +189,13 @@ export const SizeSection = ({ elementId }: Props): JSX.Element | null => {
     if (!el?.parentId) return undefined;
     return s.elements[el.parentId]?.flexDirection;
   });
+  // A cell's width belongs to its column, so the W field is shown
+  // disabled with the reason rather than quietly removed.
+  // see docs/plans/tables-plan.md
+  const cellWidthOwnedByColumn = useCanvasStore((s) => {
+    const el = s.elements[elementId];
+    return el ? columnOwnsWidth(el, s.elements) : false;
+  });
   // The flex / grid child controls live under an "Advanced" disclosure so
   // the common case — W and H — stays uncluttered. Closed by default; the
   // section stays mounted across selection changes, so it holds while the
@@ -354,32 +362,42 @@ export const SizeSection = ({ elementId }: Props): JSX.Element | null => {
       ]}
     >
       <Row label="">
-        <PrefixSuffixInput
-          prefix="W"
-          title={
-            isWidthFixed
-              ? 'Width — type a number, or any CSS length (100vh, calc(...)). Set the unit on the right.'
-              : 'Width — computed (border-box). Type a number to make it fixed, or change the type on the right.'
-          }
-          value={widthFieldValue}
-          placeholder={isWidthFixed ? undefined : sizeTypeLabel(widthType)}
-          onCommit={(raw) =>
-            handleCommitWidth(combineTypedWithType(raw, widthType))
-          }
-          {...(STEPPABLE_TYPES.has(widthType)
-            ? { onArrow: makeArrowHandler(widthType, widthNumber, handleCommitWidth) }
-            : {})}
-          computed={!isWidthFixed}
-          suffix={
-            <SizeTypeSelect
-              value={widthType}
-              orientation="horizontal"
-              onSelect={handleSelectWidthType}
-              {...(disabledTypes ? { disabledTypes } : {})}
-              ariaLabel="Width type"
-            />
-          }
-        />
+        {cellWidthOwnedByColumn ? (
+          <PrefixSuffixInput
+            prefix="W"
+            title="A cell's width comes from its column. Change it in the table's Columns control, so the header and the body move together."
+            value="Column"
+            disabled
+            onCommit={() => undefined}
+          />
+        ) : (
+          <PrefixSuffixInput
+            prefix="W"
+            title={
+              isWidthFixed
+                ? 'Width — type a number, or any CSS length (100vh, calc(...)). Set the unit on the right.'
+                : 'Width — computed (border-box). Type a number to make it fixed, or change the type on the right.'
+            }
+            value={widthFieldValue}
+            placeholder={isWidthFixed ? undefined : sizeTypeLabel(widthType)}
+            onCommit={(raw) =>
+              handleCommitWidth(combineTypedWithType(raw, widthType))
+            }
+            {...(STEPPABLE_TYPES.has(widthType)
+              ? { onArrow: makeArrowHandler(widthType, widthNumber, handleCommitWidth) }
+              : {})}
+            computed={!isWidthFixed}
+            suffix={
+              <SizeTypeSelect
+                value={widthType}
+                orientation="horizontal"
+                onSelect={handleSelectWidthType}
+                {...(disabledTypes ? { disabledTypes } : {})}
+                ariaLabel="Width type"
+              />
+            }
+          />
+        )}
         <PrefixSuffixInput
           prefix="H"
           title={

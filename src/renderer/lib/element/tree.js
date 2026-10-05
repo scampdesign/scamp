@@ -1,3 +1,4 @@
+import { effectiveDisplay } from '../effectiveDisplay';
 import { ROOT_ELEMENT_ID } from './types';
 /**
  * Generate a 4-character lowercase hex id, matching the format used in the
@@ -307,7 +308,8 @@ export const wrapElement = (elements, elementId, wrapperId, template) => {
     const parent = elements[target.parentId];
     if (!parent)
         return null;
-    const parentIsLayout = parent.display === 'flex' || parent.display === 'grid';
+    const parentDisplay = effectiveDisplay(parent);
+    const parentIsLayout = parentDisplay === 'flex' || parentDisplay === 'grid';
     // Wrapper takes over the child's slot. Hugs content so it doesn't
     // visually balloon past the wrapped element. Position carries over
     // from the child (so the wrapper sits where the child sat); flex/

@@ -41,9 +41,4 @@ export declare const NEW_INPUT_BACKGROUND = "#ffffff";
 export declare const NEW_INPUT_BORDER_COLOR = "#cbd5e1";
 export declare const makeInput: (input: NewInputInput, id: string) => ScampElement;
 export declare const makeComponentInstance: (input: NewComponentInstanceInput, id: string) => ScampElement;
-/**
- * When a new rectangle or text element is drawn inside a `<ul>` or
- * `<ol>`, default its tag to `<li>` so the output semantic is correct
- * without the user having to open the Element section.
- */
-export declare const tagForListChildContext: (parent: ScampElement | undefined) => string | undefined;
+export declare const tagForListChildContext: (parent: ScampElement | undefined, type?: "rectangle" | "text") => string | undefined;

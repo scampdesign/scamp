@@ -17,6 +17,7 @@ import { GapIcon } from '../controls/GapIcon';
 import { GridTemplateEditor } from '../controls/GridTemplateEditor';
 import { SegmentedControl } from '../controls/SegmentedControl';
 import { SpaceValueInput } from '../controls/SpaceValueInput';
+import { TableColumnsEditor } from '../controls/TableColumnsEditor';
 import type {
   AlignContent,
   AlignItems,
@@ -209,6 +210,7 @@ const computeLayoutPatch = (
 export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
   const patchElement = useCanvasStore((s) => s.patchElement);
+  const elements = useCanvasStore((s) => s.elements);
   const themeTokens = useCanvasStore((s) => s.themeTokens);
   const openThemePanel = useCanvasStore((s) => s.openThemePanel);
   // Gap is a spacing property → float `--space-*` tokens to the top.
@@ -246,6 +248,29 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
           Layout is disabled while Visibility is set to None — the
           element is removed from the page.
         </div>
+      </Section>
+    );
+  }
+
+  // A table's layout is not one of the modes: it is a grid, always, and
+  // its rows are `<tr>` elements rather than track-list entries. So it
+  // gets the Columns control on its own and none of the mode picker.
+  // see docs/plans/tables-plan.md
+  if (element.tag === 'table') {
+    return (
+      <Section
+        title="Columns"
+        elementId={elementId}
+        fields={['display', 'gridTemplateColumns']}
+        cssProperties={['display', 'grid-template-columns']}
+      >
+        <Row label="">
+          <TableColumnsEditor
+            table={element}
+            elements={elements}
+            onChange={(patch) => patchElement(elementId, patch)}
+          />
+        </Row>
       </Section>
     );
   }

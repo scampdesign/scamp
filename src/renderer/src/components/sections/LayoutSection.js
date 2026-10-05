@@ -9,6 +9,7 @@ import { GapIcon } from '../controls/GapIcon';
 import { GridTemplateEditor } from '../controls/GridTemplateEditor';
 import { SegmentedControl } from '../controls/SegmentedControl';
 import { SpaceValueInput } from '../controls/SpaceValueInput';
+import { TableColumnsEditor } from '../controls/TableColumnsEditor';
 import { baseDirection, isColumnDirection, isReverseDirection, withReverse, } from '@lib/flexAxis';
 import { axisGapPatch, effectiveAxisGaps, hasAxisGaps } from '@lib/flexGap';
 import { tokensForField } from '@lib/tokensForField';
@@ -147,6 +148,7 @@ const computeLayoutPatch = (current, next) => {
 export const LayoutSection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
     const patchElement = useCanvasStore((s) => s.patchElement);
+    const elements = useCanvasStore((s) => s.elements);
     const themeTokens = useCanvasStore((s) => s.themeTokens);
     const openThemePanel = useCanvasStore((s) => s.openThemePanel);
     // Gap is a spacing property → float `--space-*` tokens to the top.
@@ -173,6 +175,13 @@ export const LayoutSection = ({ elementId }) => {
                     padding: '8px 0',
                     lineHeight: 1.4,
                 }, children: "Layout is disabled while Visibility is set to None \u2014 the element is removed from the page." }) }));
+    }
+    // A table's layout is not one of the modes: it is a grid, always, and
+    // its rows are `<tr>` elements rather than track-list entries. So it
+    // gets the Columns control on its own and none of the mode picker.
+    // see docs/plans/tables-plan.md
+    if (element.tag === 'table') {
+        return (_jsx(Section, { title: "Columns", elementId: elementId, fields: ['display', 'gridTemplateColumns'], cssProperties: ['display', 'grid-template-columns'], children: _jsx(Row, { label: "", children: _jsx(TableColumnsEditor, { table: element, elements: elements, onChange: (patch) => patchElement(elementId, patch) }) }) }));
     }
     const handleToggleReverse = () => {
         patchElement(elementId, {

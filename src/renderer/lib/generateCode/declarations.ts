@@ -1,5 +1,6 @@
 // generateCode/declarations.ts — split out of generateCode.ts (4.5).
 import { effectiveDisplay } from "../effectiveDisplay";
+import { cellSpanPlacement } from "../tableGrid";
 import { DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from "../defaults";
 import { ROOT_ELEMENT_ID, type BreakpointOverride, type PropertyGroup, type ScampElement } from "../element";
 import { formatAnimationShorthand, formatBoxShadowShorthand, formatFilterList, formatTransformList, formatTransitionShorthand } from "../parsers";
@@ -317,11 +318,19 @@ export const elementDeclarationLines = (
   // grid container. Free-text fields are emitted when non-empty;
   // align/justify-self only when not the default `stretch`.
   if (parent && parentDisplay === 'grid') {
+    // A cell's span comes from its `colSpan` / `rowSpan` attribute. An
+    // explicit placement the user typed still wins — this only fills in
+    // what the attribute already said. see docs/plans/tables-plan.md
+    const span = cellSpanPlacement(el);
     if (el.gridColumn.trim().length > 0) {
       lines.push(`grid-column: ${el.gridColumn};`);
+    } else if (span.gridColumn !== undefined) {
+      lines.push(`grid-column: ${span.gridColumn};`);
     }
     if (el.gridRow.trim().length > 0) {
       lines.push(`grid-row: ${el.gridRow};`);
+    } else if (span.gridRow !== undefined) {
+      lines.push(`grid-row: ${span.gridRow};`);
     }
     if (el.alignSelf !== BASE.alignSelf) {
       lines.push(`align-self: ${selfAlignForParent(el.alignSelf, 'grid')};`);

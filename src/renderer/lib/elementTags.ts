@@ -58,6 +58,18 @@ export const TAG_OPTIONS: Record<ElementType, ReadonlyArray<TagOption>> = {
     { value: 'li', label: 'li' },
     { value: 'details', label: 'details' },
     { value: 'summary', label: 'summary' },
+    // The table family. `table`, its sections and `tr` are containers;
+    // `th` and `td` are dual-natured like `li` — a plain `<td>Smith</td>`
+    // parses as a text element, one with element children as a
+    // rectangle — so they appear in BOTH lists.
+    // see docs/plans/tables-plan.md
+    { value: 'table', label: 'table' },
+    { value: 'thead', label: 'thead' },
+    { value: 'tbody', label: 'tbody' },
+    { value: 'tfoot', label: 'tfoot' },
+    { value: 'tr', label: 'tr' },
+    { value: 'th', label: 'th' },
+    { value: 'td', label: 'td' },
     { value: 'dialog', label: 'dialog' },
     { value: 'button', label: 'button' },
     { value: 'a', label: 'a' },
@@ -93,6 +105,11 @@ export const TAG_OPTIONS: Record<ElementType, ReadonlyArray<TagOption>> = {
     // A button with element children is a rectangle (see the rectangle
     // list above).
     { value: 'button', label: 'button' },
+    // The dual-natured half of the table family, plus `caption`, which
+    // only ever holds words. see docs/plans/tables-plan.md
+    { value: 'th', label: 'th' },
+    { value: 'td', label: 'td' },
+    { value: 'caption', label: 'caption' },
   ],
   image: [
     { value: 'img', label: 'img' },
@@ -164,6 +181,12 @@ export const BINDABLE_TYPED_ATTRIBUTES: Record<string, ReadonlyArray<string>> = 
   img: ['src', 'alt'],
 };
 
+/** Shared by `th` and `td` — the two tags that can span tracks. */
+const TABLE_CELL_ATTRIBUTES: ReadonlyArray<AttributeSpec> = [
+  { name: 'colSpan', label: 'Col span', kind: 'text', placeholder: '1' },
+  { name: 'rowSpan', label: 'Row span', kind: 'text', placeholder: '1' },
+];
+
 export const TAG_ATTRIBUTES: Record<string, ReadonlyArray<AttributeSpec>> = {
   // `<a>` href/target/rel are managed by the LinkField in the Element
   // section — that flow handles internal page references, external URL
@@ -178,6 +201,11 @@ export const TAG_ATTRIBUTES: Record<string, ReadonlyArray<AttributeSpec>> = {
     { name: 'action', label: 'Action', kind: 'text', placeholder: '/submit' },
   ],
   dialog: [{ name: 'open', label: 'Open', kind: 'boolean' }],
+  // A cell's span. Scamp derives `grid-column: span n` from this, so
+  // the semantic attribute is the only place it is written down.
+  // see docs/plans/tables-plan.md
+  th: TABLE_CELL_ATTRIBUTES,
+  td: TABLE_CELL_ATTRIBUTES,
   label: [{ name: 'htmlFor', label: 'For', kind: 'text', placeholder: 'input-id' }],
   blockquote: [{ name: 'cite', label: 'Cite', kind: 'text' }],
   time: [

@@ -44,7 +44,7 @@ export const createElementsCreateSlice = (set) => ({
             const parent = state.elements[input.parentId];
             if (!parent)
                 return state;
-            const contextTag = tagForListChildContext(parent);
+            const contextTag = tagForListChildContext(parent, 'text');
             const fontFamily = defaultTextFontFamily(state.themeTokens);
             const newText = makeText(input, id, fontFamily);
             const withTag = contextTag ? { ...newText, tag: contextTag } : newText;

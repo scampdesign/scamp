@@ -1,11 +1,11 @@
 import postcss from 'postcss';
-import { BROWSER_RESET_BLOCK, BROWSER_RESET_SENTINEL, DEFAULT_BODY_FONT_FAMILY, LINK_CURSOR_BLOCK, LINK_CURSOR_SENTINEL, LIST_PADDING_BLOCK, LIST_PADDING_SENTINEL, } from './agentMd';
+import { BROWSER_RESET_BLOCK, BROWSER_RESET_SENTINEL, DEFAULT_BODY_FONT_FAMILY, LINK_CURSOR_BLOCK, LINK_CURSOR_SENTINEL, LIST_PADDING_BLOCK, LIST_PADDING_SENTINEL, TABLE_RESET_BLOCK, TABLE_RESET_SENTINEL, } from './agentMd';
 /**
  * Additively backfill Scamp's project defaults into a `theme.css`
  * string. Pure: takes the raw CSS, returns the (possibly-updated) CSS
  * plus a `changed` flag.
  *
- * Six independent additive checks:
+ * Seven independent additive checks:
  *
  *   1. If no `:root` rule declares `--font-sans`, append the token to
  *      the first `:root` rule (or create a `:root` block if there
@@ -45,12 +45,14 @@ export const backfillThemeDefaults = (css) => {
     const hasBrowserReset = css.includes(BROWSER_RESET_SENTINEL);
     const hasListPadding = css.includes(LIST_PADDING_SENTINEL);
     const hasLinkCursor = css.includes(LINK_CURSOR_SENTINEL);
+    const hasTableReset = css.includes(TABLE_RESET_SENTINEL);
     if (hasFontSansToken &&
         hasBoxSizingReset &&
         hasBodyFontFamily &&
         hasBrowserReset &&
         hasListPadding &&
-        hasLinkCursor) {
+        hasLinkCursor &&
+        hasTableReset) {
         return { content: css, changed: false };
     }
     if (!hasFontSansToken) {
@@ -74,6 +76,9 @@ export const backfillThemeDefaults = (css) => {
     }
     if (!hasLinkCursor) {
         content = content.replace(/\s*$/, '\n\n') + LINK_CURSOR_BLOCK + '\n';
+    }
+    if (!hasTableReset) {
+        content = content.replace(/\s*$/, '\n\n') + TABLE_RESET_BLOCK + '\n';
     }
     return { content, changed: true };
 };

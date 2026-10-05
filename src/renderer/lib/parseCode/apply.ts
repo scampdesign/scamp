@@ -4,6 +4,7 @@ import { DEFAULT_COMPONENT_ROOT_STYLES, DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES
 import { ROOT_ELEMENT_ID, type BreakpointOverride, type ElementType, type ScampElement, type StateOverride } from "../element";
 import { parseAnimationShorthand, parsePx, parseSpaceValueOrNull } from "../parsers";
 import { getTagDefaultPadding } from "../tagDefaults";
+import { cellSpanPlacement } from "../tableGrid";
 import { type RawDeclaration } from "./css";
 import { type RawElement } from "./tsx";
 
@@ -257,8 +258,16 @@ export const applyDeclarations = (
 ): ScampElement => {
   let element: ScampElement = baseline;
   const customProperties: Record<string, string> = {};
+  // What this cell's `colSpan` / `rowSpan` already implies. The
+  // generator derives the placement from the attribute, so reading it
+  // back into `gridColumn` would leave the model carrying the same
+  // span twice — and changing the attribute would then move only one of
+  // them. see docs/plans/tables-plan.md
+  const derivedSpan = cellSpanPlacement(baseline);
 
   for (const { prop, value } of decls) {
+    if (prop === 'grid-column' && value.trim() === derivedSpan.gridColumn) continue;
+    if (prop === 'grid-row' && value.trim() === derivedSpan.gridRow) continue;
     // `position` is a typed field handled by the cssPropertyMap below
     // — drop straight through. The legacy "skip position entirely"
     // behavior dropped agent-written `position: fixed` etc., which

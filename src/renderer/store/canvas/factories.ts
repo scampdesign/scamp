@@ -199,14 +199,53 @@ export const makeComponentInstance = (
 });
 
 /**
- * When a new rectangle or text element is drawn inside a `<ul>` or
- * `<ol>`, default its tag to `<li>` so the output semantic is correct
- * without the user having to open the Element section.
+ * The tag a new element should take from where it was drawn, so the
+ * output semantic is right without the user opening the Element
+ * section.
+ *
+ * Inside a `<ul>` or `<ol>` that is `<li>`. Inside a table it walks the
+ * family down: a child of the table is a `<tbody>`, a child of a
+ * section is a `<tr>`, and a child of a row is a `<td>`.
+ *
+ * A child of `<table>` deliberately becomes a SECTION rather than a
+ * row. A `<tr>` written directly inside a `<table>` is reparented by
+ * the HTML parser into a `<tbody>` it inserts itself, which carries no
+ * Scamp class — and the derived subgrid rule then reaches the row
+ * through a tag selector, but nothing the user set on it does. Landing
+ * on the shape the parser would have built avoids the whole question.
+ * see docs/plans/tables-plan.md
  */
+const CHILD_TAG_FOR_CONTAINER: Readonly<Record<string, string>> = {
+  ul: 'li',
+  ol: 'li',
+  table: 'tbody',
+  thead: 'tr',
+  tbody: 'tr',
+  tfoot: 'tr',
+  tr: 'td',
+};
+
+/**
+ * Where a text element wants a different answer from a container.
+ * Words directly inside a table are its caption; a `<tbody>` holding
+ * text is not a thing. A section has no text child at all, so nothing
+ * is defaulted there and the element stays a `<p>` for the user to
+ * place.
+ */
+const CHILD_TAG_FOR_TEXT: Readonly<Record<string, string | undefined>> = {
+  table: 'caption',
+  thead: undefined,
+  tbody: undefined,
+  tfoot: undefined,
+};
+
 export const tagForListChildContext = (
-  parent: ScampElement | undefined
+  parent: ScampElement | undefined,
+  type: 'rectangle' | 'text' = 'rectangle'
 ): string | undefined => {
-  if (!parent) return undefined;
-  if (parent.tag === 'ul' || parent.tag === 'ol') return 'li';
-  return undefined;
+  if (!parent || parent.tag === undefined) return undefined;
+  if (type === 'text' && parent.tag in CHILD_TAG_FOR_TEXT) {
+    return CHILD_TAG_FOR_TEXT[parent.tag];
+  }
+  return CHILD_TAG_FOR_CONTAINER[parent.tag];
 };

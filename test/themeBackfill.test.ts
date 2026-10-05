@@ -4,6 +4,7 @@ import {
   BROWSER_RESET_SENTINEL,
   LINK_CURSOR_SENTINEL,
   LIST_PADDING_SENTINEL,
+  TABLE_RESET_SENTINEL,
   DEFAULT_BODY_FONT_FAMILY,
 } from '../src/shared/agentMd';
 
@@ -99,6 +100,7 @@ body {
 ${BROWSER_RESET_SENTINEL}
 ${LIST_PADDING_SENTINEL}
 ${LINK_CURSOR_SENTINEL}
+${TABLE_RESET_SENTINEL}
 `;
       const result = backfillThemeDefaults(input);
       expect(result.changed).toBe(false);
@@ -125,6 +127,7 @@ body {
 ${BROWSER_RESET_SENTINEL}
 ${LIST_PADDING_SENTINEL}
 ${LINK_CURSOR_SENTINEL}
+${TABLE_RESET_SENTINEL}
 `;
       const result = backfillThemeDefaults(input);
       expect(result.changed).toBe(false);
@@ -152,6 +155,7 @@ body {
 ${BROWSER_RESET_SENTINEL}
 ${LIST_PADDING_SENTINEL}
 ${LINK_CURSOR_SENTINEL}
+${TABLE_RESET_SENTINEL}
 `;
       const result = backfillThemeDefaults(input);
       expect(result.changed).toBe(false);
@@ -270,6 +274,7 @@ body {
 ${BROWSER_RESET_SENTINEL}
 ${LIST_PADDING_SENTINEL}
 ${LINK_CURSOR_SENTINEL}
+${TABLE_RESET_SENTINEL}
 /* user has customised the rules, but the sentinel marks our presence */
 p { margin: 8px 0; }
 `;
@@ -298,6 +303,7 @@ body {
 ${BROWSER_RESET_SENTINEL}
 ${LIST_PADDING_SENTINEL}
 ${LINK_CURSOR_SENTINEL}
+${TABLE_RESET_SENTINEL}
 `;
       const result = backfillThemeDefaults(input);
       expect(result.changed).toBe(false);
@@ -326,6 +332,24 @@ ${LINK_CURSOR_SENTINEL}
       // An anchor with no destination is not a link, and a browser
       // does not point at one either.
       expect(result.content).toContain('a[href]');
+    });
+
+    it('undoes the browser\'s table styling in a project that predates it', () => {
+      // A browser gives a table separated borders with 2px of spacing
+      // and a bold, centred `th` — none of it a decision the user made,
+      // and all of it arriving the moment a tag becomes `table`. Its own
+      // sentinel because every existing project already carries the
+      // browser-reset one.
+      const css = `:root {\n  --font-sans: system-ui;\n}\n\n${BROWSER_RESET_SENTINEL}\n${LIST_PADDING_SENTINEL}\n${LINK_CURSOR_SENTINEL}\n`;
+      const result = backfillThemeDefaults(css);
+      expect(result.changed).toBe(true);
+      expect(result.content).toContain(TABLE_RESET_SENTINEL);
+      expect(result.content).toContain('border-collapse: collapse;');
+      expect(result.content).toContain('border-spacing: 0;');
+      // `inherit`, not `normal`: a `th` inside a bolded row should
+      // still follow it. The point is to stop the browser deciding.
+      expect(result.content).toContain('font-weight: inherit;');
+      expect(result.content).toContain('text-align: inherit;');
     });
 
     it('adds every missing piece to a bare :root file', () => {

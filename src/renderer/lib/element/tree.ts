@@ -1,3 +1,4 @@
+import { effectiveDisplay } from '../effectiveDisplay';
 import { ROOT_ELEMENT_ID } from './types';
 import type { Position, ScampElement } from './types';
 
@@ -330,8 +331,8 @@ export const wrapElement = (
   const parent = elements[target.parentId];
   if (!parent) return null;
 
-  const parentIsLayout =
-    parent.display === 'flex' || parent.display === 'grid';
+  const parentDisplay = effectiveDisplay(parent);
+  const parentIsLayout = parentDisplay === 'flex' || parentDisplay === 'grid';
 
   // Wrapper takes over the child's slot. Hugs content so it doesn't
   // visually balloon past the wrapped element. Position carries over

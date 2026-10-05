@@ -34,13 +34,18 @@ TSX updates.
 
 `div` (default), `section`, `article`, `aside`, `main`, `header`,
 `footer`, `nav`, `figure`, `form`, `fieldset`, `ul`, `ol`, `li`,
-`details`, `summary`, `dialog`, `button`, and `a`.
+`details`, `summary`, `table`, `thead`, `tbody`, `tfoot`, `tr`, `th`,
+`td`, `dialog`, `button`, and `a`.
 
 ### Text tags
 
 `p` (default), `h1` through `h6`, `span`, `label`, `blockquote`, `pre`,
-`code`, `strong`, `em`, `small`, `time`, `figcaption`, `legend`, and
-`li`.
+`code`, `strong`, `em`, `small`, `time`, `figcaption`, `legend`, `li`,
+`a`, `button`, `th`, `td`, and `caption`.
+
+Some tags appear in both lists. A `<td>` that holds only words is a text
+element; one that holds other elements is a rectangle. The same is true
+of `<li>`, `<a>`, and `<button>`.
 
 ### Media tags
 
@@ -192,11 +197,64 @@ recoloring you did in Scamp is part of the inline source, so reloading
 discards those color edits; the prompt says so before you commit. **Keep
 current** leaves your in-canvas version untouched.
 
-## List context defaults
+## Tables
 
-When you draw a new rectangle or text element inside a `<ul>` or `<ol>`,
-Scamp sets its tag to `<li>` automatically. You can change it afterward
-if needed.
+The table tags are available, so a table you import or build keeps its
+meaning and its content in the generated code. Use `table` for the
+table itself, `thead`, `tbody`, and `tfoot` for its sections, `tr` for a
+row, `th` for a header cell, `td` for a body cell, and `caption` for the
+table's title.
+
+Scamp removes the styling a browser applies to a table on its own: the
+gap between cells, and the bold, centered header cell. Those aren't
+choices you made and the properties panel can't show them, so the canvas
+and the generated page both start from a plain table you style yourself.
+
+### Set a table's columns
+
+A table's column widths are defined once, on the table, so a change
+moves the header and the body together.
+
+1. Select the table.
+2. In the properties panel, expand the **Columns** section.
+3. Click **Define 3 columns**. The number is the count of cells in the
+   table's first row, and Scamp adds one track for each.
+4. Set each track's size. A track can be a fraction of the space
+   (`fr`), a fixed number of pixels, a percentage, or sized to its
+   content.
+
+To add a column, click **Add column** and draw a cell in each row. To
+add a row, draw a rectangle inside `thead`, `tbody`, or `tfoot`; Scamp
+tags it `tr`.
+
+**Note:** A cell's **W** field reads `Column` and can't be edited,
+because the column it sits in sets its width. Height, padding, and
+alignment are still the cell's own.
+
+### Make a cell span columns
+
+1. Select the cell.
+2. In the **Element** section, set **Col span** or **Row span**.
+
+Scamp writes the `colspan` attribute and places the cell across that
+many tracks. You don't set a grid position yourself.
+
+## Tag defaults from context
+
+When you draw a new element inside a container that expects a particular
+child, Scamp sets the tag for you. You can change it afterward.
+
+| You draw inside | Scamp uses |
+|---|---|
+| `ul` or `ol` | `li` |
+| `table` | `tbody`, or `caption` for a text element |
+| `thead`, `tbody`, or `tfoot` | `tr` |
+| `tr` | `td` |
+
+A child of `table` becomes a section rather than a row because a browser
+moves a `tr` written directly inside a `table` into a `tbody` it adds
+itself. Starting from the section keeps what you see on the canvas and
+what the published page renders the same.
 
 ## What doesn't change with the tag
 

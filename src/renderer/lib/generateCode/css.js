@@ -1,5 +1,6 @@
 // generateCode/css.ts — split out of generateCode.ts (4.5).
 import { isStyled, runClassName, runStyleDeclarations, runsOf } from '../textRuns';
+import { isGridTable, tableSubgridRule } from '../tableGrid';
 import { ELEMENT_STATES } from "../element";
 import { breakpointOverrideLines, elementDeclarationLines, sizeDeclarationLines } from "./declarations";
 import { classNameFor, computeElementsNeedingPositioningContext } from "./internal";
@@ -94,6 +95,13 @@ const elementCssChunks = (el, parent, mustEstablishPositioningContext = false) =
     const baseLines = elementDeclarationLines(el, parent, mustEstablishPositioningContext);
     const baseBody = baseLines.map((line) => line.length === 0 ? "" : `  ${line}`).join('\n');
     chunks.push(`.${classNameFor(el)} {\n${baseBody}\n}`);
+    // A grid table's columns reach its rows through one derived rule,
+    // right after the table's own so a row can still override it.
+    // Nothing is stored per row — that copy is the duplication tables
+    // exist to remove. see docs/plans/tables-plan.md
+    if (isGridTable(el)) {
+        chunks.push(tableSubgridRule(classNameFor(el)));
+    }
     const overrides = el.stateOverrides;
     if (overrides) {
         for (const state of ELEMENT_STATES) {

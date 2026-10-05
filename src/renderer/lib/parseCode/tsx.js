@@ -189,6 +189,13 @@ const TEXT_TAGS = new Set([
     'ins',
     'dt',
     'dd',
+    // A plain `<td>Smith</td>` is a text element. One with element
+    // children is corrected to a rectangle by the same structural pass
+    // that handles `<a>`, `<li>` and `<button>`.
+    // see docs/plans/tables-plan.md
+    'th',
+    'td',
+    'caption',
     'summary',
 ]);
 const INPUT_TAGS = new Set(['input', 'textarea', 'select']);

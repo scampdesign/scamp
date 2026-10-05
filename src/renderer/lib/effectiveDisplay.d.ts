@@ -14,5 +14,13 @@ import type { ScampElement } from './element';
  * both. The answer is the typed keyword, because that is what the rest
  * of the model is written in; the `inline-` part still reaches the page
  * through `customProperties`.
+ *
+ * A table tag is the same problem arriving from the other direction. A
+ * `<tr>` places its cells and a `<table>` places its rows — natively, or
+ * through the subgrid a defined table derives — but the typed `display`
+ * on one is the "neither" sentinel, so every caller answered no and
+ * Scamp absolutely positioned the cells. An out-of-flow grid item is
+ * placed by nothing, so the columns reached no cell at all.
+ * see docs/plans/tables-plan.md
  */
-export declare const effectiveDisplay: (el: Pick<ScampElement, "display" | "customProperties"> | null | undefined) => ScampElement["display"] | undefined;
+export declare const effectiveDisplay: (el: Pick<ScampElement, "display" | "customProperties" | "tag"> | null | undefined) => ScampElement["display"] | undefined;

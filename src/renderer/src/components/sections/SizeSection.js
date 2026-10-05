@@ -8,6 +8,7 @@ import { NumberInput } from '../controls/NumberInput';
 import { PrefixSuffixInput } from '../controls/PrefixSuffixInput';
 import { SizeTypeSelect } from '../controls/SizeTypeSelect';
 import { shrinkGuardPatch } from '@lib/flexChild';
+import { columnOwnsWidth } from '@lib/tableGrid';
 import { parseSizeValue } from '@lib/parsers';
 import { combineTypedWithType, rawForType, sizeTypeLabel, sizeTypeOf, } from '@lib/sizeType';
 import { lockedSizePatch } from '@lib/aspectRatio';
@@ -151,6 +152,13 @@ export const SizeSection = ({ elementId }) => {
             return undefined;
         return s.elements[el.parentId]?.flexDirection;
     });
+    // A cell's width belongs to its column, so the W field is shown
+    // disabled with the reason rather than quietly removed.
+    // see docs/plans/tables-plan.md
+    const cellWidthOwnedByColumn = useCanvasStore((s) => {
+        const el = s.elements[elementId];
+        return el ? columnOwnsWidth(el, s.elements) : false;
+    });
     // The flex / grid child controls live under an "Advanced" disclosure so
     // the common case — W and H — stays uncluttered. Closed by default; the
     // section stays mounted across selection changes, so it holds while the
@@ -285,11 +293,11 @@ export const SizeSection = ({ elementId }) => {
             'flex-basis',
             'flex',
             'order',
-        ], children: [_jsxs(Row, { label: "", children: [_jsx(PrefixSuffixInput, { prefix: "W", title: isWidthFixed
+        ], children: [_jsxs(Row, { label: "", children: [cellWidthOwnedByColumn ? (_jsx(PrefixSuffixInput, { prefix: "W", title: "A cell's width comes from its column. Change it in the table's Columns control, so the header and the body move together.", value: "Column", disabled: true, onCommit: () => undefined })) : (_jsx(PrefixSuffixInput, { prefix: "W", title: isWidthFixed
                             ? 'Width — type a number, or any CSS length (100vh, calc(...)). Set the unit on the right.'
                             : 'Width — computed (border-box). Type a number to make it fixed, or change the type on the right.', value: widthFieldValue, placeholder: isWidthFixed ? undefined : sizeTypeLabel(widthType), onCommit: (raw) => handleCommitWidth(combineTypedWithType(raw, widthType)), ...(STEPPABLE_TYPES.has(widthType)
                             ? { onArrow: makeArrowHandler(widthType, widthNumber, handleCommitWidth) }
-                            : {}), computed: !isWidthFixed, suffix: _jsx(SizeTypeSelect, { value: widthType, orientation: "horizontal", onSelect: handleSelectWidthType, ...(disabledTypes ? { disabledTypes } : {}), ariaLabel: "Width type" }) }), _jsx(PrefixSuffixInput, { prefix: "H", title: isHeightFixed
+                            : {}), computed: !isWidthFixed, suffix: _jsx(SizeTypeSelect, { value: widthType, orientation: "horizontal", onSelect: handleSelectWidthType, ...(disabledTypes ? { disabledTypes } : {}), ariaLabel: "Width type" }) })), _jsx(PrefixSuffixInput, { prefix: "H", title: isHeightFixed
                             ? 'Height — type a number, or any CSS length (100vh, calc(...)). Set the unit on the right.'
                             : 'Height — computed (border-box). Type a number to make it fixed, or change the type on the right.', value: heightFieldValue, placeholder: isHeightFixed ? undefined : sizeTypeLabel(heightType), onCommit: (raw) => handleCommitHeight(combineTypedWithType(raw, heightType)), ...(STEPPABLE_TYPES.has(heightType)
                             ? { onArrow: makeArrowHandler(heightType, heightNumber, handleCommitHeight) }

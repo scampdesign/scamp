@@ -1,4 +1,5 @@
 // generateCode/internal.ts — split out of generateCode.ts (4.5).
+import { effectiveDisplay } from "../effectiveDisplay";
 import { ROOT_ELEMENT_ID, slugifyName, type ScampElement } from "../element";
 
 /**
@@ -152,7 +153,12 @@ export const computeElementsNeedingPositioningContext = (
   for (const el of Object.values(elements)) {
     if (el.id === rootId) continue;
     if (el.childIds.length === 0) continue;
-    const isLayoutParent = el.display === 'flex' || el.display === 'grid';
+    // Through `effectiveDisplay`, so an `inline-grid` container and a
+    // table row both count as laying their children out. Reading the
+    // typed field alone said no, and their children were then given a
+    // `position: absolute` that takes them out of the layout.
+    const parentDisplay = effectiveDisplay(el);
+    const isLayoutParent = parentDisplay === 'flex' || parentDisplay === 'grid';
     for (const childId of el.childIds) {
       const child = elements[childId];
       if (!child) continue;

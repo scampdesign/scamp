@@ -161,6 +161,47 @@ menu {
   padding: 0;
 }`;
 
+/**
+ * Sentinel for the table reset. Its own, for the same reason as the two
+ * above: every existing project already carries the browser-reset
+ * sentinel, so a rule folded into that block would never reach one.
+ */
+export const TABLE_RESET_SENTINEL =
+  '/* scamp: table reset — the browser styles a table before anyone asks */';
+
+/**
+ * Undo the styling a browser applies to a table unasked.
+ *
+ * `BROWSER_RESET_BLOCK` zeroes UA margins on block tags so the canvas
+ * and the preview agree on an unstyled element. The table family was
+ * missed, and it is the loudest set of UA defaults left: `border-collapse:
+ * separate` with `border-spacing: 2px` puts a gap between every cell
+ * that no panel control shows, `th` comes out bold and centred, and
+ * cells carry a UA padding. Switching a tag to `table` in Scamp would
+ * change the element's appearance in ways the user did not ask for and
+ * cannot see in the panel.
+ *
+ * `font-weight: inherit` rather than `normal`: a `th` inside a heading
+ * or a bolded row should still follow it. The point is to stop the
+ * browser deciding, not to decide the other way.
+ * see docs/plans/tables-plan.md
+ */
+export const TABLE_RESET_BLOCK = `${TABLE_RESET_SENTINEL}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+th {
+  font-weight: inherit;
+  text-align: inherit;
+}
+
+th,
+td {
+  padding: 0;
+}`;
+
 
 
 /**
@@ -295,6 +336,8 @@ body {
 ${BROWSER_RESET_BLOCK}
 
 ${LIST_PADDING_BLOCK}
+
+${TABLE_RESET_BLOCK}
 
 ${LINK_CURSOR_BLOCK}
 `;

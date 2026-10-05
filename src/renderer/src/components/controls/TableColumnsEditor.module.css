@@ -1,0 +1,43 @@
+/* A table's column tracks. Matches GridTemplateEditor's layout, which
+ * wraps the GridTrackList this reuses. */
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.hint {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  margin: 0;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--accent);
+}
+
+/* Same dashed affordance as the track list's own Add button, so
+ * "define the columns" reads as the same kind of action. */
+.define {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--control-h);
+  padding: 0 8px;
+  background: transparent;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.define:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}

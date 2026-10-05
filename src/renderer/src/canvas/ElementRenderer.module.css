@@ -26,6 +26,28 @@
   display: block;
 }
 
+/* The same table normalisation `theme.css` writes, so the canvas and
+ * the preview agree the moment a tag becomes `table`. The browser gives
+ * a table separated borders and 2px of spacing, and a `th` that is bold
+ * and centred — none of it asked for.
+ *
+ * `:where` for the same reason as above: zero specificity, so the
+ * page's own rules win and this only fills in what they do not set.
+ * see docs/plans/tables-plan.md */
+.element:where(table) {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.element:where(th) {
+  font-weight: inherit;
+  text-align: inherit;
+}
+
+.element:where(th, td) {
+  padding: 0;
+}
+
 /* The browser puts `padding-inline-start: 40px` on a list. The canvas
  * does not, and neither does the properties panel, so a `ul`-tagged
  * element measured 40px narrower than everything claimed it was.
