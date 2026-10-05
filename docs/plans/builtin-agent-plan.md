@@ -73,7 +73,7 @@ AgentPanel ──agent:send──────────────▶ AgentSe
    ▲                                     │  harness loop
    │◀──agent:event (stream) ─────────────┤  ├─ AnthropicProvider (SDK)
    │                                     │  ├─ tool catalog
-agentToolResponder ◀──agent:tool────────┤  │   ├─ read  → existing MCP invoker
+agentToolResponder ◀──agent:tool────────┤  │   ├─ read  → canvasToolInvoker
    │  (store actions, lint)              │  │   └─ write → renderer, via agent:tool
    └──agent:tool-result─────────────────▶│  └─ confirmation gate
                                          ├─ providerKeyStore (safeStorage)
@@ -100,12 +100,12 @@ The tool result reports back which declarations became typed
 findings on that element. The model learns the panel's vocabulary from
 the feedback rather than from a schema.
 
-**The tool catalog is shared.** Read-tool descriptors and their invoker
-move out of `src/main/mcp/` into a catalog both the MCP server and the
-harness import. **Decided:** write tools are registered for the
-built-in agent only, and the MCP server stays read-only for the beta.
-Exposing them to external agents is a later decision, alongside the
-bulk-import plan's open question about `scamp_declare_tokens`.
+**The tool catalog is shared.** Both the MCP server and the harness get
+the read tools from `canvasToolInvoker` (Phase 0). **Decided:** write
+tools are registered for the built-in agent only, and the MCP server
+stays read-only for the beta. Exposing them to external agents is a
+later decision, alongside the bulk-import plan's open question about
+`scamp_declare_tokens`.
 
 ---
 
@@ -160,15 +160,22 @@ Each phase ships something usable. The PRD's order is kept, with one
 change: the harness and a minimal panel ship together, because a harness
 nobody can talk to can't be tested by hand.
 
-### Phase 0 — groundwork
+### Phase 0 — groundwork — **done**
 
-- Move the MCP tool descriptors and invoker into a shared catalog
-  (`src/main/agentTools/`), with the MCP server importing it. No
-  behaviour change; the MCP e2e spec proves it.
-- A renderer `auth` slice wrapping `authStatus` + `onAuthChanged`, so any
-  component can ask "is the user signed in". Replaces the local state in
-  `AccountPanel.tsx`.
-- Add `@anthropic-ai/sdk`.
+- **The canvas-query bridge moved out of the MCP lifecycle** into
+  `src/main/canvasQueries.ts`. The tool invoker was already free of the
+  transport (`createToolInvoker(runQuery, options)`); what tied it to the
+  MCP server was the query registry, created when the server started and
+  dropped when it stopped or failed. The built-in agent would have gone
+  down with a port collision on 39841. Now one long-lived registry serves
+  both, and `canvasToolInvoker(projectPath)` hands either caller the read
+  tools. No behaviour change for the MCP server.
+- **`useAuthStore`** (`src/renderer/store/authSlice.ts`): `status` of
+  `unknown | signed-in | signed-out`, seeded in `App` from `authStatus`
+  and kept current by `onAuthChanged`. `unknown` until main answers, so
+  a gated surface never flashes in. `AccountPanel` keeps its own state —
+  it tracks the sign-in *flow*, and both read the same broadcast.
+- **`@anthropic-ai/sdk`** added.
 
 ### Phase 1 — provider connection
 

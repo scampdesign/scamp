@@ -10,6 +10,7 @@ import { initSyncBridge, flushPendingPageWrite } from './syncBridge';
 import { applyAppTheme } from './lib/applyAppTheme';
 import { CONSENT_VERSION, hasCurrentConsent } from '@shared/consent';
 import { useFontsStore } from '@store/fontsSlice';
+import { useAuthStore } from '@store/authSlice';
 import { useTerminalActivityStore } from '@store/terminalActivitySlice';
 import type { ProjectData } from '@shared/types';
 
@@ -69,6 +70,21 @@ export const App = (): JSX.Element => {
 
   useEffect(() => {
     return initSyncBridge();
+  }, []);
+
+  // Sign-in state for gated surfaces (the Scamp Agent). Main owns the
+  // session; this mirrors it. see @store/authSlice
+  useEffect(() => {
+    let cancelled = false;
+    const apply = useAuthStore.getState().applyStatus;
+    void window.scamp.authStatus().then((status) => {
+      if (!cancelled) apply(status);
+    });
+    const off = window.scamp.onAuthChanged(apply);
+    return () => {
+      cancelled = true;
+      off();
+    };
   }, []);
 
   // Phase 4.2: keep the terminal-activity slice in sync with main's

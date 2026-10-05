@@ -4,23 +4,18 @@ import { ipcMain } from 'electron';
 import { IPC } from '@shared/ipcChannels';
 import { detectDisabledAgents, writeAgentConfigs } from './agentConfig';
 import { ensureToken, markMcpStopped, writeMcpConfig } from './mcpOps';
-import { createQueryRegistry } from './pendingQueries';
 import { startMcpServer } from './server';
-import { createToolInvoker, IMPORT_SOURCE_REPLY_LIMIT, TOOL_DESCRIPTORS } from './tools';
-import { listImportSources, readImportSource } from '../importSourceStore';
-import { listRoutes } from '../ipc/routeOps';
-import { getProjectFormat } from '../ipc/projectFormatCache';
+import { TOOL_DESCRIPTORS } from './tools';
+import { canvasToolInvoker, initCanvasQueries, rejectCanvasQueries } from '../canvasQueries';
 /**
- * The Electron glue: owns the window reference, the IPC listener, the query
- * registry, and the running server.
+ * The Electron glue: owns the running server. Questions to the canvas go
+ * through `canvasQueries`, which the built-in agent shares.
  *
  * Everything testable lives in its neighbours — this file exists so
  * `server.ts`, `tools.ts`, and `pendingQueries.ts` never import Electron and
  * can be unit tested without an app.
  * see docs/plans/mcp-server-plan.md
  */
-let mainWindow = null;
-let registry = null;
 let running = null;
 let activeProject = null;
 let activeToken = null;
@@ -28,22 +23,9 @@ let registered = [];
 let agentSeen = false;
 /** Register the reply listener once, at app start. */
 export const initMcp = (win) => {
-    mainWindow = win;
-    ipcMain.removeAllListeners(IPC.McpQueryResult);
-    ipcMain.on(IPC.McpQueryResult, (_e, result) => {
-        registry?.resolve(result);
-    });
+    initCanvasQueries(win);
     ipcMain.removeHandler(IPC.McpStatus);
     ipcMain.handle(IPC.McpStatus, () => mcpStatus());
-};
-const send = (payload) => {
-    const win = mainWindow;
-    // Guard both: the window can be destroyed between a tool call arriving and
-    // this send, and a destroyed window's webContents throws on send.
-    if (win === null || win.isDestroyed()) {
-        throw new Error('The Scamp window is not available.');
-    }
-    win.webContents.send(IPC.McpQuery, payload);
 };
 /**
  * Start (or restart) the server for a project.
@@ -56,7 +38,6 @@ export const startMcpForProject = async (projectPath) => {
     await stopMcp();
     try {
         const token = await ensureToken(projectPath);
-        registry = createQueryRegistry({ send });
         agentSeen = false;
         running = await startMcpServer({
             token,
@@ -65,23 +46,7 @@ export const startMcpForProject = async (projectPath) => {
             },
             deps: {
                 tools: TOOL_DESCRIPTORS,
-                invoke: createToolInvoker((tool, args) => registry === null
-                    ? Promise.reject(new Error('The Scamp MCP server is not running.'))
-                    : registry.query(tool, args), {
-                    listRoutes: async () => (await getProjectFormat(projectPath)) === 'scamp' ? listRoutes(projectPath) : [],
-                    listImportSources: () => listImportSources(projectPath),
-                    readImportSource: async (view, part) => {
-                        const found = await readImportSource(projectPath, view, part, IMPORT_SOURCE_REPLY_LIMIT);
-                        if (found === null)
-                            return null;
-                        return {
-                            text: found.text,
-                            truncated: found.truncated,
-                            path: part === 'html' ? found.stored.htmlPath : found.stored.cssPath,
-                            url: found.stored.url,
-                        };
-                    },
-                }),
+                invoke: canvasToolInvoker(projectPath),
             },
         });
         activeProject = projectPath;
@@ -117,8 +82,7 @@ export const startMcpForProject = async (projectPath) => {
 export const stopMcp = async () => {
     // Fail in-flight queries before closing the socket, so a waiting agent gets
     // a reason rather than a timeout.
-    registry?.rejectAll('The Scamp MCP server is shutting down.');
-    registry = null;
+    rejectCanvasQueries('The Scamp MCP server is shutting down.');
     const server = running;
     running = null;
     if (server !== null)
