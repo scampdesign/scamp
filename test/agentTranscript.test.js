@@ -45,6 +45,25 @@ describe('applyAgentEvent', () => {
             { kind: 'text', text: 'Found it.' },
         ]);
     });
+    it('shows what an edit changed in place of the tool name', () => {
+        const entries = fold([
+            { kind: 'tool-start', turnId: 't1', toolId: 'a', name: 'scamp_set_styles' },
+            {
+                kind: 'tool-end',
+                turnId: 't1',
+                toolId: 'a',
+                name: 'scamp_set_styles',
+                ok: true,
+                summary: 'Updated card_a1b2 — gap: 24px;',
+            },
+        ]);
+        expect(reply(entries).parts).toEqual([
+            {
+                kind: 'tools',
+                calls: [{ id: 'a', name: 'scamp_set_styles', status: 'ok', summary: 'Updated card_a1b2 — gap: 24px;' }],
+            },
+        ]);
+    });
     it('shows the progress note until the agent acts', () => {
         const working = fold([
             { kind: 'progress', turnId: 't1', text: 'Checking the ' },

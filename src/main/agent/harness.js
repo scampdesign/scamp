@@ -88,7 +88,14 @@ export const runTurn = async (options) => {
                 ? { content: [{ type: 'text', text: 'The tool input must be a JSON object.' }], isError: true }
                 : await invoke(use.name, args);
             const ok = result.isError !== true;
-            emit({ kind: 'tool-end', toolId: use.id, name: use.name, ok });
+            const summary = 'summary' in result ? result.summary : undefined;
+            emit({
+                kind: 'tool-end',
+                toolId: use.id,
+                name: use.name,
+                ok,
+                ...(ok && summary !== undefined ? { summary } : {}),
+            });
             return {
                 type: 'tool_result',
                 tool_use_id: use.id,

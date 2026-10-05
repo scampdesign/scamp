@@ -26,6 +26,41 @@ const send = (payload) => {
     win.webContents.send(IPC.McpQuery, payload);
 };
 const registry = createQueryRegistry({ send });
+/**
+ * The agent's edits go on their own channel with a longer wait: a read
+ * answers from memory, but an edit regenerates and reparses the page.
+ */
+const EDIT_TIMEOUT_MS = 15_000;
+const editRegistry = createQueryRegistry({
+    timeoutMs: EDIT_TIMEOUT_MS,
+    send: ({ requestId, tool, args }) => {
+        const win = mainWindow;
+        if (win === null || win.isDestroyed())
+            throw new Error('The Scamp window is not available.');
+        const turnId = typeof args['turnId'] === 'string' ? args['turnId'] : '';
+        const input = args['input'];
+        const payload = {
+            requestId,
+            tool,
+            args: {
+                turnId,
+                input: input !== null && typeof input === 'object' ? input : {},
+            },
+        };
+        win.webContents.send(IPC.AgentToolCall, payload);
+    },
+});
+const isAgentEditAnswer = (value) => value !== null &&
+    typeof value === 'object' &&
+    typeof value.ok === 'boolean' &&
+    typeof value.text === 'string';
+/** Ask the renderer to make one edit for the agent's turn `turnId`. */
+export const runAgentEdit = async (tool, input, turnId) => {
+    const answer = await editRegistry.query(tool, { turnId, input });
+    if (!isAgentEditAnswer(answer))
+        throw new Error('The canvas sent back an answer Scamp didn’t understand.');
+    return answer;
+};
 /** Register the reply listener once, at app start. */
 export const initCanvasQueries = (win) => {
     mainWindow = win;
@@ -33,10 +68,15 @@ export const initCanvasQueries = (win) => {
     ipcMain.on(IPC.McpQueryResult, (_e, result) => {
         registry.resolve(result);
     });
+    ipcMain.removeAllListeners(IPC.AgentToolResult);
+    ipcMain.on(IPC.AgentToolResult, (_e, result) => {
+        editRegistry.resolve(result);
+    });
 };
 /** Fail every question still waiting — the project is closing. */
 export const rejectCanvasQueries = (reason) => {
     registry.rejectAll(reason);
+    editRegistry.rejectAll(reason);
 };
 /**
  * The read tools, answered about `projectPath`. Most go to the renderer;

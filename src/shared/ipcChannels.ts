@@ -112,6 +112,10 @@ export const IPC = {
   AgentReset: 'agent:reset',
   /** Main → renderer: one step of a turn, as it happens. */
   AgentEvent: 'agent:event',
+  /** Main → renderer: make one edit for the agent. */
+  AgentToolCall: 'agent:tool-call',
+  /** Renderer → main: how that edit went. */
+  AgentToolResult: 'agent:tool-result',
 
   // Theme
   ThemeRead: 'theme:read',

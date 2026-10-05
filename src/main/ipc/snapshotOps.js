@@ -36,6 +36,8 @@ export const formatTriggerLabel = (trigger, detail) => {
             return 'Auto-save';
         case 'before_restore':
             return 'Before restore';
+        case 'agent_session':
+            return detail ? `Before Scamp Agent — ${detail}` : 'Before Scamp Agent';
     }
 };
 /**

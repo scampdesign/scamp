@@ -1,6 +1,6 @@
 import type { BetaMessageParam, BetaTool } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import type { AgentEvent, AgentTurnOutcome, AgentUsage } from '@shared/types';
-import type { ToolInvoker } from '../mcp/protocol';
+import type { ToolResult } from '../mcp/protocol';
 import type { AgentProvider } from './provider';
 /**
  * One turn of the agent: the user's message, then as many model calls and
@@ -16,11 +16,18 @@ import type { AgentProvider } from './provider';
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 /** An event before the session stamps it with its turn. */
 export type HarnessEvent = DistributiveOmit<AgentEvent, 'turnId'>;
+/**
+ * Runs one tool. An edit's result carries a one-line `summary` the panel
+ * shows in place of the tool's name.
+ */
+export type AgentToolInvoker = (name: string, args: Record<string, unknown>) => Promise<ToolResult & {
+    summary?: string;
+}>;
 export type RunTurnOptions = {
     provider: AgentProvider;
     system: string;
     tools: BetaTool[];
-    invoke: ToolInvoker;
+    invoke: AgentToolInvoker;
     history: ReadonlyArray<BetaMessageParam>;
     userContent: string;
     effort: 'low' | 'medium' | 'high';

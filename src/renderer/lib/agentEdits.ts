@@ -1,0 +1,475 @@
+// @lib/agentEdits.ts — the Scamp Agent's edits, as pure functions.
+//
+// Every edit goes through the same code Scamp uses for a file: styles are
+// written into the element's class rule in the generated stylesheet and
+// parsed back, exactly as if a person had typed them in the CSS tab. So an
+// agent edit can't produce a model that wouldn't survive a save and reload,
+// and a value the panel can't type is caught and reported, not guessed at.
+// see docs/plans/builtin-agent-plan.md
+
+import postcss from 'postcss';
+
+import { DESKTOP_BREAKPOINT_ID, type Breakpoint } from '@shared/types';
+import { patchClassBlock } from '@shared/patchClass';
+
+import { ROOT_ELEMENT_ID, type ScampElement } from './element';
+import {
+  generateElementId,
+  groupSiblings,
+  reorderElementPure,
+  slugifyName,
+} from './element/tree';
+import { TAG_OPTIONS } from './elementTags';
+import { classNameFor, generateCode } from './generateCode';
+import { parseCode } from './parseCode';
+
+export type AgentEditContext = {
+  elements: Record<string, ScampElement>;
+  rootId: string;
+  breakpoints: ReadonlyArray<Breakpoint>;
+  /** A component's root is sized differently from a page's. */
+  isComponent: boolean;
+};
+
+export type AgentEditResult =
+  | {
+      ok: true;
+      elements: Record<string, ScampElement>;
+      /** One line for the panel and the model: what changed. */
+      summary: string;
+      touched: string[];
+      /** Anything the model should know about the result. */
+      notes: string[];
+    }
+  | { ok: false; error: string };
+
+const fail = (error: string): AgentEditResult => ({ ok: false, error });
+
+/** Find an element by its Scamp id or by its class name. */
+export const resolveElement = (
+  ctx: AgentEditContext,
+  ref: unknown
+): ScampElement | null => {
+  if (typeof ref !== 'string' || ref.length === 0) return null;
+  const byId = ctx.elements[ref];
+  if (byId !== undefined) return byId;
+  if (ref === 'root') return ctx.elements[ctx.rootId] ?? null;
+  return Object.values(ctx.elements).find((el) => classNameFor(el) === ref) ?? null;
+};
+
+const notFound = (ref: unknown): string =>
+  `No element "${String(ref)}". Use an id or class name from scamp_get_element_tree.`;
+
+type Declaration = { prop: string; value: string; important: boolean };
+
+/** Declarations from a CSS fragment like `display: flex; gap: 12px`. */
+export const parseDeclarationList = (css: string): Declaration[] | string => {
+  let root: postcss.Root;
+  try {
+    root = postcss.parse(`.x{${css}}`);
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err);
+  }
+  const rule = root.first;
+  if (rule === undefined || rule.type !== 'rule' || root.nodes.length !== 1) {
+    return 'Expected declarations only, like "display: flex; gap: 12px" — no selectors or braces.';
+  }
+  const out: Declaration[] = [];
+  for (const node of rule.nodes) {
+    if (node.type !== 'decl') {
+      return 'Expected declarations only, like "display: flex; gap: 12px" — no nested rules.';
+    }
+    out.push({ prop: node.prop.trim().toLowerCase(), value: node.value.trim(), important: node.important === true });
+  }
+  return out;
+};
+
+const formatDeclaration = (d: Declaration): string =>
+  `${d.prop}: ${d.value}${d.important ? ' !important' : ''};`;
+
+/** The class rule's declarations as the stylesheet has them. */
+const ruleDeclarations = (
+  css: string,
+  className: string,
+  maxWidth: number | null
+): Declaration[] => {
+  const root = postcss.parse(css);
+  const out: Declaration[] = [];
+  const read = (rule: postcss.Rule): void => {
+    for (const node of rule.nodes) {
+      if (node.type === 'decl') {
+        out.push({ prop: node.prop.trim().toLowerCase(), value: node.value.trim(), important: node.important === true });
+      }
+    }
+  };
+  for (const node of root.nodes) {
+    if (maxWidth === null && node.type === 'rule' && node.selector.trim() === `.${className}`) read(node);
+    if (
+      maxWidth !== null &&
+      node.type === 'atrule' &&
+      node.name === 'media' &&
+      node.params.replace(/\s+/g, '') === `(max-width:${maxWidth}px)`
+    ) {
+      for (const inner of node.nodes ?? []) {
+        if (inner.type === 'rule' && inner.selector.trim() === `.${className}`) read(inner);
+      }
+    }
+  }
+  return out;
+};
+
+/** A breakpoint by id or label; null for desktop, the base styles. */
+const resolveBreakpoint = (
+  ctx: AgentEditContext,
+  ref: unknown
+): Breakpoint | null | 'unknown' => {
+  if (ref === undefined || ref === null || ref === '' || ref === DESKTOP_BREAKPOINT_ID) return null;
+  if (typeof ref !== 'string') return 'unknown';
+  const wanted = ref.trim().toLowerCase();
+  if (wanted === 'desktop') return null;
+  return (
+    ctx.breakpoints.find((b) => b.id.toLowerCase() === wanted || b.label.toLowerCase() === wanted) ??
+    'unknown'
+  );
+};
+
+/** The stylesheet round trip every style edit takes. */
+const roundTrip = (
+  ctx: AgentEditContext,
+  elements: Record<string, ScampElement>,
+  edit: (code: { tsx: string; css: string }) => string
+): Record<string, ScampElement> => {
+  const code = generateCode({
+    elements,
+    rootId: ctx.rootId,
+    pageName: 'AgentEdit',
+    breakpoints: [...ctx.breakpoints],
+    isComponent: ctx.isComponent,
+  });
+  return parseCode(code.tsx, edit(code), {
+    breakpoints: [...ctx.breakpoints],
+    isComponent: ctx.isComponent,
+  }).elements;
+};
+
+/** Keep the tree from the store; take only what the parser decided about styles. */
+const withIdentity = (parsed: ScampElement, original: ScampElement): ScampElement => ({
+  ...parsed,
+  id: original.id,
+  parentId: original.parentId,
+  childIds: original.childIds,
+});
+
+/**
+ * Set and remove declarations on an element's class rule — at a
+ * breakpoint, when one is named.
+ */
+export const setStyles = (
+  ctx: AgentEditContext,
+  args: { element: unknown; set?: unknown; remove?: unknown; breakpoint?: unknown }
+): AgentEditResult => {
+  const el = resolveElement(ctx, args.element);
+  if (el === null) return fail(notFound(args.element));
+  if (el.type === 'component-instance') {
+    return fail('A component instance takes its styles from the component. Edit the component instead.');
+  }
+  const setCss = typeof args.set === 'string' ? args.set : '';
+  const remove = Array.isArray(args.remove)
+    ? args.remove.filter((p): p is string => typeof p === 'string').map((p) => p.trim().toLowerCase())
+    : [];
+  const additions = parseDeclarationList(setCss);
+  if (typeof additions === 'string') return fail(`Couldn't read that CSS: ${additions}`);
+  if (additions.length === 0 && remove.length === 0) return fail('Nothing to change: pass "set", "remove", or both.');
+
+  const breakpoint = resolveBreakpoint(ctx, args.breakpoint);
+  if (breakpoint === 'unknown') {
+    const known = ctx.breakpoints.map((b) => b.label).join(', ');
+    return fail(`No breakpoint "${String(args.breakpoint)}". This project has: ${known}.`);
+  }
+  const maxWidth = breakpoint === null ? null : breakpoint.width;
+  const className = classNameFor(el);
+
+  let parsedElements: Record<string, ScampElement>;
+  try {
+    parsedElements = roundTrip(ctx, ctx.elements, (code) => {
+      const current = ruleDeclarations(code.css, className, maxWidth);
+      const replaced = new Set(additions.map((d) => d.prop));
+      const kept = current.filter((d) => !remove.includes(d.prop) && !replaced.has(d.prop));
+      const body = [...kept, ...additions].map(formatDeclaration).join('\n');
+      return patchClassBlock(code.css, className, body, maxWidth === null ? undefined : { maxWidth });
+    });
+  } catch (err) {
+    return fail(`Scamp couldn't apply that CSS: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  const parsed = parsedElements[el.id];
+  if (parsed === undefined) return fail(`Scamp lost ${className} while applying that CSS.`);
+  const next = withIdentity(parsed, el);
+
+  // What rendered but didn't become a typed, panel-editable value.
+  const custom =
+    breakpoint === null
+      ? next.customProperties
+      : (next.breakpointOverrides?.[breakpoint.id]?.customProperties ?? {});
+  const untyped = additions.filter((d) => d.prop in custom).map((d) => d.prop);
+  const notes =
+    untyped.length > 0
+      ? [
+          `These render but the properties panel can't edit them: ${untyped.join(', ')}. ` +
+            'That is fine for properties with no panel control; otherwise check the value or use the shorthand.',
+        ]
+      : [];
+
+  const changes = [
+    ...additions.map(formatDeclaration),
+    ...remove.map((p) => `removed ${p}`),
+  ].join(' ');
+  const where = breakpoint === null ? '' : ` at ${breakpoint.label}`;
+  return {
+    ok: true,
+    elements: { ...ctx.elements, [el.id]: next },
+    summary: `Updated ${className}${where} — ${changes}`,
+    touched: [el.id],
+    notes,
+  };
+};
+
+const freshElementId = (elements: Record<string, ScampElement>): string => {
+  for (let i = 0; i < 1000; i += 1) {
+    const id = generateElementId();
+    if (elements[id] === undefined) return id;
+  }
+  throw new Error('Could not find a free element id.');
+};
+
+const isLayoutParent = (el: ScampElement): boolean => el.display === 'flex' || el.display === 'grid';
+
+/**
+ * A new element inside `parent`, styled with `css`. Built by parsing a
+ * one-element file, so it starts from what Scamp reads for an element
+ * with only those declarations — not from the draw tool's defaults.
+ */
+export const addElement = (
+  ctx: AgentEditContext,
+  args: { parent: unknown; tag?: unknown; text?: unknown; css?: unknown; name?: unknown; index?: unknown }
+): AgentEditResult => {
+  const parent = resolveElement(ctx, args.parent);
+  if (parent === null) return fail(notFound(args.parent));
+  if (parent.type !== 'rectangle') {
+    return fail(`${classNameFor(parent)} can't hold children. Add the element to its container instead.`);
+  }
+  const text = typeof args.text === 'string' ? args.text : null;
+  const isText = text !== null;
+  const type = isText ? 'text' : 'rectangle';
+  const tag = typeof args.tag === 'string' && args.tag.length > 0 ? args.tag.toLowerCase() : isText ? 'p' : 'div';
+  if (!TAG_OPTIONS[type].some((o) => o.value === tag)) {
+    const allowed = TAG_OPTIONS[type].map((o) => o.value).join(', ');
+    return fail(`<${tag}> isn't available for a ${isText ? 'text element' : 'container'}. Use one of: ${allowed}.`);
+  }
+  const css = typeof args.css === 'string' ? args.css : '';
+  const declarations = parseDeclarationList(css);
+  if (typeof declarations === 'string') return fail(`Couldn't read that CSS: ${declarations}`);
+
+  const id = freshElementId(ctx.elements);
+  const slug = typeof args.name === 'string' ? slugifyName(args.name) : '';
+  const className = `${slug.length > 0 ? slug : isText ? 'text' : 'rect'}_${id}`;
+  // Placeholder words: the real text is set on the model below, so it
+  // never has to be escaped into JSX here.
+  const tsx = `<div data-scamp-id="root" className={styles.root}><${tag} data-scamp-id="${id}" className={styles.${className}}>${isText ? 'x' : ''}</${tag}></div>`;
+  const body = declarations.map(formatDeclaration).join('\n');
+  const draft = parseCode(tsx, `.${className} {\n${body}\n}`, {
+    breakpoints: [...ctx.breakpoints],
+    isComponent: false,
+  }).elements[id];
+  if (draft === undefined) return fail('Scamp couldn’t build that element.');
+
+  const siblings = parent.childIds;
+  const index =
+    typeof args.index === 'number' && Number.isInteger(args.index)
+      ? Math.max(0, Math.min(args.index, siblings.length))
+      : siblings.length;
+  const childIds = [...siblings.slice(0, index), id, ...siblings.slice(index)];
+  const placed: ScampElement = {
+    ...draft,
+    id,
+    parentId: parent.id,
+    childIds: [],
+    ...(isText ? { text } : {}),
+  };
+  const inserted = { ...ctx.elements, [id]: placed, [parent.id]: { ...parent, childIds } };
+
+  // Parsed once more in its real place: whether the parent lays out its
+  // children decides how a position is read.
+  let settled: Record<string, ScampElement>;
+  try {
+    settled = roundTrip({ ...ctx, elements: inserted }, inserted, (code) => code.css);
+  } catch (err) {
+    return fail(`Scamp couldn't place that element: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  const final = settled[id];
+  if (final === undefined) return fail('Scamp lost the new element while placing it.');
+
+  const notes = isLayoutParent(parent)
+    ? []
+    : [
+        `${classNameFor(parent)} isn't a flex or grid container, so the new element is placed absolutely at its top-left. ` +
+          'Give the parent a layout (display: flex) to flow its children.',
+      ];
+  return {
+    ok: true,
+    elements: { ...inserted, [id]: withIdentity(final, placed) },
+    summary: `Added <${tag}> ${className} to ${classNameFor(parent)}`,
+    touched: [id, parent.id],
+    notes,
+  };
+};
+
+/** Replace a text element's words. */
+export const setText = (ctx: AgentEditContext, args: { element: unknown; text: unknown }): AgentEditResult => {
+  const el = resolveElement(ctx, args.element);
+  if (el === null) return fail(notFound(args.element));
+  if (typeof args.text !== 'string') return fail('"text" must be a string.');
+  if (el.type !== 'text') {
+    return fail(`${classNameFor(el)} is a container, not text. Set the text of the text element inside it.`);
+  }
+  // New words invalidate styled runs: their offsets describe text that no
+  // longer exists. The same rule as typing on the canvas.
+  const { runs: _dropped, ...rest } = el;
+  return {
+    ok: true,
+    elements: { ...ctx.elements, [el.id]: { ...rest, text: args.text } },
+    summary: `Changed the text of ${classNameFor(el)}`,
+    touched: [el.id],
+    notes: el.runs !== undefined ? ['Its styled runs (bold or colored words) were dropped with the old text.'] : [],
+  };
+};
+
+/** Change the HTML tag, within what the element's type allows. */
+export const setTag = (ctx: AgentEditContext, args: { element: unknown; tag: unknown }): AgentEditResult => {
+  const el = resolveElement(ctx, args.element);
+  if (el === null) return fail(notFound(args.element));
+  if (el.id === ctx.rootId) return fail('The root’s tag is fixed.');
+  if (typeof args.tag !== 'string' || args.tag.length === 0) return fail('"tag" must be a tag name.');
+  const tag = args.tag.toLowerCase();
+  const options = TAG_OPTIONS[el.type];
+  if (options === undefined || !options.some((o) => o.value === tag)) {
+    const allowed = (options ?? []).map((o) => o.value).join(', ');
+    return fail(`<${tag}> isn't available for ${classNameFor(el)}. Use one of: ${allowed}.`);
+  }
+  return {
+    ok: true,
+    elements: { ...ctx.elements, [el.id]: { ...el, tag } },
+    summary: `Changed ${classNameFor(el)} to <${tag}>`,
+    touched: [el.id],
+    notes: [],
+  };
+};
+
+/** Attributes Scamp writes itself, or that would not compile. */
+const RESERVED_ATTRIBUTE = /^(classname|class|style|key|ref|data-scamp-.*|dangerouslysetinnerhtml|on[a-z].*)$/i;
+
+/** Set or remove attributes. A null value removes one. */
+export const setAttributes = (
+  ctx: AgentEditContext,
+  args: { element: unknown; attributes: unknown }
+): AgentEditResult => {
+  const el = resolveElement(ctx, args.element);
+  if (el === null) return fail(notFound(args.element));
+  const attrs = args.attributes;
+  if (attrs === null || typeof attrs !== 'object' || Array.isArray(attrs)) {
+    return fail('"attributes" must be an object of name → value (null removes one).');
+  }
+  const next: Record<string, string> = { ...(el.attributes ?? {}) };
+  const changed: string[] = [];
+  for (const [name, value] of Object.entries(attrs)) {
+    if (RESERVED_ATTRIBUTE.test(name)) {
+      return fail(`"${name}" is managed by Scamp or can't be set as text. Event handlers belong in code, not the design.`);
+    }
+    if (value === null) {
+      delete next[name];
+      changed.push(`removed ${name}`);
+    } else if (typeof value === 'string') {
+      next[name] = value;
+      changed.push(`${name}="${value}"`);
+    } else {
+      return fail(`The value of "${name}" must be a string, or null to remove it.`);
+    }
+  }
+  return {
+    ok: true,
+    elements: { ...ctx.elements, [el.id]: { ...el, attributes: next } },
+    summary: `Updated ${classNameFor(el)} — ${changed.join(', ')}`,
+    touched: [el.id],
+    notes: [],
+  };
+};
+
+/** Move an element to another parent, or to another position in its own. */
+export const moveElement = (
+  ctx: AgentEditContext,
+  args: { element: unknown; parent: unknown; index?: unknown }
+): AgentEditResult => {
+  const el = resolveElement(ctx, args.element);
+  if (el === null) return fail(notFound(args.element));
+  const parent = resolveElement(ctx, args.parent);
+  if (parent === null) return fail(notFound(args.parent));
+  if (parent.type !== 'rectangle') return fail(`${classNameFor(parent)} can't hold children.`);
+  const index =
+    typeof args.index === 'number' && Number.isInteger(args.index) ? Math.max(0, args.index) : parent.childIds.length;
+  const next = reorderElementPure(ctx.elements, el.id, parent.id, index);
+  if (next === null) {
+    return fail(`Can't move ${classNameFor(el)} there — it would move the root, or put an element inside itself.`);
+  }
+  return {
+    ok: true,
+    elements: next,
+    summary: `Moved ${classNameFor(el)} into ${classNameFor(parent)}`,
+    touched: [el.id, parent.id, ...(el.parentId !== null ? [el.parentId] : [])],
+    notes: [],
+  };
+};
+
+/** Wrap sibling elements in a new container, optionally styled. */
+export const wrapElements = (
+  ctx: AgentEditContext,
+  args: { elements: unknown; tag?: unknown; css?: unknown; name?: unknown }
+): AgentEditResult => {
+  if (!Array.isArray(args.elements) || args.elements.length === 0) {
+    return fail('"elements" must list the sibling elements to wrap.');
+  }
+  const resolved = args.elements.map((ref) => resolveElement(ctx, ref));
+  const missing = args.elements.find((_ref, i) => resolved[i] === null);
+  if (missing !== undefined) return fail(notFound(missing));
+  const ids = resolved.flatMap((el) => (el === null ? [] : [el.id]));
+  if (ids.includes(ROOT_ELEMENT_ID)) return fail('The root can’t be wrapped.');
+
+  const groupId = freshElementId(ctx.elements);
+  const grouped = groupSiblings(ctx.elements, ids, groupId);
+  if (grouped === null) return fail('Those elements must all be siblings — children of the same parent.');
+
+  let elements = grouped.elements;
+  const group = elements[groupId];
+  if (group === undefined) return fail('Scamp lost the new container.');
+  const slug = typeof args.name === 'string' ? slugifyName(args.name) : '';
+  elements = { ...elements, [groupId]: { ...group, ...(slug.length > 0 ? { name: slug } : {}) } };
+
+  const notes: string[] = [];
+  if (typeof args.tag === 'string' && args.tag.length > 0) {
+    const tagged = setTag({ ...ctx, elements }, { element: groupId, tag: args.tag });
+    if (!tagged.ok) return tagged;
+    elements = tagged.elements;
+  }
+  if (typeof args.css === 'string' && args.css.trim().length > 0) {
+    const styled = setStyles({ ...ctx, elements }, { element: groupId, set: args.css });
+    if (!styled.ok) return styled;
+    elements = styled.elements;
+    notes.push(...styled.notes);
+  }
+  const wrapper = elements[groupId];
+  return {
+    ok: true,
+    elements,
+    summary: `Wrapped ${ids.length} element${ids.length === 1 ? '' : 's'} in ${wrapper ? classNameFor(wrapper) : groupId}`,
+    touched: [groupId, ...ids],
+    notes,
+  };
+};

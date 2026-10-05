@@ -8,7 +8,7 @@ import type {
 
 import type { AgentEvent, AgentTurnOutcome, AgentUsage } from '@shared/types';
 
-import type { ToolInvoker } from '../mcp/protocol';
+import type { ToolResult } from '../mcp/protocol';
 import type { AgentProvider } from './provider';
 import { describeProviderError } from './providerErrors';
 
@@ -29,11 +29,20 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K>
 /** An event before the session stamps it with its turn. */
 export type HarnessEvent = DistributiveOmit<AgentEvent, 'turnId'>;
 
+/**
+ * Runs one tool. An edit's result carries a one-line `summary` the panel
+ * shows in place of the tool's name.
+ */
+export type AgentToolInvoker = (
+  name: string,
+  args: Record<string, unknown>
+) => Promise<ToolResult & { summary?: string }>;
+
 export type RunTurnOptions = {
   provider: AgentProvider;
   system: string;
   tools: BetaTool[];
-  invoke: ToolInvoker;
+  invoke: AgentToolInvoker;
   history: ReadonlyArray<BetaMessageParam>;
   userContent: string;
   effort: 'low' | 'medium' | 'high';
@@ -151,7 +160,14 @@ export const runTurn = async (options: RunTurnOptions): Promise<RunTurnResult> =
             ? { content: [{ type: 'text' as const, text: 'The tool input must be a JSON object.' }], isError: true }
             : await invoke(use.name, args);
         const ok = result.isError !== true;
-        emit({ kind: 'tool-end', toolId: use.id, name: use.name, ok });
+        const summary = 'summary' in result ? result.summary : undefined;
+        emit({
+          kind: 'tool-end',
+          toolId: use.id,
+          name: use.name,
+          ok,
+          ...(ok && summary !== undefined ? { summary } : {}),
+        });
         return {
           type: 'tool_result',
           tool_use_id: use.id,

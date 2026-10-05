@@ -9,6 +9,8 @@ export type TranscriptToolCall = {
     id: string;
     name: string;
     status: 'running' | 'ok' | 'failed';
+    /** What an edit changed, when it says. Shown instead of the tool's label. */
+    summary?: string;
 };
 /** A reply is text and tool calls interleaved, in the order they happened. */
 export type TranscriptPart = {

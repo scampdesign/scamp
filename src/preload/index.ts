@@ -25,6 +25,7 @@ import type {
   AgentKeySetResult,
   AgentKeyStatusResult,
   AgentSendArgs,
+  AgentToolCallArgs,
   AgentSendResult,
   AuthSignInResult,
   AuthStatusResult,
@@ -255,6 +256,17 @@ const api = {
 
   sendMcpQueryResult: (result: McpQueryResultArgs): void => {
     ipcRenderer.send(IPC.McpQueryResult, result);
+  },
+
+  /** The Scamp Agent's edits — answered by `agentToolResponder`, one reply each. */
+  onAgentToolCall: (handler: (args: AgentToolCallArgs) => void): (() => void) => {
+    const listener = (_e: IpcRendererEvent, args: AgentToolCallArgs): void => handler(args);
+    ipcRenderer.on(IPC.AgentToolCall, listener);
+    return () => ipcRenderer.removeListener(IPC.AgentToolCall, listener);
+  },
+
+  sendAgentToolResult: (result: McpQueryResultArgs): void => {
+    ipcRenderer.send(IPC.AgentToolResult, result);
   },
 
   getMcpStatus: (): Promise<McpStatusResult> =>

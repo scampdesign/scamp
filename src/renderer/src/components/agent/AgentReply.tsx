@@ -48,7 +48,7 @@ export const AgentReply = ({ entry }: Props): JSX.Element => {
                 ) : (
                   <IconX size={12} aria-hidden />
                 )}
-                {toolLabel(call.name)}
+                {call.summary ?? toolLabel(call.name)}
               </li>
             ))}
           </ul>

@@ -19,8 +19,8 @@ import styles from './AgentPanel.module.css';
 /** Starting points, which change with what's selected. */
 const SUGGESTIONS_WITH_SELECTION = [
   'What styles does this element have?',
-  'Why isn’t this element where I expect it?',
-  'Which theme tokens could this element use?',
+  'Center this element’s contents',
+  'Use theme tokens for this element’s colors',
 ];
 const SUGGESTIONS_WITHOUT_SELECTION = [
   'What’s on this page?',
@@ -90,8 +90,8 @@ export const AgentPanel = (): JSX.Element => {
             {visible.length === 0 ? (
               <div className={styles.empty}>
                 <p className={styles.emptyText}>
-                  Ask about the page you’re designing. The agent can read the canvas; editing from the chat is
-                  coming next.
+                  Ask about the page you’re designing, or ask for a change. Each reply’s edits undo together
+                  with Cmd+Z.
                 </p>
                 <ul className={styles.suggestions}>
                   {(hasSelection ? SUGGESTIONS_WITH_SELECTION : SUGGESTIONS_WITHOUT_SELECTION).map((s) => (
@@ -131,7 +131,7 @@ export const AgentPanel = (): JSX.Element => {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about this page…"
+                placeholder="Ask or describe a change…"
                 rows={3}
                 aria-label="Message the agent"
               />

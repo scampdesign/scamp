@@ -32,7 +32,7 @@ export const createAgentSession = (deps) => {
                         provider,
                         system: deps.system,
                         tools: deps.tools,
-                        invoke: deps.invoke,
+                        invoke: (name, args) => deps.invoke(name, args, turnId),
                         history,
                         userContent: userContentFor(text, context),
                         effort: 'medium',

@@ -1,7 +1,6 @@
 import type { BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import type { AgentEvent, AgentSendResult } from '@shared/types';
-import type { ToolInvoker } from '../mcp/protocol';
-import { runTurn } from './harness';
+import { runTurn, type AgentToolInvoker } from './harness';
 import type { AgentProvider } from './provider';
 /**
  * One project's conversation with the agent: its history, the turn in
@@ -14,7 +13,8 @@ import type { AgentProvider } from './provider';
 export type AgentSessionDeps = {
     /** Null when there's no usable key. */
     getProvider: () => Promise<AgentProvider | null>;
-    invoke: ToolInvoker;
+    /** Runs a tool for a turn — edits need the turn, to undo it as one step. */
+    invoke: (name: string, args: Record<string, unknown>, turnId: string) => ReturnType<AgentToolInvoker>;
     system: string;
     tools: Parameters<typeof runTurn>[0]['tools'];
     emit: (event: AgentEvent) => void;

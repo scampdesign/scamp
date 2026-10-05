@@ -30,6 +30,7 @@ import { makeFileChangedHandler } from './syncBridge/externalEdit';
 import { makeThemeChangedHandler } from './syncBridge/themeListener';
 import { cancelContextWrite, flushContextWrite, makeContextFileHandler, } from './syncBridge/contextFile';
 import { installMcpResponder } from './syncBridge/mcpResponder';
+import { installAgentToolResponder } from './syncBridge/agentToolResponder';
 // savePatch / retryLastSave moved to writeDispatch; re-exported so
 // CssPanel + the save-status retry button keep importing from here.
 export { savePatch, retryLastSave } from './syncBridge/writeDispatch';
@@ -131,6 +132,8 @@ export const initSyncBridge = () => {
     // rather than on change: the MCP server asks, this answers.
     // see docs/plans/mcp-server-plan.md
     const offMcp = installMcpResponder();
+    // The built-in agent's edits, answered the same way.
+    const offAgentTools = installAgentToolResponder();
     const offAck = window.scamp.onFileWriteAck((payload) => {
         handleAck(payload.writeId, payload.path);
     });
@@ -150,6 +153,7 @@ export const initSyncBridge = () => {
         cancelContextWrite();
         unsubContext();
         offMcp();
+        offAgentTools();
         ctx.cancelWriteTimer();
         pendingFlush = null;
         if (ctx.quietResumeTimer !== null) {

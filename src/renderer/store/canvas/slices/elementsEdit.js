@@ -353,6 +353,12 @@ export const createElementsEditSlice = (set) => ({
             });
         }
     },
+    applyAgentElements: (elements, touched) => {
+        if (useCanvasStore.getState().snapshotPreview !== null)
+            return;
+        set({ elements });
+        commitElementsToHistory({ kind: 'agent-edit', elementIds: [...touched] });
+    },
     patchCustomProperties: (id, patch) => {
         const state = useCanvasStore.getState();
         const el = state.elements[id];

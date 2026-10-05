@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import { app, ipcMain, safeStorage } from 'electron';
 import { IPC } from '@shared/ipcChannels';
 import { currentAuthToken } from '../auth/authService';
-import { canvasToolInvoker } from '../canvasQueries';
+import { canvasToolInvoker, runAgentEdit } from '../canvasQueries';
 import { agentToolsFrom } from '../agent/agentTools';
 import { createAnthropicProvider } from '../agent/anthropicProvider';
 import { createProviderKey } from '../agent/providerKey';
@@ -12,6 +12,9 @@ import { AGENT_SYSTEM_PROMPT } from '../agent/systemPrompt';
 import { verifyAnthropicKey } from '../agent/verifyAnthropicKey';
 import { readE2eSeams } from '../e2eSeams';
 import { TOOL_DESCRIPTORS } from '../mcp/tools';
+import { WRITE_TOOLS, WRITE_TOOL_NAMES } from '../agent/writeTools';
+import { createSnapshot } from './snapshotOps';
+import { getProjectFormat } from './projectFormatCache';
 /**
  * Scamp Agent handlers. The key arrives once, on `agent:key-set`, and is
  * never sent back — every reply is a status. A message goes in on
@@ -41,7 +44,12 @@ const scriptedProvider = async (path) => {
     const script = JSON.parse(await fs.readFile(path, 'utf-8'));
     return createScriptedProvider(script);
 };
-const AGENT_TOOLS = agentToolsFrom(TOOL_DESCRIPTORS);
+// Reads first, then edits — both in a fixed order, since the tool list
+// heads the cached prefix.
+const AGENT_TOOLS = [
+    ...agentToolsFrom(TOOL_DESCRIPTORS),
+    ...[...WRITE_TOOLS].sort((a, b) => a.name.localeCompare(b.name)),
+];
 let session = null;
 const sessionFor = (projectPath, target) => {
     if (session !== null && session.projectPath === projectPath) {
@@ -51,9 +59,11 @@ const sessionFor = (projectPath, target) => {
     session?.agent.reset();
     const script = seams().agentScript;
     let scripted = null;
+    const read = canvasToolInvoker(projectPath);
     const holder = {
         projectPath,
         target,
+        snapshotTaken: false,
         agent: createAgentSession({
             getProvider: async () => {
                 if (script !== null)
@@ -61,7 +71,31 @@ const sessionFor = (projectPath, target) => {
                 const key = await getProviderKey().current();
                 return key === null ? null : createAnthropicProvider(key);
             },
-            invoke: canvasToolInvoker(projectPath),
+            invoke: async (name, args, turnId) => {
+                if (!WRITE_TOOL_NAMES.has(name))
+                    return read(name, args);
+                // A restore point before the conversation's first edit, taken
+                // while disk still holds the pre-agent design. Best-effort: a
+                // failed snapshot logs and doesn't block the edit.
+                if (!holder.snapshotTaken) {
+                    holder.snapshotTaken = true;
+                    await createSnapshot(projectPath, await getProjectFormat(projectPath), 'agent_session');
+                }
+                try {
+                    const answer = await runAgentEdit(name, args, turnId);
+                    return {
+                        content: [{ type: 'text', text: answer.text }],
+                        ...(answer.ok ? {} : { isError: true }),
+                        ...(answer.summary !== undefined ? { summary: answer.summary } : {}),
+                    };
+                }
+                catch (err) {
+                    return {
+                        content: [{ type: 'text', text: `${name} failed: ${err instanceof Error ? err.message : String(err)}` }],
+                        isError: true,
+                    };
+                }
+            },
             system: AGENT_SYSTEM_PROMPT,
             tools: AGENT_TOOLS,
             emit: (event) => {
@@ -91,5 +125,8 @@ export const registerAgentIpc = () => {
     });
     ipcMain.handle(IPC.AgentReset, async () => {
         session?.agent.reset();
+        // A new conversation gets its own restore point.
+        if (session !== null)
+            session.snapshotTaken = false;
     });
 };

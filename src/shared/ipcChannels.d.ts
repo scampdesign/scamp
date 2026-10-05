@@ -57,6 +57,10 @@ export declare const IPC: {
     readonly AgentReset: "agent:reset";
     /** Main → renderer: one step of a turn, as it happens. */
     readonly AgentEvent: "agent:event";
+    /** Main → renderer: make one edit for the agent. */
+    readonly AgentToolCall: "agent:tool-call";
+    /** Renderer → main: how that edit went. */
+    readonly AgentToolResult: "agent:tool-result";
     readonly ThemeRead: "theme:read";
     readonly ThemeChanged: "theme:changed";
     readonly ThemeWrite: "theme:write";

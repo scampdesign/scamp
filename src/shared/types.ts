@@ -887,7 +887,9 @@ export type SnapshotTrigger =
   | 'session_close'
   | 'manual'
   | 'auto_save'
-  | 'before_restore';
+  | 'before_restore'
+  /** Taken before the Scamp Agent's first edit in a conversation. */
+  | 'agent_session';
 
 export type SnapshotMeta = {
   id: string;
@@ -1263,7 +1265,15 @@ export type AgentEvent =
   /** A short note on what the agent is doing between tool calls. */
   | { kind: 'progress'; turnId: string; text: string }
   | { kind: 'tool-start'; turnId: string; toolId: string; name: string }
-  | { kind: 'tool-end'; turnId: string; toolId: string; name: string; ok: boolean }
+  | {
+      kind: 'tool-end';
+      turnId: string;
+      toolId: string;
+      name: string;
+      ok: boolean;
+      /** What an edit changed, in one line — "Updated card_a1b2 — gap: 24px;". */
+      summary?: string;
+    }
   | {
       kind: 'turn-end';
       turnId: string;
@@ -1287,6 +1297,16 @@ export type AgentSendArgs = {
    * renderer already knows it and the panel shows the same line.
    */
   context: string;
+};
+
+/**
+ * Main asks the renderer to make one edit for the agent. `turnId` lets
+ * the renderer fold a turn's edits into a single undo step.
+ */
+export type AgentToolCallArgs = {
+  requestId: string;
+  tool: string;
+  args: { turnId: string; input: Record<string, unknown> };
 };
 
 export type AgentSendResult =

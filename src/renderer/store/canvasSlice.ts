@@ -729,6 +729,13 @@ export type CanvasState = {
   resizeElement: (id: string, x: number, y: number, width: number, height: number) => void;
   patchElement: (id: string, patch: Partial<ScampElement>) => void;
   /**
+   * Replace the element map with one the Scamp Agent computed. The agent's
+   * edits are already resolved (breakpoints included), so this bypasses
+   * the panel's axis routing. One history entry — or none inside a turn's
+   * transaction, which commits the whole turn as one.
+   */
+  applyAgentElements: (elements: Record<string, ScampElement>, touched: ReadonlyArray<string>) => void;
+  /**
    * Merge `patch` into an element's `customProperties` and write the
    * result through `patchElement` (so axis routing + history apply). A
    * key whose patch value is `undefined` is DELETED — this is the

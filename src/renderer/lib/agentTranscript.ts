@@ -11,6 +11,8 @@ export type TranscriptToolCall = {
   id: string;
   name: string;
   status: 'running' | 'ok' | 'failed';
+  /** What an edit changed, when it says. Shown instead of the tool's label. */
+  summary?: string;
 };
 
 /** A reply is text and tool calls interleaved, in the order they happened. */
@@ -90,7 +92,13 @@ const reduceAssistant = (entry: AssistantEntry, event: AgentEvent): AssistantEnt
             : {
                 kind: 'tools',
                 calls: part.calls.map((call) =>
-                  call.id === event.toolId ? { ...call, status: event.ok ? 'ok' : 'failed' } : call
+                  call.id === event.toolId
+                    ? {
+                        ...call,
+                        status: event.ok ? 'ok' : 'failed',
+                        ...(event.summary !== undefined ? { summary: event.summary } : {}),
+                      }
+                    : call
                 ),
               }
         ),
@@ -135,6 +143,13 @@ const TOOL_LABELS: Readonly<Record<string, string>> = {
   scamp_get_recent_edits: 'Read your recent edits',
   scamp_get_conventions: 'Read the project’s conventions',
   scamp_get_theme_tokens: 'Read the theme tokens',
+  scamp_set_styles: 'Edit styles',
+  scamp_add_element: 'Add an element',
+  scamp_set_text: 'Edit text',
+  scamp_set_tag: 'Change a tag',
+  scamp_set_attributes: 'Edit attributes',
+  scamp_move_element: 'Move an element',
+  scamp_wrap_elements: 'Wrap elements',
 };
 
 export const toolLabel = (name: string): string =>

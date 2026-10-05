@@ -1,5 +1,13 @@
 import { BrowserWindow } from 'electron';
 import type { ToolInvoker } from './mcp/protocol';
+/** What the renderer answers an edit with. */
+export type AgentEditAnswer = {
+    ok: boolean;
+    text: string;
+    summary?: string;
+};
+/** Ask the renderer to make one edit for the agent's turn `turnId`. */
+export declare const runAgentEdit: (tool: string, input: Record<string, unknown>, turnId: string) => Promise<AgentEditAnswer>;
 /** Register the reply listener once, at app start. */
 export declare const initCanvasQueries: (win: BrowserWindow) => void;
 /** Fail every question still waiting — the project is closing. */

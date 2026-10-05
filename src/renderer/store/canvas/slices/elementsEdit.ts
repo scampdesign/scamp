@@ -84,6 +84,7 @@ export const createElementsEditSlice: StateCreator<
   | 'moveElement'
   | 'resizeElement'
   | 'patchElement'
+  | 'applyAgentElements'
   | 'patchCustomProperties'
   | 'resetElementFieldsAtBreakpoint'
   | 'resetElementFieldsAtState'
@@ -439,6 +440,12 @@ export const createElementsEditSlice: StateCreator<
         propertyKeys: Object.keys(patch) as ReadonlyArray<keyof ScampElement>,
       });
     }
+  },
+
+  applyAgentElements: (elements, touched) => {
+    if (useCanvasStore.getState().snapshotPreview !== null) return;
+    set({ elements });
+    commitElementsToHistory({ kind: 'agent-edit', elementIds: [...touched] });
   },
 
   patchCustomProperties: (id, patch) => {

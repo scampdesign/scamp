@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain } from 'electron';
 
 import { IPC } from '@shared/ipcChannels';
-import type { McpQueryArgs, McpQueryResultArgs } from '@shared/types';
+import type { AgentToolCallArgs, McpQueryArgs, McpQueryResultArgs } from '@shared/types';
 
 import { listImportSources, readImportSource } from './importSourceStore';
 import { listRoutes } from './ipc/routeOps';
@@ -35,6 +35,51 @@ const send = (payload: McpQueryArgs): void => {
 
 const registry: QueryRegistry = createQueryRegistry({ send });
 
+/**
+ * The agent's edits go on their own channel with a longer wait: a read
+ * answers from memory, but an edit regenerates and reparses the page.
+ */
+const EDIT_TIMEOUT_MS = 15_000;
+
+const editRegistry: QueryRegistry = createQueryRegistry({
+  timeoutMs: EDIT_TIMEOUT_MS,
+  send: ({ requestId, tool, args }) => {
+    const win = mainWindow;
+    if (win === null || win.isDestroyed()) throw new Error('The Scamp window is not available.');
+    const turnId = typeof args['turnId'] === 'string' ? args['turnId'] : '';
+    const input = args['input'];
+    const payload: AgentToolCallArgs = {
+      requestId,
+      tool,
+      args: {
+        turnId,
+        input: input !== null && typeof input === 'object' ? (input as Record<string, unknown>) : {},
+      },
+    };
+    win.webContents.send(IPC.AgentToolCall, payload);
+  },
+});
+
+/** What the renderer answers an edit with. */
+export type AgentEditAnswer = { ok: boolean; text: string; summary?: string };
+
+const isAgentEditAnswer = (value: unknown): value is AgentEditAnswer =>
+  value !== null &&
+  typeof value === 'object' &&
+  typeof (value as { ok?: unknown }).ok === 'boolean' &&
+  typeof (value as { text?: unknown }).text === 'string';
+
+/** Ask the renderer to make one edit for the agent's turn `turnId`. */
+export const runAgentEdit = async (
+  tool: string,
+  input: Record<string, unknown>,
+  turnId: string
+): Promise<AgentEditAnswer> => {
+  const answer = await editRegistry.query(tool, { turnId, input });
+  if (!isAgentEditAnswer(answer)) throw new Error('The canvas sent back an answer Scamp didn’t understand.');
+  return answer;
+};
+
 /** Register the reply listener once, at app start. */
 export const initCanvasQueries = (win: BrowserWindow): void => {
   mainWindow = win;
@@ -42,11 +87,16 @@ export const initCanvasQueries = (win: BrowserWindow): void => {
   ipcMain.on(IPC.McpQueryResult, (_e, result: McpQueryResultArgs) => {
     registry.resolve(result);
   });
+  ipcMain.removeAllListeners(IPC.AgentToolResult);
+  ipcMain.on(IPC.AgentToolResult, (_e, result: McpQueryResultArgs) => {
+    editRegistry.resolve(result);
+  });
 };
 
 /** Fail every question still waiting — the project is closing. */
 export const rejectCanvasQueries = (reason: string): void => {
   registry.rejectAll(reason);
+  editRegistry.rejectAll(reason);
 };
 
 /**

@@ -252,34 +252,55 @@ nobody can talk to can't be tested by hand.
 **Left for Phase 7:** history persistence, a context override, Markdown
 beyond inline code.
 
-### Phase 3 — write tools
+### Phase 3 — write tools — **done**
 
-The core of the plan. Each tool is executed by
-`src/renderer/src/syncBridge/agentToolResponder.ts` against the store,
-inside one history transaction per agent turn.
+**Seven edits**, in `@lib/agentEdits` (pure, 30 tests), answered in the
+renderer by `syncBridge/agentToolResponder.ts`:
 
-| Tool | Does | Through |
-|---|---|---|
-| `scamp_set_styles` | CSS declarations onto an element, optionally at a breakpoint or state | `applyDeclarations` → `patchElement` (axis routing already exists) |
-| `scamp_add_element` | A child of a given type and tag, with CSS and text | `create*` actions |
-| `scamp_set_text` / `scamp_set_tag` / `scamp_set_attributes` | Content and semantics | existing slice actions |
-| `scamp_move_element` | Reparent or reorder | `reparentElement` / `reorderElement` |
-| `scamp_wrap_elements` | Group siblings in a new container | `groupElements` |
-| `scamp_delete_element` | Remove, **always confirmed** | `deleteElement` |
-| `scamp_extract_component` | A subtree into a component, and repeats into instances | `generateComponentFromSubtree` + `createComponent` + `replaceSubtreeWithInstance` |
-| `scamp_set_theme_tokens` | Add or change tokens in `theme.css` | `theme:write` |
-| `scamp_update_design_md` | One prose section of `DESIGN.md` | the design-md sync path |
+| Tool | Does |
+|---|---|
+| `scamp_set_styles` | Set and remove declarations on the class rule, at a breakpoint if named |
+| `scamp_add_element` | A text element or container, styled from nothing |
+| `scamp_set_text` / `scamp_set_tag` / `scamp_set_attributes` | Content and semantics |
+| `scamp_move_element` | Reparent or reorder |
+| `scamp_wrap_elements` | Siblings into a new, optionally styled container |
 
-Every result returns what changed in one line (the panel shows it as the
-PRD's confirmation — "Updated rect_a1b2 — display: flex"), which
-declarations didn't type, and the element's lint findings.
+**Every style goes through the file round trip, in memory.** An edit
+generates the page's stylesheet, rewrites just that class rule with the
+same `patchClassBlock` the CSS tab's save uses, and parses it back —
+then takes only that element from the result. So an agent edit is
+exactly what a person typing in the CSS tab would get, can't produce a
+model that wouldn't survive a save and reload (every test asserts the
+round trip), and a value the panel can't type is reported back to the
+model rather than guessed at. A new element is built the same way: a
+one-element file, parsed, so it starts from "no declarations" rather
+than the draw tool's fixed 100 × 100.
 
-The `mcp:query` bridge has a 2-second timeout, sized for reads.
-`agent:tool` gets its own channel and a longer one; component extraction
-writes files.
+**Each result carries feedback:** a one-line summary the panel shows in
+place of the tool name ("Updated card_a1b2 — gap: 24px;"), which values
+rendered but the panel can't edit, and `lintView`'s findings on the
+touched elements — so the agent can fix what it caused.
 
-Tests: each tool against a store fixture, asserting the generated files
-round-trip (`generateCode` → `parseCode` reproduces the model).
+**One undo step per turn.** The responder opens a history transaction on
+a turn's first edit and `App` closes it on `turn-end`; the store's
+`applyAgentElements` commits an `agent-edit` entry, which the
+transaction folds into one.
+
+**Plumbing:** edits run on their own channel (`agent:tool-call`) with a
+15-second wait instead of the reads' two, since an edit regenerates and
+reparses the page. The write tools are offered to the built-in agent
+only; the MCP server is unchanged.
+
+**Two changes from the plan:**
+
+- **The pre-session snapshot moved up from Phase 4.** Main takes an
+  `agent_session` snapshot ("Before Scamp Agent" in History) before a
+  conversation's first edit, and again after **New conversation**.
+  Shipping edits a phase before their restore point wasn't worth it.
+- **Delete, component extraction, theme tokens and DESIGN.md moved to
+  Phase 4.** Each needs something Phase 4 builds first: delete needs the
+  confirmation gate, and the other three touch files the snapshot
+  doesn't cover yet (`theme.css`, `DESIGN.md`, a new component folder).
 
 ### Phase 4 — safety
 

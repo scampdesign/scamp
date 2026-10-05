@@ -93,6 +93,15 @@ const api = {
     sendMcpQueryResult: (result) => {
         ipcRenderer.send(IPC.McpQueryResult, result);
     },
+    /** The Scamp Agent's edits — answered by `agentToolResponder`, one reply each. */
+    onAgentToolCall: (handler) => {
+        const listener = (_e, args) => handler(args);
+        ipcRenderer.on(IPC.AgentToolCall, listener);
+        return () => ipcRenderer.removeListener(IPC.AgentToolCall, listener);
+    },
+    sendAgentToolResult: (result) => {
+        ipcRenderer.send(IPC.AgentToolResult, result);
+    },
     getMcpStatus: () => ipcRenderer.invoke(IPC.McpStatus),
     writeComponentThumbnail: (args) => ipcRenderer.invoke(IPC.ComponentWriteThumbnail, args),
     readComponentThumbnail: (args) => ipcRenderer.invoke(IPC.ComponentReadThumbnail, args),
