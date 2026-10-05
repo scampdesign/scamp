@@ -10,6 +10,8 @@ import {
 import { classNameFor } from '@lib/generateCode';
 
 import { useCanvasStore } from './canvasSlice';
+import { useHistoryStore } from './historySlice';
+import { useSnapshotsStore } from './snapshotsSlice';
 
 /**
  * The Scamp Agent conversation in the renderer. Main owns the real
@@ -25,6 +27,10 @@ export type AgentState = {
   busy: boolean;
   /** Why the last message couldn't be sent at all. */
   sendError: string | null;
+  /** The agent has edited the canvas in this conversation, since any undo. */
+  edited: boolean;
+  /** Restore everything to before the conversation's first edit. */
+  undoSession: () => Promise<{ ok: true } | { ok: false; error: string }>;
   send: (text: string) => Promise<void>;
   cancel: () => void;
   reset: () => void;
@@ -60,6 +66,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   entries: [],
   busy: false,
   sendError: null,
+  edited: false,
 
   send: async (text) => {
     const trimmed = text.trim();
@@ -86,13 +93,34 @@ export const useAgentStore = create<AgentState>((set, get) => ({
 
   reset: () => {
     void window.scamp.agentReset();
-    set({ entries: [], busy: false, sendError: null });
+    set({ entries: [], busy: false, sendError: null, edited: false });
+  },
+
+  undoSession: async () => {
+    const projectPath = useCanvasStore.getState().projectPath;
+    if (!projectPath) return { ok: false, error: 'No project is open.' };
+    const result = await window.scamp.agentUndoSession({ projectPath });
+    if (!result.ok) return result;
+    // A restore is a hard reset, as from the History panel: the undo stack
+    // no longer lines up with the canvas.
+    useHistoryStore.getState().clearAllHistory();
+    void useSnapshotsStore.getState().loadSnapshots(projectPath);
+    set((state) => ({
+      edited: false,
+      entries: [
+        ...state.entries,
+        { role: 'note', id: `note_${Date.now().toString(36)}`, text: 'Undid every change the agent made in this conversation.' },
+      ],
+    }));
+    return { ok: true };
   },
 
   applyEvent: (event) => {
     set((state) => ({
       entries: applyAgentEvent(state.entries, event),
       ...(event.kind === 'turn-end' ? { busy: false } : {}),
+      // An edit that went through is what makes Undo AI session mean something.
+      ...(event.kind === 'tool-end' && event.ok && event.summary !== undefined ? { edited: true } : {}),
     }));
   },
 }));

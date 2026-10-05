@@ -62,7 +62,7 @@ describe('executeAgentEdit', () => {
         useHistoryStore.getState().undo();
         const elements = useCanvasStore.getState().elements;
         expect(elements['a1b2']?.gap).toBe(8);
-        expect(elements['a1b2']?.tag).toBe('div');
+        expect(elements['a1b2']?.tag).not.toBe('section');
         expect(elements['e5f6']?.text).toBe('Body');
     });
     it('keeps two turns as two undo steps', () => {

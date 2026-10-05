@@ -236,6 +236,45 @@ describe('createAgentSession', () => {
         expect(rejected).toBe(true);
     });
 });
+describe('noteNextTurn', () => {
+    const sessionWith = (sent) => createAgentSession({
+        getProvider: async () => ({
+            streamTurn: async (request) => {
+                const last = request.messages.at(-1);
+                sent.push(typeof last?.content === 'string' ? last.content : '');
+                return createScriptedProvider([{ content: [{ type: 'text', text: 'ok' }] }]).streamTurn(request, {
+                    onText: () => { },
+                    onProgress: () => { },
+                });
+            },
+        }),
+        invoke: fakeInvoke(),
+        system: 'test',
+        tools: [],
+        emit: () => { },
+        onKeyRejected: () => { },
+    });
+    it('tells the agent once, in front of the next message', async () => {
+        const sent = [];
+        const agent = sessionWith(sent);
+        agent.noteNextTurn('The user undid your changes.');
+        await agent.send('What now?', 'Page: home', 't1');
+        await agent.idle();
+        await agent.send('And now?', 'Page: home', 't2');
+        await agent.idle();
+        expect(sent[0]).toBe('[Scamp: The user undid your changes.]\n[Scamp: Page: home]\n\nWhat now?');
+        expect(sent[1]).toBe('[Scamp: Page: home]\n\nAnd now?');
+    });
+    it('is dropped by a new conversation', async () => {
+        const sent = [];
+        const agent = sessionWith(sent);
+        agent.noteNextTurn('Stale.');
+        agent.reset();
+        await agent.send('Hi', '', 't1');
+        await agent.idle();
+        expect(sent[0]).toBe('Hi');
+    });
+});
 describe('userContentFor', () => {
     it('puts the context line in front of the words', () => {
         expect(userContentFor('Center it', 'Page: home · Selected: rect_a1b2')).toBe('[Scamp: Page: home · Selected: rect_a1b2]\n\nCenter it');

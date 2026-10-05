@@ -1249,6 +1249,12 @@ export type AgentToolCallArgs = {
         input: Record<string, unknown>;
     };
 };
+export type AgentUndoSessionResult = {
+    ok: true;
+} | {
+    ok: false;
+    error: string;
+};
 export type AgentSendResult = {
     ok: true;
 } | {

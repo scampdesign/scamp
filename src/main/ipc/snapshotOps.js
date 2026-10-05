@@ -6,6 +6,8 @@
 import { promises as fs } from 'fs';
 import { dirname, join, relative, sep } from 'path';
 import { randomUUID } from 'crypto';
+import { designMdPathFor } from './designMdOps';
+import { themePathFor } from './themeOps';
 /** Max snapshots kept locally; oldest is pruned when a new one exceeds it. */
 export const SNAPSHOT_LIMIT = 50;
 /** Consecutive external edits within this window collapse into one snapshot. */
@@ -131,9 +133,12 @@ export const enumerateProjectFiles = async (projectPath, format) => {
         if (await exists(p))
             out.push(p);
     };
+    // The design system, in every format: a restore that brought the pages
+    // back but left the theme as it was would show the old design in the
+    // new colours.
+    await add(themePathFor(projectPath, format));
+    await add(designMdPathFor(projectPath, format));
     if (format === 'scamp') {
-        await add(join(projectPath, 'design', 'theme.css'));
-        await add(join(projectPath, 'design', 'DESIGN.md'));
         // Views share the components layout below; routes are the user's
         // logic and go in whole.
         await addTree(join(projectPath, 'routes'), out);

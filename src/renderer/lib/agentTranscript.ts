@@ -22,6 +22,8 @@ export type TranscriptPart =
 
 export type TranscriptEntry =
   | { role: 'user'; id: string; text: string; context: string }
+  /** Something Scamp did, said in the conversation — "Undid the agent's changes." */
+  | { role: 'note'; id: string; text: string }
   | {
       role: 'assistant';
       /** The turn id main assigned. */

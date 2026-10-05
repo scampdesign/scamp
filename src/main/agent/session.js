@@ -1,10 +1,17 @@
 import { runTurn } from './harness';
-/** The user's words, with the line Scamp adds in front of them. */
-export const userContentFor = (text, context) => context.trim().length > 0 ? `[Scamp: ${context.trim()}]\n\n${text}` : text;
+/** The user's words, with the lines Scamp adds in front of them. */
+export const userContentFor = (text, context, note = null) => {
+    const lines = [
+        ...(note !== null ? [`[Scamp: ${note}]`] : []),
+        ...(context.trim().length > 0 ? [`[Scamp: ${context.trim()}]`] : []),
+    ];
+    return lines.length > 0 ? `${lines.join('\n')}\n\n${text}` : text;
+};
 export const createAgentSession = (deps) => {
     let history = [];
     let inFlight = null;
     let generation = 0;
+    let pendingNote = null;
     return {
         send: async (text, context, turnId) => {
             if (inFlight !== null) {
@@ -26,6 +33,8 @@ export const createAgentSession = (deps) => {
                 };
             }
             const startedIn = generation;
+            const note = pendingNote;
+            pendingNote = null;
             void (async () => {
                 try {
                     const result = await runTurn({
@@ -34,7 +43,7 @@ export const createAgentSession = (deps) => {
                         tools: deps.tools,
                         invoke: (name, args) => deps.invoke(name, args, turnId),
                         history,
-                        userContent: userContentFor(text, context),
+                        userContent: userContentFor(text, context, note),
                         effort: 'medium',
                         signal: controller.signal,
                         emit: (event) => deps.emit({ ...event, turnId }),
@@ -79,6 +88,11 @@ export const createAgentSession = (deps) => {
             inFlight?.controller.abort();
             generation += 1;
             history = [];
+            pendingNote = null;
+        },
+        isBusy: () => inFlight !== null,
+        noteNextTurn: (note) => {
+            pendingNote = note;
         },
         history: () => history,
         idle: async () => {

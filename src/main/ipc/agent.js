@@ -13,6 +13,8 @@ import { verifyAnthropicKey } from '../agent/verifyAnthropicKey';
 import { readE2eSeams } from '../e2eSeams';
 import { TOOL_DESCRIPTORS } from '../mcp/tools';
 import { WRITE_TOOLS, WRITE_TOOL_NAMES } from '../agent/writeTools';
+import { deleteComponent } from './componentOps';
+import { restoreSnapshotAndReload } from './snapshot';
 import { createSnapshot } from './snapshotOps';
 import { getProjectFormat } from './projectFormatCache';
 /**
@@ -51,6 +53,14 @@ const AGENT_TOOLS = [
     ...[...WRITE_TOOLS].sort((a, b) => a.name.localeCompare(b.name)),
 ];
 let session = null;
+/** Forget the restore point: a new conversation, or one just undone. */
+const forgetRestorePoint = () => {
+    if (session === null)
+        return;
+    session.snapshotTaken = false;
+    session.snapshotId = null;
+    session.createdComponents = [];
+};
 const sessionFor = (projectPath, target) => {
     if (session !== null && session.projectPath === projectPath) {
         session.target = target;
@@ -64,6 +74,8 @@ const sessionFor = (projectPath, target) => {
         projectPath,
         target,
         snapshotTaken: false,
+        snapshotId: null,
+        createdComponents: [],
         agent: createAgentSession({
             getProvider: async () => {
                 if (script !== null)
@@ -79,7 +91,8 @@ const sessionFor = (projectPath, target) => {
                 // failed snapshot logs and doesn't block the edit.
                 if (!holder.snapshotTaken) {
                     holder.snapshotTaken = true;
-                    await createSnapshot(projectPath, await getProjectFormat(projectPath), 'agent_session');
+                    const snapshot = await createSnapshot(projectPath, await getProjectFormat(projectPath), 'agent_session');
+                    holder.snapshotId = snapshot?.id ?? null;
                 }
                 try {
                     const answer = await runAgentEdit(name, args, turnId);
@@ -126,7 +139,31 @@ export const registerAgentIpc = () => {
     ipcMain.handle(IPC.AgentReset, async () => {
         session?.agent.reset();
         // A new conversation gets its own restore point.
-        if (session !== null)
-            session.snapshotTaken = false;
+        forgetRestorePoint();
+    });
+    ipcMain.handle(IPC.AgentUndoSession, async (_e, args) => {
+        const current = session;
+        if (current === null || current.projectPath !== args.projectPath || current.snapshotId === null) {
+            return { ok: false, error: 'There are no agent changes to undo in this conversation.' };
+        }
+        if (current.agent.isBusy()) {
+            return { ok: false, error: 'Stop the agent before undoing its changes.' };
+        }
+        const restored = await restoreSnapshotAndReload(current.projectPath, current.snapshotId, {
+            reloadOpenPage: true,
+        });
+        if (!restored.ok)
+            return { ok: false, error: restored.error };
+        const format = await getProjectFormat(current.projectPath);
+        for (const componentName of current.createdComponents) {
+            await deleteComponent({ projectPath: current.projectPath, componentName }, format).catch(() => {
+                // Best-effort: a component the user already removed is fine.
+            });
+        }
+        forgetRestorePoint();
+        // The model still remembers making those edits. Tell it, once, so it
+        // doesn't describe a canvas that no longer exists.
+        current.agent.noteNextTurn('The user undid every change you made in this conversation. The canvas is back to how it was before your first edit.');
+        return { ok: true };
     });
 };

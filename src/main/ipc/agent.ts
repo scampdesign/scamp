@@ -8,6 +8,7 @@ import type {
   AgentKeyStatusResult,
   AgentSendArgs,
   AgentSendResult,
+  AgentUndoSessionResult,
 } from '@shared/types';
 
 import { currentAuthToken } from '../auth/authService';
@@ -23,6 +24,8 @@ import { verifyAnthropicKey } from '../agent/verifyAnthropicKey';
 import { readE2eSeams } from '../e2eSeams';
 import { TOOL_DESCRIPTORS } from '../mcp/tools';
 import { WRITE_TOOLS, WRITE_TOOL_NAMES } from '../agent/writeTools';
+import { deleteComponent } from './componentOps';
+import { restoreSnapshotAndReload } from './snapshot';
 import { createSnapshot } from './snapshotOps';
 import { getProjectFormat } from './projectFormatCache';
 
@@ -76,7 +79,19 @@ let session: {
   target: WebContents;
   /** Whether this conversation's pre-edit snapshot has been taken. */
   snapshotTaken: boolean;
+  /** That snapshot, for Undo AI session. Null if it couldn't be taken. */
+  snapshotId: string | null;
+  /** Components the agent created since — a restore copies files back but never removes new ones. */
+  createdComponents: string[];
 } | null = null;
+
+/** Forget the restore point: a new conversation, or one just undone. */
+const forgetRestorePoint = (): void => {
+  if (session === null) return;
+  session.snapshotTaken = false;
+  session.snapshotId = null;
+  session.createdComponents = [];
+};
 
 const sessionFor = (projectPath: string, target: WebContents): AgentSession => {
   if (session !== null && session.projectPath === projectPath) {
@@ -91,6 +106,8 @@ const sessionFor = (projectPath: string, target: WebContents): AgentSession => {
     projectPath,
     target,
     snapshotTaken: false,
+    snapshotId: null as string | null,
+    createdComponents: [] as string[],
     agent: createAgentSession({
       getProvider: async () => {
         if (script !== null) return (scripted ??= scriptedProvider(script));
@@ -104,7 +121,8 @@ const sessionFor = (projectPath: string, target: WebContents): AgentSession => {
         // failed snapshot logs and doesn't block the edit.
         if (!holder.snapshotTaken) {
           holder.snapshotTaken = true;
-          await createSnapshot(projectPath, await getProjectFormat(projectPath), 'agent_session');
+          const snapshot = await createSnapshot(projectPath, await getProjectFormat(projectPath), 'agent_session');
+          holder.snapshotId = snapshot?.id ?? null;
         }
         try {
           const answer = await runAgentEdit(name, args, turnId);
@@ -155,6 +173,36 @@ export const registerAgentIpc = (): void => {
   ipcMain.handle(IPC.AgentReset, async (): Promise<void> => {
     session?.agent.reset();
     // A new conversation gets its own restore point.
-    if (session !== null) session.snapshotTaken = false;
+    forgetRestorePoint();
   });
+
+  ipcMain.handle(
+    IPC.AgentUndoSession,
+    async (_e, args: { projectPath: string }): Promise<AgentUndoSessionResult> => {
+      const current = session;
+      if (current === null || current.projectPath !== args.projectPath || current.snapshotId === null) {
+        return { ok: false, error: 'There are no agent changes to undo in this conversation.' };
+      }
+      if (current.agent.isBusy()) {
+        return { ok: false, error: 'Stop the agent before undoing its changes.' };
+      }
+      const restored = await restoreSnapshotAndReload(current.projectPath, current.snapshotId, {
+        reloadOpenPage: true,
+      });
+      if (!restored.ok) return { ok: false, error: restored.error };
+      const format = await getProjectFormat(current.projectPath);
+      for (const componentName of current.createdComponents) {
+        await deleteComponent({ projectPath: current.projectPath, componentName }, format).catch(() => {
+          // Best-effort: a component the user already removed is fine.
+        });
+      }
+      forgetRestorePoint();
+      // The model still remembers making those edits. Tell it, once, so it
+      // doesn't describe a canvas that no longer exists.
+      current.agent.noteNextTurn(
+        'The user undid every change you made in this conversation. The canvas is back to how it was before your first edit.'
+      );
+      return { ok: true };
+    }
+  );
 };

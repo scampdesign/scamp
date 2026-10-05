@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { agentContextLine, applyAgentEvent, startTurn, } from '@lib/agentTranscript';
 import { classNameFor } from '@lib/generateCode';
 import { useCanvasStore } from './canvasSlice';
+import { useHistoryStore } from './historySlice';
+import { useSnapshotsStore } from './snapshotsSlice';
 let turnCounter = 0;
 const newTurnId = () => {
     turnCounter += 1;
@@ -29,6 +31,7 @@ export const useAgentStore = create((set, get) => ({
     entries: [],
     busy: false,
     sendError: null,
+    edited: false,
     send: async (text) => {
         const trimmed = text.trim();
         const projectPath = useCanvasStore.getState().projectPath;
@@ -51,12 +54,34 @@ export const useAgentStore = create((set, get) => ({
     },
     reset: () => {
         void window.scamp.agentReset();
-        set({ entries: [], busy: false, sendError: null });
+        set({ entries: [], busy: false, sendError: null, edited: false });
+    },
+    undoSession: async () => {
+        const projectPath = useCanvasStore.getState().projectPath;
+        if (!projectPath)
+            return { ok: false, error: 'No project is open.' };
+        const result = await window.scamp.agentUndoSession({ projectPath });
+        if (!result.ok)
+            return result;
+        // A restore is a hard reset, as from the History panel: the undo stack
+        // no longer lines up with the canvas.
+        useHistoryStore.getState().clearAllHistory();
+        void useSnapshotsStore.getState().loadSnapshots(projectPath);
+        set((state) => ({
+            edited: false,
+            entries: [
+                ...state.entries,
+                { role: 'note', id: `note_${Date.now().toString(36)}`, text: 'Undid every change the agent made in this conversation.' },
+            ],
+        }));
+        return { ok: true };
     },
     applyEvent: (event) => {
         set((state) => ({
             entries: applyAgentEvent(state.entries, event),
             ...(event.kind === 'turn-end' ? { busy: false } : {}),
+            // An edit that went through is what makes Undo AI session mean something.
+            ...(event.kind === 'tool-end' && event.ok && event.summary !== undefined ? { edited: true } : {}),
         }));
     },
 }));

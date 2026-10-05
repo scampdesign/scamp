@@ -26,6 +26,7 @@ import type {
   AgentKeyStatusResult,
   AgentSendArgs,
   AgentToolCallArgs,
+  AgentUndoSessionResult,
   AgentSendResult,
   AuthSignInResult,
   AuthStatusResult,
@@ -438,6 +439,8 @@ const api = {
     ipcRenderer.invoke(IPC.AgentSend, args),
   agentCancel: (): Promise<void> => ipcRenderer.invoke(IPC.AgentCancel),
   agentReset: (): Promise<void> => ipcRenderer.invoke(IPC.AgentReset),
+  agentUndoSession: (args: { projectPath: string }): Promise<AgentUndoSessionResult> =>
+    ipcRenderer.invoke(IPC.AgentUndoSession, args),
   onAgentEvent: (handler: (event: AgentEvent) => void): (() => void) => {
     const listener = (_e: unknown, event: AgentEvent): void => handler(event);
     ipcRenderer.on(IPC.AgentEvent, listener);

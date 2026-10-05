@@ -1309,6 +1309,8 @@ export type AgentToolCallArgs = {
   args: { turnId: string; input: Record<string, unknown> };
 };
 
+export type AgentUndoSessionResult = { ok: true } | { ok: false; error: string };
+
 export type AgentSendResult =
   | { ok: true }
   | { ok: false; reason: 'busy' | 'signed-out' | 'not-connected'; message: string };

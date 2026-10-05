@@ -14,6 +14,15 @@ export type AgentState = {
     busy: boolean;
     /** Why the last message couldn't be sent at all. */
     sendError: string | null;
+    /** The agent has edited the canvas in this conversation, since any undo. */
+    edited: boolean;
+    /** Restore everything to before the conversation's first edit. */
+    undoSession: () => Promise<{
+        ok: true;
+    } | {
+        ok: false;
+        error: string;
+    }>;
     send: (text: string) => Promise<void>;
     cancel: () => void;
     reset: () => void;

@@ -25,11 +25,18 @@ export type AgentSession = {
     send: (text: string, context: string, turnId: string) => Promise<AgentSendResult>;
     cancel: () => void;
     reset: () => void;
+    /** A turn is in flight. */
+    isBusy: () => boolean;
+    /**
+     * Something the agent should know before the user's next message — that
+     * its edits were undone, say. Rides in front of that message, once.
+     */
+    noteNextTurn: (note: string) => void;
     /** For tests. */
     history: () => ReadonlyArray<BetaMessageParam>;
     /** Resolves when the turn in flight ends. For tests. */
     idle: () => Promise<void>;
 };
-/** The user's words, with the line Scamp adds in front of them. */
-export declare const userContentFor: (text: string, context: string) => string;
+/** The user's words, with the lines Scamp adds in front of them. */
+export declare const userContentFor: (text: string, context: string, note?: string | null) => string;
 export declare const createAgentSession: (deps: AgentSessionDeps) => AgentSession;

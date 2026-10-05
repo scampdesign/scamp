@@ -78,3 +78,30 @@ test('edits reach the canvas and the files, and undo as one step', async ({ wind
   await window.locator('[data-section="history"]').click();
   await expect(window.getByText('Before Scamp Agent')).toBeVisible();
 });
+
+test('Undo AI changes puts the canvas and files back in one click', async ({ window, project }) => {
+  await expect(pageRoot(window)).toBeVisible();
+  await waitForSaved(window);
+  const before = await readPageFiles(project.dir, project.pageName);
+
+  await window.locator('[data-section="agent"]').click();
+  await window.getByTestId('agent-connect').getByLabel('Claude API key').fill('sk-ant-e2e');
+  await window.getByRole('button', { name: 'Connect' }).click();
+  await window.getByLabel('Message the agent').fill('Add a red note');
+  await window.getByLabel('Message the agent').press('Enter');
+  await expect(window.getByTestId('agent-reply')).toHaveAttribute('data-status', 'done');
+  await expect(pageRoot(window).getByText('Hello from the agent')).toBeVisible();
+  await waitForSaved(window);
+
+  // Asks first, and says what it will put back.
+  await window.getByRole('button', { name: 'Undo AI changes' }).click();
+  await expect(window.getByTestId('agent-undo-confirm')).toContainText('before its first edit');
+  await window.getByRole('button', { name: 'Undo changes' }).click();
+
+  await expect(window.getByTestId('agent-note')).toHaveText('Undid every change the agent made in this conversation.');
+  await expect(pageRoot(window).getByText('Hello from the agent')).toHaveCount(0);
+  await expect(window.getByRole('button', { name: 'Undo AI changes' })).toHaveCount(0);
+  const after = await readPageFiles(project.dir, project.pageName);
+  expect(after.tsx).toBe(before.tsx);
+  expect(after.css).toBe(before.css);
+});

@@ -33,20 +33,33 @@ export type AgentSession = {
   send: (text: string, context: string, turnId: string) => Promise<AgentSendResult>;
   cancel: () => void;
   reset: () => void;
+  /** A turn is in flight. */
+  isBusy: () => boolean;
+  /**
+   * Something the agent should know before the user's next message — that
+   * its edits were undone, say. Rides in front of that message, once.
+   */
+  noteNextTurn: (note: string) => void;
   /** For tests. */
   history: () => ReadonlyArray<BetaMessageParam>;
   /** Resolves when the turn in flight ends. For tests. */
   idle: () => Promise<void>;
 };
 
-/** The user's words, with the line Scamp adds in front of them. */
-export const userContentFor = (text: string, context: string): string =>
-  context.trim().length > 0 ? `[Scamp: ${context.trim()}]\n\n${text}` : text;
+/** The user's words, with the lines Scamp adds in front of them. */
+export const userContentFor = (text: string, context: string, note: string | null = null): string => {
+  const lines = [
+    ...(note !== null ? [`[Scamp: ${note}]`] : []),
+    ...(context.trim().length > 0 ? [`[Scamp: ${context.trim()}]`] : []),
+  ];
+  return lines.length > 0 ? `${lines.join('\n')}\n\n${text}` : text;
+};
 
 export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
   let history: BetaMessageParam[] = [];
   let inFlight: { controller: AbortController; done: Promise<void> } | null = null;
   let generation = 0;
+  let pendingNote: string | null = null;
 
   return {
     send: async (text, context, turnId) => {
@@ -70,6 +83,8 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
         };
       }
       const startedIn = generation;
+      const note = pendingNote;
+      pendingNote = null;
       void (async () => {
         try {
           const result = await runTurn({
@@ -78,7 +93,7 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
             tools: deps.tools,
             invoke: (name, args) => deps.invoke(name, args, turnId),
             history,
-            userContent: userContentFor(text, context),
+            userContent: userContentFor(text, context, note),
             effort: 'medium',
             signal: controller.signal,
             emit: (event) => deps.emit({ ...event, turnId }),
@@ -121,6 +136,13 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
       inFlight?.controller.abort();
       generation += 1;
       history = [];
+      pendingNote = null;
+    },
+
+    isBusy: () => inFlight !== null,
+
+    noteNextTurn: (note) => {
+      pendingNote = note;
     },
 
     history: () => history,

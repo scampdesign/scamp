@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { IconMessagePlus, IconPlayerStop, IconSend } from '@tabler/icons-react';
+import { IconArrowBackUp, IconMessagePlus, IconPlayerStop, IconSend } from '@tabler/icons-react';
 
 import { useAgentStore, currentAgentContext } from '@store/agentSlice';
 import { useCanvasStore } from '@store/canvasSlice';
@@ -35,7 +35,9 @@ export const AgentPanel = (): JSX.Element => {
   // Recomputed from the canvas on every store change; a string, so the
   // panel only re-renders when the line actually changes.
   const context = useCanvasStore(() => currentAgentContext());
-  const { entries, busy, sendError, send, cancel, reset } = useAgentStore();
+  const { entries, busy, sendError, send, cancel, reset, edited, undoSession } = useAgentStore();
+  const [confirmingUndo, setConfirmingUndo] = useState(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
   const conversationProject = useAgentStore((s) => s.projectPath);
   const visible = conversationProject === projectPath ? entries : [];
   const [draft, setDraft] = useState('');
@@ -54,6 +56,12 @@ export const AgentPanel = (): JSX.Element => {
     setDraft('');
   };
 
+  const handleUndo = async (): Promise<void> => {
+    const result = await undoSession();
+    setConfirmingUndo(false);
+    setUndoError(result.ok ? null : result.error);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
@@ -68,6 +76,20 @@ export const AgentPanel = (): JSX.Element => {
           Agent <span className={styles.beta}>Beta</span>
         </h2>
         {connected && (
+          <div className={styles.headerActions}>
+          {edited && (
+            <Tooltip label="Undo AI changes">
+              <button
+                type="button"
+                className={styles.iconButton}
+                onClick={() => setConfirmingUndo(true)}
+                disabled={busy || confirmingUndo}
+                aria-label="Undo AI changes"
+              >
+                <IconArrowBackUp size={14} />
+              </button>
+            </Tooltip>
+          )}
           <Tooltip label="New conversation">
             <button
               type="button"
@@ -79,8 +101,31 @@ export const AgentPanel = (): JSX.Element => {
               <IconMessagePlus size={14} />
             </button>
           </Tooltip>
+          </div>
         )}
       </header>
+
+      {confirmingUndo && (
+        <div className={styles.confirm} role="alertdialog" aria-label="Undo AI changes" data-testid="agent-undo-confirm">
+          <p className={styles.confirmText}>
+            Undo every change the agent made in this conversation? Pages, components, the theme, and
+            DESIGN.md go back to how they were before its first edit.
+          </p>
+          <div className={styles.confirmActions}>
+            <button type="button" className={styles.secondaryButton} onClick={() => setConfirmingUndo(false)}>
+              Keep changes
+            </button>
+            <button type="button" className={styles.primaryButton} onClick={() => void handleUndo()}>
+              Undo changes
+            </button>
+          </div>
+        </div>
+      )}
+      {undoError !== null && (
+        <p className={`${styles.replyError} ${styles.bannerError}`} role="alert">
+          {undoError}
+        </p>
+      )}
 
       {keyControls.status === null ? null : !connected ? (
         <AgentConnect keyControls={keyControls} />
@@ -109,6 +154,10 @@ export const AgentPanel = (): JSX.Element => {
                   <div key={entry.id} className={styles.userMessage} data-testid="agent-user-message">
                     {entry.text}
                   </div>
+                ) : entry.role === 'note' ? (
+                  <p key={entry.id} className={styles.note} data-testid="agent-note">
+                    {entry.text}
+                  </p>
                 ) : (
                   <AgentReply key={entry.id} entry={entry} />
                 )

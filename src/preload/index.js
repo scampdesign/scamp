@@ -185,6 +185,7 @@ const api = {
     agentSend: (args) => ipcRenderer.invoke(IPC.AgentSend, args),
     agentCancel: () => ipcRenderer.invoke(IPC.AgentCancel),
     agentReset: () => ipcRenderer.invoke(IPC.AgentReset),
+    agentUndoSession: (args) => ipcRenderer.invoke(IPC.AgentUndoSession, args),
     onAgentEvent: (handler) => {
         const listener = (_e, event) => handler(event);
         ipcRenderer.on(IPC.AgentEvent, listener);

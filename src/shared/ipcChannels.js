@@ -103,6 +103,8 @@ export const IPC = {
     AgentToolCall: 'agent:tool-call',
     /** Renderer → main: how that edit went. */
     AgentToolResult: 'agent:tool-result',
+    /** Restore the project to before the conversation's first edit. */
+    AgentUndoSession: 'agent:undo-session',
     // Theme
     ThemeRead: 'theme:read',
     ThemeChanged: 'theme:changed',
