@@ -129,6 +129,9 @@ export const CAPTURED_PROPERTIES = [
     'align-content', 'align-self', 'flex-grow', 'flex-shrink', 'flex-basis',
     'order', 'gap', 'row-gap', 'column-gap',
     'grid-template-columns', 'grid-template-rows', 'grid-column', 'grid-row',
+    // Without the areas, a child's `grid-area: nav` names lines that don't
+    // exist, and every child lands in an implicit track after the grid.
+    'grid-template-areas',
     'justify-items', 'justify-self',
     // Paint
     'background-color', 'background-image', 'background-size',
@@ -190,6 +193,7 @@ export const INITIAL_VALUES = {
     order: '0',
     gap: 'normal', 'row-gap': 'normal', 'column-gap': 'normal',
     'grid-template-columns': 'none', 'grid-template-rows': 'none',
+    'grid-template-areas': 'none',
     'grid-column': 'auto', 'grid-row': 'auto',
     'align-self': 'auto', 'justify-self': 'auto',
     'justify-items': 'normal', 'align-items': 'normal',

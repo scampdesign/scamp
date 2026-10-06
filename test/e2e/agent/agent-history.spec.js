@@ -14,7 +14,7 @@ import { pageRoot, pageSidebarItem } from '../fixtures/selectors';
  */
 const SCRIPT = path.join(os.tmpdir(), `scamp-e2e-agent-history-${process.pid}.json`);
 writeFileSync(SCRIPT, JSON.stringify([
-    { content: [{ type: 'text', text: 'The home page has a header.' }] },
+    { content: [{ type: 'text', text: 'The page has a header.' }] },
     { content: [{ type: 'echo_system' }] },
 ]));
 const ENV = {
@@ -37,22 +37,23 @@ const goTo = async (window, slug) => {
     await window.locator('[data-section="agent"]').click();
 };
 test('keeps a conversation per page, on disk, across a restart', async ({ window, app, project }) => {
+    // The project opens on its first view, About.
     await connect(window);
-    await expect(window.getByTestId('agent-context')).toContainText('View: Home');
+    await expect(window.getByTestId('agent-context')).toContainText('View: About');
     await window.getByLabel('Message the agent').fill('What is on this page?');
     await window.getByLabel('Message the agent').press('Enter');
     await expect(window.getByTestId('agent-reply')).toHaveAttribute('data-status', 'done');
-    await expect(window.getByTestId('agent-reply')).toContainText('The home page has a header.');
+    await expect(window.getByTestId('agent-reply')).toContainText('The page has a header.');
     // Another page has a conversation of its own, empty to start.
-    await goTo(window, 'about');
-    await expect(window.getByTestId('agent-context')).toContainText('View: About');
+    await goTo(window, 'home');
+    await expect(window.getByTestId('agent-context')).toContainText('View: Home');
     await expect(window.getByTestId('agent-reply')).toHaveCount(0);
     await expect(window.getByRole('button', { name: 'What’s on this page?' })).toBeVisible();
-    // Back on home, its conversation is still there.
-    await goTo(window, 'home');
+    // Back on About, its conversation is still there.
+    await goTo(window, 'about');
     await expect(window.getByTestId('agent-user-message')).toHaveText('What is on this page?');
-    await expect(window.getByTestId('agent-reply')).toContainText('The home page has a header.');
-    const file = path.join(project.dir, '.scamp', 'agent-history', 'view-Home.json');
+    await expect(window.getByTestId('agent-reply')).toContainText('The page has a header.');
+    const file = path.join(project.dir, '.scamp', 'agent-history', 'view-About.json');
     const saved = JSON.parse(await fs.readFile(file, 'utf-8'));
     expect(saved.version).toBe(1);
     expect(saved.model.map((m) => m.role)).toEqual(['user', 'assistant']);
@@ -70,7 +71,7 @@ test('keeps a conversation per page, on disk, across a restart', async ({ window
         await dismissSentryPrompt(window2);
         await connect(window2);
         await expect(window2.getByTestId('agent-user-message')).toHaveText('What is on this page?');
-        await expect(window2.getByTestId('agent-reply')).toContainText('The home page has a header.');
+        await expect(window2.getByTestId('agent-reply')).toContainText('The page has a header.');
         // And the model gets the earlier exchange too: the next reply follows on.
         await window2.getByLabel('Message the agent').fill('And now?');
         await window2.getByLabel('Message the agent').press('Enter');
@@ -92,8 +93,8 @@ test('lets the user widen what the agent considers', async ({ window }) => {
     await connect(window);
     const focus = window.getByLabel('What the agent considers');
     await focus.selectOption('project');
-    await expect(window.getByTestId('agent-context')).toHaveText('Whole project · Open: View: Home');
+    await expect(window.getByTestId('agent-context')).toHaveText('Whole project · Open: View: About');
     await expect(window.getByRole('button', { name: 'Which pages don’t follow the project’s conventions?' })).toBeVisible();
     await focus.selectOption('page');
-    await expect(window.getByTestId('agent-context')).toHaveText('View: Home · Whole page');
+    await expect(window.getByTestId('agent-context')).toHaveText('View: About · Whole page');
 });

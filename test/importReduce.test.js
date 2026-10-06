@@ -642,6 +642,59 @@ describe('materializePseudos — ticks and toggles become elements', () => {
         expect(made[0]?.detail).toBe('✓');
     });
 });
+describe('reduceCapture — filling depends on how the parent lays out', () => {
+    // A 40px icon button inside a wrapper that hugs it: the same width as
+    // its parent, but only because the parent is sized by it.
+    const iconButton = (styles = {}) => node({
+        id: 2,
+        tag: 'button',
+        rect: { x: 0, y: 0, w: 40, h: 40 },
+        styles: { display: 'flex', width: '40px', height: '40px', ...styles },
+        children: [node({ id: 3, tag: 'svg', rect: { x: 10, y: 10, w: 20, h: 20 } })],
+    });
+    const inside = (parentStyles, child) => node({ id: 1, rect: { x: 0, y: 0, w: 40, h: 40 }, styles: parentStyles, children: [child] });
+    const button = (root) => Object.values(reduce(node({ children: [root] })).elements).find((e) => e.tag === 'button');
+    it('keeps the width of a flex item in a row, which the row never stretches', () => {
+        expect(button(inside({ display: 'flex' }, iconButton()))?.widthMode).toBe('fixed');
+    });
+    it('drops it when the item grows to fill the row', () => {
+        expect(button(inside({ display: 'flex' }, iconButton({ 'flex-grow': '1' })))?.widthMode).not.toBe('fixed');
+    });
+    it('drops it in a column whose items stretch across', () => {
+        expect(button(inside({ display: 'flex', 'flex-direction': 'column' }, iconButton()))?.widthMode).toBe('stretch');
+    });
+    it('keeps it in a column that centres its items', () => {
+        const parent = { display: 'flex', 'flex-direction': 'column', 'align-items': 'center' };
+        expect(button(inside(parent, iconButton()))?.widthMode).toBe('fixed');
+    });
+    it('keeps it on an inline-level box in block flow, which shrinks to fit', () => {
+        expect(button(inside({ display: 'block' }, iconButton({ display: 'inline-flex' })))?.widthMode).toBe('fixed');
+    });
+    it('keeps it on a grid item that is not stretched', () => {
+        expect(button(inside({ display: 'grid', 'justify-items': 'start' }, iconButton()))?.widthMode).toBe('fixed');
+        expect(button(inside({ display: 'grid' }, iconButton()))?.widthMode).toBe('stretch');
+    });
+});
+describe('reduceCapture — a control keeps the height it centres its label in', () => {
+    const label = (styles) => node({
+        id: 1,
+        tag: 'button',
+        text: 'Upload audio',
+        rect: { x: 0, y: 0, w: 136, h: 40 },
+        styles: { width: '136px', height: '40px', ...styles },
+    });
+    const heightOf = (child) => Object.values(reduce(node({ children: [child] })).elements).find((e) => e.tag === 'button')?.heightMode;
+    it('keeps a button’s height when it centres its label', () => {
+        expect(heightOf(label({ display: 'inline-flex', 'align-items': 'center' }))).toBe('fixed');
+    });
+    it('keeps a badge’s height in a centring grid too', () => {
+        expect(heightOf(label({ display: 'grid', 'align-items': 'center' }))).toBe('fixed');
+    });
+    it('still drops the height of text that only flows', () => {
+        expect(heightOf(label({ display: 'block' }))).not.toBe('fixed');
+        expect(heightOf(label({ display: 'flex' }))).not.toBe('fixed');
+    });
+});
 describe('grid templates — used values are not decisions', () => {
     // `getComputedStyle` reads a grid template back as the track sizes it
     // used, never as what was written. `1fr 1fr` comes out
@@ -662,6 +715,17 @@ describe('grid templates — used values are not decisions', () => {
             isComponent: true,
         }).css;
     };
+    it('keeps the named areas its children place themselves in', () => {
+        const css = cssOf(node({
+            styles: gridStyles({ 'grid-template-areas': '"nav centre panel"' }),
+            children: [
+                node({ id: 1, rect: { x: 0, y: 0, w: 200, h: 100 }, styles: { 'grid-column': 'nav', 'grid-row': 'nav' } }),
+                node({ id: 2, rect: { x: 200, y: 0, w: 900, h: 100 }, styles: { 'grid-column': 'centre' } }),
+            ],
+        }));
+        expect(css).toContain('grid-template-areas: "nav centre panel";');
+        expect(css).toContain('grid-column: nav;');
+    });
     it('drops a row template that is only measurements', () => {
         const css = cssOf(node({
             styles: gridStyles({ 'grid-template-rows': '739.797px' }),
@@ -1248,6 +1312,43 @@ describe('viewNameFromTitle', () => {
         ['404', 'Imported404'],
     ])('turns %j into %j', (title, expected) => {
         expect(viewNameFromTitle(title)).toBe(expected);
+    });
+});
+describe('an app shell captured from a real browser', () => {
+    // test/fixtures/import/pages/app-shell.html — the three things a real
+    // dashboard import lost. see docs/notes/import-parity-log.md
+    const payload = JSON.parse(readFileSync('test/fixtures/import/payloads/app-shell.json', 'utf-8'));
+    const result = reduceCapture(payload, { randomId: seqIds() });
+    const els = Object.values(result.elements);
+    const css = generateCode({
+        elements: result.elements,
+        rootId: result.rootId,
+        pageName: 'Page',
+        cssModuleImportName: 'Page',
+        isComponent: true,
+    }).css;
+    it('keeps the named areas the columns place themselves in', () => {
+        expect(css).toContain('grid-template-areas: "nav centre panel";');
+        expect(css).toContain('grid-column: nav;');
+    });
+    it('leaves out the part of a line the page hides at this width', () => {
+        const words = JSON.stringify(els.map((el) => [el.text, el.inlineFragments]));
+        expect(words).toContain('Resova iQ');
+        expect(words).not.toMatch(/Resova iQ.*iQ/);
+    });
+    it('keeps the height a button and an avatar centre their words in', () => {
+        const button = els.find((el) => el.tag === 'button' && el.text === 'Upload audio');
+        expect(button?.heightMode).toBe('fixed');
+        expect(button?.heightValue).toBe(40);
+        const avatar = els.find((el) => el.text === 'PR');
+        expect(avatar?.heightMode).toBe('fixed');
+        expect(avatar?.heightValue).toBe(40);
+    });
+    it('keeps the width of an icon button its wrapper hugs', () => {
+        // The one button that holds an icon rather than words.
+        const icon = els.find((el) => el.tag === 'button' && el.childIds.length > 0);
+        expect(icon?.widthMode).toBe('fixed');
+        expect(icon?.widthValue).toBe(40);
     });
 });
 describe('against a page captured from a real browser', () => {

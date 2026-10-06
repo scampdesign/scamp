@@ -658,10 +658,14 @@ export const captureFn = (policy) => {
                     built.push(item);
                     continue;
                 }
+                // A part of the line the page doesn't show at this width — the
+                // short form of a logo, say — isn't in the line at all.
+                if (window.getComputedStyle(item.el).display === 'none')
+                    continue;
                 const childPath = `${path}>${item.el.tagName.toLowerCase()}:${index}`;
                 index += 1;
                 const node = depth >= maxDepth ? null : visit(item.el, computed, depth + 1, childPath);
-                // Hidden, or too deep to walk: keep the words rather than the
+                // Invisible, or too deep to walk: keep the words rather than the
                 // box, which is still better than losing the run.
                 built.push(node === null
                     ? { kind: 'markup', source: inlineSource(item.el, 0) }

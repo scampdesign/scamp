@@ -183,36 +183,42 @@ isRoot = false) => {
     }
     return current;
 };
+const FLEX_DISPLAYS = new Set(['flex', 'inline-flex']);
+const GRID_DISPLAYS = new Set(['grid', 'inline-grid']);
+const STRETCHING = new Set(['normal', 'stretch']);
 /**
- * Drop a size that the layout produced rather than the author chose.
- *
- * A node with element children is sized by its content and its parent;
- * pinning the measured pixels is how an import turns into a rigid
- * screenshot. A leaf keeps its size, because an image or a spacer with
- * an explicit box is usually the point.
- *
- * This is the conservative reading. The precise answer needs the
- * authored rules rather than the computed ones, which is a phase-2
- * question — see the plan's note on `document.styleSheets`.
+ * Whether the parent's layout stretches this child across its width, so
+ * a width equal to the parent's is the layout's and not the child's.
+ * Only true then: a flex item in a row is sized by its content unless it
+ * grows, so an icon button as wide as the wrapper hugging it is still
+ * the icon button's own 40px. see docs/notes/import-parity-log.md
  */
+const parentStretchesWidth = (child, parent) => {
+    const display = parent.styles['display'] ?? 'block';
+    const alignSelf = child['align-self'] ?? 'auto';
+    if (FLEX_DISPLAYS.has(display)) {
+        const row = !(parent.styles['flex-direction'] ?? 'row').startsWith('column');
+        if (row)
+            return Number.parseFloat(child['flex-grow'] ?? '0') > 0;
+        return (alignSelf === 'auto' ? STRETCHING.has(parent.styles['align-items'] ?? 'normal') : alignSelf === 'stretch');
+    }
+    if (GRID_DISPLAYS.has(display)) {
+        const justifySelf = child['justify-self'] ?? 'auto';
+        return justifySelf === 'auto' ? STRETCHING.has(parent.styles['justify-items'] ?? 'normal') : STRETCHING.has(justifySelf);
+    }
+    // Block flow stretches block-level boxes; an inline-level one shrinks to fit.
+    return !(child['display'] ?? 'block').startsWith('inline');
+};
 /**
- * Drop a size only when the layout would produce it anyway.
- *
- * The first version of this dropped width and height from every element
- * with children, on the principle that a computed value is not a
- * decision. Measured, that cost 20 points of fidelity — 92% of elements
- * within 2px of the source became 72% — because plenty of those widths
- * WERE decisions, and a dropped one becomes a guess.
- *
- * The measured box tells the two apart. An element whose width matches
- * the space its parent gave it was filling, and `stretch` reproduces
- * that at any width; one that is narrower chose to be, and the number
- * has to be kept. Same for height against its content.
- *
- * So the rule is not "prefer flexible" or "prefer faithful" — it is
- * "declare what the page decided, and let flow do the rest".
+ * A text box that centres its words in a flex or grid box — a button, an
+ * avatar, a badge — chose its height: 40px with the label in the middle.
+ * Dropping it collapses the control onto its label.
  */
-const dropComputedSizes = (node, parentRect, findings, at) => {
+const centresItsWords = (styles) => {
+    const display = styles['display'] ?? '';
+    return (FLEX_DISPLAYS.has(display) || GRID_DISPLAYS.has(display)) && styles['align-items'] === 'center';
+};
+const dropComputedSizes = (node, parent, findings, at) => {
     const styles = node.styles;
     const rect = node.rect;
     const next = { ...styles };
@@ -235,7 +241,7 @@ const dropComputedSizes = (node, parentRect, findings, at) => {
     // icon box with `line-height: 0` is a square someone chose, and
     // dropping its height collapsed it onto its own contents.
     const holdsWords = node.text !== null || node.inline !== undefined;
-    if (elementTypeFor(node.tag) === 'text' && holdsWords) {
+    if (elementTypeFor(node.tag) === 'text' && holdsWords && !centresItsWords(styles)) {
         // Round a text box's width UP, never down. Scamp's model is whole
         // pixels (`parseSizeValue` rounds), so a measured `129.484px` would
         // land at `129px` — a fraction narrower than the words it was
@@ -265,12 +271,12 @@ const dropComputedSizes = (node, parentRect, findings, at) => {
     }
     // Everything else keeps a size it chose. A leaf with an explicit box —
     // an image, a spacer — is usually the point of that element.
-    if (node.children.length === 0 || !rect || !parentRect) {
+    if (node.children.length === 0 || !rect || !parent) {
         return { styles: next, dropped };
     }
-    // Within a pixel of the parent's content box: this element was
-    // filling, not sizing itself.
-    const fills = Math.abs(rect.w - parentRect.w) <= 1;
+    // Within a pixel of the parent's box, in a layout that stretches it:
+    // this element was filling, not sizing itself.
+    const fills = Math.abs(rect.w - parent.w) <= 1 && parentStretchesWidth(styles, parent);
     if (fills && 'width' in next) {
         findings.push({ kind: 'dropped-computed-size', at, detail: `width: ${next['width']}` });
         delete next['width'];
@@ -1071,9 +1077,7 @@ export const reduceCapture = (payload, options = {}) => {
     planTables(pruned);
     const build = (node, parentId, path, parentIsLayout, 
     /** How the parent arranges this child: down the page, or across it. */
-    parentFlow, 
-    /** The parent's measured box, for telling "filling" from "sized". */
-    parentRect) => {
+    parentFlow, parent) => {
         const isRoot = parentId === null;
         const at = [...path, node.tag].join(' > ');
         let id = ROOT_ELEMENT_ID;
@@ -1146,7 +1150,7 @@ export const reduceCapture = (payload, options = {}) => {
         const hasElementChildren = node.children.length > 0;
         const needsTextChild = inlineRun === null && node.text !== null && hasElementChildren;
         const host = node;
-        const sized = dropComputedSizes(host, parentRect, findings, at);
+        const sized = dropComputedSizes(host, parent, findings, at);
         const tablePart = tableRoles.get(node.id) ?? null;
         const styles = normalizedStyles({ ...host, styles: sized.styles }, isRoot, findings, at, tablePart);
         const display = styles['display'];
@@ -1290,7 +1294,7 @@ export const reduceCapture = (payload, options = {}) => {
         // `<colgroup>` / `<col>` size columns the grid already carries.
         const built = [...(inlineRun?.children ?? []), ...node.children].filter((child) => tableRoles.get(child.id)?.role !== 'column');
         built.forEach((child, index) => {
-            childIds.push(build(child, id, [...path, node.tag], selfIsLayout, ownFlow, node.rect ?? null));
+            childIds.push(build(child, id, [...path, node.tag], selfIsLayout, ownFlow, node.rect ? { w: node.rect.w, h: node.rect.h, styles: node.styles } : null));
             if (liftedTextId !== null && wordsAfter === index)
                 childIds.push(liftedTextId);
         });
