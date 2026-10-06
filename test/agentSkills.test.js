@@ -16,6 +16,13 @@ describe('importCleanupSkill', () => {
         expect(skill.version).toBe(IMPORT_CLEANUP_VERSION);
         expect(skill.effort).toBe('high');
     });
+    it('says a display the panel can’t express is left alone', () => {
+        // The create-tokens eval run removed `display: inline` from ten
+        // elements to clear their findings, and the page stopped matching.
+        const { instructions } = importCleanupSkill('create-tokens');
+        expect(instructions).toContain('Not every finding is yours to fix');
+        expect(instructions).toContain('inline, inline-block, list-item');
+    });
     it('says which token mode the user chose', () => {
         expect(importCleanupSkill('create-tokens').instructions).toContain('chose to create theme tokens');
         expect(importCleanupSkill('keep-literal').instructions).toContain('chose to keep literal values');

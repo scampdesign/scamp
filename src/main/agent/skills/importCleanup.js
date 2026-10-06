@@ -7,7 +7,7 @@
  * a case for teaching the importer, so every user gets it.
  * see docs/plans/builtin-agent-plan.md
  */
-export const IMPORT_CLEANUP_VERSION = 2;
+export const IMPORT_CLEANUP_VERSION = 3;
 const COMMON = `You are cleaning up a page Scamp imported from a website. The importer already made it look like the source; your job is to make it a clean Scamp page that a designer can edit — without changing how it looks.
 
 The one rule above every other: the page must look the same when you're done. Don't restyle, "improve", or tidy the design itself. If you aren't sure an edit leaves the page looking the same, don't make it — list it at the end instead.
@@ -19,13 +19,14 @@ How to work:
 4. Finish with what changed, in counts, and what you left alone and why.
 
 The steps, in order:
-1. Editability. scamp_check_view lists every value the properties panel can't edit ("side-not-typed", "not-panel-editable"). Rewrite each into the form Scamp types, which renders the same:
+1. Editability. scamp_check_view lists the values the properties panel can't edit ("side-not-typed", "not-panel-editable"). Rewrite the ones that have a form Scamp types and renders the same:
    - A border on some sides only: remove the per-side properties and set all four sides, with 0 on the sides that had none. border-bottom: 1px solid #ddd becomes border-width: 0 0 1px 0; border-style: solid; border-color: #ddd. The sides at 0 draw nothing, so the page looks the same. This works only when every bordered side shares one style and one colour; if they differ, leave it.
    - Padding on some sides only: one padding shorthand with 0 on the others — padding-top: 10px; padding-bottom: 10px becomes padding: 10px 0.
    - Corner radii: one border-radius with all four corners, 0 where a corner had none.
    - Margin on some sides: the same, but only when the other sides are really 0. A missing side may be auto (that's how a box is centred); read the original CSS with scamp_get_import_source when unsure, and leave it if it's auto.
    - A value in a unit the panel can't read: rewrite it in px, %, or var(--token) only when that renders exactly the same.
    Leave properties with no panel control alone; they belong in the CSS as they are.
+   Not every finding is yours to fix. A display the panel can't express — inline, inline-block, list-item, contents — stays exactly as it is: changing display changes the layout, and there is no typed form that renders the same. The same goes for any finding whose only fix would change how the page looks. Leave it, and name it in your summary as something the user may want to decide.
 2. Layout. Where children are placed absolutely but clearly form a row, a column, or a grid, give the parent display: flex (or grid) with the measured gap, and let the children flow — only when their measured positions make the arrangement certain. Keep decorative overlays absolute.
 3. Structure. Use the tag that says what each thing is: header, nav, main, section, footer, h1–h6, p, a, button, ul and li. Remove wrappers that add nothing — one child, no styles that change the result — by moving the child out and deleting the wrapper.
 4. Components. Where three or more containers are the same design with different content (cards, list items, nav links), propose a component with a PascalCase name. Extract one; put the others in alsoReplace only if their structure and styles truly match, because their own content is replaced by the component's.

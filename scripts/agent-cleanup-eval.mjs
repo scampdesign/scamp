@@ -143,7 +143,7 @@ const capture = async (url) => {
 
 /** Render a model the way Scamp exports it; screenshot and measure it. */
 const render = async ({ elements, rootId, themeCss, components }) => {
-  const { tsx, css } = app.generateCode({ elements, rootId, pageName: 'Imported', cssModuleImportName: 'Imported', isComponent: true });
+  const { tsx, css } = app.generateCode({ elements, rootId, pageName: 'Imported', cssModuleImportName: 'Imported', isComponent: false });
   const exported = app.buildHtmlExport({
     projectName: 'eval',
     pages: [{ name: 'imported', tsxContent: tsx, cssContent: css }],
@@ -201,8 +201,8 @@ const measure = async (state, source, sourceNodes) => {
   const tokenNames = app.parseThemeFile(state.themeCss).tokens.map((t) => t.name);
   const findings = app.lintView({ elements: state.elements, rootId: state.rootId, themeTokens: tokenNames });
   const rendered = await render(state);
-  const reparsed = app.parseCode(rendered.tsx, rendered.css, { isComponent: true });
-  const again = app.generateCode({ elements: reparsed.elements, rootId: reparsed.rootId, pageName: 'Imported', cssModuleImportName: 'Imported', isComponent: true });
+  const reparsed = app.parseCode(rendered.tsx, rendered.css, { isComponent: false });
+  const again = app.generateCode({ elements: reparsed.elements, rootId: reparsed.rootId, pageName: 'Imported', cssModuleImportName: 'Imported', isComponent: false });
   const sourceById = new Map(flatten(source.payload.root).map((n) => [n.id, n]));
   let compared = 0;
   let within = 0;
@@ -249,7 +249,18 @@ outer: for (const file of pages) {
   const url = pathToFileURL(join(pagesDir, file)).href;
   const source = await capture(url);
   const reduced = app.reduceCapture(source.payload);
-  const initial = { elements: reduced.elements, rootId: reduced.rootId, themeCss: app.DEFAULT_THEME_CSS, components: {} };
+  // The view as the app holds it once opened: the importer writes it as a
+  // component, and the canvas reads it back as a view, which saves like a
+  // page. Starting anywhere else measures a state no user ever edits.
+  const written = app.generateCode({
+    elements: reduced.elements,
+    rootId: reduced.rootId,
+    pageName: 'Imported',
+    cssModuleImportName: 'Imported',
+    isComponent: true,
+  });
+  const opened = app.parseCode(written.tsx, written.css, { isComponent: false });
+  const initial = { elements: opened.elements, rootId: opened.rootId, themeCss: app.DEFAULT_THEME_CSS, components: {} };
   const before = await measure(initial, source, reduced.sourceNodes);
 
   for (const mode of modes) {

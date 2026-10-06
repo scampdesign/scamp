@@ -428,6 +428,41 @@ for nothing and is the default. Calibrate on one page first:
 ANTHROPIC_API_KEY=… node scripts/agent-cleanup-eval.mjs --provider anthropic --pages dashboard --modes keep-literal --max-usd 1.5
 ```
 
+**What the real-model runs found** (skill v1 → v3, $3.57 of $5):
+
+- **v1 was timid.** Dashboard, keep-literal: 27 → 22 findings. Every
+  finding was a one-sided border or padding the skill said to fold "when
+  the sides allow it" — and a one-sided border never does, so the agent
+  correctly left them. v2 gave the recipe (all four sides, 0 where there
+  was none): **27 → 0**, pixels identical, $0.39.
+- **v2 on all three pages, keep-literal ($1.02):** dashboard 27 → 0,
+  marketing 19 → 11 (its floor: the eleven left are `display` values the
+  panel can't express), patients 44 → 1, and a `FeatureCard` component
+  on marketing. Pixels identical everywhere; `theme.css` untouched.
+- **v2, create-tokens ($1.72):** tokens added (7–14 a page), none
+  undeclared. But on marketing the agent removed `display: inline` from
+  ten elements to clear their findings and the page stopped matching
+  (98.6% → 95.3%). v2 said to rewrite "each" finding; v3 says a display
+  the panel can't express is left alone, and so is anything whose only
+  fix changes the look.
+- **The eval had a bug of its own:** it rendered the view as a component
+  while the agent edited it as a view (which saves like a page), so a
+  root restyle looked like a broken round trip. It now starts from the
+  view as the app holds it once opened.
+
+**Found along the way, not fixed:**
+
+- **An imported view gains `min-height: 100vh` on its first save.** The
+  importer writes it as a component; editing treats a view like a page.
+  One-time, then stable. Worth deciding which the importer should write.
+- **The agent can't set a table's row and cell styling.** The patient
+  list's last finding is padding repeated on every cell, which the
+  table's own cell padding fixes in one rule — but no tool reaches
+  `tableStyle`. A `scamp_set_table_style` tool would.
+- **The importer could fold one-sided borders itself.** It needs no
+  judgement, so it fits "a cleanup step that fires on most pages belongs
+  in the importer".
+
 **Not done:** the rubric judged by a model for semantic tags and
 component choices. The deterministic measures come first; a judge is
 worth adding once those are stable.
