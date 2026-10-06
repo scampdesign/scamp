@@ -227,6 +227,9 @@ const measure = async (state, source, sourceNodes) => {
     pixels: await pixelMatch(source.shot, rendered.shot),
     geometry: compared === 0 ? 1 : within / compared,
     geometryCompared: compared,
+    // The count, not just the share: extracting a component takes elements
+    // out of the comparison, which moves the percentage with nothing worse.
+    geometryOff: compared - within,
     roundTrip: again.tsx === rendered.tsx && again.css === rendered.css,
     tokens: tokenNames.length,
   };
@@ -324,7 +327,9 @@ outer: for (const file of pages) {
       console.log(`    ${kind.padEnd(22)} ${before.findingsByKind[kind] ?? 0} → ${after.findingsByKind[kind] ?? 0}`);
     }
     console.log(`  pixels            ${pct(before.pixels)} → ${pct(after.pixels)}`);
-    console.log(`  geometry          ${pct(before.geometry)} → ${pct(after.geometry)}  (${after.geometryCompared} compared)`);
+    console.log(
+      `  geometry          ${before.geometryOff} → ${after.geometryOff} elements off by more than 2px  (${before.geometryCompared} → ${after.geometryCompared} compared)`
+    );
     console.log(`  round-trip        ${after.roundTrip ? 'ok' : 'BROKEN'}`);
     console.log(
       `  tokens            ${mode === 'keep-literal' ? (row.themeChanged ? 'theme.css CHANGED' : 'theme.css untouched') : `${before.tokens} → ${after.tokens}, ${after.undeclaredTokens} undeclared`}`
