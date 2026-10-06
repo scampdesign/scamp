@@ -373,9 +373,48 @@ instance exported empty and pixels read 51%. The harness now takes
 render and compare apart (`capturePage`, `renderView`, `compareShots`)
 and inlines every stylesheet the export writes.
 
-### Phase 4 — repeats
+### Phase 4 — repeats — **done**
 
-Call-site grouping, `repeat` + row samples, list names from source.
+`@lib/reactRepeats` (`planRepeats`) runs after components, on each view
+and each component definition. A run of neighbouring siblings is one
+`.map()` when React says so: they share a JSX call site (React 19), or —
+React 18 gives no call site — each carries a `key` with one owner
+writing them all, or each is the keyed root of an instance of one
+component. The capture now records those keys (`react.key`, and each
+owner's `key`).
+
+A run whose rows have the same shape and the same look becomes one
+element with `repeat: { over, as }`, the rows as samples on the root,
+and what differs — words (`prop: 'row.field'`), attributes and an
+image's `src`/`alt` (`bind`), an instance's props (`bind` on the
+instance) — as row fields, named after the layer or the prop. Sizes
+that differ by row go back to the content. The key is a field every row
+holds a different value of, else a numbered `id`. Rows that differ in
+look stay as copies: a status chip's colour is data the template can't
+hold.
+
+The list and row names come from the source: main reads the call
+site's line (`@shared/reactSource`, `listNamesAt`) from the folder Scamp
+is running the app from, and only files inside it
+(`ReactImportListNames`). `RECEIVED_RANGES.map((range) =>` gives
+`receivedRanges` / `range`; without a source the list is named after
+its row (`claimRows`).
+
+**The export now expands repeats.** `generateHtml` wrote a repeated
+element once and ignored show flags — wrong for any repeat, imported or
+made in the Data tab. It now evaluates bindings the way the canvas does
+(`expandChildren`, `resolveAttr`, `resolveInstanceOverrides` from
+`@lib/bindingEval`): once per sample row, a hidden element left out,
+row-bound text, attributes and instance props from the row.
+
+**On riq_frontend_demo:** 28 lists, 231 rows, are now one element each;
+the project goes from 10,624 elements to 6,218; pixels 93.77%, the same
+as with components alone. 86 lists stay copies, because their rows
+differ in shape (42), an icon (12), or a status colour (21). Tests:
+`test/reactRepeats.test.ts` (with a generate → parse → generate round
+trip and a real React 18 capture), `test/reactSource.test.ts`, the
+repeat cases in `test/generateHtml.test.ts`, and the team list in the
+batch e2e.
 
 ### Phase 5 — tokens from the app
 

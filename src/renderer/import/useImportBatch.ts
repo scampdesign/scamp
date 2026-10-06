@@ -34,6 +34,8 @@ export type BatchState = {
   /** Once every page is in: the components the app window found across them. */
   finishing?: boolean;
   components?: Array<{ name: string; instances: number; views: number }>;
+  /** Lists made into repeats. */
+  repeats?: Array<{ list: string; rows: number }>;
   /** Copies that stayed copies, and why. */
   notes?: string[];
   finishError?: string;
@@ -116,6 +118,7 @@ export const useImportBatch = ({
             ...b,
             finishing: false,
             components: payload.components,
+            repeats: payload.repeats ?? [],
             notes: payload.notes,
             ...(payload.error !== undefined ? { finishError: payload.error } : {}),
           };

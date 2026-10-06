@@ -33,6 +33,8 @@ export type PlannedComponent = {
   views: string[];
   /** Text props, by name. */
   props: string[];
+  /** React's account of the definition's elements, from the copy it was made from. */
+  react: Record<string, CapturedReact>;
 };
 
 export type ReactComponentFinding = {
@@ -53,7 +55,13 @@ export type ReactComponentFinding = {
 };
 
 export type ReactComponentPlan = {
-  views: Array<{ name: string; elements: Record<string, ScampElement>; rootId: string }>;
+  views: Array<{
+    name: string;
+    elements: Record<string, ScampElement>;
+    rootId: string;
+    /** React's account, with each new instance standing for the copy it replaced. */
+    react: Record<string, CapturedReact>;
+  }>;
   components: PlannedComponent[];
   findings: ReactComponentFinding[];
 };
@@ -524,10 +532,16 @@ export const planReactComponents = (
     if (varying.length > 0) {
       findings.push({ component: componentName, kind: 'style-varies', detail: varying.join(', ') });
     }
+    const definitionReact: Record<string, CapturedReact> = {};
+    for (const id of first.members) {
+      const info = views[first.view]?.react[id];
+      if (info !== undefined) definitionReact[idMap.get(id) as string] = info;
+    }
     components.push({
       name: componentName,
       elements: definition,
       rootId: ROOT_ELEMENT_ID,
+      react: definitionReact,
       instances: resolved.length,
       views: [...usedIn],
       props: [...propNames],
@@ -535,7 +549,7 @@ export const planReactComponents = (
   }
 
   return {
-    views: views.map(({ name, elements, rootId }) => ({ name, elements, rootId })),
+    views: views.map(({ name, elements, rootId, react }) => ({ name, elements, rootId, react })),
     components,
     findings,
   };

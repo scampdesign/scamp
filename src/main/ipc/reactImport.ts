@@ -1,14 +1,19 @@
+import { promises as fs } from 'fs';
+import { extname, relative, resolve } from 'path';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 
 import { IPC } from '@shared/ipcChannels';
+import { listNamesAt, parseCallSite } from '@shared/reactSource';
 import type {
   ReactImportInspectResult,
+  ReactImportListNamesArgs,
+  ReactImportListNamesResult,
   ReactImportProgress,
   ReactImportStartArgs,
   ReactImportStartResult,
 } from '@shared/types';
 
-import { inspectReactFolder, startReactApp } from '../reactImport/appServer';
+import { inspectReactFolder, reactAppFolder, startReactApp } from '../reactImport/appServer';
 import type { ReactFramework } from '../reactImport/detect';
 
 /**
@@ -27,7 +32,38 @@ const FRAMEWORK_LABEL: Readonly<Record<ReactFramework, string>> = {
 /** Folders the user picked in the dialog, the only ones that can be started. */
 const chosen = new Set<string>();
 
+/** Source files a call site may name: the app's own code, nothing else. */
+const SOURCE_EXTENSIONS: ReadonlySet<string> = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs']);
+
+/**
+ * List names for the given call sites, read from the app Scamp is running
+ * for this project. Only files inside that app's folder are read.
+ */
+const listNames = async (args: ReactImportListNamesArgs): Promise<ReactImportListNamesResult> => {
+  const folder = typeof args?.projectPath === 'string' ? reactAppFolder(args.projectPath) : null;
+  if (folder === null || !Array.isArray(args.sites)) return {};
+  const files = new Map<string, string[] | null>();
+  const out: ReactImportListNamesResult = {};
+  for (const site of args.sites.slice(0, 2000)) {
+    if (typeof site !== 'string') continue;
+    const call = parseCallSite(site);
+    if (call === null || !SOURCE_EXTENSIONS.has(extname(call.path))) continue;
+    const file = resolve(folder, `.${call.path.startsWith('/') ? call.path : `/${call.path}`}`);
+    const inside = relative(folder, file);
+    if (inside.startsWith('..') || inside === '') continue;
+    if (!files.has(file)) {
+      files.set(file, await fs.readFile(file, 'utf-8').then((text) => text.split('\n'), () => null));
+    }
+    const lines = files.get(file);
+    const names = lines === null || lines === undefined ? null : listNamesAt(lines, call);
+    if (names !== null) out[site] = names;
+  }
+  return out;
+};
+
 export const registerReactImportIpc = (): void => {
+  ipcMain.handle(IPC.ReactImportListNames, (_e, args: ReactImportListNamesArgs) => listNames(args));
+
   ipcMain.handle(IPC.ReactImportInspect, async (e): Promise<ReactImportInspectResult> => {
     const owner = BrowserWindow.fromWebContents(e.sender);
     const options = {

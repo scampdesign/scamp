@@ -75,6 +75,12 @@ export const BatchSummary = ({ batch, onStop, onUndo, onDismiss }: Props): JSX.E
           {batch.components.map((c) => `${c.name} (${c.instances} ${c.instances === 1 ? 'copy' : 'copies'})`).join(', ')}
         </p>
       )}
+      {batch.undone === undefined && (batch.repeats?.length ?? 0) > 0 && (
+        <p className={styles.batchComponents} data-testid="import-batch-repeats">
+          {`Made ${batch.repeats?.length} ${batch.repeats?.length === 1 ? 'list' : 'lists'} into repeating elements: `}
+          {batch.repeats?.map((r) => `${r.list} (${r.rows} rows)`).join(', ')}
+        </p>
+      )}
       {batch.finishError !== undefined && <p className={styles.batchComponents}>{batch.finishError}</p>}
       {batch.undone === undefined && (batch.notes?.length ?? 0) > 0 && (
         <details className={styles.batchNotes}>

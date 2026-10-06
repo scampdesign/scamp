@@ -147,6 +147,9 @@ The export is meant to look identical to the canvas.
 - **Your CSS comes through as written**, including breakpoints, hover
   and focus states, transitions, and animations. They're all CSS, so
   they keep working.
+- **Repeated elements and conditions use their sample data.** An element
+  set to repeat is written once for each sample row, and an element with
+  a show condition is left out when its sample is off, as on the canvas.
 - **Images are copied** into `assets/` and referenced relatively.
 - **`theme.css` is copied as is**, so every token still resolves.
 

@@ -621,6 +621,16 @@ export type ReactImportStartResult = {
     ok: false;
     error: string;
 };
+/** JSX call sites to read list names at, for one Scamp project's running app. */
+export type ReactImportListNamesArgs = {
+    projectPath: string;
+    sites: string[];
+};
+/** Each call site's list and row name, where the source says. */
+export type ReactImportListNamesResult = Record<string, {
+    over: string;
+    as: string;
+}>;
 /** The dev server getting ready, streamed to the dialog. */
 export type ReactImportProgress = {
     kind: 'phase';
@@ -717,6 +727,11 @@ export type ImportBatchReport = {
     projectPath: string;
     batchId: string;
     components: ImportBatchComponent[];
+    /** Lists the app draws with `.map()`, now one repeated element each. */
+    repeats?: Array<{
+        list: string;
+        rows: number;
+    }>;
     /** Copies that stayed copies, and why — `AppFrame: the nav item differs by page`. */
     notes: string[];
     error?: string;

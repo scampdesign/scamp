@@ -72,6 +72,12 @@ such as a page title, becomes a text prop. The list of results says
 which components Scamp made, and which copies it kept as they are and
 why.
 
+A list the app draws from data, such as the rows of a table, becomes
+one element set to repeat, with each row's words kept as sample data.
+You can edit the rows on the **Data** tab. A list whose rows look
+different from each other, such as rows with different status colors,
+stays as separate elements.
+
 **Note:** A component shows one look on every page. Where the app
 highlights something differently on each page, such as the current item
 in a navigation menu, the component shows the look most pages have.

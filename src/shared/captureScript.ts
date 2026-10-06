@@ -147,11 +147,12 @@ export const captureFn = (policy: CapturePolicy): CapturePayload => {
    * see docs/plans/react-import-plan.md
    */
   const reactReader = ((): {
-    annotate: (el: Element) => { owners: Array<{ name: string; id: number }>; site?: string } | null;
+    annotate: (el: Element) => { owners: Array<{ name: string; id: number; key?: string }>; site?: string; key?: string } | null;
     instances: Record<string, { name: string; props: Record<string, string | number | boolean> }>;
   } | null => {
     type Fiber = {
       type: unknown;
+      key?: string | null;
       child: Fiber | null;
       sibling: Fiber | null;
       alternate: Fiber | null;
@@ -252,16 +253,22 @@ export const captureFn = (policy: CapturePolicy): CapturePayload => {
       annotate: (el) => {
         const fiber = fiberOf(el);
         if (fiber === null) return null;
-        const owners: Array<{ name: string; id: number }> = [];
+        const owners: Array<{ name: string; id: number; key?: string }> = [];
         let owner = fiber._debugOwner ?? null;
         for (let hops = 0; owner !== null && hops < 40 && owners.length < 12; hops += 1) {
           const name = nameOf(owner.type);
-          if (name !== null && !isLibrary(owner)) owners.push({ name, id: idOf(owner, name) });
+          if (name !== null && !isLibrary(owner)) {
+            owners.push({ name, id: idOf(owner, name), ...(owner.key != null ? { key: String(owner.key) } : {}) });
+          }
           owner = owner._debugOwner ?? null;
         }
         const site = sourceOf(fiber);
         if (owners.length === 0 && site === null) return null;
-        return { owners, ...(site !== null && !site.url.includes('/node_modules/') ? { site: site.at } : {}) };
+        return {
+          owners,
+          ...(site !== null && !site.url.includes('/node_modules/') ? { site: site.at } : {}),
+          ...(fiber.key != null ? { key: String(fiber.key) } : {}),
+        };
       },
     };
   })();

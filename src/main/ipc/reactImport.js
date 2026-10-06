@@ -1,6 +1,9 @@
+import { promises as fs } from 'fs';
+import { extname, relative, resolve } from 'path';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import { IPC } from '@shared/ipcChannels';
-import { inspectReactFolder, startReactApp } from '../reactImport/appServer';
+import { listNamesAt, parseCallSite } from '@shared/reactSource';
+import { inspectReactFolder, reactAppFolder, startReactApp } from '../reactImport/appServer';
 /**
  * React app import, app window side. A folder is chosen through the
  * system dialog here, and only a folder chosen that way can be started:
@@ -14,7 +17,40 @@ const FRAMEWORK_LABEL = {
 };
 /** Folders the user picked in the dialog, the only ones that can be started. */
 const chosen = new Set();
+/** Source files a call site may name: the app's own code, nothing else. */
+const SOURCE_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs']);
+/**
+ * List names for the given call sites, read from the app Scamp is running
+ * for this project. Only files inside that app's folder are read.
+ */
+const listNames = async (args) => {
+    const folder = typeof args?.projectPath === 'string' ? reactAppFolder(args.projectPath) : null;
+    if (folder === null || !Array.isArray(args.sites))
+        return {};
+    const files = new Map();
+    const out = {};
+    for (const site of args.sites.slice(0, 2000)) {
+        if (typeof site !== 'string')
+            continue;
+        const call = parseCallSite(site);
+        if (call === null || !SOURCE_EXTENSIONS.has(extname(call.path)))
+            continue;
+        const file = resolve(folder, `.${call.path.startsWith('/') ? call.path : `/${call.path}`}`);
+        const inside = relative(folder, file);
+        if (inside.startsWith('..') || inside === '')
+            continue;
+        if (!files.has(file)) {
+            files.set(file, await fs.readFile(file, 'utf-8').then((text) => text.split('\n'), () => null));
+        }
+        const lines = files.get(file);
+        const names = lines === null || lines === undefined ? null : listNamesAt(lines, call);
+        if (names !== null)
+            out[site] = names;
+    }
+    return out;
+};
 export const registerReactImportIpc = () => {
+    ipcMain.handle(IPC.ReactImportListNames, (_e, args) => listNames(args));
     ipcMain.handle(IPC.ReactImportInspect, async (e) => {
         const owner = BrowserWindow.fromWebContents(e.sender);
         const options = {

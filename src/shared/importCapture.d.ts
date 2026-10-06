@@ -77,9 +77,16 @@ export type CapturedReact = {
     owners: Array<{
         name: string;
         id: number;
+        key?: string;
     }>;
     /** The JSX call site, `/src/app/nav.tsx:102:72`. React 19 only. */
     site?: string;
+    /**
+     * The element's own React `key`. With the owners' keys, the sign of a
+     * `.map()` where React has no call site to give (React 18): React
+     * requires a key on every element of a list.
+     */
+    key?: string;
 };
 /** One component instance: its name, and its props that are plain values. */
 export type CapturedReactInstance = {

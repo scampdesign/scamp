@@ -6,3 +6,5 @@ body { margin: 0; font: 15px/22px system-ui, sans-serif; color: #1d2732; backgro
 .main { grid-area: main; padding: 32px; }
 .card { padding: 24px; border: 1px solid #d9e2ee; border-radius: 12px; background: #fff; }
 .card h1 { margin: 0 0 8px; font-size: 24px; line-height: 32px; }
+.members { margin: 16px 0 0; padding: 0; list-style: none; }
+.member { padding: 8px 12px; border-bottom: 1px solid #d9e2ee; }

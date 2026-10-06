@@ -25,6 +25,8 @@ import type {
   ImportBatchActionArgs,
   ImportBatchReport,
   ReactImportInspectResult,
+  ReactImportListNamesArgs,
+  ReactImportListNamesResult,
   ReactImportProgress,
   ReactImportStartArgs,
   ReactImportStartResult,
@@ -451,6 +453,8 @@ const api = {
   reactImportInspect: (): Promise<ReactImportInspectResult> => ipcRenderer.invoke(IPC.ReactImportInspect),
   reactImportStart: (args: ReactImportStartArgs): Promise<ReactImportStartResult> =>
     ipcRenderer.invoke(IPC.ReactImportStart, args),
+  reactImportListNames: (args: ReactImportListNamesArgs): Promise<ReactImportListNamesResult> =>
+    ipcRenderer.invoke(IPC.ReactImportListNames, args),
   onReactImportProgress: (handler: (event: ReactImportProgress) => void): (() => void) => {
     const listener = (_e: unknown, event: ReactImportProgress): void => handler(event);
     ipcRenderer.on(IPC.ReactImportProgress, listener);

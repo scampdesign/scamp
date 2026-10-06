@@ -16,6 +16,7 @@
  *
  * see docs/plans/html-export-plan.md
  */
+import { expandChildren, resolveAttr, resolveInstanceOverrides, resolveText as resolveRowText, } from './bindingEval';
 import { svgSourceToHtml } from './svgJsx';
 import { sizeDeclarationLines } from './generateCode/declarations';
 import { classNameFor, escapeHtml, tagFor } from './generateCode/internal';
@@ -27,6 +28,11 @@ import { classNameFor, escapeHtml, tagFor } from './generateCode/internal';
 export const INSTANCE_CLASS_SEPARATOR = '__';
 /** The class prefix applied to everything inside one expanded instance. */
 export const instanceClassPrefix = (outerPrefix, instanceClass) => `${outerPrefix}${instanceClass}${INSTANCE_CLASS_SEPARATOR}`;
+/** The sample data a tree's root holds, as a scope with no row yet. */
+const rootBinding = (elements, rootId) => ({
+    samples: elements[rootId]?.samples ?? {},
+    row: null,
+});
 const indent = (level) => '  '.repeat(level);
 /** Editor bookkeeping — not page content, so it's stripped on export. */
 const isEditorAttribute = (name) => name.startsWith('data-scamp-');
@@ -107,9 +113,11 @@ const renderInstance = (el, scope, level, options, activeComponents) => {
     const childScope = {
         elements: tree.elements,
         classPrefix: instanceClassPrefix(scope.classPrefix, classNameFor(el)),
-        propValues: el.propOverrides ?? {},
+        // A prop bound to a row in the page takes this row's value.
+        propValues: resolveInstanceOverrides(el, scope.binding),
         slots: groupSlotContent(el, scope),
         isComponent: true,
+        binding: rootBinding(tree.elements, tree.rootId),
     };
     // The page sizes an instance through the component's `className` prop, so
     // in the app the component root renders with both its own `.root` and the
@@ -139,15 +147,24 @@ const renderElement = (el, scope, level, options, extraClass, activeComponents, 
         classes.push(extraClass);
     const attrs = [`class="${escapeHtml(classes.join(' '))}"`];
     if (el.type === 'image' && tag === 'img') {
-        attrs.push(`src="${escapeHtml(rewriteAsset(el.src ?? '', options))}"`);
-        attrs.push(`alt="${escapeHtml(el.alt ?? '')}"`);
+        const src = resolveAttr(el, 'src', scope.binding) ?? el.src ?? '';
+        attrs.push(`src="${escapeHtml(rewriteAsset(src, options))}"`);
+        attrs.push(`alt="${escapeHtml(resolveAttr(el, 'alt', scope.binding) ?? el.alt ?? '')}"`);
     }
-    if (el.attributes) {
-        for (const [name, value] of Object.entries(el.attributes)) {
-            if (isEditorAttribute(name))
-                continue;
-            attrs.push(formatAttribute(name, rewriteAttributeValue(name, value, options)));
-        }
+    const attributes = { ...(el.attributes ?? {}) };
+    // A row-bound attribute takes this row's value; one with no literal
+    // sample (the rows are the sample) is written from the row alone.
+    for (const name of Object.keys(el.bind ?? {})) {
+        if (el.type === 'image' && (name === 'src' || name === 'alt'))
+            continue;
+        const value = resolveAttr(el, name, scope.binding);
+        if (value !== undefined)
+            attributes[name] = value;
+    }
+    for (const [name, value] of Object.entries(attributes)) {
+        if (isEditorAttribute(name))
+            continue;
+        attrs.push(formatAttribute(name, rewriteAttributeValue(name, value, options)));
     }
     const open = `<${tag} ${attrs.join(' ')}`;
     if (VOID_TAGS.has(tag)) {
@@ -181,11 +198,11 @@ const renderElement = (el, scope, level, options, extraClass, activeComponents, 
         if (!filled || filled.ids.length === 0) {
             return `${indent(level)}${open}></${tag}>`;
         }
-        const inner = filled.ids
-            .map((id) => {
+        const inner = expandChildren(filled.scope.elements, filled.ids, filled.scope.binding)
+            .map(({ id, row }) => {
             const child = filled.scope.elements[id];
             return child
-                ? renderElement(child, filled.scope, level + 1, options, null, active)
+                ? renderElement(child, { ...filled.scope, binding: { ...filled.scope.binding, row } }, level + 1, options, null, active)
                 : '';
         })
             .filter((line) => line.length > 0)
@@ -210,9 +227,12 @@ const renderElement = (el, scope, level, options, extraClass, activeComponents, 
     if (before !== undefined)
         segments.push(before);
     el.childIds.forEach((childId, i) => {
-        const child = scope.elements[childId];
-        if (child) {
-            const line = renderElement(child, scope, level + 1, options, null, active);
+        // A hidden child renders nothing; a repeated one renders once per row.
+        for (const { id, row } of expandChildren(scope.elements, [childId], scope.binding)) {
+            const child = scope.elements[id];
+            if (!child)
+                continue;
+            const line = renderElement(child, { ...scope, binding: { ...scope.binding, row } }, level + 1, options, null, active);
             if (line.length > 0)
                 segments.push(line);
         }
@@ -231,6 +251,9 @@ const renderElement = (el, scope, level, options, extraClass, activeComponents, 
 const resolveText = (el, scope) => {
     if (el.type !== 'text')
         return null;
+    const fromRow = resolveRowText(el, scope.binding);
+    if (fromRow !== undefined)
+        return fromRow;
     if (scope.isComponent && el.prop !== undefined && el.prop.length > 0) {
         return scope.propValues[el.prop] ?? el.text ?? '';
     }
@@ -315,6 +338,7 @@ export const generateHtml = (elements, rootId, options) => {
         propValues: {},
         slots: new Map(),
         isComponent: false,
+        binding: rootBinding(elements, rootId),
     };
     return renderElement(root, scope, 2, options, null, new Set());
 };

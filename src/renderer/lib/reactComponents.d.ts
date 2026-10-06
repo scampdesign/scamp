@@ -17,6 +17,8 @@ export type PlannedComponent = {
     views: string[];
     /** Text props, by name. */
     props: string[];
+    /** React's account of the definition's elements, from the copy it was made from. */
+    react: Record<string, CapturedReact>;
 };
 export type ReactComponentFinding = {
     component: string;
@@ -39,6 +41,8 @@ export type ReactComponentPlan = {
         name: string;
         elements: Record<string, ScampElement>;
         rootId: string;
+        /** React's account, with each new instance standing for the copy it replaced. */
+        react: Record<string, CapturedReact>;
     }>;
     components: PlannedComponent[];
     findings: ReactComponentFinding[];

@@ -101,7 +101,7 @@ export const startReactApp = async (key, dir, onEvent) => {
     const { command, args, env } = project.devCommand(port);
     const proc = run(command, args, dir, env, log);
     const url = `http://localhost:${port}`;
-    running.set(key, { process: proc, url });
+    running.set(key, { process: proc, url, folder: dir });
     proc.on('exit', () => {
         if (running.get(key)?.process === proc)
             running.delete(key);
@@ -116,6 +116,8 @@ export const startReactApp = async (key, dir, onEvent) => {
         return { ok: false, error: err instanceof Error ? err.message : String(err) };
     }
 };
+/** The folder of the app Scamp is running for this key, if it is running one. */
+export const reactAppFolder = (key) => running.get(key)?.folder ?? null;
 export const stopReactApp = (key) => {
     const entry = running.get(key);
     if (entry === undefined)

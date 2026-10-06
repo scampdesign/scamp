@@ -97,6 +97,8 @@ export declare const IPC: {
     readonly ReactImportInspect: "react-import:inspect";
     readonly ReactImportStart: "react-import:start";
     readonly ReactImportProgress: "react-import:progress";
+    /** The names a React app's source gives its lists, read in main from the app's folder. */
+    readonly ReactImportListNames: "react-import:list-names";
     /** Download one remote image into the project's assets. */
     readonly ImportFetchImage: "import:fetchImage";
     /** Which of these families does Google Fonts serve? */

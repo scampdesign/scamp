@@ -598,3 +598,66 @@ describe('renderDocument', () => {
     expect(doc.indexOf('theme.css')).toBeLessThan(doc.indexOf('index.css'));
   });
 });
+
+describe('generateHtml — repeats and show flags', () => {
+  // The canvas expands these from the root's samples; the export has to
+  // write what the canvas shows. see docs/notes/view-bindings.md
+  const team = (extra: Partial<ScampElement> = {}): Record<string, ScampElement> =>
+    asMap([
+      { ...makeRoot(['list']), samples: { team: [{ name: 'Ada', url: '/ada' }, { name: 'Grace', url: '/grace' }], open: false } },
+      makeEl('list', { tag: 'ul', childIds: ['item'] }),
+      makeEl('item', { parentId: 'list', tag: 'li', childIds: ['name', 'link'], repeat: { over: 'team', as: 'member' }, ...extra }),
+      makeEl('name', { parentId: 'item', type: 'text', tag: 'strong', prop: 'member.name' }),
+      makeEl('link', { parentId: 'item', tag: 'a', attributes: { href: '#' }, bind: { href: 'member.url' } }),
+    ]);
+
+  it('writes a repeated element once per row, each with its row’s words', () => {
+    const html = generateHtml(team(), ROOT_ELEMENT_ID, { componentTrees: {} });
+    expect(html.match(/<li /g)).toHaveLength(2);
+    expect(html).toContain('>Ada</strong>');
+    expect(html).toContain('>Grace</strong>');
+  });
+
+  it('writes a row-bound attribute from the row', () => {
+    const html = generateHtml(team(), ROOT_ELEMENT_ID, { componentTrees: {} });
+    expect(html).toContain('href="/ada"');
+    expect(html).toContain('href="/grace"');
+    expect(html).not.toContain('href="#"');
+  });
+
+  it('leaves out an element whose show flag is off', () => {
+    const html = generateHtml(team({ showIf: 'open' }), ROOT_ELEMENT_ID, { componentTrees: {} });
+    expect(html).not.toContain('<li ');
+  });
+
+  it('writes nothing for a repeat with no rows', () => {
+    const elements = team();
+    elements[ROOT_ELEMENT_ID] = { ...elements[ROOT_ELEMENT_ID]!, samples: {} };
+    expect(generateHtml(elements, ROOT_ELEMENT_ID, { componentTrees: {} })).not.toContain('<li ');
+  });
+
+  it('gives a repeated instance its row’s props', () => {
+    const card: ComponentTree = {
+      rootId: ROOT_ELEMENT_ID,
+      elements: asMap([
+        makeRoot(['title']),
+        makeEl('title', { type: 'text', tag: 'h2', prop: 'title', text: 'Default' }),
+      ]),
+    };
+    const elements = asMap([
+      { ...makeRoot(['inst']), samples: { cards: [{ title: 'First' }, { title: 'Second' }] } },
+      makeEl('inst', {
+        type: 'component-instance',
+        componentName: 'Card',
+        instanceId: 'inst_inst',
+        propOverrides: {},
+        repeat: { over: 'cards', as: 'card' },
+        bind: { title: 'card.title' },
+      }),
+    ]);
+    const html = generateHtml(elements, ROOT_ELEMENT_ID, { componentTrees: { Card: card } });
+    expect(html).toContain('>First</h2>');
+    expect(html).toContain('>Second</h2>');
+    expect(html).not.toContain('Default');
+  });
+});

@@ -15,6 +15,7 @@
 // the page, and the sibling groups one `.map()` call site drew.
 //
 // Env:
+//   SRC=dir    the app's folder, for list names, when the target is a URL
 //   OUT=dir    screenshots (default .pixels-tmp/react)
 //   TOP=n      diff clusters listed per route (default 3)
 //
@@ -50,6 +51,8 @@ if (target === undefined) {
 const { detectReactProject } = await bundleOf('src/main/reactImport/detect.ts');
 const { readRoutesFn, flattenRoutes, selectedByDefault, viewNameForRoute } = await bundleOf('src/shared/reactRoutes.ts');
 const { planReactComponents } = await bundleOf('src/renderer/lib/reactComponents.ts');
+const { planRepeats } = await bundleOf('src/renderer/lib/reactRepeats.ts');
+const { listNamesAt, parseCallSite } = await bundleOf('src/shared/reactSource.ts');
 const { lintView } = await bundleOf('src/renderer/lib/viewLint.ts');
 const { parseCode } = await bundleOf('src/renderer/lib/parseCode.ts');
 const { generateCode } = await bundleOf('src/renderer/lib/generateCode.ts');
@@ -296,6 +299,40 @@ try {
       };
     });
     const plan = planReactComponents(views);
+
+    // ---- lists, as repeats (Phase 4) -------------------------------------
+    const sourceDir = isUrl ? process.env.SRC : resolve(target);
+    const files = new Map();
+    const sources = {};
+    const allSites = new Set(
+      [...plan.views.map((v) => v.react), ...plan.components.map((c) => c.react)].flatMap((r) =>
+        Object.values(r).flatMap((info) => (info.site === undefined ? [] : [info.site]))
+      )
+    );
+    if (sourceDir !== undefined) {
+      for (const site of allSites) {
+        const call = parseCallSite(site);
+        if (call === null) continue;
+        if (!files.has(call.path)) {
+          files.set(call.path, await readFile(join(sourceDir, call.path), 'utf-8').then((t) => t.split('\n'), () => null));
+        }
+        const lines = files.get(call.path);
+        const names = lines === null ? null : listNamesAt(lines, call);
+        if (names !== null) sources[site] = names;
+      }
+    }
+    const repeated = { repeats: 0, rows: 0, skipped: 0, examples: [], why: {} };
+    const withRepeats = (tree, takenNames = []) => {
+      const result = planRepeats(tree, { sources, takenNames });
+      repeated.repeats += result.repeats.length;
+      repeated.rows += result.repeats.reduce((n, r) => n + r.rows, 0);
+      repeated.skipped += result.skipped.length;
+      for (const k of result.skipped) { const field = k.differs.split(' on ')[0]; repeated.why[field] = (repeated.why[field] ?? 0) + 1; }
+      for (const r of result.repeats) if (repeated.examples.length < 12) repeated.examples.push(`${r.over}(${r.rows}: ${r.fields.join(', ')})`);
+      return result.elements;
+    };
+    for (const view of plan.views) view.elements = withRepeats(view);
+    for (const component of plan.components) component.elements = withRepeats(component, component.props);
     const components = plan.components.map((c) => {
       const code = generateCode({ elements: c.elements, rootId: c.rootId, pageName: c.name, cssModuleImportName: c.name, isComponent: true });
       // The export's shape: a component as the files the app would write.
@@ -330,6 +367,7 @@ try {
         row.withComponents = { error: err.message.slice(0, 200) };
       }
     }
+    results.repeatPlan = repeated;
     results.componentPlan = {
       components: plan.components.map((c) => ({ name: c.name, instances: c.instances, views: c.views.length, props: c.props, elements: Object.keys(c.elements).length })),
       findings: plan.findings,
@@ -371,6 +409,7 @@ const summary = {
     measured.reduce((n, r) => n + (r.withComponents?.elements ?? r.elements), 0) +
     (results.componentPlan?.components ?? []).reduce((n, c) => n + c.elements, 0),
   meanPixelsWithComponents: mean(measured.map((r) => r.withComponents?.pixels).filter((p) => typeof p === 'number')),
+  repeats: results.repeatPlan ?? null,
 };
 
 console.log('\n— summary —');
@@ -390,6 +429,13 @@ if (summary.components.length > 15) console.log(`    … and ${summary.component
 const byKind = summary.componentFindings.reduce((acc, f) => ({ ...acc, [f.kind]: [...(acc[f.kind] ?? []), f] }), {});
 for (const [kind, list] of Object.entries(byKind)) {
   console.log(`  ${kind}: ${list.length} — ${list.slice(0, 6).map((f) => `${f.component} (${f.detail.slice(0, 60)})`).join('; ')}`);
+}
+if (summary.repeats !== null) {
+  console.log(
+    `  repeats: ${summary.repeats.repeats} lists, ${summary.repeats.rows} rows; ${summary.repeats.skipped} lists kept as copies (rows look different)`
+  );
+  if (summary.repeats.examples.length > 0) console.log(`    e.g. ${summary.repeats.examples.join('; ')}`);
+  console.log(`    kept because rows differ in: ${JSON.stringify(summary.repeats.why)}`);
 }
 console.log(`  elements in the project: ${summary.elementsBefore} → ${summary.elementsAfter}`);
 console.log(`  pixels with components: mean ${summary.meanPixelsWithComponents.toFixed(2)}% (was ${summary.meanPixels.toFixed(2)}%)`);

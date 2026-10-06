@@ -445,17 +445,24 @@ export const planReactComponents = (input, options = {}) => {
         if (varying.length > 0) {
             findings.push({ component: componentName, kind: 'style-varies', detail: varying.join(', ') });
         }
+        const definitionReact = {};
+        for (const id of first.members) {
+            const info = views[first.view]?.react[id];
+            if (info !== undefined)
+                definitionReact[idMap.get(id)] = info;
+        }
         components.push({
             name: componentName,
             elements: definition,
             rootId: ROOT_ELEMENT_ID,
+            react: definitionReact,
             instances: resolved.length,
             views: [...usedIn],
             props: [...propNames],
         });
     }
     return {
-        views: views.map(({ name, elements, rootId }) => ({ name, elements, rootId })),
+        views: views.map(({ name, elements, rootId, react }) => ({ name, elements, rootId, react })),
         components,
         findings,
     };

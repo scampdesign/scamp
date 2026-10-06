@@ -152,6 +152,12 @@ test('imports several routes into a new project, and removes them in one step', 
     expect(about).not.toContain('<nav');
     const shell = await fs.readFile(path.join(newProject, 'components', 'Shell', 'Shell.tsx'), 'utf-8');
     expect(shell).toContain('{children}');
+    // The team page's list, drawn with `.map()`, is one repeated row now.
+    await expect(batch.getByTestId('import-batch-repeats')).toContainText('members (3 rows)');
+    const team = await fs.readFile(path.join(newProject, 'views', 'TeamDetail', 'TeamDetail.tsx'), 'utf-8');
+    expect(team).toContain('members.map((member) =>');
+    expect(team).toContain('Grace');
+    expect(team.match(/<li /g)?.length).toBe(1);
     // Which nav item is highlighted differs by page; the report says so.
     await batch.getByText(/kept as copies or simplified/).click();
     await expect(batch).toContainText('Shell looks different on some pages');

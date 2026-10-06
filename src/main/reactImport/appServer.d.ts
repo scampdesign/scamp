@@ -29,6 +29,8 @@ export declare const startReactApp: (key: string, dir: string, onEvent: (event: 
     ok: false;
     error: string;
 }>;
+/** The folder of the app Scamp is running for this key, if it is running one. */
+export declare const reactAppFolder: (key: string) => string | null;
 export declare const stopReactApp: (key: string) => void;
 /** Stop the server at this address, if Scamp started it. */
 export declare const stopReactAppAt: (url: string) => void;

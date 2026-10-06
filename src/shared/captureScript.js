@@ -179,14 +179,19 @@ export const captureFn = (policy) => {
                 let owner = fiber._debugOwner ?? null;
                 for (let hops = 0; owner !== null && hops < 40 && owners.length < 12; hops += 1) {
                     const name = nameOf(owner.type);
-                    if (name !== null && !isLibrary(owner))
-                        owners.push({ name, id: idOf(owner, name) });
+                    if (name !== null && !isLibrary(owner)) {
+                        owners.push({ name, id: idOf(owner, name), ...(owner.key != null ? { key: String(owner.key) } : {}) });
+                    }
                     owner = owner._debugOwner ?? null;
                 }
                 const site = sourceOf(fiber);
                 if (owners.length === 0 && site === null)
                     return null;
-                return { owners, ...(site !== null && !site.url.includes('/node_modules/') ? { site: site.at } : {}) };
+                return {
+                    owners,
+                    ...(site !== null && !site.url.includes('/node_modules/') ? { site: site.at } : {}),
+                    ...(fiber.key != null ? { key: String(fiber.key) } : {}),
+                };
             },
         };
     })();

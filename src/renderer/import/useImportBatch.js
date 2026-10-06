@@ -38,6 +38,7 @@ export const useImportBatch = ({ webviewRef, projectPath, baseUrl, readAllWidths
                 ...b,
                 finishing: false,
                 components: payload.components,
+                repeats: payload.repeats ?? [],
                 notes: payload.notes,
                 ...(payload.error !== undefined ? { finishError: payload.error } : {}),
             };

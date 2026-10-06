@@ -31,6 +31,11 @@ export type BatchState = {
         instances: number;
         views: number;
     }>;
+    /** Lists made into repeats. */
+    repeats?: Array<{
+        list: string;
+        rows: number;
+    }>;
     /** Copies that stayed copies, and why. */
     notes?: string[];
     finishError?: string;

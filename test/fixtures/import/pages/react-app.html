@@ -29,7 +29,9 @@
       h('nav', { className: 'nav' }, h(NavItem, { label: 'Home' }), h(NavItem, { label: 'About' })),
       h('main', { className: 'main' }, children));
   }
-  function App() { return h(Shell, null, h(Card, { title: 'First' }), h(Card, { title: 'Second' })); }
+  const TAGS = ['Design', 'Code', 'Ship'];
+  function Tags() { return h('ul', { className: 'tags' }, TAGS.map((tag) => h('li', { key: tag, className: 'tag' }, tag))); }
+  function App() { return h(Shell, null, h(Card, { title: 'First' }), h(Card, { title: 'Second' }), h(Tags)); }
   ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 </script>
 </body>

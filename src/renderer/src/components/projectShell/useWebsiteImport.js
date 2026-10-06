@@ -6,6 +6,7 @@ import { applyBreakpointCaptures, reduceCapture } from '@lib/importReduce';
 import { fontsNeededBy, googleFontsUrlFor, resolveFonts, } from '@lib/importFonts';
 import { buildReport } from '@lib/importReport';
 import { describeReactFinding, planReactComponents } from '@lib/reactComponents';
+import { planRepeats } from '@lib/reactRepeats';
 import { generateElementId } from '@lib/element/tree';
 import { needsFileTreatment, svgAssetName, svgDocument, } from '@lib/importSvgAssets';
 import { useFontsStore } from '@store/fontsSlice';
@@ -465,6 +466,22 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     takenNames: [...project.components.map((c) => c.name), ...project.pages.map((p) => p.name)],
                     randomId: generateElementId,
                 });
+                // Lists the app draws with `.map()`, as repeats — in the views and
+                // in the components just made. The names come from the app's
+                // source, read in main from the folder Scamp is running it from.
+                const sites = [...new Set([...plan.views.map((v) => v.react), ...plan.components.map((c) => c.react)].flatMap((r) => Object.values(r).flatMap((info) => (info.site === undefined ? [] : [info.site]))))];
+                const sources = sites.length > 0 ? await window.scamp.reactImportListNames({ projectPath, sites }).catch(() => ({})) : {};
+                const repeats = [];
+                for (const view of plan.views) {
+                    const result = planRepeats(view, { sources });
+                    view.elements = result.elements;
+                    repeats.push(...result.repeats);
+                }
+                for (const component of plan.components) {
+                    const result = planRepeats(component, { sources, takenNames: component.props });
+                    component.elements = result.elements;
+                    repeats.push(...result.repeats);
+                }
                 const madeFiles = [];
                 for (const component of plan.components) {
                     const code = generateCode({
@@ -485,12 +502,16 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     madeFiles.push(file);
                     record?.components.push(file.name);
                 }
-                // Each view that now holds instances, rewritten.
+                // Each view that now holds instances or repeats, rewritten.
                 const rewritten = new Map();
                 for (const [i, view] of views.entries()) {
                     const planned = plan.views[i];
-                    // Changed exactly when it gained an element: an instance.
-                    if (planned === undefined || !Object.keys(planned.elements).some((id) => !(id in view.elements)))
+                    if (planned === undefined)
+                        continue;
+                    // Changed when it gained an element (an instance) or lost one (a list's rows).
+                    const before = Object.keys(view.elements);
+                    const after = Object.keys(planned.elements);
+                    if (before.length === after.length && after.every((id) => id in view.elements))
                         continue;
                     const code = generateCode({
                         elements: planned.elements,
@@ -528,6 +549,7 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     projectPath,
                     batchId,
                     components: plan.components.map((c) => ({ name: c.name, instances: c.instances, views: c.views.length })),
+                    repeats: repeats.map((r) => ({ list: r.over, rows: r.rows })),
                     notes: plan.findings.map(describeReactFinding),
                 });
             }

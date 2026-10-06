@@ -30,12 +30,20 @@ const Shell = ({ path, children }) =>
     h('main', { key: 'main', className: 'main' }, children),
   ]);
 
+// A list drawn with `.map()`, keyed as React requires: the import makes it one repeated row.
+const MEMBERS = ['Ada', 'Grace', 'Linus'];
+const MemberList = () => h('ul', { className: 'members' }, MEMBERS.map((name) => h('li', { key: name, className: 'member' }, name)));
+
 const Page = ({ title, body }) => h('section', { className: 'card' }, [h('h1', { key: 't' }, title), h('p', { key: 'b' }, body)]);
 
 const routes = [
   { path: '/', element: () => h(Page, { title: 'Welcome home', body: 'The fixture app’s first page.' }) },
   { path: '/about', element: () => h(Page, { title: 'About us', body: 'A page with no params.' }) },
-  { path: '/team/:member', element: ({ params }) => h(Page, { title: `Team: ${params.member}`, body: 'A page with a param.' }) },
+  {
+    path: '/team/:member',
+    element: ({ params }) =>
+      h('div', null, [h(Page, { key: 'page', title: `Team: ${params.member}`, body: 'A page with a param.' }), h(MemberList, { key: 'list' })]),
+  },
   // Like a page behind a sign-in: it sends you elsewhere straight away.
   { path: '/private', redirect: '/' },
 ];
