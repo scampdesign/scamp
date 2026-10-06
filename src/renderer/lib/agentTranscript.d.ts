@@ -4,6 +4,7 @@ import type { AgentUsage } from '@shared/types';
  * itself is shared with main, in `@shared/agentTranscript`.
  * see docs/plans/builtin-agent-plan.md
  */
+import type { TranscriptEntry } from '@shared/agentTranscript';
 export { applyAgentEvent, settleTranscript, startTurn, type TranscriptEntry, type TranscriptPart, type TranscriptToolCall, } from '@shared/agentTranscript';
 export declare const toolLabel: (name: string) => string;
 /** One element as the context line names it. */
@@ -35,3 +36,11 @@ export declare const agentContextLine: (input: {
  * would make a cheap exchange look expensive.
  */
 export declare const formatUsage: (usage: AgentUsage) => string;
+/**
+ * A reply's words, as the agent wrote them — Markdown and all, so they
+ * paste into a document or an issue the way they read in the panel.
+ * Tool calls and confirmations are the panel's, not the agent's words.
+ */
+export declare const replyText: (entry: Extract<TranscriptEntry, {
+    role: "assistant";
+}>) => string;

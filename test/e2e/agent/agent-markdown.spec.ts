@@ -39,7 +39,7 @@ test.use({
   appEnv: { SCAMP_E2E_SIGNED_IN: '1', SCAMP_E2E_AGENT_VERIFY: 'accept', SCAMP_E2E_AGENT_SCRIPT: SCRIPT },
 });
 
-test('renders headings, lists, bold and code — and markup as text', async ({ window }) => {
+test('renders headings, lists, bold and code — and markup as text', async ({ window, app }) => {
   await expect(pageRoot(window)).toBeVisible();
   await window.locator('[data-section="agent"]').click();
   await window.getByTestId('agent-connect').getByLabel('Claude API key').fill('sk-ant-e2e');
@@ -62,5 +62,12 @@ test('renders headings, lists, bold and code — and markup as text', async ({ w
   await expect(reply).toContainText('<img src=x');
   expect(await window.title()).not.toBe('pwned');
 
-  await reply.screenshot({ path: path.join(os.tmpdir(), 'scamp-agent-markdown.png') });
+
+  // Copy gives the Markdown the agent wrote, ready to paste elsewhere.
+  await reply.getByTestId('agent-copy-reply').click();
+  await expect(reply.getByRole('button', { name: 'Copy reply' })).toBeVisible();
+  await expect
+    .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+    .toContain('# Convention review\n\nI checked **15 views**.');
+
 });

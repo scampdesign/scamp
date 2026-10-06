@@ -6,6 +6,8 @@ import type { AgentUsage } from '@shared/types';
  * see docs/plans/builtin-agent-plan.md
  */
 
+import type { TranscriptEntry } from '@shared/agentTranscript';
+
 export {
   applyAgentEvent,
   settleTranscript,
@@ -99,3 +101,13 @@ export const formatUsage = (usage: AgentUsage): string => {
     ? `${line} · ${usage.cacheReadTokens.toLocaleString('en-US')} from cache`
     : line;
 };
+
+/**
+ * A reply's words, as the agent wrote them — Markdown and all, so they
+ * paste into a document or an issue the way they read in the panel.
+ * Tool calls and confirmations are the panel's, not the agent's words.
+ */
+export const replyText = (entry: Extract<TranscriptEntry, { role: 'assistant' }>): string =>
+  entry.parts
+    .flatMap((part) => (part.kind === 'text' && part.text.trim().length > 0 ? [part.text.trim()] : []))
+    .join('\n\n');

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agentContextLine, applyAgentEvent, formatUsage, settleTranscript, startTurn, toolLabel, } from '@lib/agentTranscript';
+import { agentContextLine, applyAgentEvent, formatUsage, replyText, settleTranscript, startTurn, toolLabel, } from '@lib/agentTranscript';
 const USAGE = { inputTokens: 1200, outputTokens: 300, cacheReadTokens: 4000, cacheWriteTokens: 0 };
 const fold = (events, start = startTurn([], 't1', 'Hi', 'Page: home')) => events.reduce(applyAgentEvent, start);
 const reply = (entries) => {
@@ -174,5 +174,14 @@ describe('settleTranscript', () => {
             message: 'Stopped before it finished.',
             parts: [{ kind: 'confirm', state: 'declined' }],
         });
+    });
+});
+describe('replyText', () => {
+    const reply = (parts) => ({ role: 'assistant', id: 't1', parts, progress: '', status: 'done' });
+    it('joins the text parts as paragraphs, Markdown kept', () => {
+        expect(replyText(reply([{ kind: 'text', text: '## Plan\n' }, { kind: 'tools', calls: [] }, { kind: 'text', text: '- **one**' }]))).toBe('## Plan\n\n- **one**');
+    });
+    it('is empty for a reply that only used tools', () => {
+        expect(replyText(reply([{ kind: 'tools', calls: [] }, { kind: 'text', text: '  ' }]))).toBe('');
     });
 });

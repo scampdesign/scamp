@@ -5,6 +5,7 @@ import {
   agentContextLine,
   applyAgentEvent,
   formatUsage,
+  replyText,
   settleTranscript,
   startTurn,
   toolLabel,
@@ -229,5 +230,20 @@ describe('settleTranscript', () => {
       message: 'Stopped before it finished.',
       parts: [{ kind: 'confirm', state: 'declined' }],
     });
+  });
+});
+
+describe('replyText', () => {
+  const reply = (parts: Array<{ kind: 'text'; text: string } | { kind: 'tools'; calls: [] }>) =>
+    ({ role: 'assistant', id: 't1', parts, progress: '', status: 'done' }) as const;
+
+  it('joins the text parts as paragraphs, Markdown kept', () => {
+    expect(
+      replyText(reply([{ kind: 'text', text: '## Plan\n' }, { kind: 'tools', calls: [] }, { kind: 'text', text: '- **one**' }]))
+    ).toBe('## Plan\n\n- **one**');
+  });
+
+  it('is empty for a reply that only used tools', () => {
+    expect(replyText(reply([{ kind: 'tools', calls: [] }, { kind: 'text', text: '  ' }]))).toBe('');
   });
 });

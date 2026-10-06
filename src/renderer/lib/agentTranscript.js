@@ -1,8 +1,3 @@
-/**
- * The panel's words for the Scamp Agent conversation. The transcript
- * itself is shared with main, in `@shared/agentTranscript`.
- * see docs/plans/builtin-agent-plan.md
- */
 export { applyAgentEvent, settleTranscript, startTurn, } from '@shared/agentTranscript';
 /** What each read tool is doing, said as the panel says it. */
 const TOOL_LABELS = {
@@ -73,3 +68,11 @@ export const formatUsage = (usage) => {
         ? `${line} · ${usage.cacheReadTokens.toLocaleString('en-US')} from cache`
         : line;
 };
+/**
+ * A reply's words, as the agent wrote them — Markdown and all, so they
+ * paste into a document or an issue the way they read in the panel.
+ * Tool calls and confirmations are the panel's, not the agent's words.
+ */
+export const replyText = (entry) => entry.parts
+    .flatMap((part) => (part.kind === 'text' && part.text.trim().length > 0 ? [part.text.trim()] : []))
+    .join('\n\n');

@@ -1,12 +1,15 @@
-import { IconCheck, IconLoader2, IconX } from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
+import { IconCheck, IconCopy, IconLoader2, IconX } from '@tabler/icons-react';
 
 import {
   formatUsage,
+  replyText,
   toolLabel,
   type TranscriptEntry,
   type TranscriptPart,
 } from '@lib/agentTranscript';
 
+import { Tooltip } from '../controls/Tooltip';
 import { AgentMarkdown } from './AgentMarkdown';
 import styles from './AgentPanel.module.css';
 
@@ -59,6 +62,23 @@ const ConfirmCard = ({
 /** One reply: its text and tool calls in order, then how it ended. */
 export const AgentReply = ({ entry }: Props): JSX.Element => {
   const working = entry.status === 'working';
+  const text = replyText(entry);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  const handleCopy = (): void => {
+    void window.scamp
+      .writeClipboard({ text })
+      // Only claim success when the write actually happened.
+      .then(() => setCopied(true))
+      .catch(() => undefined);
+  };
+
   const asking = entry.parts.some((part) => part.kind === 'confirm' && part.state === 'pending');
   const note = entry.message ?? OUTCOME_NOTE[entry.status];
   return (
@@ -99,8 +119,23 @@ export const AgentReply = ({ entry }: Props): JSX.Element => {
           {note}
         </p>
       )}
-      {!working && entry.usage !== undefined && (
-        <p className={styles.usage}>{formatUsage(entry.usage)}</p>
+      {!working && (entry.usage !== undefined || text.length > 0) && (
+        <div className={styles.replyFooter}>
+          {entry.usage !== undefined && <p className={styles.usage}>{formatUsage(entry.usage)}</p>}
+          {text.length > 0 && (
+            <Tooltip label={copied ? 'Copied' : 'Copy reply'}>
+              <button
+                type="button"
+                className={styles.iconButton}
+                onClick={handleCopy}
+                aria-label="Copy reply"
+                data-testid="agent-copy-reply"
+              >
+                {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+              </button>
+            </Tooltip>
+          )}
+        </div>
       )}
     </div>
   );
