@@ -219,6 +219,11 @@ const measure = async (state, source, sourceNodes) => {
     findings: findings.length,
     findingsPerElement: elementCount === 0 ? 0 : findings.length / elementCount,
     undeclaredTokens: findings.filter((f) => f.kind === 'undeclared-token').length,
+    // Which kinds are left is what says what the skill should do next.
+    findingsByKind: findings.reduce((acc, f) => ({ ...acc, [f.kind]: (acc[f.kind] ?? 0) + 1 }), {}),
+    // The finding lines themselves, for reading against the source.
+    findingDetails: findings.map((f) => `${f.className ?? ''}: ${f.message}`),
+    code: { tsx: rendered.tsx, css: rendered.css },
     pixels: await pixelMatch(source.shot, rendered.shot),
     geometry: compared === 0 ? 1 : within / compared,
     geometryCompared: compared,
@@ -307,9 +312,17 @@ outer: for (const file of pages) {
       after,
     };
     results.push(row);
+    // The cleaned page itself, to read beside the numbers.
+    const slug = `${file.replace(/\.html$/, '')}-${mode}`;
+    await writeFile(join(tmpDir, `${slug}.after.module.css`), after.code.css, 'utf-8');
+    await writeFile(join(tmpDir, `${slug}.after.tsx`), after.code.tsx, 'utf-8');
     const pct = (n) => `${(n * 100).toFixed(1)}%`;
     console.log(`\n${file} · ${mode} · ${outcomes.join(' → ')}`);
     console.log(`  findings/element  ${before.findingsPerElement.toFixed(3)} → ${after.findingsPerElement.toFixed(3)}  (${before.findings} → ${after.findings})`);
+    const kinds = [...new Set([...Object.keys(before.findingsByKind), ...Object.keys(after.findingsByKind)])];
+    for (const kind of kinds) {
+      console.log(`    ${kind.padEnd(22)} ${before.findingsByKind[kind] ?? 0} → ${after.findingsByKind[kind] ?? 0}`);
+    }
     console.log(`  pixels            ${pct(before.pixels)} → ${pct(after.pixels)}`);
     console.log(`  geometry          ${pct(before.geometry)} → ${pct(after.geometry)}  (${after.geometryCompared} compared)`);
     console.log(`  round-trip        ${after.roundTrip ? 'ok' : 'BROKEN'}`);

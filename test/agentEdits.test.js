@@ -3,6 +3,7 @@ import { DEFAULT_BREAKPOINTS } from '@shared/types';
 import { addElement, deleteElement, mergeThemeTokens, planExtraction, moveElement, parseDeclarationList, resolveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
 import { generateCode } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
+import { lintView } from '@lib/viewLint';
 /**
  * The Scamp Agent's edits. The property that matters most: whatever an
  * edit produces survives a save and reload unchanged — the round-trip
@@ -322,5 +323,44 @@ describe('planExtraction', () => {
     it('refuses a look-alike that does not exist or is the source', () => {
         expect(typeof planExtraction(context(), { element: 'a1b2', name: 'Card', alsoReplace: ['nope'] }, [])).toBe('string');
         expect(typeof planExtraction(context(), { element: 'a1b2', name: 'Card', alsoReplace: ['a1b2'] }, [])).toBe('string');
+    });
+});
+describe('the import-cleanup recipes', () => {
+    // The dashboard page in the eval corpus writes borders and padding one
+    // side at a time, which the panel can't edit. These are the typed forms
+    // the cleanup skill tells the agent to use: same rendering, every value
+    // editable. If one of these ever leaves a finding, the skill is giving
+    // advice Scamp can't take.
+    const TSX_ONE = `<div data-scamp-id="root" className={styles.root}>
+  <div data-scamp-id="a1b2" className={styles.row_a1b2}></div>
+</div>`;
+    const ctxFor = (css) => ({
+        elements: parseCode(TSX_ONE, css).elements,
+        rootId: 'root',
+        breakpoints: DEFAULT_BREAKPOINTS,
+        isComponent: false,
+    });
+    const findingsOn = (elements) => lintView({ elements, rootId: 'root', themeTokens: [] })
+        .filter((f) => f.elementId === 'a1b2')
+        .map((f) => f.kind);
+    it('a one-sided border becomes a typed border with the other sides at zero', () => {
+        const ctx = ctxFor('.row_a1b2 { border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: #dfe3ea; }');
+        expect(findingsOn(ctx.elements)).toHaveLength(3);
+        const result = ok(setStyles(ctx, {
+            element: 'a1b2',
+            remove: ['border-bottom-width', 'border-bottom-style', 'border-bottom-color'],
+            set: 'border-width: 0 0 1px 0; border-style: solid; border-color: #dfe3ea',
+        }));
+        const row = result.elements['a1b2'];
+        expect(row?.borderWidth).toEqual([0, 0, 1, 0]);
+        expect(row?.borderStyle).toBe('solid');
+        expect(row?.customProperties).toEqual({});
+        expect(findingsOn(result.elements)).toEqual([]);
+    });
+    it('padding on two sides becomes the padding shorthand with the others at zero', () => {
+        const ctx = ctxFor('.row_a1b2 { padding-top: 10px; padding-bottom: 10px; }');
+        const result = ok(setStyles(ctx, { element: 'a1b2', remove: ['padding-top', 'padding-bottom'], set: 'padding: 10px 0' }));
+        expect(result.elements['a1b2']?.padding).toEqual([10, 0, 10, 0]);
+        expect(findingsOn(result.elements)).toEqual([]);
     });
 });

@@ -9,5 +9,5 @@ import type { AgentSkill } from './skill';
  * a case for teaching the importer, so every user gets it.
  * see docs/plans/builtin-agent-plan.md
  */
-export declare const IMPORT_CLEANUP_VERSION = 1;
+export declare const IMPORT_CLEANUP_VERSION = 2;
 export declare const importCleanupSkill: (tokenMode: TokenMode) => AgentSkill;
