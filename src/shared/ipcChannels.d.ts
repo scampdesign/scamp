@@ -53,8 +53,10 @@ export declare const IPC: {
     /** Send a message; the reply streams back on `agent:event`. */
     readonly AgentSend: "agent:send";
     readonly AgentCancel: "agent:cancel";
-    /** Start a new conversation for the project. */
+    /** Start a new conversation for one page, view or component. */
     readonly AgentReset: "agent:reset";
+    /** A page's, view's or component's conversation, read back for the panel. */
+    readonly AgentLoad: "agent:load";
     /** Main → renderer: one step of a turn, as it happens. */
     readonly AgentEvent: "agent:event";
     /** Main → renderer: make one edit for the agent. */

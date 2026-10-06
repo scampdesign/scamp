@@ -224,6 +224,35 @@ describe('createAgentSession', () => {
         agent.reset();
         expect(agent.history()).toEqual([]);
     });
+    it('continues a conversation read back from disk', async () => {
+        let seen = [];
+        const saved = [
+            { role: 'user', content: 'Earlier' },
+            { role: 'assistant', content: [{ type: 'text', text: 'Earlier reply.' }] },
+        ];
+        const agent = createAgentSession({
+            getProvider: async () => {
+                const scripted = createScriptedProvider([{ content: [{ type: 'text', text: 'Later reply.' }] }]);
+                return {
+                    streamTurn: async (request, handlers) => {
+                        seen = [...request.messages];
+                        return scripted.streamTurn(request, handlers);
+                    },
+                };
+            },
+            invoke: fakeInvoke(),
+            system: 'test',
+            tools: [],
+            emit: () => { },
+            onKeyRejected: () => { },
+            initial: { history: saved, skill: null },
+        });
+        await agent.send('Later', '', 'turn_2');
+        await agent.idle();
+        expect(seen.slice(0, 2)).toEqual(saved);
+        expect(seen[2]).toEqual({ role: 'user', content: 'Later' });
+        expect(agent.history()).toHaveLength(4);
+    });
     it('still ends the turn, and frees the session, when a tool throws', async () => {
         const events = [];
         const agent = createAgentSession({

@@ -30,6 +30,8 @@ export type AgentSessionDeps = {
   emit: (event: AgentEvent) => void;
   /** The provider rejected the key mid-conversation. */
   onKeyRejected: () => void;
+  /** A conversation read back from disk, to continue. */
+  initial?: { history: ReadonlyArray<BetaMessageParam>; skill: AgentSkill | null };
 };
 
 export type AgentSession = {
@@ -72,11 +74,11 @@ export const userContentFor = (text: string, context: string, note: string | nul
 };
 
 export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
-  let history: BetaMessageParam[] = [];
+  let history: BetaMessageParam[] = [...(deps.initial?.history ?? [])];
   let inFlight: { controller: AbortController; done: Promise<void> } | null = null;
   let generation = 0;
   let pendingNote: string | null = null;
-  let skill: AgentSkill | null = null;
+  let skill: AgentSkill | null = deps.initial?.skill ?? null;
   /** Confirmations waiting on the user, by id. */
   const waiting = new Map<string, (approved: boolean) => void>();
   let confirmCounter = 0;

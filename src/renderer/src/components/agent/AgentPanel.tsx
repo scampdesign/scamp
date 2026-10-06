@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconArrowBackUp, IconMessagePlus, IconPlayerStop, IconSend } from '@tabler/icons-react';
 
-import { useAgentStore, currentAgentContext } from '@store/agentSlice';
+import type { AgentFocus } from '@lib/agentTranscript';
+import { currentAgentContext, currentConversationKey, sameConversation, useAgentStore } from '@store/agentSlice';
 import { useCanvasStore } from '@store/canvasSlice';
 
 import { Tooltip } from '../controls/Tooltip';
@@ -29,16 +30,47 @@ const SUGGESTIONS_WITHOUT_SELECTION = [
   'Which elements don’t use theme tokens?',
   'What did this page lose when it was imported?',
 ];
+const SUGGESTIONS_FOR_PROJECT = [
+  'Which pages don’t follow the project’s conventions?',
+  'Which colors repeat without a theme token?',
+  'Which designs repeat and could be components?',
+];
+
+const FOCUS_LABELS: Readonly<Record<AgentFocus, string>> = {
+  selection: 'Selection',
+  page: 'Whole page',
+  project: 'Whole project',
+};
 
 export const AgentPanel = (): JSX.Element => {
   const keyControls = useAgentKey(true);
   const projectPath = useCanvasStore((s) => s.projectPath);
   const hasSelection = useCanvasStore((s) => s.selectedElementIds.length > 0);
+  const {
+    entries,
+    busy,
+    sendError,
+    send,
+    cancel,
+    reset,
+    edited,
+    undoSession,
+    lastImport,
+    cleanupPhase,
+    cleanupConversation,
+    conversation,
+    openConversation,
+    focus,
+    setFocus,
+  } = useAgentStore();
   // Recomputed from the canvas on every store change; a string, so the
   // panel only re-renders when the line actually changes.
-  const context = useCanvasStore(() => currentAgentContext());
-  const { entries, busy, sendError, send, cancel, reset, edited, undoSession, lastImport, cleanupPhase } =
-    useAgentStore();
+  const context = useCanvasStore(() => currentAgentContext(focus));
+  // A string for the same reason: the page, view or component open now.
+  const openKeyId = useCanvasStore(() => {
+    const key = currentConversationKey();
+    return key === null ? null : `${key.kind}:${key.name}`;
+  });
   const openViewName = useCanvasStore((s) => s.activeComponent?.name ?? null);
   // Offered for the view imported most recently, while it's the one open.
   const cleanupOffer =
@@ -48,7 +80,19 @@ export const AgentPanel = (): JSX.Element => {
   const [confirmingUndo, setConfirmingUndo] = useState(false);
   const [undoError, setUndoError] = useState<string | null>(null);
   const conversationProject = useAgentStore((s) => s.projectPath);
-  const visible = conversationProject === projectPath ? entries : [];
+  const openKey = currentConversationKey();
+  const showing = conversationProject === projectPath && sameConversation(conversation, openKey);
+  const visible = showing ? entries : [];
+
+  // Each page, view and component has its own conversation: going to one
+  // opens its conversation, read back from disk.
+  useEffect(() => {
+    const key = currentConversationKey();
+    if (projectPath === null || key === null) return;
+    const agent = useAgentStore.getState();
+    if (agent.projectPath === projectPath && sameConversation(agent.conversation, key)) return;
+    void agent.openConversation(projectPath, key);
+  }, [projectPath, openKeyId]);
   const [draft, setDraft] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -103,7 +147,7 @@ export const AgentPanel = (): JSX.Element => {
             <button
               type="button"
               className={styles.iconButton}
-              onClick={reset}
+              onClick={() => void reset()}
               disabled={visible.length === 0}
               aria-label="New conversation"
             >
@@ -150,7 +194,12 @@ export const AgentPanel = (): JSX.Element => {
                   with Cmd+Z.
                 </p>
                 <ul className={styles.suggestions}>
-                  {(hasSelection ? SUGGESTIONS_WITH_SELECTION : SUGGESTIONS_WITHOUT_SELECTION).map((s) => (
+                  {(focus === 'project'
+                    ? SUGGESTIONS_FOR_PROJECT
+                    : hasSelection && focus === 'selection'
+                      ? SUGGESTIONS_WITH_SELECTION
+                      : SUGGESTIONS_WITHOUT_SELECTION
+                  ).map((s) => (
                     <li key={s}>
                       <button type="button" className={styles.suggestion} onClick={() => handleSend(s)}>
                         {s}
@@ -174,13 +223,29 @@ export const AgentPanel = (): JSX.Element => {
                 )
               )
             )}
-            {cleanupPhase === 'awaiting-approval' && !busy && <AgentPlanBar />}
+            {cleanupPhase === 'awaiting-approval' && !busy && sameConversation(cleanupConversation, openKey) && (
+              <AgentPlanBar />
+            )}
           </div>
 
           <footer className={styles.composer}>
-            <p className={styles.context} data-testid="agent-context" title={context}>
-              {context.length > 0 ? context : 'No page open'}
-            </p>
+            <div className={styles.contextRow}>
+              <p className={styles.context} data-testid="agent-context" title={context}>
+                {context.length > 0 ? context : 'No page open'}
+              </p>
+              <select
+                className={styles.focusSelect}
+                value={focus}
+                onChange={(e) => setFocus(e.target.value as AgentFocus)}
+                aria-label="What the agent considers"
+              >
+                {(Object.keys(FOCUS_LABELS) as AgentFocus[]).map((value) => (
+                  <option key={value} value={value}>
+                    {FOCUS_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
             {sendError !== null && (
               <p className={styles.replyError} role="alert">
                 {sendError}

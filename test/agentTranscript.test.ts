@@ -5,6 +5,7 @@ import {
   agentContextLine,
   applyAgentEvent,
   formatUsage,
+  settleTranscript,
   startTurn,
   toolLabel,
   type TranscriptEntry,
@@ -170,16 +171,63 @@ describe('agentContextLine', () => {
   it('is empty when nothing is open', () => {
     expect(agentContextLine({ target: null, selection: [] })).toBe('');
   });
+
+  it('drops the selection when the focus is the whole page', () => {
+    expect(
+      agentContextLine({ target: page, selection: [{ className: 'rect_a1b2' }], focus: 'page' })
+    ).toBe('Page: home · Whole page');
+  });
+
+  it('names what is open when the focus is the whole project', () => {
+    expect(
+      agentContextLine({ target: page, selection: [{ className: 'rect_a1b2' }], focus: 'project' })
+    ).toBe('Whole project · Open: Page: home');
+    expect(agentContextLine({ target: null, selection: [], focus: 'project' })).toBe('Whole project');
+  });
+
+  it('says nothing about the page focus when no page is open', () => {
+    expect(agentContextLine({ target: null, selection: [], focus: 'page' })).toBe('');
+  });
 });
 
 describe('formatUsage', () => {
-  it('totals every kind of token', () => {
-    expect(formatUsage(USAGE)).toBe('5,500 tokens');
+  it('counts tokens read from the cache apart from the rest', () => {
+    expect(formatUsage(USAGE)).toBe('1,500 tokens · 4,000 from cache');
+  });
+
+  it('counts tokens written to the cache with the rest', () => {
+    expect(formatUsage({ ...USAGE, cacheReadTokens: 0, cacheWriteTokens: 500 })).toBe('2,000 tokens');
   });
 
   it('handles zero', () => {
     expect(formatUsage({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 })).toBe(
       '0 tokens'
     );
+  });
+});
+
+describe('settleTranscript', () => {
+  it('leaves finished replies alone', () => {
+    const entries = applyAgentEvent(startTurn([], 't1', 'Hi', ''), {
+      kind: 'turn-end',
+      turnId: 't1',
+      outcome: 'done',
+      usage: USAGE,
+    });
+    expect(settleTranscript(entries)).toEqual(entries);
+  });
+
+  it('stops a reply that can no longer finish, and declines what it asked', () => {
+    const entries = applyAgentEvent(startTurn([], 't1', 'Delete it', ''), {
+      kind: 'confirm-request',
+      turnId: 't1',
+      confirmId: 't1:c1',
+      items: ['Delete the card'],
+    });
+    expect(settleTranscript(entries)[1]).toMatchObject({
+      status: 'cancelled',
+      message: 'Stopped before it finished.',
+      parts: [{ kind: 'confirm', state: 'declined' }],
+    });
   });
 });

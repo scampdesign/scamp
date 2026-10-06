@@ -4,8 +4,12 @@ import Anthropic from '@anthropic-ai/sdk';
 import { describeProviderError } from '../src/main/agent/providerErrors';
 
 /** Real SDK error instances, built the way the SDK builds them from a response. */
-const statusError = (status: number): InstanceType<typeof Anthropic.APIError> =>
-  Anthropic.APIError.generate(status, { type: 'error', error: { type: 'x', message: 'x' } }, 'x', new Headers());
+const statusError = (
+  status: number,
+  type = 'x',
+  headers: Record<string, string> = {}
+): InstanceType<typeof Anthropic.APIError> =>
+  Anthropic.APIError.generate(status, { type: 'error', error: { type, message: 'x' } }, 'x', new Headers(headers));
 
 describe('describeProviderError', () => {
   it('reads a 401 as a key the provider rejected', () => {
@@ -20,6 +24,48 @@ describe('describeProviderError', () => {
 
   it('reads a 429 as rate limiting', () => {
     expect(describeProviderError(statusError(429)).reason).toBe('rate-limited');
+    expect(describeProviderError(statusError(429)).message).toContain('in a minute');
+  });
+
+  it('says when to try again, from retry-after', () => {
+    expect(describeProviderError(statusError(429, 'rate_limit_error', { 'retry-after': '30' })).message).toBe(
+      'Anthropic is rate-limiting this key. Try again in 30 seconds.'
+    );
+    expect(describeProviderError(statusError(429, 'rate_limit_error', { 'retry-after': '300' })).message).toContain(
+      'in 5 minutes'
+    );
+  });
+
+  it('ignores a retry-after it can’t read', () => {
+    expect(describeProviderError(statusError(429, 'rate_limit_error', { 'retry-after': 'soon' })).message).toContain(
+      'in a minute'
+    );
+  });
+
+  it('reads an overloaded API as overloaded, by status or by type', () => {
+    expect(describeProviderError(statusError(529)).reason).toBe('overloaded');
+    expect(describeProviderError(statusError(500, 'overloaded_error')).reason).toBe('overloaded');
+  });
+
+  it('reads a billing error as billing, whatever the status', () => {
+    const described = describeProviderError(statusError(400, 'billing_error'));
+    expect(described.reason).toBe('billing');
+    expect(described.message).toContain('Claude Console');
+  });
+
+  it('reads a 413 as a conversation too long to send', () => {
+    expect(describeProviderError(statusError(413, 'request_too_large')).reason).toBe('too-long');
+  });
+
+  it('reads any other 400 as a conversation to start over', () => {
+    expect(describeProviderError(statusError(400, 'invalid_request_error')).message).toContain(
+      'Start a new conversation'
+    );
+  });
+
+  it('reads a timeout as the network, and says it was slow', () => {
+    const described = describeProviderError(new Anthropic.APIConnectionTimeoutError());
+    expect(described).toEqual({ reason: 'network', message: 'Anthropic took too long to answer. Try again.' });
   });
 
   it('reads a connection failure as the network', () => {

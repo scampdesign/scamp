@@ -1,149 +1,19 @@
-import type { AgentEvent, AgentTurnOutcome, AgentUsage } from '@shared/types';
+import type { AgentUsage } from '@shared/types';
 
 /**
- * The Scamp Agent conversation as the panel shows it, built from the
- * events main streams back. Pure, so the panel is a view of this and
- * nothing else.
+ * The panel's words for the Scamp Agent conversation. The transcript
+ * itself is shared with main, in `@shared/agentTranscript`.
  * see docs/plans/builtin-agent-plan.md
  */
 
-export type TranscriptToolCall = {
-  id: string;
-  name: string;
-  status: 'running' | 'ok' | 'failed';
-  /** What an edit changed, when it says. Shown instead of the tool's label. */
-  summary?: string;
-};
-
-/** A reply is text and tool calls interleaved, in the order they happened. */
-export type TranscriptPart =
-  | { kind: 'text'; text: string }
-  | { kind: 'tools'; calls: TranscriptToolCall[] }
-  /** Edits waiting on the user's say-so, and what they said. */
-  | { kind: 'confirm'; id: string; items: string[]; state: 'pending' | 'approved' | 'declined' };
-
-export type TranscriptEntry =
-  | { role: 'user'; id: string; text: string; context: string }
-  /** Something Scamp did, said in the conversation — "Undid the agent's changes." */
-  | { role: 'note'; id: string; text: string }
-  | {
-      role: 'assistant';
-      /** The turn id main assigned. */
-      id: string;
-      parts: TranscriptPart[];
-      /** The agent's current note on what it's doing; cleared as it acts. */
-      progress: string;
-      status: 'working' | AgentTurnOutcome;
-      message?: string;
-      usage?: AgentUsage;
-    };
-
-type AssistantEntry = Extract<TranscriptEntry, { role: 'assistant' }>;
-
-/** A user message and the reply it's waiting for. */
-export const startTurn = (
-  entries: ReadonlyArray<TranscriptEntry>,
-  turnId: string,
-  text: string,
-  context: string
-): TranscriptEntry[] => [
-  ...entries,
-  { role: 'user', id: `${turnId}:user`, text, context },
-  { role: 'assistant', id: turnId, parts: [], progress: '', status: 'working' },
-];
-
-const withLastPart = (
-  parts: ReadonlyArray<TranscriptPart>,
-  kind: TranscriptPart['kind'],
-  update: (part: TranscriptPart | null) => TranscriptPart
-): TranscriptPart[] => {
-  const last = parts.at(-1);
-  if (last !== undefined && last.kind === kind) return [...parts.slice(0, -1), update(last)];
-  return [...parts, update(null)];
-};
-
-const reduceAssistant = (entry: AssistantEntry, event: AgentEvent): AssistantEntry => {
-  switch (event.kind) {
-    case 'text':
-      return {
-        ...entry,
-        progress: '',
-        parts: withLastPart(entry.parts, 'text', (part) => ({
-          kind: 'text',
-          text: (part?.kind === 'text' ? part.text : '') + event.text,
-        })),
-      };
-    case 'progress':
-      return { ...entry, progress: entry.progress + event.text };
-    case 'tool-start':
-      return {
-        ...entry,
-        progress: '',
-        parts: withLastPart(entry.parts, 'tools', (part) => ({
-          kind: 'tools',
-          calls: [
-            ...(part?.kind === 'tools' ? part.calls : []),
-            { id: event.toolId, name: event.name, status: 'running' },
-          ],
-        })),
-      };
-    case 'tool-end':
-      return {
-        ...entry,
-        parts: entry.parts.map((part) =>
-          part.kind !== 'tools'
-            ? part
-            : {
-                kind: 'tools',
-                calls: part.calls.map((call) =>
-                  call.id === event.toolId
-                    ? {
-                        ...call,
-                        status: event.ok ? 'ok' : 'failed',
-                        ...(event.summary !== undefined ? { summary: event.summary } : {}),
-                      }
-                    : call
-                ),
-              }
-        ),
-      };
-    case 'confirm-request':
-      return {
-        ...entry,
-        progress: '',
-        parts: [...entry.parts, { kind: 'confirm', id: event.confirmId, items: event.items, state: 'pending' }],
-      };
-    case 'confirm-resolved':
-      return {
-        ...entry,
-        parts: entry.parts.map((part) =>
-          part.kind === 'confirm' && part.id === event.confirmId
-            ? { ...part, state: event.approved ? 'approved' : 'declined' }
-            : part
-        ),
-      };
-    case 'turn-end':
-      return {
-        ...entry,
-        progress: '',
-        status: event.outcome,
-        usage: event.usage,
-        ...(event.message !== undefined ? { message: event.message } : {}),
-      };
-  }
-};
-
-/**
- * Fold one event in. An event for a turn the transcript doesn't have — one
- * from before a reset — is ignored.
- */
-export const applyAgentEvent = (
-  entries: ReadonlyArray<TranscriptEntry>,
-  event: AgentEvent
-): TranscriptEntry[] =>
-  entries.map((entry) =>
-    entry.role === 'assistant' && entry.id === event.turnId ? reduceAssistant(entry, event) : entry
-  );
+export {
+  applyAgentEvent,
+  settleTranscript,
+  startTurn,
+  type TranscriptEntry,
+  type TranscriptPart,
+  type TranscriptToolCall,
+} from '@shared/agentTranscript';
 
 /** What each read tool is doing, said as the panel says it. */
 const TOOL_LABELS: Readonly<Record<string, string>> = {
@@ -181,20 +51,33 @@ export const toolLabel = (name: string): string =>
 export type ContextSelection = { className: string; name?: string };
 
 /**
+ * What the agent should consider: the selection (the default), the whole
+ * page while something is selected, or the whole project.
+ */
+export type AgentFocus = 'selection' | 'page' | 'project';
+
+const targetLabel = (target: { kind: 'page' | 'component' | 'view'; name: string }): string =>
+  `${target.kind === 'component' ? 'Component' : target.kind === 'view' ? 'View' : 'Page'}: ${target.name}`;
+
+/**
  * The line that tells the agent — and the user, in the panel — what the
  * agent is looking at.
  */
 export const agentContextLine = (input: {
   target: { kind: 'page' | 'component' | 'view'; name: string } | null;
   selection: ReadonlyArray<ContextSelection>;
+  focus?: AgentFocus;
 }): string => {
-  const parts: string[] = [];
-  if (input.target !== null) {
-    const kind = input.target.kind === 'component' ? 'Component' : input.target.kind === 'view' ? 'View' : 'Page';
-    parts.push(`${kind}: ${input.target.name}`);
+  const focus = input.focus ?? 'selection';
+  if (focus === 'project') {
+    return input.target === null ? 'Whole project' : `Whole project · Open: ${targetLabel(input.target)}`;
   }
+  const parts: string[] = [];
+  if (input.target !== null) parts.push(targetLabel(input.target));
   const [first, ...rest] = input.selection;
-  if (first !== undefined) {
+  if (focus === 'page') {
+    if (input.target !== null) parts.push('Whole page');
+  } else if (first !== undefined) {
     const one = first.name !== undefined && first.name.length > 0 ? `${first.name} (${first.className})` : first.className;
     parts.push(rest.length === 0 ? `Selected: ${one}` : `Selected: ${one} and ${rest.length} more`);
   } else if (input.target !== null) {
@@ -203,8 +86,16 @@ export const agentContextLine = (input: {
   return parts.join(' · ');
 };
 
-/** Tokens for one exchange, for the line under a reply. */
+/**
+ * Tokens for one exchange, for the line under a reply. Tokens read from
+ * the cache are counted apart: they cost a tenth of the rest, and a long
+ * conversation re-reads its whole history at every step, so one total
+ * would make a cheap exchange look expensive.
+ */
 export const formatUsage = (usage: AgentUsage): string => {
-  const total = usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens;
-  return `${total.toLocaleString('en-US')} tokens`;
+  const fresh = usage.inputTokens + usage.outputTokens + usage.cacheWriteTokens;
+  const line = `${fresh.toLocaleString('en-US')} tokens`;
+  return usage.cacheReadTokens > 0
+    ? `${line} · ${usage.cacheReadTokens.toLocaleString('en-US')} from cache`
+    : line;
 };

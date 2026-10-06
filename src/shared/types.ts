@@ -3,6 +3,8 @@
  * All IPC payloads must have explicit types defined here.
  */
 
+import type { TranscriptEntry } from './agentTranscript';
+
 export type PageFile = {
   name: string;
   tsxPath: string;
@@ -1238,6 +1240,9 @@ export type AgentKeyRejection =
   | 'invalid-key'
   | 'no-model-access'
   | 'rate-limited'
+  | 'overloaded'
+  | 'billing'
+  | 'too-long'
   | 'network'
   | 'unknown';
 
@@ -1305,8 +1310,26 @@ export type AgentStartCleanupArgs = {
 /** A Scamp-authored skill to run this conversation under. */
 export type AgentSkillRequest = { id: 'import-cleanup'; tokenMode: AgentTokenMode };
 
+/**
+ * Which conversation: each page, view and component has its own, kept in
+ * `.scamp/agent-history/`.
+ */
+export type AgentConversationKey = { kind: 'page' | 'view' | 'component'; name: string };
+
+export type AgentConversationArgs = { projectPath: string; conversation: AgentConversationKey };
+
+/** A conversation as the panel opens it. */
+export type AgentConversationState = {
+  entries: TranscriptEntry[];
+  /** A turn is in flight — in this conversation or another. */
+  busy: boolean;
+  /** The agent edited the canvas in this conversation since it opened, and Undo AI changes can revert it. */
+  canUndo: boolean;
+};
+
 export type AgentSendArgs = {
   projectPath: string;
+  conversation: AgentConversationKey;
   /**
    * Chosen by the renderer, so the reply exists in the transcript before
    * main can stream the first event for it.

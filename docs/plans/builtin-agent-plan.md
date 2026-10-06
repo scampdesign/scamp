@@ -510,13 +510,46 @@ edit), plus the panel's own card. The scripted provider echoes the last
 system message, which is how the e2e proves the skill's instructions
 reached the model.
 
-### Phase 7 — panel completeness
+### Phase 7 — panel completeness — **done**
 
-The PRD's remaining panel requirements, once the engine is proven:
-per-page history in `.scamp/agent-history/<page>.json` (append-only, full
-content blocks), the context line with an override, context-aware
-suggested prompts, per-exchange token counts, and every error state in
-plain language.
+**A conversation per page.** Each page, view and component has its own
+conversation, in `.scamp/agent-history/<kind>-<name>.json` (the kind
+keeps a page, a view and a component of one name apart; the name is
+URI-encoded, so a route can't reach outside the folder). A file holds
+both sides: `model`, the history the model sees, whole and append-only;
+and `transcript`, what the panel draws. Main owns both — it folds the
+same events it streams to the panel (`@shared/agentTranscript`), and
+saves when a turn ends — so a turn that finishes while the user is on
+another page is still recorded. A file Scamp can't read is moved aside,
+never overwritten; a reply saved mid-turn reads back as stopped.
+**New conversation** deletes the file. A cleanup's skill is saved with
+its conversation and restored with it.
+
+One turn at a time across the project, because Scamp edits whatever is
+open: if the user leaves a page mid-turn, the turn's next edit is
+refused with a message telling the agent to stop and say so.
+
+**Focus.** Beside the context line, the user picks what the agent
+considers: **Selection** (the default), **Whole page**, or **Whole
+project**. The line the agent receives says the same, and the system
+prompt explains it. The suggested prompts follow the focus.
+
+**Errors.** Billing, overload, timeouts, a conversation too long to
+send, and other bad requests each have their own plain-language
+message; a rate limit quotes `retry-after`. By `error.type` and the
+SDK's classes, never message text.
+
+**Token counts** count cache reads apart — "1,500 tokens · 40,000 from
+cache" — since a long conversation re-reads its history at every step
+at a tenth of the price, and one total made cheap exchanges look
+expensive.
+
+Tests: `test/integration/agentConversations.integration.test.ts`, the
+session's restored history in `test/agentHarness.test.ts`, errors,
+focus and usage in their unit tests, and
+`test/e2e/agent/agent-history.spec.ts` — per-page conversations, the
+file on disk, a relaunch that reads it back and continues it, and the
+focus picker.
 
 ---
 

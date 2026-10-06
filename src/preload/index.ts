@@ -21,6 +21,8 @@ import type {
   CreateProjectArgs,
   ExportChooseSavePathArgs,
   ExportChooseSavePathResult,
+  AgentConversationArgs,
+  AgentConversationState,
   AgentEvent,
   AgentKeySetResult,
   AgentKeyStatusResult,
@@ -439,8 +441,10 @@ const api = {
   agentSend: (args: AgentSendArgs): Promise<AgentSendResult> =>
     ipcRenderer.invoke(IPC.AgentSend, args),
   agentCancel: (): Promise<void> => ipcRenderer.invoke(IPC.AgentCancel),
-  agentReset: (): Promise<void> => ipcRenderer.invoke(IPC.AgentReset),
-  agentUndoSession: (args: { projectPath: string }): Promise<AgentUndoSessionResult> =>
+  agentReset: (args: AgentConversationArgs): Promise<void> => ipcRenderer.invoke(IPC.AgentReset, args),
+  agentLoad: (args: AgentConversationArgs): Promise<AgentConversationState> =>
+    ipcRenderer.invoke(IPC.AgentLoad, args),
+  agentUndoSession: (args: AgentConversationArgs & { note: string }): Promise<AgentUndoSessionResult> =>
     ipcRenderer.invoke(IPC.AgentUndoSession, args),
   agentConfirm: (args: { confirmId: string; approved: boolean }): Promise<void> =>
     ipcRenderer.invoke(IPC.AgentConfirm, args),

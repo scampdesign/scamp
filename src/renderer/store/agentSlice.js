@@ -10,22 +10,25 @@ const newTurnId = () => {
     turnCounter += 1;
     return `turn_${Date.now().toString(36)}_${turnCounter}`;
 };
-/** What the agent is looking at, read from the canvas right now. */
-export const currentAgentContext = () => {
+/** The page, view or component open on the canvas — and so its conversation. */
+export const currentConversationKey = () => {
     const canvas = useCanvasStore.getState();
-    const target = canvas.activeComponent
-        ? {
-            kind: canvas.activeComponent.kind === 'view' ? 'view' : 'component',
-            name: canvas.activeComponent.name,
-        }
+    return canvas.activeComponent
+        ? { kind: canvas.activeComponent.kind === 'view' ? 'view' : 'component', name: canvas.activeComponent.name }
         : canvas.activePage
             ? { kind: 'page', name: canvas.activePage.name }
             : null;
+};
+export const sameConversation = (a, b) => a !== null && b !== null && a.kind === b.kind && a.name === b.name;
+/** What the agent is looking at, read from the canvas right now. */
+export const currentAgentContext = (focus = useAgentStore.getState().focus) => {
+    const canvas = useCanvasStore.getState();
+    const target = currentConversationKey();
     const selection = canvas.selectedElementIds.flatMap((id) => {
         const el = canvas.elements[id];
         return el === undefined ? [] : [{ className: classNameFor(el), ...(el.name ? { name: el.name } : {}) }];
     });
-    return agentContextLine({ target, selection });
+    return agentContextLine({ target, selection, focus });
 };
 /**
  * After a turn ends. The plan turn hands over to the user; the applying
@@ -57,14 +60,30 @@ const rememberTokenMode = (projectPath, mode) => {
         // Remembering is a convenience; private windows and blocked storage are fine.
     }
 };
+/** Each open supersedes the last, so a slow read never replaces a newer one. */
+let openCounter = 0;
 export const useAgentStore = create((set, get) => ({
     projectPath: null,
+    conversation: null,
     entries: [],
     busy: false,
+    runningTurn: null,
+    focus: 'selection',
     sendError: null,
     edited: false,
     lastImport: null,
     cleanupPhase: null,
+    cleanupConversation: null,
+    openConversation: async (projectPath, key) => {
+        openCounter += 1;
+        const opened = openCounter;
+        set({ projectPath, conversation: key, entries: [], edited: false, sendError: null });
+        const state = await window.scamp.agentLoad({ projectPath, conversation: key });
+        if (opened !== openCounter)
+            return;
+        set({ entries: state.entries, busy: state.busy, edited: state.canUndo });
+    },
+    setFocus: (focus) => set({ focus }),
     recordImport: (projectPath, viewName, report) => {
         set({ lastImport: { projectPath, viewName, report: [...report] } });
     },
@@ -73,31 +92,52 @@ export const useAgentStore = create((set, get) => ({
         if (lastImport === null || get().busy)
             return;
         rememberTokenMode(lastImport.projectPath, tokenMode);
+        const conversation = { kind: 'view', name: lastImport.viewName };
+        if (get().projectPath !== lastImport.projectPath || !sameConversation(get().conversation, conversation)) {
+            await get().openConversation(lastImport.projectPath, conversation);
+        }
         // A cleanup is its own conversation: the skill holds for all of it.
-        get().reset();
-        set({ cleanupPhase: 'planning' });
+        await get().reset();
+        set({ cleanupPhase: 'planning', cleanupConversation: conversation });
         await get().send(cleanupRequest(lastImport.viewName, lastImport.report), {
             skill: { id: 'import-cleanup', tokenMode },
+            conversation,
         });
     },
     approvePlan: async () => {
-        if (get().cleanupPhase !== 'awaiting-approval')
+        const conversation = get().cleanupConversation;
+        if (get().cleanupPhase !== 'awaiting-approval' || conversation === null)
             return;
         set({ cleanupPhase: 'applying' });
-        await get().send('Go ahead with the plan.');
+        await get().send('Go ahead with the plan.', { conversation });
     },
     send: async (text, options = {}) => {
         const trimmed = text.trim();
         const projectPath = useCanvasStore.getState().projectPath;
         if (trimmed.length === 0 || !projectPath || get().busy)
             return;
-        // A conversation belongs to one project; main starts a new one too.
-        const entries = get().projectPath === projectPath ? get().entries : [];
+        const conversation = options.conversation ?? currentConversationKey();
+        if (conversation === null) {
+            set({ sendError: 'Open a page to talk to the agent about it.' });
+            return;
+        }
+        if (get().projectPath !== projectPath || !sameConversation(get().conversation, conversation)) {
+            await get().openConversation(projectPath, conversation);
+            if (get().busy)
+                return;
+        }
+        const entries = get().entries;
         const turnId = newTurnId();
         const context = currentAgentContext();
-        set({ projectPath, entries: startTurn(entries, turnId, trimmed, context), busy: true, sendError: null });
+        set({
+            entries: startTurn(entries, turnId, trimmed, context),
+            busy: true,
+            sendError: null,
+            runningTurn: { turnId, conversation },
+        });
         const result = await window.scamp.agentSend({
             projectPath,
+            conversation,
             turnId,
             text: trimmed,
             context,
@@ -106,21 +146,24 @@ export const useAgentStore = create((set, get) => ({
         if (!result.ok) {
             // Nothing was sent: take the message back out rather than leave a
             // reply waiting forever.
-            set({ entries, busy: false, sendError: result.message, cleanupPhase: null });
+            set({ entries, busy: false, sendError: result.message, cleanupPhase: null, runningTurn: null });
         }
     },
     cancel: () => {
         void window.scamp.agentCancel();
     },
-    reset: () => {
-        void window.scamp.agentReset();
-        set({ entries: [], busy: false, sendError: null, edited: false, cleanupPhase: null });
+    reset: async () => {
+        const { projectPath, conversation } = get();
+        set({ entries: [], sendError: null, edited: false, cleanupPhase: null, cleanupConversation: null });
+        if (projectPath !== null && conversation !== null)
+            await window.scamp.agentReset({ projectPath, conversation });
     },
     undoSession: async () => {
-        const projectPath = useCanvasStore.getState().projectPath;
-        if (!projectPath)
+        const { projectPath, conversation } = get();
+        if (projectPath === null || conversation === null)
             return { ok: false, error: 'No project is open.' };
-        const result = await window.scamp.agentUndoSession({ projectPath });
+        const note = 'Undid every change the agent made in this conversation.';
+        const result = await window.scamp.agentUndoSession({ projectPath, conversation, note });
         if (!result.ok)
             return result;
         // A restore is a hard reset, as from the History panel: the undo stack
@@ -131,7 +174,7 @@ export const useAgentStore = create((set, get) => ({
             edited: false,
             entries: [
                 ...state.entries,
-                { role: 'note', id: `note_${Date.now().toString(36)}`, text: 'Undid every change the agent made in this conversation.' },
+                { role: 'note', id: `note_${Date.now().toString(36)}`, text: note },
             ],
         }));
         return { ok: true };
@@ -139,9 +182,19 @@ export const useAgentStore = create((set, get) => ({
     applyEvent: (event) => {
         set((state) => ({
             entries: applyAgentEvent(state.entries, event),
-            ...(event.kind === 'turn-end' ? { busy: false, cleanupPhase: nextCleanupPhase(state.cleanupPhase, event) } : {}),
-            // An edit that went through is what makes Undo AI session mean something.
-            ...(event.kind === 'tool-end' && event.ok && event.summary !== undefined
+            ...(event.kind === 'turn-end'
+                ? {
+                    busy: false,
+                    runningTurn: null,
+                    cleanupPhase: nextCleanupPhase(state.cleanupPhase, event),
+                }
+                : {}),
+            // An edit that went through is what makes Undo AI session mean
+            // something — in the conversation the panel shows.
+            ...(event.kind === 'tool-end' &&
+                event.ok &&
+                event.summary !== undefined &&
+                state.entries.some((entry) => entry.id === event.turnId)
                 ? {
                     edited: true,
                     // Approved in words rather than with the button: the plan is

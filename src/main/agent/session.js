@@ -10,11 +10,11 @@ export const userContentFor = (text, context, note = null) => {
     return lines.length > 0 ? `${lines.join('\n')}\n\n${text}` : text;
 };
 export const createAgentSession = (deps) => {
-    let history = [];
+    let history = [...(deps.initial?.history ?? [])];
     let inFlight = null;
     let generation = 0;
     let pendingNote = null;
-    let skill = null;
+    let skill = deps.initial?.skill ?? null;
     /** Confirmations waiting on the user, by id. */
     const waiting = new Map();
     let confirmCounter = 0;

@@ -194,7 +194,26 @@
   border-top: 1px solid var(--border-subtle);
 }
 
+.contextRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.focusSelect {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 2px;
+}
+
 .context {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   font-size: 11px;
   color: var(--text-tertiary);

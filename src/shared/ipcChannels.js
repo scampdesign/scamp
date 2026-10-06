@@ -95,8 +95,10 @@ export const IPC = {
     /** Send a message; the reply streams back on `agent:event`. */
     AgentSend: 'agent:send',
     AgentCancel: 'agent:cancel',
-    /** Start a new conversation for the project. */
+    /** Start a new conversation for one page, view or component. */
     AgentReset: 'agent:reset',
+    /** A page's, view's or component's conversation, read back for the panel. */
+    AgentLoad: 'agent:load',
     /** Main → renderer: one step of a turn, as it happens. */
     AgentEvent: 'agent:event',
     /** Main → renderer: make one edit for the agent. */

@@ -21,6 +21,11 @@ export type AgentSessionDeps = {
     emit: (event: AgentEvent) => void;
     /** The provider rejected the key mid-conversation. */
     onKeyRejected: () => void;
+    /** A conversation read back from disk, to continue. */
+    initial?: {
+        history: ReadonlyArray<BetaMessageParam>;
+        skill: AgentSkill | null;
+    };
 };
 export type AgentSession = {
     /**

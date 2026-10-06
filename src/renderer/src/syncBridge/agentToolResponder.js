@@ -3,6 +3,7 @@ import { generateComponentFromSubtree } from '@lib/extractComponent';
 import { classNameFor } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
 import { parseThemeFile, serializeThemeFile } from '@lib/parseTheme';
+import { currentConversationKey, sameConversation, useAgentStore } from '@store/agentSlice';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useHistoryStore } from '@store/historySlice';
 const EDITS = {
@@ -115,6 +116,17 @@ export const executeAgentEdit = async (tool, input, turnId) => {
         return { ok: false, text: 'No project is open in Scamp.' };
     if (state.snapshotPreview !== null) {
         return { ok: false, text: 'Scamp is showing a snapshot preview, which is read-only. Ask the user to exit it.' };
+    }
+    // Scamp edits whatever is open, so a turn whose user has since gone to
+    // another page must not land its edits there.
+    const running = useAgentStore.getState().runningTurn;
+    const open = currentConversationKey();
+    if (running !== null && running.turnId === turnId && !sameConversation(running.conversation, open)) {
+        const from = running.conversation.name;
+        return {
+            ok: false,
+            text: `The user left ${from} for ${open?.name ?? 'another page'}, and Scamp edits whatever is open, so this edit wasn't made. Stop, and tell the user to go back to ${from} to continue.`,
+        };
     }
     if (tool === 'scamp_set_theme_tokens')
         return setThemeTokens(state.projectPath, input);

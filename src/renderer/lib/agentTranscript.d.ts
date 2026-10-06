@@ -1,67 +1,21 @@
-import type { AgentEvent, AgentTurnOutcome, AgentUsage } from '@shared/types';
+import type { AgentUsage } from '@shared/types';
 /**
- * The Scamp Agent conversation as the panel shows it, built from the
- * events main streams back. Pure, so the panel is a view of this and
- * nothing else.
+ * The panel's words for the Scamp Agent conversation. The transcript
+ * itself is shared with main, in `@shared/agentTranscript`.
  * see docs/plans/builtin-agent-plan.md
  */
-export type TranscriptToolCall = {
-    id: string;
-    name: string;
-    status: 'running' | 'ok' | 'failed';
-    /** What an edit changed, when it says. Shown instead of the tool's label. */
-    summary?: string;
-};
-/** A reply is text and tool calls interleaved, in the order they happened. */
-export type TranscriptPart = {
-    kind: 'text';
-    text: string;
-} | {
-    kind: 'tools';
-    calls: TranscriptToolCall[];
-}
-/** Edits waiting on the user's say-so, and what they said. */
- | {
-    kind: 'confirm';
-    id: string;
-    items: string[];
-    state: 'pending' | 'approved' | 'declined';
-};
-export type TranscriptEntry = {
-    role: 'user';
-    id: string;
-    text: string;
-    context: string;
-}
-/** Something Scamp did, said in the conversation — "Undid the agent's changes." */
- | {
-    role: 'note';
-    id: string;
-    text: string;
-} | {
-    role: 'assistant';
-    /** The turn id main assigned. */
-    id: string;
-    parts: TranscriptPart[];
-    /** The agent's current note on what it's doing; cleared as it acts. */
-    progress: string;
-    status: 'working' | AgentTurnOutcome;
-    message?: string;
-    usage?: AgentUsage;
-};
-/** A user message and the reply it's waiting for. */
-export declare const startTurn: (entries: ReadonlyArray<TranscriptEntry>, turnId: string, text: string, context: string) => TranscriptEntry[];
-/**
- * Fold one event in. An event for a turn the transcript doesn't have — one
- * from before a reset — is ignored.
- */
-export declare const applyAgentEvent: (entries: ReadonlyArray<TranscriptEntry>, event: AgentEvent) => TranscriptEntry[];
+export { applyAgentEvent, settleTranscript, startTurn, type TranscriptEntry, type TranscriptPart, type TranscriptToolCall, } from '@shared/agentTranscript';
 export declare const toolLabel: (name: string) => string;
 /** One element as the context line names it. */
 export type ContextSelection = {
     className: string;
     name?: string;
 };
+/**
+ * What the agent should consider: the selection (the default), the whole
+ * page while something is selected, or the whole project.
+ */
+export type AgentFocus = 'selection' | 'page' | 'project';
 /**
  * The line that tells the agent — and the user, in the panel — what the
  * agent is looking at.
@@ -72,6 +26,12 @@ export declare const agentContextLine: (input: {
         name: string;
     } | null;
     selection: ReadonlyArray<ContextSelection>;
+    focus?: AgentFocus;
 }) => string;
-/** Tokens for one exchange, for the line under a reply. */
+/**
+ * Tokens for one exchange, for the line under a reply. Tokens read from
+ * the cache are counted apart: they cost a tenth of the rest, and a long
+ * conversation re-reads its whole history at every step, so one total
+ * would make a cheap exchange look expensive.
+ */
 export declare const formatUsage: (usage: AgentUsage) => string;

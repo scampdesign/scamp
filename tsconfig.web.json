@@ -39,6 +39,7 @@
     "src/main/agent/scriptedProvider.ts",
     "src/main/agent/harness.ts",
     "src/main/agent/session.ts",
+    "src/main/agent/conversationStore.ts",
     "src/main/agent/agentTools.ts",
     "src/main/agent/systemPrompt.ts",
     "src/main/agent/writeTools.ts",

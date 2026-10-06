@@ -1,84 +1,9 @@
-/** A user message and the reply it's waiting for. */
-export const startTurn = (entries, turnId, text, context) => [
-    ...entries,
-    { role: 'user', id: `${turnId}:user`, text, context },
-    { role: 'assistant', id: turnId, parts: [], progress: '', status: 'working' },
-];
-const withLastPart = (parts, kind, update) => {
-    const last = parts.at(-1);
-    if (last !== undefined && last.kind === kind)
-        return [...parts.slice(0, -1), update(last)];
-    return [...parts, update(null)];
-};
-const reduceAssistant = (entry, event) => {
-    switch (event.kind) {
-        case 'text':
-            return {
-                ...entry,
-                progress: '',
-                parts: withLastPart(entry.parts, 'text', (part) => ({
-                    kind: 'text',
-                    text: (part?.kind === 'text' ? part.text : '') + event.text,
-                })),
-            };
-        case 'progress':
-            return { ...entry, progress: entry.progress + event.text };
-        case 'tool-start':
-            return {
-                ...entry,
-                progress: '',
-                parts: withLastPart(entry.parts, 'tools', (part) => ({
-                    kind: 'tools',
-                    calls: [
-                        ...(part?.kind === 'tools' ? part.calls : []),
-                        { id: event.toolId, name: event.name, status: 'running' },
-                    ],
-                })),
-            };
-        case 'tool-end':
-            return {
-                ...entry,
-                parts: entry.parts.map((part) => part.kind !== 'tools'
-                    ? part
-                    : {
-                        kind: 'tools',
-                        calls: part.calls.map((call) => call.id === event.toolId
-                            ? {
-                                ...call,
-                                status: event.ok ? 'ok' : 'failed',
-                                ...(event.summary !== undefined ? { summary: event.summary } : {}),
-                            }
-                            : call),
-                    }),
-            };
-        case 'confirm-request':
-            return {
-                ...entry,
-                progress: '',
-                parts: [...entry.parts, { kind: 'confirm', id: event.confirmId, items: event.items, state: 'pending' }],
-            };
-        case 'confirm-resolved':
-            return {
-                ...entry,
-                parts: entry.parts.map((part) => part.kind === 'confirm' && part.id === event.confirmId
-                    ? { ...part, state: event.approved ? 'approved' : 'declined' }
-                    : part),
-            };
-        case 'turn-end':
-            return {
-                ...entry,
-                progress: '',
-                status: event.outcome,
-                usage: event.usage,
-                ...(event.message !== undefined ? { message: event.message } : {}),
-            };
-    }
-};
 /**
- * Fold one event in. An event for a turn the transcript doesn't have — one
- * from before a reset — is ignored.
+ * The panel's words for the Scamp Agent conversation. The transcript
+ * itself is shared with main, in `@shared/agentTranscript`.
+ * see docs/plans/builtin-agent-plan.md
  */
-export const applyAgentEvent = (entries, event) => entries.map((entry) => entry.role === 'assistant' && entry.id === event.turnId ? reduceAssistant(entry, event) : entry);
+export { applyAgentEvent, settleTranscript, startTurn, } from '@shared/agentTranscript';
 /** What each read tool is doing, said as the panel says it. */
 const TOOL_LABELS = {
     scamp_get_active_page: 'Looked at the open page',
@@ -108,18 +33,25 @@ const TOOL_LABELS = {
     scamp_set_theme_tokens: 'Edit theme tokens',
 };
 export const toolLabel = (name) => TOOL_LABELS[name] ?? name.replace(/^scamp_/, '').replace(/_/g, ' ');
+const targetLabel = (target) => `${target.kind === 'component' ? 'Component' : target.kind === 'view' ? 'View' : 'Page'}: ${target.name}`;
 /**
  * The line that tells the agent — and the user, in the panel — what the
  * agent is looking at.
  */
 export const agentContextLine = (input) => {
-    const parts = [];
-    if (input.target !== null) {
-        const kind = input.target.kind === 'component' ? 'Component' : input.target.kind === 'view' ? 'View' : 'Page';
-        parts.push(`${kind}: ${input.target.name}`);
+    const focus = input.focus ?? 'selection';
+    if (focus === 'project') {
+        return input.target === null ? 'Whole project' : `Whole project · Open: ${targetLabel(input.target)}`;
     }
+    const parts = [];
+    if (input.target !== null)
+        parts.push(targetLabel(input.target));
     const [first, ...rest] = input.selection;
-    if (first !== undefined) {
+    if (focus === 'page') {
+        if (input.target !== null)
+            parts.push('Whole page');
+    }
+    else if (first !== undefined) {
         const one = first.name !== undefined && first.name.length > 0 ? `${first.name} (${first.className})` : first.className;
         parts.push(rest.length === 0 ? `Selected: ${one}` : `Selected: ${one} and ${rest.length} more`);
     }
@@ -128,8 +60,16 @@ export const agentContextLine = (input) => {
     }
     return parts.join(' · ');
 };
-/** Tokens for one exchange, for the line under a reply. */
+/**
+ * Tokens for one exchange, for the line under a reply. Tokens read from
+ * the cache are counted apart: they cost a tenth of the rest, and a long
+ * conversation re-reads its whole history at every step, so one total
+ * would make a cheap exchange look expensive.
+ */
 export const formatUsage = (usage) => {
-    const total = usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens;
-    return `${total.toLocaleString('en-US')} tokens`;
+    const fresh = usage.inputTokens + usage.outputTokens + usage.cacheWriteTokens;
+    const line = `${fresh.toLocaleString('en-US')} tokens`;
+    return usage.cacheReadTokens > 0
+        ? `${line} · ${usage.cacheReadTokens.toLocaleString('en-US')} from cache`
+        : line;
 };
