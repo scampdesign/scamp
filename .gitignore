@@ -19,4 +19,5 @@ playwright-report
 test/e2e/parity/.tmp/
 .fidelity-tmp
 .agent-eval
+.react-eval
 .pixels-tmp

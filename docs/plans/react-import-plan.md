@@ -219,14 +219,36 @@ updated view's agent conversation fresh.
 
 Each phase ships something usable and is measured on the eval below.
 
-### Phase 0 — the eval
+### Phase 0 — the eval — **done**
 
-`scripts/react-import-eval.mjs <dir or url> [routes…]`: start or reach
-the dev server, read routes, capture and reduce each, then report per
-route pixel match and geometry (reusing `import-pixels.mjs` and
-`import-fidelity.mjs` internals), findings per element, round trip,
-and — from Phase 3 on — components, instances and repeats found.
-Baseline: the four numbers above, extended to all 18 routes that render.
+`node scripts/react-import-eval.mjs <dir or url> [/route …]`. Given a
+folder it reads it with `detect.ts` and starts the dev server on a free
+port (and stops it); given a URL it uses that server. Routes come from
+the running router (`reactRoutes.ts`), or name them. Per route: whether
+it rendered as itself, pixel match, findings per element, the view's
+round trip, and what React's tree offers Phases 3 and 4 — user
+components and call-site sibling groups. Results in `.react-eval/`.
+
+The pixel measurement moved into `scripts/lib/pixelHarness.mjs`, shared
+with `import-pixels.mjs`, so the two can't drift.
+
+**Baseline** (riq_frontend_demo, 2026-10-06, the importer as of
+`47dd4a2`, no React-specific code):
+
+| | |
+|---|---|
+| Routes in the router / visitable as they stand | 48 / 42 |
+| Measured / redirected | 39 / 3 (`/ → /login`, `/dashboard → /setup`, `/appointment/patient-details/upload → /setup`) |
+| Pixels | mean **94.1%**, median 95.1%, lowest 85.0% (`/org-manager/people`); 20 of 39 at 95% or better |
+| Findings per element | mean 0.08 |
+| Round trip | ok on every route |
+| Components drawn on 2+ routes | 48 — `AppShell`, `AppFrame`, `AppSidebar` and `IconButton` on 38–39 each |
+| Call-site sibling groups | 328 |
+| Elements carrying a fiber | 99–100% |
+
+The lowest routes are MUI-heavy (`muigrid_root`, `muitypography_root` on
+the Rx tools) or a layout gap like the parity log's open "text wraps a
+word early" entry; those are importer work and show up here first.
 
 ### Phase 1 — one route from a React project
 
