@@ -1,6 +1,7 @@
 import {
   addElement,
   deleteElement,
+  editFeedback,
   mergeThemeTokens,
   planExtraction,
   moveElement,
@@ -16,7 +17,6 @@ import { generateComponentFromSubtree } from '@lib/extractComponent';
 import { classNameFor } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
 import { parseThemeFile, serializeThemeFile } from '@lib/parseTheme';
-import { lintView } from '@lib/viewLint';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useHistoryStore } from '@store/historySlice';
 
@@ -181,25 +181,12 @@ export const executeAgentEdit = async (
   for (const id of result.touched) turnTouched.add(id);
   state.applyAgentElements(result.elements, result.touched);
 
-  // What Scamp's own check says about what was just touched — the same
-  // findings the Checks section shows, so the agent can fix its own work.
-  const touched = new Set(result.touched);
-  const findings = lintView({
-    elements: result.elements,
-    rootId: state.rootElementId,
-    themeTokens: state.themeTokens.map((token) => token.name),
-  }).filter((f) => f.elementId !== null && touched.has(f.elementId));
-  const findingLines = findings.map(
-    (f) => `Check: ${f.className ?? ''} — ${f.message}${f.hint !== undefined ? ` ${f.hint}` : ''}`
+  const feedback = editFeedback(
+    result,
+    state.rootElementId,
+    state.themeTokens.map((token) => token.name)
   );
-  const ids = result.touched
-    .map((id) => result.elements[id])
-    .flatMap((el) => (el === undefined ? [] : [`${classNameFor(el)} (id ${el.id})`]));
-  return {
-    ok: true,
-    summary: result.summary,
-    text: [result.summary, `Touched: ${ids.join(', ')}`, ...result.notes, ...findingLines].join('\n'),
-  };
+  return { ok: true, summary: feedback.summary, text: feedback.text };
 };
 
 export const installAgentToolResponder = (): (() => void) =>

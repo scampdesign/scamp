@@ -15,6 +15,13 @@ export type ToolCall = {
     name: string;
     input: unknown;
 };
-export declare const needsConfirmation: (calls: ReadonlyArray<ToolCall>) => boolean;
+/**
+ * `planApproved`: a skill session where the user already approved a plan
+ * — the many-edits check would only interrupt agreed work. Deletes,
+ * components and theme changes ask regardless.
+ */
+export declare const needsConfirmation: (calls: ReadonlyArray<ToolCall>, options?: {
+    planApproved?: boolean;
+}) => boolean;
 /** One edit, said as the confirmation card lists it. */
 export declare const describeToolCall: ({ name, input }: ToolCall) => string;

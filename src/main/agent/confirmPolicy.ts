@@ -22,9 +22,17 @@ export const BATCH_LIMIT = 5;
 
 export type ToolCall = { name: string; input: unknown };
 
-export const needsConfirmation = (calls: ReadonlyArray<ToolCall>): boolean =>
+/**
+ * `planApproved`: a skill session where the user already approved a plan
+ * — the many-edits check would only interrupt agreed work. Deletes,
+ * components and theme changes ask regardless.
+ */
+export const needsConfirmation = (
+  calls: ReadonlyArray<ToolCall>,
+  options: { planApproved?: boolean } = {}
+): boolean =>
   calls.some((c) => ALWAYS_CONFIRM.has(c.name)) ||
-  calls.filter((c) => WRITE_TOOL_NAMES.has(c.name)).length > BATCH_LIMIT;
+  (options.planApproved !== true && calls.filter((c) => WRITE_TOOL_NAMES.has(c.name)).length > BATCH_LIMIT);
 
 const str = (input: unknown, key: string): string => {
   if (input === null || typeof input !== 'object') return '';

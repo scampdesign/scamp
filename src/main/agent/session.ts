@@ -5,6 +5,7 @@ import type { AgentEvent, AgentSendResult } from '@shared/types';
 import { describeToolCall, needsConfirmation } from './confirmPolicy';
 import { runTurn, type AgentToolInvoker } from './harness';
 import { WRITE_TOOL_NAMES } from './writeTools';
+import type { AgentSkill } from './skills/skill';
 import type { AgentProvider } from './provider';
 
 /**
@@ -32,7 +33,18 @@ export type AgentSessionDeps = {
 };
 
 export type AgentSession = {
-  send: (text: string, context: string, turnId: string) => Promise<AgentSendResult>;
+  /**
+   * `skill` starts a skill for the rest of the conversation; ignored if
+   * one is already running.
+   */
+  send: (
+    text: string,
+    context: string,
+    turnId: string,
+    options?: { skill?: AgentSkill }
+  ) => Promise<AgentSendResult>;
+  /** The skill this conversation runs, if any. */
+  skill: () => AgentSkill | null;
   cancel: () => void;
   reset: () => void;
   /** A turn is in flight. */
@@ -64,12 +76,13 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
   let inFlight: { controller: AbortController; done: Promise<void> } | null = null;
   let generation = 0;
   let pendingNote: string | null = null;
+  let skill: AgentSkill | null = null;
   /** Confirmations waiting on the user, by id. */
   const waiting = new Map<string, (approved: boolean) => void>();
   let confirmCounter = 0;
 
   return {
-    send: async (text, context, turnId) => {
+    send: async (text, context, turnId, options = {}) => {
       if (inFlight !== null) {
         return { ok: false, reason: 'busy', message: 'The agent is still working on your last message.' };
       }
@@ -92,20 +105,30 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
       const startedIn = generation;
       const note = pendingNote;
       pendingNote = null;
+      const startsSkill = skill === null && options.skill !== undefined;
+      if (startsSkill && options.skill !== undefined) skill = options.skill;
+      const active = skill;
       void (async () => {
         try {
           const result = await runTurn({
             provider,
             system: deps.system,
-            tools: deps.tools,
-            invoke: (name, args) => deps.invoke(name, args, turnId),
+            tools: active !== null ? active.tools(deps.tools) : deps.tools,
+            invoke: async (name, args) =>
+              active !== null && !active.allows(name)
+                ? {
+                    content: [{ type: 'text', text: `${name} is off for this ${active.id} session.` }],
+                    isError: true,
+                  }
+                : deps.invoke(name, args, turnId),
             history,
             userContent: userContentFor(text, context, note),
-            effort: 'medium',
+            effort: active?.effort ?? 'medium',
+            ...(startsSkill && active !== null ? { systemNote: active.instructions } : {}),
             signal: controller.signal,
             emit: (event) => deps.emit({ ...event, turnId }),
             review: async (calls) => {
-              if (!needsConfirmation(calls)) return true;
+              if (!needsConfirmation(calls, { planApproved: active?.planApproved === true })) return true;
               if (controller.signal.aborted) return false;
               confirmCounter += 1;
               const confirmId = `${turnId}:confirm_${confirmCounter}`;
@@ -160,9 +183,12 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
       generation += 1;
       history = [];
       pendingNote = null;
+      skill = null;
     },
 
     isBusy: () => inFlight !== null,
+
+    skill: () => skill,
 
     answer: (confirmId, approved) => {
       waiting.get(confirmId)?.(approved);

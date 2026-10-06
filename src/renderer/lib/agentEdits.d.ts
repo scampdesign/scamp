@@ -106,4 +106,17 @@ export declare const planExtraction: (ctx: AgentEditContext, args: {
     name: string;
     replaceIds: string[];
 } | string;
+/**
+ * What the model is told after an edit: the summary, what it touched, any
+ * notes, and Scamp's own check findings on those elements — the same
+ * findings the Checks section shows, so the agent can fix what it caused.
+ * Shared by the app's responder and the headless eval runner, so the model
+ * reads identical feedback in both.
+ */
+export declare const editFeedback: (result: Extract<AgentEditResult, {
+    ok: true;
+}>, rootId: string, themeTokenNames: ReadonlyArray<string>) => {
+    summary: string;
+    text: string;
+};
 export {};

@@ -16,6 +16,7 @@ export const runTurn = async (options) => {
     const history = [
         ...options.history,
         { role: 'user', content: options.userContent },
+        ...(options.systemNote !== undefined ? [{ role: 'system', content: options.systemNote }] : []),
     ];
     const usage = emptyUsage();
     const end = (outcome, message) => ({

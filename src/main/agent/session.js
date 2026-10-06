@@ -14,11 +14,12 @@ export const createAgentSession = (deps) => {
     let inFlight = null;
     let generation = 0;
     let pendingNote = null;
+    let skill = null;
     /** Confirmations waiting on the user, by id. */
     const waiting = new Map();
     let confirmCounter = 0;
     return {
-        send: async (text, context, turnId) => {
+        send: async (text, context, turnId, options = {}) => {
             if (inFlight !== null) {
                 return { ok: false, reason: 'busy', message: 'The agent is still working on your last message.' };
             }
@@ -40,20 +41,30 @@ export const createAgentSession = (deps) => {
             const startedIn = generation;
             const note = pendingNote;
             pendingNote = null;
+            const startsSkill = skill === null && options.skill !== undefined;
+            if (startsSkill && options.skill !== undefined)
+                skill = options.skill;
+            const active = skill;
             void (async () => {
                 try {
                     const result = await runTurn({
                         provider,
                         system: deps.system,
-                        tools: deps.tools,
-                        invoke: (name, args) => deps.invoke(name, args, turnId),
+                        tools: active !== null ? active.tools(deps.tools) : deps.tools,
+                        invoke: async (name, args) => active !== null && !active.allows(name)
+                            ? {
+                                content: [{ type: 'text', text: `${name} is off for this ${active.id} session.` }],
+                                isError: true,
+                            }
+                            : deps.invoke(name, args, turnId),
                         history,
                         userContent: userContentFor(text, context, note),
-                        effort: 'medium',
+                        effort: active?.effort ?? 'medium',
+                        ...(startsSkill && active !== null ? { systemNote: active.instructions } : {}),
                         signal: controller.signal,
                         emit: (event) => deps.emit({ ...event, turnId }),
                         review: async (calls) => {
-                            if (!needsConfirmation(calls))
+                            if (!needsConfirmation(calls, { planApproved: active?.planApproved === true }))
                                 return true;
                             if (controller.signal.aborted)
                                 return false;
@@ -112,8 +123,10 @@ export const createAgentSession = (deps) => {
             generation += 1;
             history = [];
             pendingNote = null;
+            skill = null;
         },
         isBusy: () => inFlight !== null,
+        skill: () => skill,
         answer: (confirmId, approved) => {
             waiting.get(confirmId)?.(approved);
         },

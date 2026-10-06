@@ -43,6 +43,12 @@ export type RunTurnOptions = {
         name: string;
         input: unknown;
     }>) => Promise<boolean>;
+    /**
+     * Operator instructions for this turn on — a skill's — sent as a
+     * mid-conversation system message after the user's words, so the cached
+     * system prompt in front of it never changes.
+     */
+    systemNote?: string;
 };
 export type RunTurnResult = {
     history: BetaMessageParam[];

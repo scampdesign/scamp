@@ -16,8 +16,13 @@ export const ALWAYS_CONFIRM = new Set([
 ]);
 /** More edits than this in one reply, and the reply asks first. */
 export const BATCH_LIMIT = 5;
-export const needsConfirmation = (calls) => calls.some((c) => ALWAYS_CONFIRM.has(c.name)) ||
-    calls.filter((c) => WRITE_TOOL_NAMES.has(c.name)).length > BATCH_LIMIT;
+/**
+ * `planApproved`: a skill session where the user already approved a plan
+ * — the many-edits check would only interrupt agreed work. Deletes,
+ * components and theme changes ask regardless.
+ */
+export const needsConfirmation = (calls, options = {}) => calls.some((c) => ALWAYS_CONFIRM.has(c.name)) ||
+    (options.planApproved !== true && calls.filter((c) => WRITE_TOOL_NAMES.has(c.name)).length > BATCH_LIMIT);
 const str = (input, key) => {
     if (input === null || typeof input !== 'object')
         return '';

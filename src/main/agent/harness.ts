@@ -55,6 +55,12 @@ export type RunTurnOptions = {
    * declines; omitted means everything runs.
    */
   review?: (calls: ReadonlyArray<{ name: string; input: unknown }>) => Promise<boolean>;
+  /**
+   * Operator instructions for this turn on — a skill's — sent as a
+   * mid-conversation system message after the user's words, so the cached
+   * system prompt in front of it never changes.
+   */
+  systemNote?: string;
 };
 
 export type RunTurnResult = {
@@ -88,6 +94,7 @@ export const runTurn = async (options: RunTurnOptions): Promise<RunTurnResult> =
   const history: BetaMessageParam[] = [
     ...options.history,
     { role: 'user', content: options.userContent },
+    ...(options.systemNote !== undefined ? [{ role: 'system' as const, content: options.systemNote }] : []),
   ];
   const usage = emptyUsage();
   const end = (outcome: AgentTurnOutcome, message?: string): RunTurnResult => ({

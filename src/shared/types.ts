@@ -1286,6 +1286,12 @@ export type AgentEvent =
       message?: string;
     };
 
+/** How an import cleanup treats repeated values; the user picks when it starts. */
+export type AgentTokenMode = 'create-tokens' | 'keep-literal';
+
+/** A Scamp-authored skill to run this conversation under. */
+export type AgentSkillRequest = { id: 'import-cleanup'; tokenMode: AgentTokenMode };
+
 export type AgentSendArgs = {
   projectPath: string;
   /**
@@ -1300,6 +1306,8 @@ export type AgentSendArgs = {
    * renderer already knows it and the panel shows the same line.
    */
   context: string;
+  /** Start a skill for the rest of this conversation. */
+  skill?: AgentSkillRequest;
 };
 
 /**

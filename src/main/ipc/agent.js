@@ -9,6 +9,7 @@ import { createProviderKey } from '../agent/providerKey';
 import { createScriptedProvider } from '../agent/scriptedProvider';
 import { createAgentSession } from '../agent/session';
 import { AGENT_SYSTEM_PROMPT } from '../agent/systemPrompt';
+import { skillFor } from '../agent/skills';
 import { verifyAnthropicKey } from '../agent/verifyAnthropicKey';
 import { readE2eSeams } from '../e2eSeams';
 import { notifyPagesChanged } from '../watcher';
@@ -138,7 +139,10 @@ export const registerAgentIpc = () => {
         if (!isSignedIn()) {
             return { ok: false, reason: 'signed-out', message: 'Sign in to Scamp to use the agent.' };
         }
-        return sessionFor(args.projectPath, e.sender).send(args.text, args.context, args.turnId);
+        const skill = args.skill?.id === 'import-cleanup' ? skillFor(args.skill) : undefined;
+        return sessionFor(args.projectPath, e.sender).send(args.text, args.context, args.turnId, {
+            ...(skill !== undefined ? { skill } : {}),
+        });
     });
     ipcMain.handle(IPC.AgentCancel, async () => {
         session?.agent.cancel();

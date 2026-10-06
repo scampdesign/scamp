@@ -15,6 +15,7 @@ import { generateElementId, groupSiblings, removeSubtree, reorderElementPure, sl
 import { TAG_OPTIONS } from './elementTags';
 import { classNameFor, generateCode } from './generateCode';
 import { parseCode } from './parseCode';
+import { lintView } from './viewLint';
 const fail = (error) => ({ ok: false, error });
 /** Find an element by its Scamp id or by its class name. */
 export const resolveElement = (ctx, ref) => {
@@ -499,4 +500,24 @@ export const planExtraction = (ctx, args, existingComponents) => {
         replaceIds.push(other.id);
     }
     return { id: el.id, name: validated.value, replaceIds };
+};
+/**
+ * What the model is told after an edit: the summary, what it touched, any
+ * notes, and Scamp's own check findings on those elements — the same
+ * findings the Checks section shows, so the agent can fix what it caused.
+ * Shared by the app's responder and the headless eval runner, so the model
+ * reads identical feedback in both.
+ */
+export const editFeedback = (result, rootId, themeTokenNames) => {
+    const touched = new Set(result.touched);
+    const findings = lintView({ elements: result.elements, rootId, themeTokens: themeTokenNames })
+        .filter((f) => f.elementId !== null && touched.has(f.elementId))
+        .map((f) => `Check: ${f.className ?? ''} — ${f.message}${f.hint !== undefined ? ` ${f.hint}` : ''}`);
+    const ids = result.touched
+        .map((id) => result.elements[id])
+        .flatMap((el) => (el === undefined ? [] : [`${classNameFor(el)} (id ${el.id})`]));
+    return {
+        summary: result.summary,
+        text: [result.summary, `Touched: ${ids.join(', ')}`, ...result.notes, ...findings].join('\n'),
+    };
 };

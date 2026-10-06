@@ -1,6 +1,7 @@
 import type { BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import type { AgentEvent, AgentSendResult } from '@shared/types';
 import { runTurn, type AgentToolInvoker } from './harness';
+import type { AgentSkill } from './skills/skill';
 import type { AgentProvider } from './provider';
 /**
  * One project's conversation with the agent: its history, the turn in
@@ -22,7 +23,15 @@ export type AgentSessionDeps = {
     onKeyRejected: () => void;
 };
 export type AgentSession = {
-    send: (text: string, context: string, turnId: string) => Promise<AgentSendResult>;
+    /**
+     * `skill` starts a skill for the rest of the conversation; ignored if
+     * one is already running.
+     */
+    send: (text: string, context: string, turnId: string, options?: {
+        skill?: AgentSkill;
+    }) => Promise<AgentSendResult>;
+    /** The skill this conversation runs, if any. */
+    skill: () => AgentSkill | null;
     cancel: () => void;
     reset: () => void;
     /** A turn is in flight. */

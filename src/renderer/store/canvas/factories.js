@@ -1,6 +1,7 @@
 // store/canvas/factories.ts — pure element factories, split from canvasSlice.ts (5.1).
 import { ROOT_ELEMENT_ID, SVG_SRC_ATTR } from '@lib/element';
 import { DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from '@lib/defaults';
+import { makeInstanceElement } from '@lib/componentInstance';
 import { DEFAULT_BODY_FONT_FAMILY } from '@shared/agentMd';
 export const makeRootElement = () => ({
     ...DEFAULT_ROOT_STYLES,
@@ -151,28 +152,7 @@ export const makeInput = (input, id) => ({
     customProperties: {},
     attributes: { type: 'text' },
 });
-export const makeComponentInstance = (input, id) => ({
-    ...DEFAULT_RECT_STYLES,
-    id,
-    type: 'component-instance',
-    parentId: input.parentId,
-    childIds: [],
-    // The instance has no intrinsic size on the page tree — the
-    // rendered component's own root sets the box. Use `auto` on
-    // both axes so the generator emits no width/height, matching
-    // what `parseCode` produces for instances without a class block.
-    widthMode: 'auto',
-    heightMode: 'auto',
-    x: input.x,
-    y: input.y,
-    customProperties: {},
-    componentName: input.componentName,
-    // Use the canvas id as the hex tail of the `inst_*` identifier
-    // so `data-scamp-instance-id` is human-readable and easy to
-    // correlate with the canvas selection.
-    instanceId: `inst_${id}`,
-    propOverrides: {},
-});
+export const makeComponentInstance = (input, id) => makeInstanceElement(input, id);
 /**
  * The tag a new element should take from where it was drawn, so the
  * output semantic is right without the user opening the Element
