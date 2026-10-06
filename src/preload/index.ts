@@ -22,8 +22,8 @@ import type {
   ExportChooseSavePathArgs,
   ExportChooseSavePathResult,
   AgentConversationArgs,
-  ImportBatchUndone,
-  ImportUndoBatchArgs,
+  ImportBatchActionArgs,
+  ImportBatchReport,
   ReactImportInspectResult,
   ReactImportProgress,
   ReactImportStartArgs,
@@ -187,13 +187,13 @@ const api = {
   resolveImportFonts: (args: ResolveFontsArgs): Promise<ResolveFontsResult> =>
     ipcRenderer.invoke(IPC.ImportResolveFonts, args),
   /** Tell the import window how it went. */
-  /** The import window asks to undo one multi-page import. */
-  onImportUndoBatch: (listener: (args: ImportUndoBatchArgs) => void): (() => void) => {
-    const handler = (_e: IpcRendererEvent, args: ImportUndoBatchArgs): void => listener(args);
-    ipcRenderer.on(IPC.ImportUndoBatchDeliver, handler);
-    return () => ipcRenderer.removeListener(IPC.ImportUndoBatchDeliver, handler);
+  /** The import window asks to finish or undo one multi-page import. */
+  onImportBatchAction: (listener: (args: ImportBatchActionArgs) => void): (() => void) => {
+    const handler = (_e: IpcRendererEvent, args: ImportBatchActionArgs): void => listener(args);
+    ipcRenderer.on(IPC.ImportBatchActionDeliver, handler);
+    return () => ipcRenderer.removeListener(IPC.ImportBatchActionDeliver, handler);
   },
-  reportBatchUndone: (payload: ImportBatchUndone): Promise<void> => ipcRenderer.invoke(IPC.ImportBatchUndone, payload),
+  reportImportBatch: (payload: ImportBatchReport): Promise<void> => ipcRenderer.invoke(IPC.ImportBatchReport, payload),
   reportImportResult: (payload: ImportResultPayload): Promise<void> =>
     ipcRenderer.invoke(IPC.ImportResultReport, payload),
   /**

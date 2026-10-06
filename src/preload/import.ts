@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 import { IPC } from '@shared/ipcChannels';
-import type { ImportBatchRef, ImportBatchUndone, ImportOpenArgs, ImportResultPayload } from '@shared/types';
+import type { ImportBatchRef, ImportBatchReport, ImportOpenArgs, ImportResultPayload } from '@shared/types';
 
 /**
  * Preload for the import window.
@@ -43,15 +43,21 @@ const importApi = {
       ...(batch !== undefined ? { batch } : {}),
     }),
 
-  /** Remove every view one multi-page import made. A batch id, nothing else. */
-  undoBatch: (projectPath: string, batchId: string): Promise<{ ok: boolean; error?: string }> =>
-    ipcRenderer.invoke(IPC.ImportUndoBatch, { projectPath, batchId }),
+  /**
+   * Finish a multi-page import (find its components) or undo it. A batch
+   * id and an action, nothing else; the app window answers on `onBatchReport`.
+   */
+  batchAction: (
+    projectPath: string,
+    batchId: string,
+    action: 'finish' | 'undo'
+  ): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC.ImportBatchAction, { projectPath, batchId, action }),
 
-  /** Which views an undo removed. */
-  onBatchUndone: (listener: (payload: ImportBatchUndone) => void): (() => void) => {
-    const handler = (_e: IpcRendererEvent, p: ImportBatchUndone): void => listener(p);
-    ipcRenderer.on(IPC.ImportBatchUndoneChanged, handler);
-    return () => ipcRenderer.removeListener(IPC.ImportBatchUndoneChanged, handler);
+  onBatchReport: (listener: (payload: ImportBatchReport) => void): (() => void) => {
+    const handler = (_e: IpcRendererEvent, p: ImportBatchReport): void => listener(p);
+    ipcRenderer.on(IPC.ImportBatchReportChanged, handler);
+    return () => ipcRenderer.removeListener(IPC.ImportBatchReportChanged, handler);
   },
 
   /**

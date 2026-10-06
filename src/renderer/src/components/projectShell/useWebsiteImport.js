@@ -5,6 +5,8 @@ import { generateCode } from '@lib/generateCode';
 import { applyBreakpointCaptures, reduceCapture } from '@lib/importReduce';
 import { fontsNeededBy, googleFontsUrlFor, resolveFonts, } from '@lib/importFonts';
 import { buildReport } from '@lib/importReport';
+import { describeReactFinding, planReactComponents } from '@lib/reactComponents';
+import { generateElementId } from '@lib/element/tree';
 import { needsFileTreatment, svgAssetName, svgDocument, } from '@lib/importSvgAssets';
 import { useFontsStore } from '@store/fontsSlice';
 import { parseThemeFile, serializeThemeFile } from '@lib/parseTheme';
@@ -12,10 +14,28 @@ import { useAppLogStore } from '@store/appLogSlice';
 import { useAgentStore } from '@store/agentSlice';
 import { useAuthStore } from '@store/authSlice';
 /**
- * The views each multi-page import made, by batch id, so undoing one
- * removes exactly those — never a view the window merely names.
+ * What each multi-page import made, by batch id: its views, and the
+ * components finishing it made. Undo removes exactly these — never
+ * anything the import window merely names.
  */
-const batchViews = new Map();
+const batches = new Map();
+/** React's account of each element, by element id, from the capture it came from. */
+const reactByElement = (payload, sourceNodes) => {
+    const byNode = new Map();
+    const walk = (node) => {
+        if (node.react !== undefined)
+            byNode.set(node.id, node.react);
+        node.children.forEach(walk);
+    };
+    walk(payload.root);
+    const out = {};
+    for (const [elementId, nodeId] of Object.entries(sourceNodes)) {
+        const react = byNode.get(nodeId);
+        if (react !== undefined)
+            out[elementId] = react;
+    }
+    return out;
+};
 /**
  * A view name the project doesn't already use. An import should never
  * silently land on top of existing work.
@@ -161,12 +181,26 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                             ? prev.components
                             : [...prev.components, created],
                     }));
+                    // A multi-page import opens nothing until it has finished: the
+                    // component pass may still rewrite every view it made.
+                    let batchView = null;
                     if (batch !== undefined) {
-                        batchViews.set(batch.id, [...(batchViews.get(batch.id) ?? []), created.name]);
+                        batchView = {
+                            name: created.name,
+                            tsxPath: created.tsxPath,
+                            cssPath: created.cssPath,
+                            elements: result.elements,
+                            rootId: result.rootId,
+                            react: reactByElement(payload, result.sourceNodes),
+                            instances: payload.react?.instances ?? {},
+                        };
+                        const record = batches.get(batch.id) ?? { views: [], components: [] };
+                        record.views.push(batchView);
+                        batches.set(batch.id, record);
                     }
-                    // A multi-page import opens its last page, not every page in turn.
-                    if (batch === undefined || batch.index === batch.total - 1)
+                    else {
                         openView(created.name);
+                    }
                     // Keep the page exactly as it was, next to what it became.
                     // Best-effort and after the view exists: a full temp
                     // directory must not cost anyone an import that worked.
@@ -253,6 +287,8 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                             }
                             return [id, next];
                         }));
+                        if (batchView !== null)
+                            batchView.elements = localised;
                         const relocated = generateCode({
                             elements: localised,
                             rootId: result.rootId,
@@ -385,33 +421,122 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
             })();
         });
     }, [project, breakpoints, onProjectChange, openView]);
-    // Undo a multi-page import: remove the views it made, and nothing else.
-    useEffect(() => window.scamp.onImportUndoBatch(({ projectPath, batchId }) => {
+    // Finish or undo a multi-page import, asked by the import window.
+    useEffect(() => window.scamp.onImportBatchAction(({ projectPath, batchId, action }) => {
         void (async () => {
             if (projectPath !== project.path)
                 return;
-            const names = batchViews.get(batchId) ?? [];
-            const removed = [];
-            let error;
-            for (const componentName of names) {
-                try {
-                    await window.scamp.deleteComponent({ projectPath, componentName, kind: 'view' });
-                    removed.push(componentName);
+            const record = batches.get(batchId);
+            const send = (payload) => void window.scamp.reportImportBatch(payload);
+            if (action === 'undo') {
+                // Everything it made — views, and the components finishing made.
+                const removed = [];
+                let error;
+                const made = [
+                    ...(record?.views ?? []).map((v) => ({ name: v.name, kind: 'view' })),
+                    ...(record?.components ?? []).map((name) => ({ name, kind: 'component' })),
+                ];
+                for (const { name, kind } of made) {
+                    try {
+                        await window.scamp.deleteComponent({ projectPath, componentName: name, kind });
+                        removed.push(name);
+                    }
+                    catch (err) {
+                        error = errorMessage(err);
+                    }
                 }
-                catch (err) {
-                    error = errorMessage(err);
+                batches.delete(batchId);
+                if (removed.length > 0) {
+                    onViewsRemoved?.(removed);
+                    onProjectChange?.((prev) => ({
+                        ...prev,
+                        components: prev.components.filter((c) => !removed.includes(c.name)),
+                    }));
+                    useAppLogStore.getState().log('info', `Undid an import: removed ${removed.join(', ')}.`);
                 }
+                send({ kind: 'undone', projectPath, batchId, removed, ...(error !== undefined ? { error } : {}) });
+                return;
             }
-            batchViews.delete(batchId);
-            if (removed.length > 0) {
-                onViewsRemoved?.(removed);
+            // Finish: one component for each React component the views share.
+            // see docs/plans/react-import-plan.md
+            const views = record?.views ?? [];
+            try {
+                const plan = planReactComponents(views, {
+                    takenNames: [...project.components.map((c) => c.name), ...project.pages.map((p) => p.name)],
+                    randomId: generateElementId,
+                });
+                const madeFiles = [];
+                for (const component of plan.components) {
+                    const code = generateCode({
+                        elements: component.elements,
+                        rootId: component.rootId,
+                        pageName: component.name,
+                        cssModuleImportName: component.name,
+                        isComponent: true,
+                        breakpoints,
+                    });
+                    const file = await window.scamp.createComponent({
+                        projectPath,
+                        componentName: component.name,
+                        kind: 'component',
+                        tsxContent: code.tsx,
+                        cssContent: code.css,
+                    });
+                    madeFiles.push(file);
+                    record?.components.push(file.name);
+                }
+                // Each view that now holds instances, rewritten.
+                const rewritten = new Map();
+                for (const [i, view] of views.entries()) {
+                    const planned = plan.views[i];
+                    // Changed exactly when it gained an element: an instance.
+                    if (planned === undefined || !Object.keys(planned.elements).some((id) => !(id in view.elements)))
+                        continue;
+                    const code = generateCode({
+                        elements: planned.elements,
+                        rootId: planned.rootId,
+                        pageName: view.name,
+                        cssModuleImportName: view.name,
+                        isComponent: true,
+                        breakpoints,
+                    });
+                    await window.scamp.writeFile({
+                        tsxPath: view.tsxPath,
+                        cssPath: view.cssPath,
+                        tsxContent: code.tsx,
+                        cssContent: code.css,
+                    });
+                    rewritten.set(view.name, { tsxContent: code.tsx, cssContent: code.css });
+                }
                 onProjectChange?.((prev) => ({
                     ...prev,
-                    components: prev.components.filter((c) => !removed.includes(c.name)),
+                    components: [
+                        ...prev.components.map((c) => {
+                            const next = rewritten.get(c.name);
+                            return next === undefined ? c : { ...c, ...next };
+                        }),
+                        ...madeFiles.filter((f) => !prev.components.some((c) => c.name === f.name)),
+                    ],
                 }));
-                useAppLogStore.getState().log('info', `Undid an import: removed ${removed.join(', ')}.`);
+                if (plan.components.length > 0) {
+                    useAppLogStore
+                        .getState()
+                        .log('info', `Made ${plan.components.length} components from the React app: ${plan.components.map((c) => c.name).join(', ')}.`);
+                }
+                send({
+                    kind: 'finished',
+                    projectPath,
+                    batchId,
+                    components: plan.components.map((c) => ({ name: c.name, instances: c.instances, views: c.views.length })),
+                    notes: plan.findings.map(describeReactFinding),
+                });
             }
-            void window.scamp.reportBatchUndone({ projectPath, batchId, removed, ...(error !== undefined ? { error } : {}) });
+            catch (err) {
+                send({ kind: 'finished', projectPath, batchId, components: [], notes: [], error: errorMessage(err) });
+            }
+            const last = views.at(-1);
+            if (last !== undefined)
+                openView(last.name);
         })();
-    }), [project.path, onProjectChange, onViewsRemoved]);
+    }), [project, breakpoints, onProjectChange, onViewsRemoved, openView]);
 };

@@ -27,7 +27,15 @@ import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { join, resolve } from 'node:path';
 
-import { VIEWPORT, bundleOf, cleanupHarness, measurePage, repoRoot } from './lib/pixelHarness.mjs';
+import {
+  VIEWPORT,
+  bundleOf,
+  cleanupHarness,
+  compareShots,
+  measurePage,
+  renderView,
+  repoRoot,
+} from './lib/pixelHarness.mjs';
 
 const TOP = Number(process.env.TOP ?? 3);
 const OUT = resolve(repoRoot, process.env.OUT ?? '.pixels-tmp/react');
@@ -40,7 +48,8 @@ if (target === undefined) {
 }
 
 const { detectReactProject } = await bundleOf('src/main/reactImport/detect.ts');
-const { readRoutesFn, flattenRoutes, selectedByDefault } = await bundleOf('src/shared/reactRoutes.ts');
+const { readRoutesFn, flattenRoutes, selectedByDefault, viewNameForRoute } = await bundleOf('src/shared/reactRoutes.ts');
+const { planReactComponents } = await bundleOf('src/renderer/lib/reactComponents.ts');
 const { lintView } = await bundleOf('src/renderer/lib/viewLint.ts');
 const { parseCode } = await bundleOf('src/renderer/lib/parseCode.ts');
 const { generateCode } = await bundleOf('src/renderer/lib/generateCode.ts');
@@ -186,6 +195,8 @@ const browser = await chromium.launch();
 // a sign-in or a finished setup carries from route to route.
 const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
 const results = [];
+/** What the component pass needs from each measured route. */
+const captured = [];
 
 try {
   const first = await context.newPage();
@@ -216,6 +227,7 @@ try {
       const tree = await page.evaluate((src) => new Function(`return (${src})`)()(), reactTreeFn.toString());
       const m = await measurePage(browser, page, { label: route, outDir: OUT });
 
+      captured.push({ route, row, measured: m });
       const elementCount = Object.keys(m.reduced.elements).length - 1;
       const findings = lintView({ elements: m.reduced.elements, rootId: m.reduced.rootId, themeTokens: [] });
       // The view as the app opens it: written as a component, read back as
@@ -260,6 +272,69 @@ try {
       await page.close();
     }
   }
+
+  // ---- components across the views (Phase 3) ----------------------------
+  if (captured.length > 0) {
+    const flatten = (node, out = new Map()) => {
+      out.set(node.id, node);
+      node.children.forEach((c) => flatten(c, out));
+      return out;
+    };
+    const views = captured.map(({ route, measured }) => {
+      const nodes = flatten(measured.payload.root);
+      const react = {};
+      for (const [elementId, nodeId] of Object.entries(measured.reduced.sourceNodes)) {
+        const info = nodes.get(nodeId)?.react;
+        if (info !== undefined) react[elementId] = info;
+      }
+      return {
+        name: viewNameForRoute(route),
+        elements: measured.reduced.elements,
+        rootId: measured.reduced.rootId,
+        react,
+        instances: measured.payload.react?.instances ?? {},
+      };
+    });
+    const plan = planReactComponents(views);
+    const components = plan.components.map((c) => {
+      const code = generateCode({ elements: c.elements, rootId: c.rootId, pageName: c.name, cssModuleImportName: c.name, isComponent: true });
+      // The export's shape: a component as the files the app would write.
+      return { name: c.name, tsx: code.tsx, css: code.css, tsxContent: code.tsx, cssContent: code.css };
+    });
+    const fontElements = Object.assign({}, ...plan.views.map((v) => v.elements), ...plan.components.map((c) => c.elements));
+    // The code itself, for reading when a number looks wrong.
+    const codeDir = join(OUT, 'code');
+    await mkdir(codeDir, { recursive: true });
+    for (const c of components) {
+      await writeFile(join(codeDir, `${c.name}.tsx`), c.tsx);
+      await writeFile(join(codeDir, `${c.name}.module.css`), c.css);
+    }
+    for (const [i, { route, row, measured }] of captured.entries()) {
+      const codeDir = join(OUT, 'code');
+      const view = plan.views[i];
+      try {
+        const code = generateCode({ elements: view.elements, rootId: view.rootId, pageName: view.name, cssModuleImportName: view.name, isComponent: true });
+        await writeFile(join(codeDir, `view-${view.name}.tsx`), code.tsx);
+        await writeFile(join(codeDir, `view-${view.name}.module.css`), code.css);
+        const { importPng, importedRects } = await renderView(browser, { ...code, components, fontElements });
+        const after = await compareShots({
+          sourcePng: measured.sourcePng,
+          importPng,
+          masks: measured.masks,
+          importedRects,
+          label: `${route}-components`,
+          outDir: OUT,
+        });
+        row.withComponents = { pixels: after.pct, elements: Object.keys(view.elements).length - 1 };
+      } catch (err) {
+        row.withComponents = { error: err.message.slice(0, 200) };
+      }
+    }
+    results.componentPlan = {
+      components: plan.components.map((c) => ({ name: c.name, instances: c.instances, views: c.views.length, props: c.props, elements: Object.keys(c.elements).length })),
+      findings: plan.findings,
+    };
+  }
 } finally {
   await browser.close();
   server.stop();
@@ -289,6 +364,13 @@ const summary = {
   roundTripBroken: measured.filter((r) => !r.roundTrip).map((r) => r.route),
   sharedComponents: shared.length,
   repeatGroups: measured.reduce((n, r) => n + r.react.repeatGroups, 0),
+  components: results.componentPlan?.components ?? [],
+  componentFindings: results.componentPlan?.findings ?? [],
+  elementsBefore: measured.reduce((n, r) => n + r.elements, 0),
+  elementsAfter:
+    measured.reduce((n, r) => n + (r.withComponents?.elements ?? r.elements), 0) +
+    (results.componentPlan?.components ?? []).reduce((n, c) => n + c.elements, 0),
+  meanPixelsWithComponents: mean(measured.map((r) => r.withComponents?.pixels).filter((p) => typeof p === 'number')),
 };
 
 console.log('\n— summary —');
@@ -300,6 +382,19 @@ console.log(`  findings per element: mean ${summary.meanFindingsPerElement.toFix
 console.log(`  round trip: ${summary.roundTripBroken.length === 0 ? 'ok on every route' : `BROKEN on ${summary.roundTripBroken.join(', ')}`}`);
 console.log(`  components drawn on 2+ routes: ${shared.length}${shared.length > 0 ? ` — ${shared.slice(0, 8).map(([n, c]) => `${n} (${c})`).join(', ')}` : ''}`);
 console.log(`  repeat groups (one call site, 2+ siblings): ${summary.repeatGroups}`);
+console.log(`\n  components made: ${summary.components.length}`);
+for (const c of summary.components.slice(0, 15)) {
+  console.log(`    ${c.name.padEnd(24)} ${String(c.instances).padStart(4)} copies in ${c.views} views, ${c.elements} elements${c.props.length > 0 ? `, props ${c.props.join(', ')}` : ''}`);
+}
+if (summary.components.length > 15) console.log(`    … and ${summary.components.length - 15} more`);
+const byKind = summary.componentFindings.reduce((acc, f) => ({ ...acc, [f.kind]: [...(acc[f.kind] ?? []), f] }), {});
+for (const [kind, list] of Object.entries(byKind)) {
+  console.log(`  ${kind}: ${list.length} — ${list.slice(0, 6).map((f) => `${f.component} (${f.detail.slice(0, 60)})`).join('; ')}`);
+}
+console.log(`  elements in the project: ${summary.elementsBefore} → ${summary.elementsAfter}`);
+console.log(`  pixels with components: mean ${summary.meanPixelsWithComponents.toFixed(2)}% (was ${summary.meanPixels.toFixed(2)}%)`);
+const worse = measured.filter((r) => typeof r.withComponents?.pixels === 'number' && r.withComponents.pixels < r.pixels - 0.5);
+if (worse.length > 0) console.log(`  routes that lost more than half a point: ${worse.map((r) => `${r.route} ${r.pixels.toFixed(1)} → ${r.withComponents.pixels.toFixed(1)}`).join(', ')}`);
 
 await mkdir(RESULTS, { recursive: true });
 const file = join(RESULTS, `results-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);

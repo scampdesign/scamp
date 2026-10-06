@@ -31,7 +31,13 @@ export type BatchState = {
   id: string;
   items: BatchItem[];
   running: boolean;
-  /** Set once the run is undone: the views it removed. */
+  /** Once every page is in: the components the app window found across them. */
+  finishing?: boolean;
+  components?: Array<{ name: string; instances: number; views: number }>;
+  /** Copies that stayed copies, and why. */
+  notes?: string[];
+  finishError?: string;
+  /** Set once the run is undone: what it removed. */
   undone?: { removed: string[]; error?: string };
 };
 
@@ -100,12 +106,20 @@ export const useImportBatch = ({
 
   useEffect(
     () =>
-      window.scampImport.onBatchUndone((payload) => {
-        setBatch((b) =>
-          b !== null && b.id === payload.batchId
-            ? { ...b, undone: { removed: payload.removed, ...(payload.error !== undefined ? { error: payload.error } : {}) } }
-            : b
-        );
+      window.scampImport.onBatchReport((payload) => {
+        setBatch((b) => {
+          if (b === null || b.id !== payload.batchId) return b;
+          if (payload.kind === 'undone') {
+            return { ...b, undone: { removed: payload.removed, ...(payload.error !== undefined ? { error: payload.error } : {}) } };
+          }
+          return {
+            ...b,
+            finishing: false,
+            components: payload.components,
+            notes: payload.notes,
+            ...(payload.error !== undefined ? { finishError: payload.error } : {}),
+          };
+        });
       }),
     []
   );
@@ -193,7 +207,15 @@ export const useImportBatch = ({
           update(id, index, { status: 'failed', detail: err instanceof Error ? err.message : String(err) });
         }
       }
-      setBatch((b) => (b !== null && b.id === id ? { ...b, running: false } : b));
+      // Every page is in: the app window looks for the app's components
+      // across them, and answers on `onBatchReport`.
+      setBatch((b) => (b !== null && b.id === id ? { ...b, running: false, finishing: true } : b));
+      const finished = await window.scampImport.batchAction(projectPath, id, 'finish');
+      if (!finished.ok) {
+        setBatch((b) =>
+          b !== null && b.id === id ? { ...b, finishing: false, finishError: finished.error ?? 'Scamp couldn’t look for components.' } : b
+        );
+      }
     },
     [webviewRef, projectPath, baseUrl, readAllWidths]
   );
@@ -203,8 +225,8 @@ export const useImportBatch = ({
   }, []);
 
   const undo = useCallback(async (): Promise<void> => {
-    if (batch === null || batch.running) return;
-    const result = await window.scampImport.undoBatch(projectPath, batch.id);
+    if (batch === null || batch.running || batch.finishing === true) return;
+    const result = await window.scampImport.batchAction(projectPath, batch.id, 'undo');
     if (!result.ok) setBatch((b) => (b === null ? b : { ...b, undone: { removed: [], error: result.error ?? 'Couldn’t undo the import.' } }));
   }, [batch, projectPath]);
 

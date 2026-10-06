@@ -112,9 +112,25 @@ test('imports several routes into a new project, and removes them in one step', 
         expect(await viewExists('Private')).toBe(false);
         // The app window is on the new project now.
         await expect(window.getByText('fixture-react-app').first()).toBeVisible();
-        // One step removes them all.
+        // The app's own components, found across the pages: the shell every
+        // page shares, with each page's content in its slot, and the card.
+        await expect(batch.getByTestId('import-batch-components')).toContainText('Shell (3 copies)', { timeout: 30_000 });
+        await expect(batch.getByTestId('import-batch-components')).toContainText('Page (3 copies)');
+        const componentExists = (name) => fs.access(path.join(newProject, 'components', name, `${name}.tsx`)).then(() => true, () => false);
+        expect(await componentExists('Shell')).toBe(true);
+        const about = await fs.readFile(path.join(newProject, 'views', 'About', 'About.tsx'), 'utf-8');
+        expect(about).toContain('<Shell');
+        expect(about).toContain('<Page');
+        expect(about).not.toContain('<nav');
+        const shell = await fs.readFile(path.join(newProject, 'components', 'Shell', 'Shell.tsx'), 'utf-8');
+        expect(shell).toContain('{children}');
+        // Which nav item is highlighted differs by page; the report says so.
+        await batch.getByText(/kept as copies or simplified/).click();
+        await expect(batch).toContainText('Shell looks different on some pages');
+        // One step removes everything it made.
         await batch.getByRole('button', { name: 'Remove these pages' }).click();
-        await expect(batch).toContainText('Removed 3 pages');
+        await expect(batch).toContainText('Removed 3 pages and 2 components');
+        expect(await componentExists('Shell')).toBe(false);
         await expect.poll(() => viewExists('About')).toBe(false);
         expect(await viewExists('Home2')).toBe(false);
         // Only what the import made: the project's own Home stays.

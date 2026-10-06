@@ -318,11 +318,60 @@ step. Tests: `projectNameFrom` units, and the second test in
   `Home2`. Carrying the app's paths belongs with the route map in
   Phase 7.
 
-### Phase 3 — React's tree in the capture, and components
+### Phase 3 — React's tree in the capture, and components — **done**
 
-The `react` annotation, then `reactComponents.ts`: shared components,
-the shell as a component with a slot, text props named from fiber
-props. Reported: fragments, style-varying instances.
+**The capture.** `captureScript.ts` reads React's fiber tree when the
+page has one: each node gains `react.owners` (the app's components that
+drew it, nearest first, with an id per instance) and `react.site` (the
+JSX call site, React 19). A component is the app's unless its JSX lives
+under `node_modules`, which `_debugStack` says; React 18 has no stack,
+so every named component counts. The payload gains each instance's
+plain props. Optional fields, so `CAPTURE_VERSION` stays 3.
+
+**The plan.** `@lib/reactComponents` (`planReactComponents`) runs over
+a finished batch's views:
+
+- An element is the root of an instance when it belongs to it and its
+  parent doesn't. A component with several top-level elements stays as
+  elements (`fragment`).
+- Children the instance doesn't own are content passed in. Content that
+  is the same in every copy (the bell every top bar has) is part of the
+  component; content that differs is the page's, through one `children`
+  slot — and only where that element holds nothing else, because a
+  Scamp slot replaces all of its element's children (`slots`).
+- Copies with the same name and shape are one group, largest first, so
+  the shell is made before the buttons inside it.
+- Each element's look is the copies' majority. A copy that differs only
+  in paint (the selected nav item's background, weight, shadow; an
+  invisible attribute such as `datetime`) takes the common look
+  (`style-varies`). A copy that differs in layout stays as it is
+  (`too-different`, naming the fields: `placeholder on dp_search_input`).
+- A size the copies share is kept; one that differs — a shell as tall as
+  its page, a breadcrumb as wide as its words — goes back to `auto`.
+- Text that differs is a prop, named after the React prop that held it.
+- A group containing a component made earlier in the run stays as
+  elements (`nested`): components inside components are not made yet.
+
+**The app.** When a run finishes, the import window asks the app window
+to finish the batch (`ImportBatchAction`, `finish`); it plans, writes the
+components, rewrites the views with instances, opens the last view, and
+reports what it made and kept. **Remove these pages** removes the
+components too.
+
+**On riq_frontend_demo** (39 routes): 25 components, among them
+`AppSidebar` (34 copies), `Clock` and `NotificationsBell` (34),
+`Breadcrumbs` (23), `GreetingBanner2` (21); the project goes from 10,623
+elements to 6,475; pixels 94.12% → 93.78%, with the Rx tools losing most
+(`/rx-copilot/weight-loss` 92.1 → 87.5). Tests:
+`test/reactComponents.test.ts`, a real React capture
+(`test/fixtures/import/pages/react-app.html`), and the batch e2e, which
+now checks the fixture's `Shell` (with its slot) and `Page`.
+
+**Found on the way:** the eval passed components to the export as
+`{ tsx, css }` where it reads `{ tsxContent, cssContent }`, so every
+instance exported empty and pixels read 51%. The harness now takes
+render and compare apart (`capturePage`, `renderView`, `compareShots`)
+and inlines every stylesheet the export writes.
 
 ### Phase 4 — repeats
 

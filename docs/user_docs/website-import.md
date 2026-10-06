@@ -64,6 +64,18 @@ Next.js, or Create React App.
 1. Click **Import N pages**. Scamp visits each page in turn, reads it at
    every breakpoint, and lists how each one went.
 
+When every page is in, Scamp looks for the app's own components across
+them. A part the app draws on several pages, such as a sidebar or a
+status chip, becomes one [component](components.md), with an instance on
+each page in place of the copy. Text that differs from page to page,
+such as a page title, becomes a text prop. The list of results says
+which components Scamp made, and which copies it kept as they are and
+why.
+
+**Note:** A component shows one look on every page. Where the app
+highlights something differently on each page, such as the current item
+in a navigation menu, the component shows the look most pages have.
+
 To import one page at a time instead, click a page in the list, then
 click **Import** at the top of the window.
 

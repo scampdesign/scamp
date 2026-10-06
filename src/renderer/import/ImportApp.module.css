@@ -410,3 +410,19 @@
   flex: none;
   text-align: right;
 }
+
+.batchComponents {
+  margin: 6px 0 0;
+  font-size: 12px;
+}
+
+.batchNotes {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #a9aeb7;
+}
+
+.batchNotes ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}

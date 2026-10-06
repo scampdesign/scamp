@@ -66,6 +66,130 @@ export const captureFn = (policy) => {
     const textTags = new Set(policy.textTags);
     const { maxDepth, maxNodes, maxTextLength } = policy.limits;
     const pageNotes = [];
+    /**
+     * React's own account of the page, when it is a React app in
+     * development: for each element, the app's components that drew it.
+     * Read from the fiber React keeps on every DOM node. Null on any other
+     * page, which leaves an HTML import exactly as it was.
+     * see docs/plans/react-import-plan.md
+     */
+    const reactReader = (() => {
+        const fiberOf = (el) => {
+            const key = Object.keys(el).find((k) => k.startsWith('__reactFiber$'));
+            return key === undefined ? null : (el[key] ?? null);
+        };
+        let root = null;
+        for (const el of [document.getElementById('root'), document.getElementById('app'), document.getElementById('__next'), ...Array.from(document.body.children)]) {
+            if (el === null)
+                continue;
+            const key = Object.keys(el).find((k) => k.startsWith('__reactContainer$'));
+            if (key === undefined)
+                continue;
+            const container = el[key];
+            // The container keeps the first root fiber; React swaps trees on
+            // every commit, so the live one is the root node's `current`.
+            root = container?.stateNode?.current ?? container ?? null;
+            break;
+        }
+        if (root === null)
+            return null;
+        const nameOf = (type) => {
+            if (typeof type === 'function') {
+                const fn = type;
+                return fn.displayName || fn.name || null;
+            }
+            if (type !== null && typeof type === 'object') {
+                const t = type;
+                return t.displayName || t.render?.displayName || t.render?.name || t.type?.displayName || t.type?.name || null;
+            }
+            return null;
+        };
+        /** The first stack frame outside React's own runtime: where the JSX was written. */
+        const sourceOf = (fiber) => {
+            const stack = fiber._debugStack?.stack;
+            if (typeof stack !== 'string')
+                return null;
+            for (const line of stack.split('\n').slice(1)) {
+                const m = line.match(/\(?(https?:\/\/[^\s)]+?):(\d+):(\d+)\)?\s*$/);
+                if (m === null || m[1] === undefined)
+                    continue;
+                if (/\/node_modules\/(\.vite\/deps\/)?(react|react-dom|scheduler)[/_.]|jsx-dev-runtime|jsx-runtime/.test(m[1]))
+                    continue;
+                let path = m[1];
+                try {
+                    path = new URL(m[1]).pathname;
+                }
+                catch {
+                    // Keep it as it is.
+                }
+                return { url: m[1], at: `${path}:${m[2]}:${m[3]}` };
+            }
+            return null;
+        };
+        // Where each component's JSX lives: the source of anything it rendered.
+        // A component defined under node_modules is a library's, not the app's.
+        const fileOf = new Map();
+        const stack = [root];
+        let walked = 0;
+        while (stack.length > 0 && walked < 200_000) {
+            const fiber = stack.pop();
+            walked += 1;
+            const owner = fiber._debugOwner;
+            if (owner && !fileOf.has(owner)) {
+                const source = sourceOf(fiber);
+                if (source !== null) {
+                    fileOf.set(owner, source.url);
+                    if (owner.alternate)
+                        fileOf.set(owner.alternate, source.url);
+                }
+            }
+            if (fiber.sibling)
+                stack.push(fiber.sibling);
+            if (fiber.child)
+                stack.push(fiber.child);
+        }
+        // No stack (React 18): nothing says which is a library's, so all count.
+        const isLibrary = (fiber) => (fileOf.get(fiber) ?? '').includes('/node_modules/');
+        const ids = new Map();
+        const instances = {};
+        const idOf = (fiber, name) => {
+            const known = ids.get(fiber) ?? (fiber.alternate ? ids.get(fiber.alternate) : undefined);
+            if (known !== undefined)
+                return known;
+            const id = ids.size;
+            ids.set(fiber, id);
+            const props = {};
+            for (const [key, value] of Object.entries(fiber.memoizedProps ?? {}).slice(0, 40)) {
+                if (key === 'children' || key === 'key')
+                    continue;
+                if (typeof value === 'string' ? value.length <= 200 : typeof value === 'number' || typeof value === 'boolean') {
+                    props[key] = value;
+                }
+            }
+            instances[String(id)] = { name, props };
+            return id;
+        };
+        return {
+            instances,
+            annotate: (el) => {
+                const fiber = fiberOf(el);
+                if (fiber === null)
+                    return null;
+                const owners = [];
+                let owner = fiber._debugOwner ?? null;
+                for (let hops = 0; owner !== null && hops < 40 && owners.length < 12; hops += 1) {
+                    const name = nameOf(owner.type);
+                    if (name !== null && !isLibrary(owner))
+                        owners.push({ name, id: idOf(owner, name) });
+                    owner = owner._debugOwner ?? null;
+                }
+                const site = sourceOf(fiber);
+                if (owners.length === 0 && site === null)
+                    return null;
+                return { owners, ...(site !== null && !site.url.includes('/node_modules/') ? { site: site.at } : {}) };
+            },
+        };
+    })();
     const assets = [];
     let nextId = 0;
     let nodeBudget = maxNodes;
@@ -725,6 +849,9 @@ export const captureFn = (policy) => {
         if (text !== null && el.children.length > 0) {
             built['textAfterChildIndex'] = textAfterChildIndex;
         }
+        const react = reactReader?.annotate(el) ?? null;
+        if (react !== null)
+            built['react'] = react;
         if (policy.includeRects) {
             const box = el.getBoundingClientRect();
             built['rect'] = {
@@ -782,5 +909,6 @@ export const captureFn = (policy) => {
         assets,
         notes: pageNotes,
         source: readSource(),
+        ...(reactReader !== null ? { react: { instances: reactReader.instances } } : {}),
     };
 };

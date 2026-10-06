@@ -159,12 +159,13 @@ export const IPC = {
   ImportOpen: 'import:open',
   // React app import: choose a folder, start its dev server with the
   // user's say-so, and stream its progress. see docs/plans/react-import-plan.md
-  // A multi-page import undone in one go: the import window names the
-  // batch, the app window removes the views it made for it and says which.
-  ImportUndoBatch: 'import:undo-batch',
-  ImportUndoBatchDeliver: 'import:undo-batch-deliver',
-  ImportBatchUndone: 'import:batch-undone',
-  ImportBatchUndoneChanged: 'import:batch-undone-changed',
+  // A multi-page import, finished (components found) or undone: the
+  // import window names the batch and the action, the app window acts on
+  // what it recorded for that batch and reports back.
+  ImportBatchAction: 'import:batch-action',
+  ImportBatchActionDeliver: 'import:batch-action-deliver',
+  ImportBatchReport: 'import:batch-report',
+  ImportBatchReportChanged: 'import:batch-report-changed',
   ReactImportInspect: 'react-import:inspect',
   ReactImportStart: 'react-import:start',
   ReactImportProgress: 'react-import:progress',

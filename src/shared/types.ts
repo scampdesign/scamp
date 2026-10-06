@@ -725,10 +725,28 @@ export type ImportReportGroup = {
 /** Which run of a multi-page import a page belongs to. */
 export type ImportBatchRef = { id: string; index: number; total: number };
 
-/** Remove every view one multi-page import made. */
-export type ImportUndoBatchArgs = { projectPath: string; batchId: string };
+/**
+ * Something to do with one multi-page import, asked by the import window:
+ * `finish` finds the app's components across its views; `undo` removes
+ * everything it made.
+ */
+export type ImportBatchActionArgs = { projectPath: string; batchId: string; action: 'finish' | 'undo' };
 
-export type ImportBatchUndone = { projectPath: string; batchId: string; removed: string[]; error?: string };
+/** A component a React import made, for the report. */
+export type ImportBatchComponent = { name: string; instances: number; views: number };
+
+/** What a batch action did, sent back to the import window. */
+export type ImportBatchReport =
+  | { kind: 'undone'; projectPath: string; batchId: string; removed: string[]; error?: string }
+  | {
+      kind: 'finished';
+      projectPath: string;
+      batchId: string;
+      components: ImportBatchComponent[];
+      /** Copies that stayed copies, and why — `AppFrame: the nav item differs by page`. */
+      notes: string[];
+      error?: string;
+    };
 
 export type ImportResultPayload = {
   projectPath: string;

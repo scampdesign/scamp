@@ -261,14 +261,11 @@ const writeDiffPng = async (a, b, w, h, file) => {
 };
 
 /**
- * Measure the page already loaded in `page`. Captures and screenshots the
- * SAME page instance, then renders the import in a fresh one.
- *
- * Returns the numbers and the intermediate results, so a caller can go on
- * to lint or round-trip the same reduction without capturing twice.
+ * Capture the page already loaded in `page`, and screenshot that SAME
+ * page instance without reloading. Reload between the two and a rotating
+ * hero or a lazily-swapped image guarantees a diff that is nobody's bug.
  */
-export const measurePage = async (browser, page, { label, outDir: out = outDir } = {}) => {
-  await mkdir(out, { recursive: true });
+export const capturePage = async (page) => {
   await page.addStyleTag({ content: FREEZE_CSS });
   await page.evaluate(() => document.fonts?.ready);
 
@@ -297,43 +294,40 @@ export const measurePage = async (browser, page, { label, outDir: out = outDir }
     return found;
   }, MASK_SELECTOR);
 
-  // Capture and screenshot the SAME page instance, without reloading.
-  // Reload between the two and a rotating hero or a lazily-swapped
-  // image guarantees a diff that is nobody's bug.
   const payload = await page.evaluate(
     ([src, policy]) => new Function(`return (${src})`)()(policy),
     [captureFn.toString(), { ...capturePolicy(), includeRects: true }]
   );
   const sourcePng = await page.screenshot({ fullPage: true });
+  return { payload, sourcePng, masks };
+};
 
-  const reduced = reduceCapture(payload);
-  const { tsx, css } = generateCode({
-    elements: reduced.elements,
-    rootId: reduced.rootId,
-    pageName: 'Imported',
-    cssModuleImportName: 'Imported',
-    isComponent: true,
-  });
+/**
+ * Render a view the way the app exports it — the project's theme.css,
+ * which carries the resets, every stylesheet the export wrote (a view's
+ * and each component's), and the page's own typefaces. Without the fonts
+ * this measures a fallback face, whose metrics differ — which reads as
+ * the importer getting every text height wrong.
+ * see docs/notes/parity-harness.md
+ */
+export const renderView = async (browser, { tsx, css, components = [], fontElements }) => {
   const exported = buildHtmlExport({
     projectName: 'pixels',
     pages: [{ name: 'imported', tsxContent: tsx, cssContent: css }],
-    components: [],
+    components,
     themeCss: DEFAULT_THEME_CSS,
   });
   const html = exported.files.find((f) => f.path.endsWith('.html'))?.contents;
-  const sheet = exported.files.find((f) => f.path.endsWith('.css'))?.contents ?? '';
   const themeSheet = exported.files.find((f) => f.path === 'theme.css')?.contents ?? '';
+  const sheets = exported.files
+    .filter((f) => f.path.endsWith('.css') && f.path !== 'theme.css')
+    .map((f) => f.contents)
+    .join('\n');
   if (!html) {
     throw new Error(`the exporter produced no document (skipped: ${JSON.stringify(exported.skipped)})`);
   }
-
-  // Render the import the way the app does: the project's theme.css,
-  // which carries the box-sizing and block-margin resets, and the
-  // page's own typefaces. Without the fonts this measures a fallback
-  // face, whose metrics differ — which reads as the importer getting
-  // every text height wrong. see docs/notes/parity-harness.md
   const fontUrl = googleFontsUrlFor(
-    fontsNeededBy(reduced.elements).map((n) => n.family).filter(needsResolving),
+    fontsNeededBy(fontElements).map((n) => n.family).filter(needsResolving),
     AXES
   );
   const fontLink = fontUrl === null ? '' : `<link rel="stylesheet" href="${fontUrl}">`;
@@ -341,7 +335,7 @@ export const measurePage = async (browser, page, { label, outDir: out = outDir }
   await shot.setContent(
     html.replace(
       '</head>',
-      `${fontLink}<style>${themeSheet}</style><style>${sheet}</style>` + `<style>${FREEZE_CSS}</style></head>`
+      `${fontLink}<style>${themeSheet}</style><style>${sheets}</style>` + `<style>${FREEZE_CSS}</style></head>`
     ),
     { waitUntil: 'networkidle' }
   );
@@ -365,7 +359,12 @@ export const measurePage = async (browser, page, { label, outDir: out = outDir }
   });
   const importPng = await shot.screenshot({ fullPage: true });
   await shot.close();
+  return { importPng, importedRects };
+};
 
+/** Diff two screenshots; write the PNGs; rank the clusters. */
+export const compareShots = async ({ sourcePng, importPng, masks, importedRects = {}, label, outDir: out = outDir }) => {
+  await mkdir(out, { recursive: true });
   const [srcMeta, impMeta] = await Promise.all([sharp(sourcePng).metadata(), sharp(importPng).metadata()]);
   // Full-page heights rarely match exactly, and the difference is
   // itself a finding — a page 400px shorter than its source has lost
@@ -380,12 +379,11 @@ export const measurePage = async (browser, page, { label, outDir: out = outDir }
   const pct = considered === 0 ? 0 : (100 * (considered - grid.differing)) / considered;
   const clusters = clustersOf(grid).map((c) => ({ ...c, element: elementUnder(c, importedRects) }));
 
-  const slug = (label ?? page.url()).replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+  const slug = label.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
   const diffFile = join(out, `${slug}.diff.png`);
   await writeDiffPng(a, b, w, h, diffFile);
   await writeFile(join(out, `${slug}.source.png`), sourcePng);
   await writeFile(join(out, `${slug}.import.png`), importPng);
-
   return {
     pct,
     differing: grid.differing,
@@ -396,10 +394,34 @@ export const measurePage = async (browser, page, { label, outDir: out = outDir }
     masks,
     clusters,
     diffFile,
-    payload,
-    reduced,
-    code: { tsx, css },
   };
+};
+
+/**
+ * Measure the page already loaded in `page`: capture it, render its
+ * import, compare. Returns the numbers and the intermediate results, so a
+ * caller can lint or round-trip the same reduction without capturing twice.
+ */
+export const measurePage = async (browser, page, { label, outDir: out = outDir } = {}) => {
+  const { payload, sourcePng, masks } = await capturePage(page);
+  const reduced = reduceCapture(payload);
+  const { tsx, css } = generateCode({
+    elements: reduced.elements,
+    rootId: reduced.rootId,
+    pageName: 'Imported',
+    cssModuleImportName: 'Imported',
+    isComponent: true,
+  });
+  const { importPng, importedRects } = await renderView(browser, { tsx, css, fontElements: reduced.elements });
+  const compared = await compareShots({
+    sourcePng,
+    importPng,
+    masks,
+    importedRects,
+    label: label ?? page.url(),
+    outDir: out,
+  });
+  return { ...compared, payload, reduced, code: { tsx, css }, sourcePng };
 };
 
 /** Remove the bundle cache. Screenshots stay. */

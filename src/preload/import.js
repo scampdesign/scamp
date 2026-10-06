@@ -30,13 +30,15 @@ const importApi = {
         ...(nameHint !== undefined ? { nameHint } : {}),
         ...(batch !== undefined ? { batch } : {}),
     }),
-    /** Remove every view one multi-page import made. A batch id, nothing else. */
-    undoBatch: (projectPath, batchId) => ipcRenderer.invoke(IPC.ImportUndoBatch, { projectPath, batchId }),
-    /** Which views an undo removed. */
-    onBatchUndone: (listener) => {
+    /**
+     * Finish a multi-page import (find its components) or undo it. A batch
+     * id and an action, nothing else; the app window answers on `onBatchReport`.
+     */
+    batchAction: (projectPath, batchId, action) => ipcRenderer.invoke(IPC.ImportBatchAction, { projectPath, batchId, action }),
+    onBatchReport: (listener) => {
         const handler = (_e, p) => listener(p);
-        ipcRenderer.on(IPC.ImportBatchUndoneChanged, handler);
-        return () => ipcRenderer.removeListener(IPC.ImportBatchUndoneChanged, handler);
+        ipcRenderer.on(IPC.ImportBatchReportChanged, handler);
+        return () => ipcRenderer.removeListener(IPC.ImportBatchReportChanged, handler);
     },
     /**
      * Ask the app window to start an AI cleanup of the view just imported.

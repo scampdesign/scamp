@@ -62,6 +62,30 @@ export type CapturedPseudo = {
     /** Computed values, filtered exactly as an element's are. */
     styles: Record<string, string>;
 };
+/**
+ * What React says about an element, when the page is a React app in
+ * development. Absent everywhere else, so an HTML import is untouched.
+ * see docs/plans/react-import-plan.md
+ */
+export type CapturedReact = {
+    /**
+     * The app's own components that drew this element, nearest first: the
+     * one whose render wrote its JSX, then the one that rendered that, and
+     * so on. Library components (anything defined under `node_modules`)
+     * are left out. Each `id` is one instance, the same across elements.
+     */
+    owners: Array<{
+        name: string;
+        id: number;
+    }>;
+    /** The JSX call site, `/src/app/nav.tsx:102:72`. React 19 only. */
+    site?: string;
+};
+/** One component instance: its name, and its props that are plain values. */
+export type CapturedReactInstance = {
+    name: string;
+    props: Record<string, string | number | boolean>;
+};
 export type CapturedNode = {
     /** Assigned by the walk, depth-first from 0. Stable within one capture. */
     id: number;
@@ -87,6 +111,8 @@ export type CapturedNode = {
         w: number;
         h: number;
     };
+    /** React's account of this element, on a React app in development. */
+    react?: CapturedReact;
     /** Static `::before` / `::after` content, recoverable as elements. */
     pseudo?: {
         before?: CapturedPseudo;
@@ -232,6 +258,10 @@ export type CapturePayload = {
      * see docs/notes/import-source-store.md
      */
     source?: CapturedSource;
+    /** The React component instances named by nodes' `react.owners`, by id. */
+    react?: {
+        instances: Record<string, CapturedReactInstance>;
+    };
 };
 export type CapturedSource = {
     /** `document.documentElement.outerHTML` at capture time. */

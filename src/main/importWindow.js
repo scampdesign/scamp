@@ -161,24 +161,28 @@ export const registerImportIpc = () => {
         target.focus();
         return { ok: true };
     });
-    // Import window → app window: undo one multi-page import. The window
-    // names a batch and nothing else; the app window removes only views it
-    // recorded making for that batch.
-    ipcMain.handle(IPC.ImportUndoBatch, (_e, args) => {
+    // Import window → app window: finish or undo one multi-page import. The
+    // window names a batch and an action and nothing else; the app window
+    // acts only on what it recorded making for that batch.
+    ipcMain.handle(IPC.ImportBatchAction, (_e, args) => {
         const target = appWindow();
         if (!target)
             return { ok: false, error: 'Scamp is not open on a project.' };
-        if (typeof args?.projectPath !== 'string' || typeof args.batchId !== 'string' || !/^[a-z0-9-]{1,64}$/.test(args.batchId)) {
-            return { ok: false, error: 'That undo request was malformed.' };
+        if (typeof args?.projectPath !== 'string' ||
+            typeof args.batchId !== 'string' ||
+            !/^[a-z0-9-]{1,64}$/.test(args.batchId) ||
+            (args.action !== 'finish' && args.action !== 'undo')) {
+            return { ok: false, error: 'That request was malformed.' };
         }
-        target.webContents.send(IPC.ImportUndoBatchDeliver, { projectPath: args.projectPath, batchId: args.batchId });
+        const forwarded = { projectPath: args.projectPath, batchId: args.batchId, action: args.action };
+        target.webContents.send(IPC.ImportBatchActionDeliver, forwarded);
         return { ok: true };
     });
-    // App window → import window: which views the undo removed.
-    ipcMain.handle(IPC.ImportBatchUndone, (_e, payload) => {
+    // App window → import window: what the action did.
+    ipcMain.handle(IPC.ImportBatchReport, (_e, payload) => {
         const win = importWindows.get(payload.projectPath);
         if (win && !win.isDestroyed())
-            win.webContents.send(IPC.ImportBatchUndoneChanged, payload);
+            win.webContents.send(IPC.ImportBatchReportChanged, payload);
     });
     // App window → import window, so the importer can report the outcome
     // without knowing anything about projects.

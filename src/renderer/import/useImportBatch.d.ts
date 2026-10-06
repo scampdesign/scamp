@@ -24,7 +24,17 @@ export type BatchState = {
     id: string;
     items: BatchItem[];
     running: boolean;
-    /** Set once the run is undone: the views it removed. */
+    /** Once every page is in: the components the app window found across them. */
+    finishing?: boolean;
+    components?: Array<{
+        name: string;
+        instances: number;
+        views: number;
+    }>;
+    /** Copies that stayed copies, and why. */
+    notes?: string[];
+    finishError?: string;
+    /** Set once the run is undone: what it removed. */
     undone?: {
         removed: string[];
         error?: string;

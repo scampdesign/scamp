@@ -27,10 +27,21 @@ export const useImportBatch = ({ webviewRef, projectPath, baseUrl, readAllWidths
             resolve(payload);
         }
     }), []);
-    useEffect(() => window.scampImport.onBatchUndone((payload) => {
-        setBatch((b) => b !== null && b.id === payload.batchId
-            ? { ...b, undone: { removed: payload.removed, ...(payload.error !== undefined ? { error: payload.error } : {}) } }
-            : b);
+    useEffect(() => window.scampImport.onBatchReport((payload) => {
+        setBatch((b) => {
+            if (b === null || b.id !== payload.batchId)
+                return b;
+            if (payload.kind === 'undone') {
+                return { ...b, undone: { removed: payload.removed, ...(payload.error !== undefined ? { error: payload.error } : {}) } };
+            }
+            return {
+                ...b,
+                finishing: false,
+                components: payload.components,
+                notes: payload.notes,
+                ...(payload.error !== undefined ? { finishError: payload.error } : {}),
+            };
+        });
     }), []);
     const start = useCallback(async (targets) => {
         if (targets.length === 0 || projectPath.length === 0)
@@ -108,15 +119,21 @@ export const useImportBatch = ({ webviewRef, projectPath, baseUrl, readAllWidths
                 update(id, index, { status: 'failed', detail: err instanceof Error ? err.message : String(err) });
             }
         }
-        setBatch((b) => (b !== null && b.id === id ? { ...b, running: false } : b));
+        // Every page is in: the app window looks for the app's components
+        // across them, and answers on `onBatchReport`.
+        setBatch((b) => (b !== null && b.id === id ? { ...b, running: false, finishing: true } : b));
+        const finished = await window.scampImport.batchAction(projectPath, id, 'finish');
+        if (!finished.ok) {
+            setBatch((b) => b !== null && b.id === id ? { ...b, finishing: false, finishError: finished.error ?? 'Scamp couldn’t look for components.' } : b);
+        }
     }, [webviewRef, projectPath, baseUrl, readAllWidths]);
     const stop = useCallback(() => {
         stopRequested.current = true;
     }, []);
     const undo = useCallback(async () => {
-        if (batch === null || batch.running)
+        if (batch === null || batch.running || batch.finishing === true)
             return;
-        const result = await window.scampImport.undoBatch(projectPath, batch.id);
+        const result = await window.scampImport.batchAction(projectPath, batch.id, 'undo');
         if (!result.ok)
             setBatch((b) => (b === null ? b : { ...b, undone: { removed: [], error: result.error ?? 'Couldn’t undo the import.' } }));
     }, [batch, projectPath]);
