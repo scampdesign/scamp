@@ -361,7 +361,7 @@ refused, for case-insensitive disks); the IO in the responder.
   is that an edit made during a turn folds into the agent's undo step.
   Worth doing if that bites in testing.
 
-### Phase 5 — the import cleanup skill — **built; real-model eval not yet run**
+### Phase 5 — the import cleanup skill — **done**
 
 **The skill** (`src/main/agent/skills/`) is a versioned module:
 instructions, the tools it may use, its effort (`high`), and the token
@@ -428,7 +428,7 @@ for nothing and is the default. Calibrate on one page first:
 ANTHROPIC_API_KEY=… node scripts/agent-cleanup-eval.mjs --provider anthropic --pages dashboard --modes keep-literal --max-usd 1.5
 ```
 
-**What the real-model runs found** (skill v1 → v3, $3.57 of $5):
+**What the real-model runs found** (skill v1 → v3, $4.17 of $5):
 
 - **v1 was timid.** Dashboard, keep-literal: 27 → 22 findings. Every
   finding was a one-sided border or padding the skill said to fold "when
@@ -445,6 +445,10 @@ ANTHROPIC_API_KEY=… node scripts/agent-cleanup-eval.mjs --provider anthropic -
   (98.6% → 95.3%). v2 said to rewrite "each" finding; v3 says a display
   the panel can't express is left alone, and so is anything whose only
   fix changes the look.
+- **v3, marketing, create-tokens ($0.60):** 19 → 11 findings — the
+  eleven `display` values left alone — 10 tokens added and none
+  undeclared, pixels identical (98.6%), the same 3 elements off as
+  before, round trip stable. The case v2 failed, passed.
 - **The eval had a bug of its own:** it rendered the view as a component
   while the agent edited it as a view (which saves like a page), so a
   root restyle looked like a broken round trip. It now starts from the
