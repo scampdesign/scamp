@@ -64,7 +64,7 @@ import { useInstanceFlows } from './projectShell/useInstanceFlows';
 import { useLatest } from './projectShell/useLatest';
 import { ReactImportDialog } from './projectShell/ReactImportDialog';
 import styles from './ProjectShell.module.css';
-export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
+export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProject, pendingImport, onPendingImportHandled, }) => {
     // Per-project config (scamp.config.json) + its canvas-store breakpoint
     // mirror, owned by the hook. Defaults render immediately so the canvas
     // doesn't flash a wrong background while the first read is in flight.
@@ -87,6 +87,24 @@ export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
     // deeply-nested readers (format, root path, page list, component-tree
     // cache, active-target canvas min-height).
     useProjectStoreSync({ project, projectConfig, activeComponent });
+    // A React import into a new project: this is that project, now open, so
+    // the import window opens on the app here.
+    useEffect(() => {
+        if (pendingImport === null || pendingImport === undefined)
+            return;
+        onPendingImportHandled?.();
+        void window.scamp.openImport({
+            projectPath: project.path,
+            url: pendingImport.url,
+            breakpoints: projectConfig.breakpoints,
+            react: { appName: pendingImport.appName },
+        });
+    }, [pendingImport, onPendingImportHandled, project.path, projectConfig.breakpoints]);
+    // An undone multi-page import can remove the view that's open.
+    const handleImportedViewsRemoved = useCallback((names) => {
+        if (activeComponent !== null && names.includes(activeComponent.name))
+            setActiveComponentState(null);
+    }, [activeComponent, setActiveComponentState]);
     // A captured page arriving from the import window lands here: this is
     // where the project, the reducer and the generator all are.
     // see docs/plans/website-import-plan.md
@@ -95,6 +113,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
         breakpoints: projectConfig.breakpoints,
         onProjectChange,
         openView: (name) => openComponent(name, null, 'view'),
+        onViewsRemoved: handleImportedViewsRemoved,
     });
     // Routes in a Scamp-framework project, and the dev server's request
     // log in the app log. see docs/notes/routes-in-the-app.md
@@ -326,8 +345,12 @@ export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
                                             }, onDismiss: () => handleProjectConfigChange({
                                                 ...projectConfig,
                                                 scampMigrationDismissed: true,
-                                            }) })) : null, routesSection: project.format === 'scamp' ? (_jsx(RoutesSection, { routes: routesApi.routes, views: project.components.filter((c) => componentKindOf(c) === 'view'), activeViewName: activeViewName, busy: routesApi.busy, onOpen: (file) => void routesApi.openRoute(file), onSetRender: (file, render) => void routesApi.setRender(file, render), onGenerate: (name) => void routesApi.generateRoute(name) })) : null })] })), reactImportOpen && (_jsx(ReactImportDialog, { projectPath: project.path, onClose: () => setReactImportOpen(false), onReady: (url, appName) => {
+                                            }) })) : null, routesSection: project.format === 'scamp' ? (_jsx(RoutesSection, { routes: routesApi.routes, views: project.components.filter((c) => componentKindOf(c) === 'view'), activeViewName: activeViewName, busy: routesApi.busy, onOpen: (file) => void routesApi.openRoute(file), onSetRender: (file, render) => void routesApi.setRender(file, render), onGenerate: (name) => void routesApi.generateRoute(name) })) : null })] })), reactImportOpen && (_jsx(ReactImportDialog, { projectPath: project.path, projectName: project.name, onClose: () => setReactImportOpen(false), onReady: (url, appName, newProject) => {
                                     setReactImportOpen(false);
+                                    if (newProject !== undefined && onSwitchProject !== undefined) {
+                                        onSwitchProject(newProject, { url, appName });
+                                        return;
+                                    }
                                     void window.scamp.openImport({
                                         projectPath: project.path,
                                         url,

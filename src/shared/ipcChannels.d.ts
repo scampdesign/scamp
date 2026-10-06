@@ -90,6 +90,10 @@ export declare const IPC: {
     /** main → renderer: a file under routes/ was added, changed, or removed. */
     readonly RoutesChanged: "routes:changed";
     readonly ImportOpen: "import:open";
+    readonly ImportUndoBatch: "import:undo-batch";
+    readonly ImportUndoBatchDeliver: "import:undo-batch-deliver";
+    readonly ImportBatchUndone: "import:batch-undone";
+    readonly ImportBatchUndoneChanged: "import:batch-undone-changed";
     readonly ReactImportInspect: "react-import:inspect";
     readonly ReactImportStart: "react-import:start";
     readonly ReactImportProgress: "react-import:progress";

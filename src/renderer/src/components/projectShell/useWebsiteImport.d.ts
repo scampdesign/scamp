@@ -25,6 +25,8 @@ type Options = {
     onProjectChange?: (update: (prev: ProjectData) => ProjectData) => void;
     /** Opens the freshly-imported view on the canvas. */
     openView: (name: string) => void;
+    /** Views an undone multi-page import removed, so the canvas can let go of one that's open. */
+    onViewsRemoved?: (names: ReadonlyArray<string>) => void;
 };
-export declare const useWebsiteImport: ({ project, breakpoints, onProjectChange, openView, }: Options) => void;
+export declare const useWebsiteImport: ({ project, breakpoints, onProjectChange, openView, onViewsRemoved, }: Options) => void;
 export {};

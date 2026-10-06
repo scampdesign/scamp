@@ -53,9 +53,22 @@ Next.js, or Create React App.
 1. Read the commands Scamp shows you. To show the app's pages, Scamp
    runs its dev server, such as `npm run dev`, and first installs its
    dependencies if they aren't installed yet.
+1. Choose where the pages go: **A new project**, named after the app, or
+   **This project**. A new project is the default, so the app's design
+   stays apart from your other work. It needs a default projects folder,
+   which you set in **Settings**.
 1. Click **Run and import**. When the app is running, the import window
    opens on it, with the app's pages listed on the left.
-1. Click a page in the list, then click **Import**.
+1. Select the checkbox beside each page you want. Pages that open as
+   they stand are already selected.
+1. Click **Import N pages**. Scamp visits each page in turn, reads it at
+   every breakpoint, and lists how each one went.
+
+To import one page at a time instead, click a page in the list, then
+click **Import** at the top of the window.
+
+To undo a multi-page import, click **Remove these pages** in the list
+of results. Scamp removes the views that import made, and nothing else.
 
 Each view is named after its route: `/billing/dashboard` becomes
 `BillingDashboard`, and `/` becomes `Home`.
@@ -73,7 +86,8 @@ Some pages need more than their address:
   shows a box under its name. Enter a value, such as an ID you know
   exists, and then click the page.
 - **A page that sends you somewhere else**, such as to a sign-in or a
-  setup screen, is flagged in the list. Use the app in the import
+  setup screen, is flagged in the list, and a multi-page import skips
+  it. Use the app in the import
   window to get to the state you want, then click **Import**. The window
   keeps the app's session, so a sign-in carries over to the next page.
 

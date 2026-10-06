@@ -72,6 +72,60 @@ test('runs a React app, lists its routes, and imports one as a view', async ({ a
         await fs.rm(appDir, { recursive: true, force: true });
     }
 });
+test('imports several routes into a new project, and removes them in one step', async ({ app, window }) => {
+    const appDir = await copyFixtureApp();
+    const projectsDir = await fs.mkdtemp(path.join(os.tmpdir(), 'scamp-projects-'));
+    try {
+        await expect(pageRoot(window)).toBeVisible();
+        await window.evaluate((dir) => globalThis.scamp
+            .setDefaultProjectsFolder(dir), projectsDir);
+        await openPagesSection(window);
+        await stubOpenDialog(app, appDir);
+        await window.getByRole('button', { name: /Import a React app/ }).click();
+        const dialog = window.getByTestId('react-import-dialog');
+        await dialog.getByRole('button', { name: 'Choose folder…' }).click();
+        // A new project is the default once there's somewhere to make one.
+        await expect(dialog.getByRole('radio', { name: /A new project/ })).toBeChecked();
+        await expect(dialog).toContainText('fixture-react-app');
+        const opened = app.waitForEvent('window');
+        await dialog.getByRole('button', { name: 'Run and import' }).click();
+        const importWindow = await opened;
+        await importWindow.waitForLoadState('domcontentloaded');
+        const newProject = path.join(projectsDir, 'fixture-react-app');
+        const routes = importWindow.getByTestId('react-routes');
+        await expect(routes.getByRole('button', { name: '/about' })).toBeVisible({ timeout: 30_000 });
+        // Pages that open as they stand are ticked; one that needs a value isn't.
+        await expect(routes.getByRole('checkbox', { name: 'Import /about' })).toBeChecked();
+        await expect(routes.getByRole('checkbox', { name: 'Import /team/:member' })).not.toBeChecked();
+        await routes.getByRole('checkbox', { name: 'Import /team/:member' }).check();
+        await routes.getByLabel('/team/:member: member').fill('ada');
+        // /, /about, /team/ada and /private, which redirects and is left out.
+        await routes.getByRole('button', { name: 'Import 4 pages' }).click();
+        const batch = importWindow.getByTestId('import-batch');
+        await expect(batch).toContainText('Imported 3 of 4 pages', { timeout: 120_000 });
+        await expect(batch).toContainText('Went elsewhere');
+        const viewExists = (name) => fs.access(path.join(newProject, 'views', name, `${name}.tsx`)).then(() => true, () => false);
+        // A new project starts with its own Home, so the app's `/` is Home2.
+        expect(await viewExists('Home2')).toBe(true);
+        expect(await viewExists('About')).toBe(true);
+        expect(await viewExists('TeamDetail')).toBe(true);
+        expect(await viewExists('Private')).toBe(false);
+        // The app window is on the new project now.
+        await expect(window.getByText('fixture-react-app').first()).toBeVisible();
+        // One step removes them all.
+        await batch.getByRole('button', { name: 'Remove these pages' }).click();
+        await expect(batch).toContainText('Removed 3 pages');
+        await expect.poll(() => viewExists('About')).toBe(false);
+        expect(await viewExists('Home2')).toBe(false);
+        // Only what the import made: the project's own Home stays.
+        expect(await viewExists('Home')).toBe(true);
+        await importWindow.close();
+    }
+    finally {
+        await fs.rm(appDir, { recursive: true, force: true });
+        await fs.rm(projectsDir, { recursive: true, force: true });
+    }
+});
 test('says when a folder is not a React app it can import', async ({ app, window }) => {
     const notReact = await fs.mkdtemp(path.join(os.tmpdir(), 'scamp-not-react-'));
     try {

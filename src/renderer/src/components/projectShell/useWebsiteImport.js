@@ -12,6 +12,11 @@ import { useAppLogStore } from '@store/appLogSlice';
 import { useAgentStore } from '@store/agentSlice';
 import { useAuthStore } from '@store/authSlice';
 /**
+ * The views each multi-page import made, by batch id, so undoing one
+ * removes exactly those — never a view the window merely names.
+ */
+const batchViews = new Map();
+/**
  * A view name the project doesn't already use. An import should never
  * silently land on top of existing work.
  */
@@ -25,9 +30,9 @@ const freeViewName = (base, taken) => {
     }
     return `${base}${Date.now()}`;
 };
-export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openView, }) => {
+export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openView, onViewsRemoved, }) => {
     useEffect(() => {
-        return window.scamp.onImportDeliver(({ projectPath, payload, narrower, nameHint }) => {
+        return window.scamp.onImportDeliver(({ projectPath, payload, narrower, nameHint, batch }) => {
             void (async () => {
                 const log = useAppLogStore.getState().log;
                 const report = (p) => {
@@ -156,7 +161,12 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                             ? prev.components
                             : [...prev.components, created],
                     }));
-                    openView(created.name);
+                    if (batch !== undefined) {
+                        batchViews.set(batch.id, [...(batchViews.get(batch.id) ?? []), created.name]);
+                    }
+                    // A multi-page import opens its last page, not every page in turn.
+                    if (batch === undefined || batch.index === batch.total - 1)
+                        openView(created.name);
                     // Keep the page exactly as it was, next to what it became.
                     // Best-effort and after the view exists: a full temp
                     // directory must not cost anyone an import that worked.
@@ -360,6 +370,7 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     report({
                         projectPath,
                         ok: true,
+                        ...(batch !== undefined ? { batchId: batch.id } : {}),
                         viewName: name,
                         cleanupAvailable: keyStatus === 'connected' || keyStatus === 'session-only',
                         elementCount: Object.keys(result.elements).length,
@@ -369,9 +380,38 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                 catch (err) {
                     const message = errorMessage(err);
                     log('error', `Import failed: ${message}`);
-                    report({ projectPath, ok: false, error: message });
+                    report({ projectPath, ok: false, error: message, ...(batch !== undefined ? { batchId: batch.id } : {}) });
                 }
             })();
         });
     }, [project, breakpoints, onProjectChange, openView]);
+    // Undo a multi-page import: remove the views it made, and nothing else.
+    useEffect(() => window.scamp.onImportUndoBatch(({ projectPath, batchId }) => {
+        void (async () => {
+            if (projectPath !== project.path)
+                return;
+            const names = batchViews.get(batchId) ?? [];
+            const removed = [];
+            let error;
+            for (const componentName of names) {
+                try {
+                    await window.scamp.deleteComponent({ projectPath, componentName, kind: 'view' });
+                    removed.push(componentName);
+                }
+                catch (err) {
+                    error = errorMessage(err);
+                }
+            }
+            batchViews.delete(batchId);
+            if (removed.length > 0) {
+                onViewsRemoved?.(removed);
+                onProjectChange?.((prev) => ({
+                    ...prev,
+                    components: prev.components.filter((c) => !removed.includes(c.name)),
+                }));
+                useAppLogStore.getState().log('info', `Undid an import: removed ${removed.join(', ')}.`);
+            }
+            void window.scamp.reportBatchUndone({ projectPath, batchId, removed, ...(error !== undefined ? { error } : {}) });
+        })();
+    }), [project.path, onProjectChange, onViewsRemoved]);
 };

@@ -1,7 +1,13 @@
+import type { ProjectData } from '@shared/types';
 type Props = {
     projectPath: string;
-    /** Open the import window on the running app. */
-    onReady: (url: string, appName: string) => void;
+    /** This project's name, for the choice of where pages land. */
+    projectName: string;
+    /**
+     * Open the import window on the running app — in a new project when
+     * `newProject` is given, which the caller switches to first.
+     */
+    onReady: (url: string, appName: string, newProject?: ProjectData) => void;
     onClose: () => void;
 };
 /**
@@ -10,5 +16,5 @@ type Props = {
  * user has seen the exact commands and said yes.
  * see docs/plans/react-import-plan.md
  */
-export declare const ReactImportDialog: ({ projectPath, onReady, onClose }: Props) => JSX.Element;
+export declare const ReactImportDialog: ({ projectPath, projectName, onReady, onClose }: Props) => JSX.Element;
 export {};

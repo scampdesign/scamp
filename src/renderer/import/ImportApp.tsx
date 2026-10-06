@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { captureFn, capturePolicy, prepareFn } from '@shared/captureScript';
-import { flattenRoutes, readRoutesFn, routeForPath, viewNameForRoute, type RawRoute } from '@shared/reactRoutes';
+import {
+  flattenRoutes,
+  readRoutesFn,
+  routeForPath,
+  selectedByDefault,
+  viewNameForRoute,
+  type RawRoute,
+} from '@shared/reactRoutes';
 import type { Breakpoint, ImportFidelity, ImportResultPayload } from '@shared/types';
 
-import { RoutePanel, type RoutesState } from './RoutePanel';
+import { BatchSummary } from './BatchSummary';
+import { RoutePanel, type ParamValues, type RoutesState } from './RoutePanel';
+import { useImportBatch } from './useImportBatch';
 import styles from './ImportApp.module.css';
 
 /**
@@ -101,6 +110,8 @@ export const ImportApp = (): JSX.Element => {
   const [currentPath, setCurrentPath] = useState('');
   const requested = useRef<{ path: string; at: number } | null>(null);
   const [redirect, setRedirect] = useState<{ from: string; to: string } | null>(null);
+  const [paramValues, setParamValues] = useState<ParamValues>({});
+  const [selectedRoutes, setSelectedRoutes] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
     const offOpen = window.scampImport.onOpen((args) => {
@@ -196,7 +207,11 @@ export const ImportApp = (): JSX.Element => {
         try {
           const raw = (await node.executeJavaScript!(`(${readRoutesFn.toString()})()`)) as RawRoute[] | null;
           if (Array.isArray(raw) && raw.length > 0) {
-            if (!cancelled) setRoutes({ kind: 'ready', routes: flattenRoutes(raw) });
+            if (!cancelled) {
+              const flat = flattenRoutes(raw);
+              setRoutes({ kind: 'ready', routes: flat });
+              setSelectedRoutes(new Set(flat.filter(selectedByDefault).map((r) => r.path)));
+            }
             return;
           }
         } catch {
@@ -235,22 +250,24 @@ export const ImportApp = (): JSX.Element => {
     if (node?.loadURL) node.loadURL(next);
   }, [draftUrl]);
 
-  const handleImport = useCallback(async (): Promise<void> => {
-    const node = webviewRef.current as unknown as {
-      executeJavaScript?: (code: string) => Promise<unknown>;
-    } | null;
-    if (!node?.executeJavaScript || projectPath.length === 0) {
-      setStatus({
-        kind: 'failed',
-        message: 'The page is not ready to read yet — wait for it to finish loading.',
-      });
-      return;
-    }
-    setStatus({ kind: 'capturing' });
-    const frame = webviewRef.current as HTMLElement | null;
-    const restoreWidth = frame?.style.width ?? '';
-    const restoreFlex = frame?.style.flex ?? '';
-    try {
+  /**
+   * Read the page at the widest breakpoint, then at each narrower one.
+   * Shared by Import and by a multi-page run. Restores the webview's
+   * width whatever happens.
+   */
+  const readAllWidths = useCallback(
+    async (
+      onWidth?: (label: string) => void
+    ): Promise<{ payload: unknown; narrower: Array<{ breakpointId: string; payload: unknown }> }> => {
+      const node = webviewRef.current as unknown as {
+        executeJavaScript?: (code: string) => Promise<unknown>;
+      } | null;
+      if (!node?.executeJavaScript) {
+        throw new Error('The page is not ready to read yet — wait for it to finish loading.');
+      }
+      const frame = webviewRef.current as HTMLElement | null;
+      const restoreWidth = frame?.style.width ?? '';
+      const restoreFlex = frame?.style.flex ?? '';
       // The capture function is serialized and evaluated in the page,
       // with the policy passed in as data — it cannot import anything
       // once it is over there. The scroll settles reveal-on-scroll
@@ -261,49 +278,54 @@ export const ImportApp = (): JSX.Element => {
       const run = (code: string): Promise<unknown> => node.executeJavaScript!(code);
       const readPage = async (): Promise<unknown> => {
         await run(`(${prepareFn.toString()})()`);
-        return run(
-          `(${captureFn.toString()})(${JSON.stringify(capturePolicy())})`
-        );
+        return run(`(${captureFn.toString()})(${JSON.stringify(capturePolicy())})`);
       };
-
-      // Read the page at the project's widest breakpoint, the width its
-      // desktop design is for — not whatever width the window happens to be.
-      const widest = [...breakpoints].sort((a, b) => b.width - a.width)[0];
-      if (frame && widest !== undefined) {
+      // `flex: none` as well as the width: the webview is a flex item
+      // with `flex: 1 1 auto`, so grow wins over any width set on it and
+      // the guest never actually narrows. A `<webview>`'s guest viewport
+      // follows the element's size, so sizing it is what makes the page's
+      // own media queries fire.
+      const sizeTo = async (width: number): Promise<void> => {
+        if (!frame) return;
         frame.style.flex = '0 0 auto';
-        frame.style.width = `${widest.width}px`;
-        await new Promise((r) => setTimeout(r, 450));
-      }
-      const payload = await readPage();
-
-      // Then the same page at each narrower breakpoint. A `<webview>`'s
-      // guest viewport follows the element's size, so narrowing it is
-      // what makes the page's own media queries fire — there is no other
-      // way to see its tablet layout from out here.
-      const narrower: Array<{ breakpointId: string; payload: unknown }> = [];
-      const smaller = [...breakpoints].sort((a, b) => b.width - a.width).slice(1);
-      for (const bp of smaller) {
-        if (!frame) break;
-        setStatus({ kind: 'capturing', at: bp.label });
-        // `flex: none` as well as the width: the webview is a flex item
-        // with `flex: 1 1 auto`, so grow wins over any width set on it
-        // and the guest never actually narrows.
-        frame.style.flex = '0 0 auto';
-        frame.style.width = `${bp.width}px`;
+        frame.style.width = `${width}px`;
         // Let layout settle and the page's own resize handlers run.
         await new Promise((r) => setTimeout(r, 450));
-        try {
-          narrower.push({ breakpointId: bp.id, payload: await readPage() });
-        } catch {
-          // A width that fails is one breakpoint's worth of overrides,
-          // not a failed import.
+      };
+      try {
+        // Read the page at the project's widest breakpoint, the width its
+        // desktop design is for — not whatever width the window happens to be.
+        const [widest, ...smaller] = [...breakpoints].sort((a, b) => b.width - a.width);
+        if (widest !== undefined) await sizeTo(widest.width);
+        const payload = await readPage();
+        const narrower: Array<{ breakpointId: string; payload: unknown }> = [];
+        for (const bp of smaller) {
+          if (!frame) break;
+          onWidth?.(bp.label);
+          await sizeTo(bp.width);
+          try {
+            narrower.push({ breakpointId: bp.id, payload: await readPage() });
+          } catch {
+            // A width that fails is one breakpoint's worth of overrides,
+            // not a failed import.
+          }
+        }
+        return { payload, narrower };
+      } finally {
+        if (frame) {
+          frame.style.width = restoreWidth;
+          frame.style.flex = restoreFlex;
         }
       }
-      if (frame) {
-        frame.style.width = restoreWidth;
-        frame.style.flex = restoreFlex;
-      }
+    },
+    [breakpoints]
+  );
 
+  const handleImport = useCallback(async (): Promise<void> => {
+    if (projectPath.length === 0) return;
+    setStatus({ kind: 'capturing' });
+    try {
+      const { payload, narrower } = await readAllWidths((label) => setStatus({ kind: 'capturing', at: label }));
       setStatus({ kind: 'capturing' });
       // A React route names its view; a page's title would name every
       // route of a single-page app the same.
@@ -315,23 +337,31 @@ export const ImportApp = (): JSX.Element => {
       }
       // On success the app window answers over `onResult`.
     } catch (err) {
-      if (frame) {
-        frame.style.width = restoreWidth;
-        frame.style.flex = restoreFlex;
-      }
       setStatus({
         kind: 'failed',
         message: err instanceof Error ? err.message : String(err),
       });
     }
-  }, [projectPath, breakpoints, react, routes, currentPath]);
+  }, [projectPath, readAllWidths, react, routes, currentPath]);
+
+  const importBatch = useImportBatch({ webviewRef, projectPath, baseUrl: loadedUrl, readAllWidths });
+  const batchRunning = importBatch.batch?.running === true;
+
+  const handleToggleRoute = useCallback((route: string): void => {
+    setSelectedRoutes((current) => {
+      const next = new Set(current);
+      if (next.has(route)) next.delete(route);
+      else next.add(route);
+      return next;
+    });
+  }, []);
 
   const nav = (method: 'goBack' | 'goForward' | 'reload') => (): void => {
     const node = webviewRef.current as unknown as Record<string, (() => void) | undefined> | null;
     node?.[method]?.();
   };
 
-  const busy = status.kind === 'capturing';
+  const busy = status.kind === 'capturing' || batchRunning;
 
 
   // A new import gets its own offer.
@@ -374,7 +404,16 @@ export const ImportApp = (): JSX.Element => {
         </button>
       </div>
 
-      {status.kind !== 'idle' && status.kind !== 'capturing' && (
+      {importBatch.batch !== null && (
+        <BatchSummary
+          batch={importBatch.batch}
+          onStop={importBatch.stop}
+          onUndo={() => void importBatch.undo()}
+          onDismiss={importBatch.dismiss}
+        />
+      )}
+
+      {importBatch.batch === null && status.kind !== 'idle' && status.kind !== 'capturing' && (
         <div
           className={`${styles.banner} ${
             status.kind === 'failed' || !status.result?.ok ? styles.bannerBad : styles.bannerGood
@@ -468,7 +507,15 @@ export const ImportApp = (): JSX.Element => {
             current={routes.kind === 'ready' ? routeForPath(routes.routes, currentPath) : null}
             redirect={redirect}
             disabled={busy || !webviewReady}
+            values={paramValues}
+            onValues={setParamValues}
+            selected={selectedRoutes}
+            onToggle={handleToggleRoute}
             onVisit={handleVisit}
+            onImportSelected={(targets) => {
+              setStatus({ kind: 'idle' });
+              void importBatch.start(targets);
+            }}
           />
         )}
         {loadedUrl ? (

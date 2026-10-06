@@ -57,7 +57,15 @@ type Options = {
   onProjectChange?: (update: (prev: ProjectData) => ProjectData) => void;
   /** Opens the freshly-imported view on the canvas. */
   openView: (name: string) => void;
+  /** Views an undone multi-page import removed, so the canvas can let go of one that's open. */
+  onViewsRemoved?: (names: ReadonlyArray<string>) => void;
 };
+
+/**
+ * The views each multi-page import made, by batch id, so undoing one
+ * removes exactly those — never a view the window merely names.
+ */
+const batchViews = new Map<string, string[]>();
 
 /**
  * A view name the project doesn't already use. An import should never
@@ -77,9 +85,10 @@ export const useWebsiteImport = ({
   breakpoints,
   onProjectChange,
   openView,
+  onViewsRemoved,
 }: Options): void => {
   useEffect(() => {
-    return window.scamp.onImportDeliver(({ projectPath, payload, narrower, nameHint }) => {
+    return window.scamp.onImportDeliver(({ projectPath, payload, narrower, nameHint, batch }) => {
       void (async (): Promise<void> => {
         const log = useAppLogStore.getState().log;
         const report = (p: Parameters<typeof window.scamp.reportImportResult>[0]): void => {
@@ -216,7 +225,11 @@ export const useWebsiteImport = ({
               ? prev.components
               : [...prev.components, created],
           }));
-          openView(created.name);
+          if (batch !== undefined) {
+            batchViews.set(batch.id, [...(batchViews.get(batch.id) ?? []), created.name]);
+          }
+          // A multi-page import opens its last page, not every page in turn.
+          if (batch === undefined || batch.index === batch.total - 1) openView(created.name);
 
           // Keep the page exactly as it was, next to what it became.
           // Best-effort and after the view exists: a full temp
@@ -458,6 +471,7 @@ export const useWebsiteImport = ({
           report({
             projectPath,
             ok: true,
+            ...(batch !== undefined ? { batchId: batch.id } : {}),
             viewName: name,
             cleanupAvailable: keyStatus === 'connected' || keyStatus === 'session-only',
             elementCount: Object.keys(result.elements).length,
@@ -466,9 +480,41 @@ export const useWebsiteImport = ({
         } catch (err) {
           const message = errorMessage(err);
           log('error', `Import failed: ${message}`);
-          report({ projectPath, ok: false, error: message });
+          report({ projectPath, ok: false, error: message, ...(batch !== undefined ? { batchId: batch.id } : {}) });
         }
       })();
     });
   }, [project, breakpoints, onProjectChange, openView]);
+
+  // Undo a multi-page import: remove the views it made, and nothing else.
+  useEffect(
+    () =>
+      window.scamp.onImportUndoBatch(({ projectPath, batchId }) => {
+        void (async (): Promise<void> => {
+          if (projectPath !== project.path) return;
+          const names = batchViews.get(batchId) ?? [];
+          const removed: string[] = [];
+          let error: string | undefined;
+          for (const componentName of names) {
+            try {
+              await window.scamp.deleteComponent({ projectPath, componentName, kind: 'view' });
+              removed.push(componentName);
+            } catch (err) {
+              error = errorMessage(err);
+            }
+          }
+          batchViews.delete(batchId);
+          if (removed.length > 0) {
+            onViewsRemoved?.(removed);
+            onProjectChange?.((prev) => ({
+              ...prev,
+              components: prev.components.filter((c) => !removed.includes(c.name)),
+            }));
+            useAppLogStore.getState().log('info', `Undid an import: removed ${removed.join(', ')}.`);
+          }
+          void window.scamp.reportBatchUndone({ projectPath, batchId, removed, ...(error !== undefined ? { error } : {}) });
+        })();
+      }),
+    [project.path, onProjectChange, onViewsRemoved]
+  );
 };

@@ -649,6 +649,8 @@ export type ImportCapturedArgs = {
      * a React route. PascalCase; the app window still makes it unique.
      */
     nameHint?: string;
+    /** One page of several imported in one go, so they can be undone together. */
+    batch?: ImportBatchRef;
 };
 /** One kind of thing the import changed or dropped. */
 /**
@@ -681,9 +683,28 @@ export type ImportReportGroup = {
     editable?: string;
 };
 /** What became of an import, sent back so the import window can say so. */
+/** Which run of a multi-page import a page belongs to. */
+export type ImportBatchRef = {
+    id: string;
+    index: number;
+    total: number;
+};
+/** Remove every view one multi-page import made. */
+export type ImportUndoBatchArgs = {
+    projectPath: string;
+    batchId: string;
+};
+export type ImportBatchUndone = {
+    projectPath: string;
+    batchId: string;
+    removed: string[];
+    error?: string;
+};
 export type ImportResultPayload = {
     projectPath: string;
     ok: boolean;
+    /** Set when the page was one of a multi-page import. */
+    batchId?: string;
     /** The created view's name, when it worked. */
     viewName?: string;
     /** How many elements the page reduced to. */

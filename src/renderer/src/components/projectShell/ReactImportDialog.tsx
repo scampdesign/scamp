@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import type { ReactImportInspectResult } from '@shared/types';
+import { projectNameFrom } from '@shared/projectName';
+import type { ProjectData, ReactImportInspectResult } from '@shared/types';
 
 import { useDialogBackdrop } from '../../hooks/useDialogBackdrop';
 import { Button } from '../controls/Button';
@@ -9,9 +10,29 @@ import styles from './ReactImportDialog.module.css';
 
 type Props = {
   projectPath: string;
-  /** Open the import window on the running app. */
-  onReady: (url: string, appName: string) => void;
+  /** This project's name, for the choice of where pages land. */
+  projectName: string;
+  /**
+   * Open the import window on the running app — in a new project when
+   * `newProject` is given, which the caller switches to first.
+   */
+  onReady: (url: string, appName: string, newProject?: ProjectData) => void;
   onClose: () => void;
+};
+
+type Target = 'new' | 'current';
+
+/** Create the project, taking the next free name if the folder exists. */
+const createFreshProject = async (parentPath: string, base: string): Promise<ProjectData> => {
+  for (let n = 1; n < 50; n += 1) {
+    const name = n === 1 ? base : `${base.slice(0, 60)}-${n}`;
+    try {
+      return await window.scamp.createProject({ parentPath, name });
+    } catch (err) {
+      if (!(err instanceof Error && err.message.includes('already exists'))) throw err;
+    }
+  }
+  throw new Error(`Every name from ${base} to ${base}-49 is taken in ${parentPath}.`);
 };
 
 type Step =
@@ -42,8 +63,22 @@ const asAppUrl = (raw: string): string | null => {
  * user has seen the exact commands and said yes.
  * see docs/plans/react-import-plan.md
  */
-export const ReactImportDialog = ({ projectPath, onReady, onClose }: Props): JSX.Element => {
+export const ReactImportDialog = ({ projectPath, projectName, onReady, onClose }: Props): JSX.Element => {
   const [step, setStep] = useState<Step>({ kind: 'choose' });
+  /** Where new projects go; null when none is set, which leaves only this project. */
+  const [projectsFolder, setProjectsFolder] = useState<string | null>(null);
+  const [target, setTarget] = useState<Target>('current');
+  /** A project already made for this import, reused if the server needs another try. */
+  const created = useRef<ProjectData | null>(null);
+
+  useEffect(() => {
+    void window.scamp.getSettings().then((settings) => {
+      setProjectsFolder(settings.defaultProjectsFolder);
+      // A React app's own tokens and pages shouldn't land among another
+      // design's, so a new project is the default when one can be made.
+      if (settings.defaultProjectsFolder !== null) setTarget('new');
+    });
+  }, []);
   const [address, setAddress] = useState('');
   const [log, setLog] = useState<string[]>([]);
   const starting = step.kind === 'starting';
@@ -75,8 +110,18 @@ export const ReactImportDialog = ({ projectPath, onReady, onClose }: Props): JSX
   const handleRun = async (app: Extract<ReactImportInspectResult, { kind: 'ok' }>): Promise<void> => {
     setLog([]);
     setStep({ kind: 'starting', app, phase: app.installCommand !== null ? 'installing' : 'starting' });
-    const result = await window.scamp.reactImportStart({ projectPath, folder: app.folder });
-    if (result.ok) onReady(result.url, app.name);
+    let fresh: ProjectData | undefined;
+    if (target === 'new' && projectsFolder !== null) {
+      try {
+        fresh = created.current ?? (await createFreshProject(projectsFolder, projectNameFrom(app.name)));
+        created.current = fresh;
+      } catch (err) {
+        setStep({ kind: 'failed', app, error: err instanceof Error ? err.message : String(err) });
+        return;
+      }
+    }
+    const result = await window.scamp.reactImportStart({ projectPath: fresh?.path ?? projectPath, folder: app.folder });
+    if (result.ok) onReady(result.url, app.name, fresh);
     else setStep({ kind: 'failed', app, error: result.error });
   };
 
@@ -156,6 +201,35 @@ export const ReactImportDialog = ({ projectPath, onReady, onClose }: Props): JSX
               This runs the project’s own code on your computer. Scamp stops the server when you close the import
               window.
             </p>
+            <fieldset className={styles.target}>
+              <legend className={styles.targetLegend}>Import the pages into</legend>
+              <label className={styles.targetOption}>
+                <input
+                  type="radio"
+                  name="react-import-target"
+                  checked={target === 'new'}
+                  onChange={() => setTarget('new')}
+                  disabled={projectsFolder === null}
+                />
+                <span>
+                  A new project, <code className={styles.code}>{projectNameFrom(step.app.name)}</code>
+                  {projectsFolder === null && (
+                    <span className={styles.targetHint}> — set a default projects folder in Settings first</span>
+                  )}
+                </span>
+              </label>
+              <label className={styles.targetOption}>
+                <input
+                  type="radio"
+                  name="react-import-target"
+                  checked={target === 'current'}
+                  onChange={() => setTarget('current')}
+                />
+                <span>
+                  This project, <code className={styles.code}>{projectName}</code>
+                </span>
+              </label>
+            </fieldset>
             <div className={dialogStyles.actions}>
               <Button variant="ghost" onClick={onClose}>
                 Cancel

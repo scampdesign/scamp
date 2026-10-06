@@ -49,6 +49,13 @@ const api = {
     /** Which of these families does Google Fonts serve? */
     resolveImportFonts: (args) => ipcRenderer.invoke(IPC.ImportResolveFonts, args),
     /** Tell the import window how it went. */
+    /** The import window asks to undo one multi-page import. */
+    onImportUndoBatch: (listener) => {
+        const handler = (_e, args) => listener(args);
+        ipcRenderer.on(IPC.ImportUndoBatchDeliver, handler);
+        return () => ipcRenderer.removeListener(IPC.ImportUndoBatchDeliver, handler);
+    },
+    reportBatchUndone: (payload) => ipcRenderer.invoke(IPC.ImportBatchUndone, payload),
     reportImportResult: (payload) => ipcRenderer.invoke(IPC.ImportResultReport, payload),
     /**
      * Keep the page's original beside the view it became, in a temp

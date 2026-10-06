@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateProjectName, suggestProjectName } from '../src/shared/projectName';
+import { projectNameFrom, validateProjectName, suggestProjectName } from '../src/shared/projectName';
 
 describe('validateProjectName', () => {
   it('accepts a simple lowercase name', () => {
@@ -104,5 +104,24 @@ describe('suggestProjectName', () => {
   it('returns an empty string for empty input', () => {
     expect(suggestProjectName('')).toBe('');
     expect(suggestProjectName('   ')).toBe('');
+  });
+});
+
+describe('projectNameFrom', () => {
+  it('turns a package name into a valid project name', () => {
+    expect(projectNameFrom('riq_frontend')).toBe('riq-frontend');
+    expect(projectNameFrom('@acme/Web App!')).toBe('web-app');
+    expect(validateProjectName(projectNameFrom('@acme/Web App!'))).toEqual({ ok: true, value: 'web-app' });
+  });
+
+  it('keeps it within 64 characters without ending on a hyphen', () => {
+    const name = projectNameFrom(`${'a'.repeat(63)}-b`);
+    expect(name.length).toBeLessThanOrEqual(64);
+    expect(name.endsWith('-')).toBe(false);
+  });
+
+  it('falls back to a name when nothing usable is left', () => {
+    expect(projectNameFrom('___')).toBe('react-app');
+    expect(projectNameFrom('')).toBe('react-app');
   });
 });

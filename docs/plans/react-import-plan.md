@@ -279,13 +279,44 @@ and `test/e2e/import/react-import.spec.ts` against
 `test/fixtures/react-app` (copied to a temp folder with Scamp's own
 `node_modules` linked, so nothing installs).
 
-### Phase 2 — every route in one go
+### Phase 2 — every route in one go — **done**
 
-Tick routes, fill params, **Import N pages**: the window visits each,
-captures every breakpoint, and the app window writes all the views in
-one transaction with one snapshot (`react_import`) so it undoes in one
-step. One report per route plus a summary. Fonts from the project's
-own files. Persistent session partition.
+Routes are ticked in `RoutePanel` (the ones that open as they stand,
+by default; a route with params once its values are in) and **Import N
+pages** runs `useImportBatch`: visit each route, wait for the load to
+stop and settle, skip one whose address changed (a redirect), read it
+at every width (`readAllWidths`, shared with single import), deliver
+it with a batch reference, and wait for the app window's verdict
+before the next — one at a time, so each view's name sees the last.
+`BatchSummary` shows each route's outcome and **Stop after this page**.
+
+**Undo** is **Remove these pages**, not a snapshot: a restore copies
+files back but never deletes new ones, and an import only adds views.
+The import window names a batch id and nothing else; the app window
+removes only the views it recorded making for that batch.
+
+**A new project per app** is the default when a default projects
+folder is set: the dialog creates it (taking `-2`, `-3` if the name is
+taken, and reusing it on retry), starts the server for it, and `App`
+switches to it (`onSwitchProject`), where the import window opens.
+
+On the fixture app: four routes ticked, three imported into a new
+project, `/private` skipped as a redirect, all three removed in one
+step. Tests: `projectNameFrom` units, and the second test in
+`test/e2e/import/react-import.spec.ts`.
+
+**Not done here:**
+
+- **Fonts from the project's own files.** Scamp's font system knows two
+  sources, Google and Adobe (`applyThemeFonts`, `parseFontEmbed`);
+  local files need a third, across the canvas, preview, export and
+  thumbnails. Its own piece of work. Until then, a family Google serves
+  (Inter, on the test app) is substituted from Google.
+- **Routes.** A view's route is its slug (`BillingDashboard` →
+  `/billing-dashboard`), not the app's path (`/billing/dashboard`), and
+  a new project's starter `Home` keeps `/`, so the app's `/` arrives as
+  `Home2`. Carrying the app's paths belongs with the route map in
+  Phase 7.
 
 ### Phase 3 — React's tree in the capture, and components
 

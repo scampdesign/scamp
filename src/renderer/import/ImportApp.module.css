@@ -343,3 +343,70 @@
   font-size: 12px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+
+.routeRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.routeCheck {
+  flex: none;
+  margin: 0 2px 0 4px;
+  accent-color: #4a6fa5;
+}
+
+.routesFooter {
+  position: sticky;
+  bottom: -12px;
+  margin: 12px -10px -12px;
+  padding: 10px;
+  border-top: 1px solid #2e333b;
+  background: #16181c;
+}
+
+.routesFooter .importBtn {
+  width: 100%;
+}
+
+/* A multi-page import, route by route. */
+.batch {
+  background: #1d2430;
+  color: #e7e7e6;
+}
+
+.batchActions {
+  display: flex;
+  gap: 8px;
+}
+
+.batchList {
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.batchItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0;
+  font-size: 12px;
+}
+
+.batchItem[data-status='redirected'],
+.batchItem[data-status='failed'] {
+  color: #f3d9a4;
+}
+
+.batchItem[data-status='waiting'],
+.batchItem[data-status='skipped'] {
+  color: #7d838d;
+}
+
+.batchStatus {
+  flex: none;
+  text-align: right;
+}

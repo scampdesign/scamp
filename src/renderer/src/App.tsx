@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { StartScreen } from './components/StartScreen';
 import { flushPendingProjectThumbnail } from './lib/projectThumbnail';
-import { ProjectShell } from './components/ProjectShell';
+import { ProjectShell, type PendingReactImport } from './components/ProjectShell';
 import { SettingsPage } from './components/SettingsPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SentryOptInPrompt } from './components/SentryOptInPrompt';
@@ -30,6 +30,8 @@ type OptInState = 'loading' | 'pending' | 'resolved';
 
 export const App = (): JSX.Element => {
   const [project, setProject] = useState<ProjectData | null>(null);
+  /** A React import waiting for the project it was made for to open. */
+  const [pendingImport, setPendingImport] = useState<PendingReactImport | null>(null);
   const [view, setView] = useState<View>('start');
   const [optInState, setOptInState] = useState<OptInState>('loading');
 
@@ -278,27 +280,41 @@ export const App = (): JSX.Element => {
 
   if (view === 'project' && project) {
     const closingProjectPath = project.path;
+    // Everything closing a project does, whether to the start screen or
+    // straight into another project.
+    const leaveProject = (): void => {
+      // Session-close snapshot: flush any pending debounced write
+      // so the snapshot includes the latest canvas state, then take
+      // it. Fire-and-forget — main reads the project from disk.
+      flushPendingPageWrite();
+      // Take the thumbnail before the canvas goes: the capture
+      // detaches its own copy synchronously, so it survives the
+      // unmount on the next line.
+      flushPendingProjectThumbnail(closingProjectPath);
+      void window.scamp.createSnapshot({
+        projectPath: closingProjectPath,
+        trigger: 'session_close',
+      });
+      // Close the preview window and stop its dev server
+      // before tearing down the project — preview shouldn't
+      // outlive the project that's editing it.
+      void window.scamp.closePreview(closingProjectPath);
+    };
     return (
       <ErrorBoundary>
         <ProjectShell
+          // A new project is a new shell, not this one re-rendered.
+          key={project.path}
           project={project}
+          pendingImport={pendingImport}
+          onPendingImportHandled={() => setPendingImport(null)}
+          onSwitchProject={(next, thenImport) => {
+            leaveProject();
+            setPendingImport(thenImport);
+            setProject(next);
+          }}
           onClose={() => {
-            // Session-close snapshot: flush any pending debounced write
-            // so the snapshot includes the latest canvas state, then take
-            // it. Fire-and-forget — main reads the project from disk.
-            flushPendingPageWrite();
-            // Take the thumbnail before the canvas goes: the capture
-            // detaches its own copy synchronously, so it survives the
-            // unmount on the next line.
-            flushPendingProjectThumbnail(closingProjectPath);
-            void window.scamp.createSnapshot({
-              projectPath: closingProjectPath,
-              trigger: 'session_close',
-            });
-            // Close the preview window and stop its dev server
-            // before tearing down the project — preview shouldn't
-            // outlive the project that's editing it.
-            void window.scamp.closePreview(closingProjectPath);
+            leaveProject();
             setProject(null);
             setView('start');
           }}

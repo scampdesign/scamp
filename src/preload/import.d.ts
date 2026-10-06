@@ -1,4 +1,4 @@
-import type { ImportOpenArgs, ImportResultPayload } from '@shared/types';
+import type { ImportBatchRef, ImportBatchUndone, ImportOpenArgs, ImportResultPayload } from '@shared/types';
 /**
  * Preload for the import window.
  *
@@ -17,10 +17,17 @@ declare const importApi: {
     deliver: (projectPath: string, payload: unknown, narrower: Array<{
         breakpointId: string;
         payload: unknown;
-    }>, nameHint?: string) => Promise<{
+    }>, nameHint?: string, batch?: ImportBatchRef) => Promise<{
         ok: boolean;
         error?: string;
     }>;
+    /** Remove every view one multi-page import made. A batch id, nothing else. */
+    undoBatch: (projectPath: string, batchId: string) => Promise<{
+        ok: boolean;
+        error?: string;
+    }>;
+    /** Which views an undo removed. */
+    onBatchUndone: (listener: (payload: ImportBatchUndone) => void) => (() => void);
     /**
      * Ask the app window to start an AI cleanup of the view just imported.
      * A view name and a mode, and nothing else; main checks both.

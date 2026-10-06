@@ -8,7 +8,7 @@ import type { CapturedSource } from '@shared/importCapture';
 import type {
   ImportCapturedArgs,
   ImportOpenArgs,
-  ImportResultPayload, AgentStartCleanupArgs } from '@shared/types';
+  ImportResultPayload, AgentStartCleanupArgs, ImportBatchUndone, ImportUndoBatchArgs } from '@shared/types';
 
 /**
  * The import window: a browser you point at a page, and a button that
@@ -190,6 +190,25 @@ export const registerImportIpc = (): void => {
     target.webContents.send(IPC.AgentStartCleanup, forwarded);
     target.focus();
     return { ok: true };
+  });
+
+  // Import window → app window: undo one multi-page import. The window
+  // names a batch and nothing else; the app window removes only views it
+  // recorded making for that batch.
+  ipcMain.handle(IPC.ImportUndoBatch, (_e, args: ImportUndoBatchArgs) => {
+    const target = appWindow();
+    if (!target) return { ok: false, error: 'Scamp is not open on a project.' };
+    if (typeof args?.projectPath !== 'string' || typeof args.batchId !== 'string' || !/^[a-z0-9-]{1,64}$/.test(args.batchId)) {
+      return { ok: false, error: 'That undo request was malformed.' };
+    }
+    target.webContents.send(IPC.ImportUndoBatchDeliver, { projectPath: args.projectPath, batchId: args.batchId });
+    return { ok: true };
+  });
+
+  // App window → import window: which views the undo removed.
+  ipcMain.handle(IPC.ImportBatchUndone, (_e, payload: ImportBatchUndone) => {
+    const win = importWindows.get(payload.projectPath);
+    if (win && !win.isDestroyed()) win.webContents.send(IPC.ImportBatchUndoneChanged, payload);
   });
 
   // App window → import window, so the importer can report the outcome

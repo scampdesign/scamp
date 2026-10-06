@@ -11,6 +11,19 @@ type Props = {
      * state instead of stomping each other via stale closure refs.
      */
     onProjectChange?: (next: ProjectData | ((prev: ProjectData) => ProjectData)) => void;
+    /**
+     * Close this project and open another, then open the import window on
+     * a React app there — a React import into a new project.
+     */
+    onSwitchProject?: (next: ProjectData, thenImport: PendingReactImport) => void;
+    /** A React import to open as soon as this project is up. */
+    pendingImport?: PendingReactImport | null;
+    onPendingImportHandled?: () => void;
 };
-export declare const ProjectShell: ({ project, onClose, onProjectChange, }: Props) => JSX.Element;
+/** A React app running at `url`, waiting for its import window. */
+export type PendingReactImport = {
+    url: string;
+    appName: string;
+};
+export declare const ProjectShell: ({ project, onClose, onProjectChange, onSwitchProject, pendingImport, onPendingImportHandled, }: Props) => JSX.Element;
 export {};

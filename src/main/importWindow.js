@@ -161,6 +161,25 @@ export const registerImportIpc = () => {
         target.focus();
         return { ok: true };
     });
+    // Import window → app window: undo one multi-page import. The window
+    // names a batch and nothing else; the app window removes only views it
+    // recorded making for that batch.
+    ipcMain.handle(IPC.ImportUndoBatch, (_e, args) => {
+        const target = appWindow();
+        if (!target)
+            return { ok: false, error: 'Scamp is not open on a project.' };
+        if (typeof args?.projectPath !== 'string' || typeof args.batchId !== 'string' || !/^[a-z0-9-]{1,64}$/.test(args.batchId)) {
+            return { ok: false, error: 'That undo request was malformed.' };
+        }
+        target.webContents.send(IPC.ImportUndoBatchDeliver, { projectPath: args.projectPath, batchId: args.batchId });
+        return { ok: true };
+    });
+    // App window → import window: which views the undo removed.
+    ipcMain.handle(IPC.ImportBatchUndone, (_e, payload) => {
+        const win = importWindows.get(payload.projectPath);
+        if (win && !win.isDestroyed())
+            win.webContents.send(IPC.ImportBatchUndoneChanged, payload);
+    });
     // App window → import window, so the importer can report the outcome
     // without knowing anything about projects.
     ipcMain.handle(IPC.ImportResultReport, (_e, payload) => {

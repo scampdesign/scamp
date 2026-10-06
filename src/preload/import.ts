@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 import { IPC } from '@shared/ipcChannels';
-import type { ImportOpenArgs, ImportResultPayload } from '@shared/types';
+import type { ImportBatchRef, ImportBatchUndone, ImportOpenArgs, ImportResultPayload } from '@shared/types';
 
 /**
  * Preload for the import window.
@@ -32,14 +32,27 @@ const importApi = {
     projectPath: string,
     payload: unknown,
     narrower: Array<{ breakpointId: string; payload: unknown }>,
-    nameHint?: string
+    nameHint?: string,
+    batch?: ImportBatchRef
   ): Promise<{ ok: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC.ImportCaptured, {
       projectPath,
       payload,
       narrower,
       ...(nameHint !== undefined ? { nameHint } : {}),
+      ...(batch !== undefined ? { batch } : {}),
     }),
+
+  /** Remove every view one multi-page import made. A batch id, nothing else. */
+  undoBatch: (projectPath: string, batchId: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC.ImportUndoBatch, { projectPath, batchId }),
+
+  /** Which views an undo removed. */
+  onBatchUndone: (listener: (payload: ImportBatchUndone) => void): (() => void) => {
+    const handler = (_e: IpcRendererEvent, p: ImportBatchUndone): void => listener(p);
+    ipcRenderer.on(IPC.ImportBatchUndoneChanged, handler);
+    return () => ipcRenderer.removeListener(IPC.ImportBatchUndoneChanged, handler);
+  },
 
   /**
    * Ask the app window to start an AI cleanup of the view just imported.

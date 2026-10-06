@@ -23,12 +23,21 @@ const importApi = {
         return () => ipcRenderer.removeListener(IPC.ImportResultChanged, handler);
     },
     /** Hand a captured page, and its narrower readings, to the app window. */
-    deliver: (projectPath, payload, narrower, nameHint) => ipcRenderer.invoke(IPC.ImportCaptured, {
+    deliver: (projectPath, payload, narrower, nameHint, batch) => ipcRenderer.invoke(IPC.ImportCaptured, {
         projectPath,
         payload,
         narrower,
         ...(nameHint !== undefined ? { nameHint } : {}),
+        ...(batch !== undefined ? { batch } : {}),
     }),
+    /** Remove every view one multi-page import made. A batch id, nothing else. */
+    undoBatch: (projectPath, batchId) => ipcRenderer.invoke(IPC.ImportUndoBatch, { projectPath, batchId }),
+    /** Which views an undo removed. */
+    onBatchUndone: (listener) => {
+        const handler = (_e, p) => listener(p);
+        ipcRenderer.on(IPC.ImportBatchUndoneChanged, handler);
+        return () => ipcRenderer.removeListener(IPC.ImportBatchUndoneChanged, handler);
+    },
     /**
      * Ask the app window to start an AI cleanup of the view just imported.
      * A view name and a mode, and nothing else; main checks both.
