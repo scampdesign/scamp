@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain, shell } from 'electron';
 import { join } from 'path';
 import { IPC } from '@shared/ipcChannels';
 import { saveImportSource } from './importSourceStore';
+import { stopReactAppAt } from './reactImport/appServer';
 /**
  * The import window: a browser you point at a page, and a button that
  * turns what is on screen into a view.
@@ -19,6 +20,8 @@ import { saveImportSource } from './importSourceStore';
  * see docs/plans/website-import-plan.md
  */
 const importWindows = new Map();
+/** What each window was opened for: a React app keeps its own session. */
+const openedFor = new Map();
 /** The app window — the one that owns a project and can make a view. */
 const appWindow = () => {
     const [first] = BrowserWindow.getAllWindows().filter((w) => !Array.from(importWindows.values()).includes(w));
@@ -37,8 +40,19 @@ export const openImportWindow = async (args) => {
     const { projectPath } = args;
     const existing = importWindows.get(projectPath);
     if (existing && !existing.isDestroyed()) {
-        existing.focus();
-        return { id: existing.id };
+        const before = openedFor.get(existing);
+        // A webview's session is fixed when it is created, so a different
+        // app — or a web page after an app — needs a window of its own.
+        if (before?.react?.appName === args.react?.appName) {
+            if (args.url !== undefined) {
+                openedFor.set(existing, args);
+                existing.webContents.send(IPC.ImportOpen, args);
+            }
+            existing.focus();
+            return { id: existing.id };
+        }
+        importWindows.delete(projectPath);
+        existing.close();
     }
     const win = new BrowserWindow({
         width: 1280,
@@ -58,6 +72,7 @@ export const openImportWindow = async (args) => {
         show: false,
     });
     importWindows.set(projectPath, win);
+    openedFor.set(win, args);
     // A third-party page opening a popup must not spawn an Electron
     // window inside the importer. Same rule as the preview: hand it to
     // the system browser and deny the embedded one.
@@ -69,7 +84,15 @@ export const openImportWindow = async (args) => {
             return { action: 'deny' };
         });
     });
-    win.on('closed', () => importWindows.delete(projectPath));
+    win.on('closed', () => {
+        if (importWindows.get(projectPath) === win)
+            importWindows.delete(projectPath);
+        // A React app's dev server lives as long as the window importing from it.
+        const opened = openedFor.get(win);
+        openedFor.delete(win);
+        if (opened?.react !== undefined && opened.url !== undefined)
+            stopReactAppAt(opened.url);
+    });
     win.once('ready-to-show', () => {
         win.show();
         win.webContents.send(IPC.ImportOpen, args);

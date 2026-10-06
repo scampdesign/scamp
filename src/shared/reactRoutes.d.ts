@@ -43,3 +43,16 @@ export declare const flattenRoutes: (routes: ReadonlyArray<RawRoute>, base?: str
 export declare const selectedByDefault: (route: ReactRoute) => boolean;
 /** The path with its params filled in, or null while any is missing. */
 export declare const fillParams: (route: ReactRoute, values: Readonly<Record<string, string>>) => string | null;
+/**
+ * A view name for a route. A single-page app gives every route the same
+ * `<title>`, so naming views by title — as a page import does — names
+ * them all the same. `/billing/dashboard` → `BillingDashboard`, `/` →
+ * `Home`; a route with params gets `Detail`: `/patients/:id` →
+ * `PatientsDetail`.
+ */
+export declare const viewNameForRoute: (path: string) => string;
+/**
+ * The route a visited path belongs to: an exact match first, then the
+ * first pattern whose params fit. `/patients/1001` → `/patients/:patientId`.
+ */
+export declare const routeForPath: (routes: ReadonlyArray<ReactRoute>, path: string) => ReactRoute | null;

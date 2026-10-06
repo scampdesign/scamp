@@ -26,9 +26,9 @@ rights to—not to republish someone else's.
    back, forward, and reload buttons.
 1. Click **Import**.
 
-Scamp reads the page as it appears on screen, then reads it again at
-each of your project's narrower [breakpoints](breakpoints.md), which is
-what gives the view its responsive overrides. Reading takes a few
+Scamp reads the page at the width of your project's widest
+[breakpoint](breakpoints.md), then reads it again at each narrower one,
+which is what gives the view its responsive overrides. Reading takes a few
 seconds per width, and the button says which width it's on.
 
 When it finishes, Scamp brings the main window forward with the new view
@@ -40,6 +40,44 @@ the report—switch back to read what changed, or to import the next page.
 a cookie banner, a login, or a tab you haven't clicked isn't there to be
 read—dismiss it, sign in, or open it first. Scamp does scroll the page
 before reading, so content that fades in on scroll is captured.
+
+## Import pages from a React app
+
+If the design lives in a React app on your computer, Scamp can run the
+app and list its pages for you. It works with apps built on Vite,
+Next.js, or Create React App.
+
+1. In the **Pages** sidebar, click **↧ Import a React app…**.
+1. Click **Choose folder…** and select the app's project folder—the one
+   with its `package.json`.
+1. Read the commands Scamp shows you. To show the app's pages, Scamp
+   runs its dev server, such as `npm run dev`, and first installs its
+   dependencies if they aren't installed yet.
+1. Click **Run and import**. When the app is running, the import window
+   opens on it, with the app's pages listed on the left.
+1. Click a page in the list, then click **Import**.
+
+Each view is named after its route: `/billing/dashboard` becomes
+`BillingDashboard`, and `/` becomes `Home`.
+
+If the app is already running, enter its address, such as
+`http://localhost:5173`, and click **Open** instead of choosing a
+folder.
+
+**Caution:** Running a dev server runs the project's own code on your
+computer. Only run apps you trust.
+
+Some pages need more than their address:
+
+- **A page with a value in its route**, such as `/patients/:patientId`,
+  shows a box under its name. Enter a value, such as an ID you know
+  exists, and then click the page.
+- **A page that sends you somewhere else**, such as to a sign-in or a
+  setup screen, is flagged in the list. Use the app in the import
+  window to get to the state you want, then click **Import**. The window
+  keeps the app's session, so a sign-in carries over to the next page.
+
+Scamp stops the app's dev server when you close the import window.
 
 ## What Scamp brings across
 

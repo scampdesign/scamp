@@ -250,16 +250,34 @@ The lowest routes are MUI-heavy (`muigrid_root`, `muitypography_root` on
 the Rx tools) or a layout gap like the parity log's open "text wraps a
 word early" entry; those are importer work and show up here first.
 
-### Phase 1 — one route from a React project
+### Phase 1 — one route from a React project — **done**
 
-**Import from React app…** in the import menu: pick a folder, detect,
-either paste a running URL or let Scamp start the dev server (with
-consent and install). The import window opens on the app with a route
-list beside it; choosing a route and **Capture** imports it as a view,
-exactly as an HTML import. Redirects are flagged.
-Tests: `detect.ts` units, devServer foreign-app mode, an e2e against a
-tiny fixture React app checked into `test/fixtures/react-app/` (Vite,
-three routes, one redirect).
+**↧ Import a React app…** under **Pages** opens `ReactImportDialog`:
+choose the folder (main reads it with `detect.ts`; only a folder chosen
+in the system dialog can be started), see the exact commands, then
+**Run and import** — or give the address of a server already running.
+`reactImport/appServer.ts` installs if needed, starts the dev script on
+a free port in its own process group, and stops it when the import
+window closes or the app quits.
+
+The import window gains a React mode: the app's routes beside the page
+(`RoutePanel`), params filled in before a route can be visited, a
+redirect flagged when a route's address changes within four seconds of
+choosing it, one persistent session per app, and the view named after
+its route (`viewNameForRoute`) — a single-page app's `<title>` is the
+same on every route. For both modes, the first read now happens at the
+widest breakpoint's width rather than the window's.
+
+Found on the way: the DOM container holds the root fiber React created
+first, and React swaps its two trees on commit, so reading from it can
+find an empty tree. `readRoutesFn` starts from `stateNode.current`.
+
+On riq_frontend_demo: 47 routes listed 3.5s after **Run and import**,
+`/dashboard → /setup` flagged, `/patients` imported as `Patients`.
+Tests: `test/reactImportDetect.test.ts`, `test/reactRoutes.test.ts`,
+and `test/e2e/import/react-import.spec.ts` against
+`test/fixtures/react-app` (copied to a temp folder with Scamp's own
+`node_modules` linked, so nothing installs).
 
 ### Phase 2 — every route in one go
 

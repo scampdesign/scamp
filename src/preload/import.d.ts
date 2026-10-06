@@ -17,7 +17,7 @@ declare const importApi: {
     deliver: (projectPath: string, payload: unknown, narrower: Array<{
         breakpointId: string;
         payload: unknown;
-    }>) => Promise<{
+    }>, nameHint?: string) => Promise<{
         ok: boolean;
         error?: string;
     }>;

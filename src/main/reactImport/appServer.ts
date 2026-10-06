@@ -1,0 +1,166 @@
+import { spawn, type ChildProcess } from 'child_process';
+import { promises as fs } from 'fs';
+import { join } from 'path';
+
+import { allocateFreePort } from '../devServer/portAlloc';
+import { detectReactProject, type DetectResult } from './detect';
+
+/**
+ * The dev server of a React app being imported. Not the preview's
+ * `devServerManager`: that one runs Scamp's own projects and knows their
+ * formats; this runs someone else's app, which Scamp only reads from.
+ *
+ * Electron-free. The IPC layer asks the user before anything here runs —
+ * starting a dev server runs the project's own scripts.
+ * see docs/plans/react-import-plan.md
+ */
+
+export type ReactAppEvent =
+  | { kind: 'log'; text: string }
+  | { kind: 'phase'; phase: 'installing' | 'starting' };
+
+type Running = { process: ChildProcess; url: string };
+
+const running = new Map<string, Running>();
+
+/** The folder read the way the import will: package.json and what's beside it. */
+export const inspectReactFolder = async (dir: string): Promise<DetectResult> => {
+  let pkg: unknown;
+  try {
+    pkg = JSON.parse(await fs.readFile(join(dir, 'package.json'), 'utf-8'));
+  } catch {
+    return { ok: false, reason: 'That folder has no package.json Scamp can read.' };
+  }
+  const top = await fs.readdir(dir).catch(() => []);
+  const nested: string[] = [];
+  for (const sub of ['src/app', 'src/pages']) {
+    if (await fs.stat(join(dir, sub)).then((s) => s.isDirectory(), () => false)) nested.push(sub);
+  }
+  return detectReactProject(pkg, [...top, ...nested]);
+};
+
+/** Kill the process and everything it started — `npm run dev` is a tree. */
+const killTree = (proc: ChildProcess): void => {
+  if (proc.pid === undefined || proc.exitCode !== null) return;
+  try {
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { stdio: 'ignore' });
+    } else {
+      process.kill(-proc.pid, 'SIGTERM');
+    }
+  } catch {
+    // Already gone.
+  }
+};
+
+const run = (
+  command: string,
+  args: string[],
+  cwd: string,
+  env: Record<string, string>,
+  onLog: (text: string) => void
+): ChildProcess => {
+  const proc = spawn(command, args, {
+    cwd,
+    env: { ...process.env, ...env, FORCE_COLOR: '0', NO_COLOR: '1' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    // Windows resolves `npm` (a .cmd shim) only through the shell.
+    shell: process.platform === 'win32',
+    // Its own process group, so stopping it stops what it spawned.
+    detached: process.platform !== 'win32',
+  });
+  proc.stdout?.on('data', (d: Buffer) => onLog(d.toString('utf8')));
+  proc.stderr?.on('data', (d: Buffer) => onLog(d.toString('utf8')));
+  return proc;
+};
+
+const waitForExit = (proc: ChildProcess): Promise<number> =>
+  new Promise((resolve) => {
+    if (proc.exitCode !== null) resolve(proc.exitCode);
+    proc.on('exit', (code) => resolve(code ?? -1));
+    proc.on('error', () => resolve(-1));
+  });
+
+/** Poll until the server answers. Rejects if it exits or takes too long. */
+const waitForServer = async (url: string, proc: ChildProcess, timeoutMs: number): Promise<void> => {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (proc.exitCode !== null) throw new Error(`The dev server stopped before it was ready (exit ${proc.exitCode}).`);
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
+      if (res.status < 500) return;
+    } catch {
+      // Not listening yet.
+    }
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  throw new Error('The dev server didn’t answer within two minutes.');
+};
+
+/**
+ * Install if needed, then start the app's dev server on a free port.
+ * One per key (the Scamp project importing it); a second call while one
+ * runs returns the same URL.
+ */
+export const startReactApp = async (
+  key: string,
+  dir: string,
+  onEvent: (event: ReactAppEvent) => void
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> => {
+  const existing = running.get(key);
+  if (existing !== undefined && existing.process.exitCode === null) return { ok: true, url: existing.url };
+
+  const detected = await inspectReactFolder(dir);
+  if (!detected.ok) return { ok: false, error: detected.reason };
+  const { project } = detected;
+  const log = (text: string): void => onEvent({ kind: 'log', text });
+
+  if (project.needsInstall) {
+    onEvent({ kind: 'phase', phase: 'installing' });
+    const install = run(project.packageManager, ['install'], dir, {}, log);
+    const code = await waitForExit(install);
+    if (code !== 0) return { ok: false, error: `${project.packageManager} install failed (exit ${code}).` };
+  }
+
+  onEvent({ kind: 'phase', phase: 'starting' });
+  const port = await allocateFreePort();
+  const { command, args, env } = project.devCommand(port);
+  const proc = run(command, args, dir, env, log);
+  const url = `http://localhost:${port}`;
+  running.set(key, { process: proc, url });
+  proc.on('exit', () => {
+    if (running.get(key)?.process === proc) running.delete(key);
+  });
+  try {
+    await waitForServer(url, proc, 120_000);
+    return { ok: true, url };
+  } catch (err) {
+    killTree(proc);
+    running.delete(key);
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+};
+
+export const stopReactApp = (key: string): void => {
+  const entry = running.get(key);
+  if (entry === undefined) return;
+  running.delete(key);
+  killTree(entry.process);
+};
+
+/** Stop the server at this address, if Scamp started it. */
+export const stopReactAppAt = (url: string): void => {
+  let origin: string;
+  try {
+    origin = new URL(url).origin;
+  } catch {
+    return;
+  }
+  for (const [key, entry] of running) {
+    if (new URL(entry.url).origin === origin) stopReactApp(key);
+  }
+};
+
+export const stopAllReactApps = (): void => {
+  for (const key of [...running.keys()]) stopReactApp(key);
+};

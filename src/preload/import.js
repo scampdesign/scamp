@@ -23,7 +23,12 @@ const importApi = {
         return () => ipcRenderer.removeListener(IPC.ImportResultChanged, handler);
     },
     /** Hand a captured page, and its narrower readings, to the app window. */
-    deliver: (projectPath, payload, narrower) => ipcRenderer.invoke(IPC.ImportCaptured, { projectPath, payload, narrower }),
+    deliver: (projectPath, payload, narrower, nameHint) => ipcRenderer.invoke(IPC.ImportCaptured, {
+        projectPath,
+        payload,
+        narrower,
+        ...(nameHint !== undefined ? { nameHint } : {}),
+    }),
     /**
      * Ask the app window to start an AI cleanup of the view just imported.
      * A view name and a mode, and nothing else; main checks both.

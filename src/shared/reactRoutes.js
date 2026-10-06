@@ -26,8 +26,13 @@ export const readRoutesFn = () => {
             if (el === null)
                 continue;
             const key = Object.keys(el).find((k) => k.startsWith('__reactContainer$'));
-            if (key !== undefined)
-                return el[key] ?? null;
+            if (key === undefined)
+                continue;
+            const container = el[key];
+            // The container keeps the root fiber it was created with. React swaps
+            // its two trees on every commit, so that one can be the stale copy
+            // with no children; the root node's `current` is always the live one.
+            return container?.stateNode?.current ?? container ?? null;
         }
         return null;
     };
@@ -139,4 +144,46 @@ export const fillParams = (route, values) => {
         return '';
     });
     return missing ? null : filled.replace(/\/{2,}/g, '/').replace(/(.)\/$/, '$1');
+};
+/**
+ * A view name for a route. A single-page app gives every route the same
+ * `<title>`, so naming views by title — as a page import does — names
+ * them all the same. `/billing/dashboard` → `BillingDashboard`, `/` →
+ * `Home`; a route with params gets `Detail`: `/patients/:id` →
+ * `PatientsDetail`.
+ */
+export const viewNameForRoute = (path) => {
+    const segments = path.split('/').filter((s) => s.length > 0 && s !== '*');
+    const words = segments
+        .filter((s) => !s.startsWith(':'))
+        .flatMap((s) => s.split(/[^A-Za-z0-9]+/))
+        .filter((w) => w.length > 0);
+    const base = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('') || 'Home';
+    const named = segments.some((s) => s.startsWith(':')) ? `${base}Detail` : base;
+    return /^[0-9]/.test(named) ? `Page${named}` : named;
+};
+/**
+ * The route a visited path belongs to: an exact match first, then the
+ * first pattern whose params fit. `/patients/1001` → `/patients/:patientId`.
+ */
+export const routeForPath = (routes, path) => {
+    const clean = path.length > 1 ? path.replace(/\/+$/, '') : path;
+    const exact = routes.find((r) => r.path === clean);
+    if (exact !== undefined)
+        return exact;
+    for (const route of routes) {
+        if (route.splat || route.params.length === 0)
+            continue;
+        const pattern = route.path
+            .split('/')
+            .map((part) => part.startsWith(':')
+            ? part.endsWith('?')
+                ? '(?:[^/]+)?'
+                : '[^/]+'
+            : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('/');
+        if (new RegExp(`^${pattern}$`).test(clean))
+            return route;
+    }
+    return null;
 };

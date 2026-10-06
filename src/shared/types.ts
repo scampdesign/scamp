@@ -637,7 +637,36 @@ export type ImportOpenArgs = {
    * than correct at one size.
    */
   breakpoints?: Breakpoint[];
+  /**
+   * Importing a React app: the window lists the app's routes beside the
+   * page and keeps one session for it. see docs/plans/react-import-plan.md
+   */
+  react?: { appName: string };
 };
+
+/** A React project folder, as the import read it. */
+export type ReactImportInspectResult =
+  | { kind: 'cancelled' }
+  | { kind: 'unsupported'; folder: string; reason: string }
+  | {
+      kind: 'ok';
+      folder: string;
+      name: string;
+      /** For the user to read: `Vite`, `Next.js`, `Create React App`. */
+      framework: string;
+      /** The exact commands Scamp would run, shown before it runs them. */
+      installCommand: string | null;
+      devCommand: string;
+    };
+
+export type ReactImportStartArgs = { projectPath: string; folder: string };
+
+export type ReactImportStartResult = { ok: true; url: string } | { ok: false; error: string };
+
+/** The dev server getting ready, streamed to the dialog. */
+export type ReactImportProgress =
+  | { kind: 'phase'; phase: 'installing' | 'starting' }
+  | { kind: 'log'; text: string };
 
 /** The import window handing a captured page to the app window. */
 export type ImportCapturedArgs = {
@@ -651,6 +680,11 @@ export type ImportCapturedArgs = {
    * never depend on these.
    */
   narrower?: Array<{ breakpointId: string; payload: unknown }>;
+  /**
+   * The view's name, when the window knows better than the page's title —
+   * a React route. PascalCase; the app window still makes it unique.
+   */
+  nameHint?: string;
 };
 
 /** One kind of thing the import changed or dropped. */

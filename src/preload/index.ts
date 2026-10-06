@@ -22,6 +22,10 @@ import type {
   ExportChooseSavePathArgs,
   ExportChooseSavePathResult,
   AgentConversationArgs,
+  ReactImportInspectResult,
+  ReactImportProgress,
+  ReactImportStartArgs,
+  ReactImportStartResult,
   AgentConversationState,
   AgentEvent,
   AgentKeySetResult,
@@ -434,6 +438,15 @@ const api = {
 
   // Scamp Agent provider key. Write-only from here: the key goes in, and
   // only a status ever comes back. see docs/plans/builtin-agent-plan.md
+  // React app import. see docs/plans/react-import-plan.md
+  reactImportInspect: (): Promise<ReactImportInspectResult> => ipcRenderer.invoke(IPC.ReactImportInspect),
+  reactImportStart: (args: ReactImportStartArgs): Promise<ReactImportStartResult> =>
+    ipcRenderer.invoke(IPC.ReactImportStart, args),
+  onReactImportProgress: (handler: (event: ReactImportProgress) => void): (() => void) => {
+    const listener = (_e: unknown, event: ReactImportProgress): void => handler(event);
+    ipcRenderer.on(IPC.ReactImportProgress, listener);
+    return () => ipcRenderer.removeListener(IPC.ReactImportProgress, listener);
+  },
   agentKeySet: (key: string): Promise<AgentKeySetResult> =>
     ipcRenderer.invoke(IPC.AgentKeySet, { key }),
   agentKeyStatus: (): Promise<AgentKeyStatusResult> => ipcRenderer.invoke(IPC.AgentKeyStatus),

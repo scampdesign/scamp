@@ -1,0 +1,8 @@
+body { margin: 0; font: 15px/22px system-ui, sans-serif; color: #1d2732; background: #f5f8fc; }
+.shell { display: grid; grid-template-areas: "nav main"; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+.nav { grid-area: nav; display: flex; flex-direction: column; gap: 4px; padding: 24px 12px; background: #eef3f9; border-right: 1px solid #d9e2ee; }
+.nav-item { padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.nav-item.is-active { background: #dbe8f6; font-weight: 600; }
+.main { grid-area: main; padding: 32px; }
+.card { padding: 24px; border: 1px solid #d9e2ee; border-radius: 12px; background: #fff; }
+.card h1 { margin: 0 0 8px; font-size: 24px; line-height: 32px; }

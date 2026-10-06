@@ -79,7 +79,7 @@ export const useWebsiteImport = ({
   openView,
 }: Options): void => {
   useEffect(() => {
-    return window.scamp.onImportDeliver(({ projectPath, payload, narrower }) => {
+    return window.scamp.onImportDeliver(({ projectPath, payload, narrower, nameHint }) => {
       void (async (): Promise<void> => {
         const log = useAppLogStore.getState().log;
         const report = (p: Parameters<typeof window.scamp.reportImportResult>[0]): void => {
@@ -182,7 +182,10 @@ export const useWebsiteImport = ({
             ...project.components.map((c) => c.name),
             ...project.pages.map((p) => p.name),
           ]);
-          const name = freeViewName(result.suggestedName, taken);
+          // A React route names its view; the hint comes from the least-trusted
+          // window, so only a plain PascalCase name is taken.
+          const hinted = typeof nameHint === 'string' && /^[A-Z][A-Za-z0-9]{0,63}$/.test(nameHint) ? nameHint : null;
+          const name = freeViewName(hinted ?? result.suggestedName, taken);
 
           const { tsx, css } = generateCode({
             elements: result.elements,

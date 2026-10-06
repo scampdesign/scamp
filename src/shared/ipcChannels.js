@@ -139,6 +139,11 @@ export const IPC = {
     // clicks Import; the payload reaches the app window, which reduces it
     // to a view. see docs/plans/website-import-plan.md
     ImportOpen: 'import:open',
+    // React app import: choose a folder, start its dev server with the
+    // user's say-so, and stream its progress. see docs/plans/react-import-plan.md
+    ReactImportInspect: 'react-import:inspect',
+    ReactImportStart: 'react-import:start',
+    ReactImportProgress: 'react-import:progress',
     /** Download one remote image into the project's assets. */
     ImportFetchImage: 'import:fetchImage',
     /** Which of these families does Google Fonts serve? */

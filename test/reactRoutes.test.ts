@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 
-import { fillParams, flattenRoutes, selectedByDefault, type RawRoute } from '@shared/reactRoutes';
+import {
+  fillParams,
+  flattenRoutes,
+  routeForPath,
+  selectedByDefault,
+  viewNameForRoute,
+  type RawRoute,
+} from '@shared/reactRoutes';
 
 /**
  * A React app's route table, flattened into pages to import.
@@ -106,5 +113,46 @@ describe('fillParams', () => {
 
   it('drops an optional param left empty', () => {
     expect(fillParams(flattenRoutes([{ path: '/docs/:section?' }])[0]!, {})).toBe('/docs');
+  });
+});
+
+describe('viewNameForRoute', () => {
+  it('names a view after its path, in PascalCase', () => {
+    expect(viewNameForRoute('/billing/dashboard')).toBe('BillingDashboard');
+    expect(viewNameForRoute('/tools/eligibility-tool')).toBe('ToolsEligibilityTool');
+  });
+
+  it('calls the root Home', () => {
+    expect(viewNameForRoute('/')).toBe('Home');
+  });
+
+  it('marks a route with params as a detail view', () => {
+    expect(viewNameForRoute('/patients/:patientId')).toBe('PatientsDetail');
+  });
+
+  it('never starts a name with a digit', () => {
+    expect(viewNameForRoute('/404')).toBe('Page404');
+  });
+});
+
+describe('routeForPath', () => {
+  const routes = flattenRoutes(ROUTES);
+
+  it('matches a path to its own route', () => {
+    expect(routeForPath(routes, '/patients')?.path).toBe('/patients');
+    expect(routeForPath(routes, '/patients/')?.path).toBe('/patients');
+  });
+
+  it('matches a filled-in path to its pattern', () => {
+    expect(routeForPath(routes, '/patients/1001')?.path).toBe('/patients/:patientId');
+  });
+
+  it('prefers the exact route over a pattern that also fits', () => {
+    const both = flattenRoutes([{ path: '/billing/:tab' }, { path: '/billing/claims' }]);
+    expect(routeForPath(both, '/billing/claims')?.path).toBe('/billing/claims');
+  });
+
+  it('returns null for a path no route takes, rather than the catch-all', () => {
+    expect(routeForPath(routes, '/nowhere/at/all')).toBeNull();
   });
 });

@@ -31,9 +31,15 @@ const importApi = {
   deliver: (
     projectPath: string,
     payload: unknown,
-    narrower: Array<{ breakpointId: string; payload: unknown }>
+    narrower: Array<{ breakpointId: string; payload: unknown }>,
+    nameHint?: string
   ): Promise<{ ok: boolean; error?: string }> =>
-    ipcRenderer.invoke(IPC.ImportCaptured, { projectPath, payload, narrower }),
+    ipcRenderer.invoke(IPC.ImportCaptured, {
+      projectPath,
+      payload,
+      narrower,
+      ...(nameHint !== undefined ? { nameHint } : {}),
+    }),
 
   /**
    * Ask the app window to start an AI cleanup of the view just imported.

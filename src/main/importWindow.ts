@@ -3,6 +3,7 @@ import { join } from 'path';
 
 import { IPC } from '@shared/ipcChannels';
 import { saveImportSource } from './importSourceStore';
+import { stopReactAppAt } from './reactImport/appServer';
 import type { CapturedSource } from '@shared/importCapture';
 import type {
   ImportCapturedArgs,
@@ -27,6 +28,8 @@ import type {
  */
 
 const importWindows = new Map<string, BrowserWindow>();
+/** What each window was opened for: a React app keeps its own session. */
+const openedFor = new Map<BrowserWindow, ImportOpenArgs>();
 
 /** The app window — the one that owns a project and can make a view. */
 const appWindow = (): BrowserWindow | null => {
@@ -52,8 +55,19 @@ export const openImportWindow = async (
   const { projectPath } = args;
   const existing = importWindows.get(projectPath);
   if (existing && !existing.isDestroyed()) {
-    existing.focus();
-    return { id: existing.id };
+    const before = openedFor.get(existing);
+    // A webview's session is fixed when it is created, so a different
+    // app — or a web page after an app — needs a window of its own.
+    if (before?.react?.appName === args.react?.appName) {
+      if (args.url !== undefined) {
+        openedFor.set(existing, args);
+        existing.webContents.send(IPC.ImportOpen, args);
+      }
+      existing.focus();
+      return { id: existing.id };
+    }
+    importWindows.delete(projectPath);
+    existing.close();
   }
 
   const win = new BrowserWindow({
@@ -75,6 +89,7 @@ export const openImportWindow = async (
   });
 
   importWindows.set(projectPath, win);
+  openedFor.set(win, args);
 
   // A third-party page opening a popup must not spawn an Electron
   // window inside the importer. Same rule as the preview: hand it to
@@ -88,7 +103,13 @@ export const openImportWindow = async (
     });
   });
 
-  win.on('closed', () => importWindows.delete(projectPath));
+  win.on('closed', () => {
+    if (importWindows.get(projectPath) === win) importWindows.delete(projectPath);
+    // A React app's dev server lives as long as the window importing from it.
+    const opened = openedFor.get(win);
+    openedFor.delete(win);
+    if (opened?.react !== undefined && opened.url !== undefined) stopReactAppAt(opened.url);
+  });
   win.once('ready-to-show', () => {
     win.show();
     win.webContents.send(IPC.ImportOpen, args);

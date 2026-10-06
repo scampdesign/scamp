@@ -65,6 +65,7 @@ import { usePageManagement } from './projectShell/usePageManagement';
 import { useComponentManagement } from './projectShell/useComponentManagement';
 import { useInstanceFlows } from './projectShell/useInstanceFlows';
 import { useLatest } from './projectShell/useLatest';
+import { ReactImportDialog } from './projectShell/ReactImportDialog';
 import styles from './ProjectShell.module.css';
 
 type Props = {
@@ -95,6 +96,7 @@ export const ProjectShell = ({
     project.path
   );
   const [showProjectSettings, setShowProjectSettings] = useState(false);
+  const [reactImportOpen, setReactImportOpen] = useState(false);
   // Ref to the artboard scroll container. Passed to `Viewport` so
   // fit-to-width zoom can observe the real scroll area, and used here
   // for the click-to-deselect handler on empty canvas space.
@@ -508,6 +510,7 @@ export const ProjectShell = ({
                 breakpoints: projectConfig.breakpoints,
               });
             }}
+            onImportReact={() => setReactImportOpen(true)}
           />
               <div
                 className={`${styles.sidebarSection} ${styles.sidebarLayers}`}
@@ -595,6 +598,21 @@ export const ProjectShell = ({
               }
             />
           </>
+        )}
+        {reactImportOpen && (
+          <ReactImportDialog
+            projectPath={project.path}
+            onClose={() => setReactImportOpen(false)}
+            onReady={(url, appName) => {
+              setReactImportOpen(false);
+              void window.scamp.openImport({
+                projectPath: project.path,
+                url,
+                breakpoints: projectConfig.breakpoints,
+                react: { appName },
+              });
+            }}
+          />
         )}
         {showProjectSettings && (
           <ProjectSettingsPage

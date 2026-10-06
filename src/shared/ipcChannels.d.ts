@@ -90,6 +90,9 @@ export declare const IPC: {
     /** main → renderer: a file under routes/ was added, changed, or removed. */
     readonly RoutesChanged: "routes:changed";
     readonly ImportOpen: "import:open";
+    readonly ReactImportInspect: "react-import:inspect";
+    readonly ReactImportStart: "react-import:start";
+    readonly ReactImportProgress: "react-import:progress";
     /** Download one remote image into the project's assets. */
     readonly ImportFetchImage: "import:fetchImage";
     /** Which of these families does Google Fonts serve? */

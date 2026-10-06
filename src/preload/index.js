@@ -179,6 +179,14 @@ const api = {
     },
     // Scamp Agent provider key. Write-only from here: the key goes in, and
     // only a status ever comes back. see docs/plans/builtin-agent-plan.md
+    // React app import. see docs/plans/react-import-plan.md
+    reactImportInspect: () => ipcRenderer.invoke(IPC.ReactImportInspect),
+    reactImportStart: (args) => ipcRenderer.invoke(IPC.ReactImportStart, args),
+    onReactImportProgress: (handler) => {
+        const listener = (_e, event) => handler(event);
+        ipcRenderer.on(IPC.ReactImportProgress, listener);
+        return () => ipcRenderer.removeListener(IPC.ReactImportProgress, listener);
+    },
     agentKeySet: (key) => ipcRenderer.invoke(IPC.AgentKeySet, { key }),
     agentKeyStatus: () => ipcRenderer.invoke(IPC.AgentKeyStatus),
     agentKeyClear: () => ipcRenderer.invoke(IPC.AgentKeyClear),

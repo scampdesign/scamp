@@ -25,8 +25,10 @@ type Props = {
     persistActiveSource: () => void;
     /** Opens the importer's browser window. Absent hides the entry point. */
     onImportWebsite?: () => void;
+    /** Import pages from a React app's project folder. */
+    onImportReact?: () => void;
     setActiveComponentState: (next: ActiveComponent | null) => void;
     setActivePageName: (name: string | null) => void;
 };
-export declare const PageSidebar: ({ pages, views, existingPageNames, pageEdit, pageEditError, pageEditBusy, isEditingPage, activePageName, activeComponent, setPageEdit, setPageEditError, resetPageEdit, handleAddPage, handleDuplicatePage, handleRenamePage, openPageMenu, openView, openViewMenu, handleRenameView, persistActiveSource, onImportWebsite, setActiveComponentState, setActivePageName, }: Props) => JSX.Element;
+export declare const PageSidebar: ({ pages, views, existingPageNames, pageEdit, pageEditError, pageEditBusy, isEditingPage, activePageName, activeComponent, setPageEdit, setPageEditError, resetPageEdit, handleAddPage, handleDuplicatePage, handleRenamePage, openPageMenu, openView, openViewMenu, handleRenameView, persistActiveSource, onImportWebsite, onImportReact, setActiveComponentState, setActivePageName, }: Props) => JSX.Element;
 export {};

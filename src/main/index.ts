@@ -36,6 +36,8 @@ import { registerUpdaterIpc } from './ipc/updater';
 import { initAutoUpdater } from './updater';
 import { registerPreviewIpc } from './ipc/preview';
 import { registerImportIpc } from './importWindow';
+import { registerReactImportIpc } from './ipc/reactImport';
+import { stopAllReactApps } from './reactImport/appServer';
 import { registerRoutesIpc } from './ipc/routes';
 import {
   closeAllPreviewWindows,
@@ -364,6 +366,7 @@ app.whenReady().then(() => {
   registerAgentIpc();
   registerHtmlExportIpc();
   registerImportIpc();
+  registerReactImportIpc();
   registerUpdaterIpc();
   registerPreviewIpc({
     open: openPreviewWindow,
@@ -451,6 +454,7 @@ const performShutdownCleanup = async (): Promise<void> => {
   disposeWatcher();
   setSentryProjectRoot(null);
   closeAllPreviewWindows();
+  stopAllReactApps();
   await Promise.all([disposeAllTerminals(), stopAllDevServers()]);
 };
 
