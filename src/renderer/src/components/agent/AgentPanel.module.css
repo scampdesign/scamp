@@ -424,3 +424,67 @@
   font-size: 11px;
   color: var(--text-tertiary);
 }
+
+/* An agent reply's Markdown. Sized for a 320px panel: headings step down
+   to the body size rather than shouting. */
+.markdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.markdown .replyText {
+  white-space: normal;
+}
+
+.mdHeading1,
+.mdHeading2,
+.mdHeading3 {
+  margin: 4px 0 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.mdHeading1 {
+  font-size: 14px;
+}
+
+.mdHeading2 {
+  font-size: 13px;
+}
+
+.mdHeading3 {
+  font-size: 12px;
+}
+
+.mdList {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.mdCode {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--bg-raised);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.mdRule {
+  width: 100%;
+  margin: 4px 0;
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+}

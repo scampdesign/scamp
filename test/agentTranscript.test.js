@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agentContextLine, applyAgentEvent, formatUsage, splitInlineCode, startTurn, toolLabel, } from '@lib/agentTranscript';
+import { agentContextLine, applyAgentEvent, formatUsage, startTurn, toolLabel, } from '@lib/agentTranscript';
 const USAGE = { inputTokens: 1200, outputTokens: 300, cacheReadTokens: 4000, cacheWriteTokens: 0 };
 const fold = (events, start = startTurn([], 't1', 'Hi', 'Page: home')) => events.reduce(applyAgentEvent, start);
 const reply = (entries) => {
@@ -137,33 +137,5 @@ describe('formatUsage', () => {
     });
     it('handles zero', () => {
         expect(formatUsage({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 })).toBe('0 tokens');
-    });
-});
-describe('splitInlineCode', () => {
-    it('marks backtick spans as code', () => {
-        expect(splitInlineCode('Set `display: flex` on `rect_a1b2`.')).toEqual([
-            { code: false, text: 'Set ' },
-            { code: true, text: 'display: flex' },
-            { code: false, text: ' on ' },
-            { code: true, text: 'rect_a1b2' },
-            { code: false, text: '.' },
-        ]);
-    });
-    it('returns plain text unchanged', () => {
-        expect(splitInlineCode('No code here.')).toEqual([{ code: false, text: 'No code here.' }]);
-    });
-    it('leaves an unclosed backtick as written', () => {
-        expect(splitInlineCode('Odd ` tick')).toEqual([{ code: false, text: 'Odd ` tick' }]);
-    });
-    it('does not let a span cross a line break', () => {
-        expect(splitInlineCode('a `b\nc` d')).toEqual([{ code: false, text: 'a `b\nc` d' }]);
-    });
-    it('returns nothing for an empty string', () => {
-        expect(splitInlineCode('')).toEqual([]);
-    });
-    it('keeps markup as text rather than interpreting it', () => {
-        expect(splitInlineCode('<img src=x onerror=alert(1)>')).toEqual([
-            { code: false, text: '<img src=x onerror=alert(1)>' },
-        ]);
     });
 });

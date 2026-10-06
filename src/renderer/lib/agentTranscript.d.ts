@@ -75,13 +75,3 @@ export declare const agentContextLine: (input: {
 }) => string;
 /** Tokens for one exchange, for the line under a reply. */
 export declare const formatUsage: (usage: AgentUsage) => string;
-/**
- * Split a reply on `backtick` spans so class names and CSS read as code.
- * Returns plain segments, never markup — the panel renders each as a text
- * node, so nothing in a reply can inject HTML. An unclosed backtick is
- * left as written.
- */
-export declare const splitInlineCode: (text: string) => Array<{
-    code: boolean;
-    text: string;
-}>;

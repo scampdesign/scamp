@@ -2,12 +2,12 @@ import { IconCheck, IconLoader2, IconX } from '@tabler/icons-react';
 
 import {
   formatUsage,
-  splitInlineCode,
   toolLabel,
   type TranscriptEntry,
   type TranscriptPart,
 } from '@lib/agentTranscript';
 
+import { AgentMarkdown } from './AgentMarkdown';
 import styles from './AgentPanel.module.css';
 
 type Props = {
@@ -19,20 +19,6 @@ const OUTCOME_NOTE: Partial<Record<Props['entry']['status'], string>> = {
   cancelled: 'Stopped.',
   refusal: 'Claude declined this request.',
 };
-
-const RichText = ({ text }: { text: string }): JSX.Element => (
-  <p className={styles.replyText}>
-    {splitInlineCode(text).map((segment, i) =>
-      segment.code ? (
-        <code key={i} className={styles.code}>
-          {segment.text}
-        </code>
-      ) : (
-        <span key={i}>{segment.text}</span>
-      )
-    )}
-  </p>
-);
 
 const ConfirmCard = ({
   part,
@@ -79,7 +65,7 @@ export const AgentReply = ({ entry }: Props): JSX.Element => {
     <div className={styles.reply} data-testid="agent-reply" data-status={entry.status}>
       {entry.parts.map((part, i) =>
         part.kind === 'text' ? (
-          <RichText key={i} text={part.text} />
+          <AgentMarkdown key={i} text={part.text} />
         ) : part.kind === 'confirm' ? (
           <ConfirmCard key={part.id} part={part} />
         ) : (

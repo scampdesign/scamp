@@ -208,23 +208,3 @@ export const formatUsage = (usage: AgentUsage): string => {
   const total = usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens;
   return `${total.toLocaleString('en-US')} tokens`;
 };
-
-/**
- * Split a reply on `backtick` spans so class names and CSS read as code.
- * Returns plain segments, never markup — the panel renders each as a text
- * node, so nothing in a reply can inject HTML. An unclosed backtick is
- * left as written.
- */
-export const splitInlineCode = (text: string): Array<{ code: boolean; text: string }> => {
-  const out: Array<{ code: boolean; text: string }> = [];
-  const pattern = /`([^`\n]+)`/g;
-  let last = 0;
-  for (const match of text.matchAll(pattern)) {
-    const index = match.index ?? 0;
-    if (index > last) out.push({ code: false, text: text.slice(last, index) });
-    out.push({ code: true, text: match[1] ?? '' });
-    last = index + match[0].length;
-  }
-  if (last < text.length) out.push({ code: false, text: text.slice(last) });
-  return out;
-};
