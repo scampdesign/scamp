@@ -7,6 +7,9 @@ import type { AgentProvider, ProviderRequest } from '../src/main/agent/provider'
 import { createAgentSession } from '../src/main/agent/session';
 import { importCleanupSkill, IMPORT_CLEANUP_VERSION } from '../src/main/agent/skills/importCleanup';
 import { skillFor } from '../src/main/agent/skills';
+import { reactImportSkill } from '../src/main/agent/skills/reactImport';
+import { REACT_SOURCE_TOOL } from '../src/main/agent/reactSourceTool';
+import { describeToolCall } from '../src/main/agent/confirmPolicy';
 import { WRITE_TOOLS } from '../src/main/agent/writeTools';
 
 /**
@@ -153,5 +156,38 @@ describe('a session running a skill', () => {
     expect(agent.skill()?.id).toBe('import-cleanup');
     agent.reset();
     expect(agent.skill()).toBeNull();
+  });
+});
+
+describe('reactImportSkill', () => {
+  const skill = reactImportSkill();
+  const all = [...WRITE_TOOLS, REACT_SOURCE_TOOL];
+
+  it('is chosen by its request', () => {
+    expect(skillFor({ id: 'react-import' }).id).toBe('react-import');
+  });
+
+  it('reads the source and sets conditions and names, and can’t restyle or delete', () => {
+    const names = skill.tools(all).map((t) => t.name);
+    expect(names).toEqual(expect.arrayContaining(['scamp_get_react_source', 'scamp_set_show', 'scamp_rename_list', 'scamp_set_tag']));
+    for (const off of ['scamp_set_styles', 'scamp_delete_element', 'scamp_set_theme_tokens', 'scamp_extract_component']) {
+      expect(names).not.toContain(off);
+      expect(skill.allows(off)).toBe(false);
+    }
+  });
+
+  it('plans first, and says the view must look the same', () => {
+    expect(skill.planApproved).toBe(true);
+    expect(skill.instructions).toContain('must look the same');
+    expect(skill.instructions).toContain('scamp_get_react_source');
+  });
+});
+
+describe('describeToolCall — binding edits', () => {
+  it('says what a condition and a rename will do', () => {
+    expect(describeToolCall({ name: 'scamp_set_show', input: { element: 'badge_0001', flag: 'isOverdue' } })).toBe(
+      'Show badge_0001 only when isOverdue'
+    );
+    expect(describeToolCall({ name: 'scamp_rename_list', input: { list: 'items', to: 'claims' } })).toBe('Rename the list items to claims');
   });
 });

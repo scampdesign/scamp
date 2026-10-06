@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import type { ImportReportGroup } from '@shared/types';
-import { cleanupRequest } from '@lib/agentCleanup';
+import { cleanupRequest, reactTidyRequest } from '@lib/agentCleanup';
 
 const group = (over: Partial<ImportReportGroup>): ImportReportGroup => ({
   kind: 'x',
@@ -83,5 +83,23 @@ describe('nextCleanupPhase', () => {
 describe('rememberedTokenMode', () => {
   it('answers null, not an error, where storage is unavailable', () => {
     expect(rememberedTokenMode('/project')).toBeNull();
+  });
+});
+
+describe('reactTidyRequest', () => {
+  it('names the view and the app, and lists what the import kept as copies', () => {
+    expect(reactTidyRequest('Patients', 'riq_frontend', ['AppSidebar looks different on some pages'])).toBe(
+      'Tidy up Patients, which I imported from the React app riq_frontend.\n\nThe import kept these as copies or simplified them:\n- AppSidebar looks different on some pages'
+    );
+  });
+
+  it('says only what to tidy when there is nothing to list', () => {
+    expect(reactTidyRequest('Home', 'app', [])).toBe('Tidy up Home, which I imported from the React app app.');
+  });
+
+  it('keeps a long list short', () => {
+    const text = reactTidyRequest('Home', 'app', Array.from({ length: 14 }, (_, i) => `note ${i}`));
+    expect(text).toContain('- and 4 more');
+    expect(text).not.toContain('note 13');
   });
 });

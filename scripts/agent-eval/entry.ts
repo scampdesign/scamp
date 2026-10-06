@@ -20,3 +20,6 @@ export { createAnthropicProvider } from '../../src/main/agent/anthropicProvider'
 export { createScriptedProvider } from '../../src/main/agent/scriptedProvider';
 export { needsConfirmation } from '../../src/main/agent/confirmPolicy';
 export { AGENT_MODEL } from '../../src/main/agent/config';
+export { reactImportSkill, REACT_IMPORT_VERSION } from '../../src/main/agent/skills/reactImport';
+export { REACT_SOURCE_TOOL } from '../../src/main/agent/reactSourceTool';
+export { sourceFor } from '../../src/main/reactImport/record';

@@ -189,6 +189,7 @@ const api = {
     // React app import. see docs/plans/react-import-plan.md
     reactImportInspect: () => ipcRenderer.invoke(IPC.ReactImportInspect),
     reactImportStart: (args) => ipcRenderer.invoke(IPC.ReactImportStart, args),
+    reactImportRecord: (args) => ipcRenderer.invoke(IPC.ReactImportRecord, args),
     reactImportListNames: (args) => ipcRenderer.invoke(IPC.ReactImportListNames, args),
     onReactImportProgress: (handler) => {
         const listener = (_e, event) => handler(event);

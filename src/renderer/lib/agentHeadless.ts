@@ -19,6 +19,8 @@ import {
   mergeThemeTokens,
   moveElement,
   planExtraction,
+  renameList,
+  setShow,
   setAttributes,
   setStyles,
   setTag,
@@ -50,6 +52,11 @@ export type HeadlessOptions = {
   breakpoints?: ReadonlyArray<Breakpoint>;
   /** The page's original, for `scamp_get_import_source`. */
   importSource?: { url: string; html: string; css: string };
+  /**
+   * A React app's source, for `scamp_get_react_source` — answered by the
+   * caller, which has the app's files. see docs/plans/react-import-plan.md
+   */
+  reactSource?: (target: string, element: string | undefined) => Promise<{ ok: true; text: string } | { ok: false; error: string }>;
 };
 
 type AgentAnswer = ToolResult & { summary?: string };
@@ -65,6 +72,8 @@ const EDITS: Readonly<Record<string, Edit>> = {
   scamp_move_element: (ctx, a) => moveElement(ctx, { ...a, element: a['element'], parent: a['parent'] }),
   scamp_wrap_elements: (ctx, a) => wrapElements(ctx, { ...a, elements: a['elements'] }),
   scamp_delete_element: (ctx, a) => deleteElement(ctx, { element: a['element'] }),
+  scamp_set_show: (ctx, a) => setShow(ctx, { element: a['element'], flag: a['flag'], shown: a['shown'] }),
+  scamp_rename_list: (ctx, a) => renameList(ctx, { list: a['list'], to: a['to'], row: a['row'], fields: a['fields'] }),
 };
 
 const text = (value: string, isError = false): AgentAnswer => ({
@@ -167,6 +176,14 @@ export const createHeadlessCanvas = (
   };
 
   const invoke = async (name: string, args: Record<string, unknown>): Promise<AgentAnswer> => {
+    if (name === 'scamp_get_react_source') {
+      if (options.reactSource === undefined) return text('This page didn’t come from a React app.', true);
+      const answer = await options.reactSource(
+        typeof args['target'] === 'string' ? args['target'] : '',
+        typeof args['element'] === 'string' ? args['element'] : undefined
+      );
+      return answer.ok ? text(answer.text) : text(answer.error, true);
+    }
     if (name === 'scamp_set_theme_tokens') return setThemeTokens(args);
     if (name === 'scamp_extract_component') return extract(args);
     const edit = EDITS[name];

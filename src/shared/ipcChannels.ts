@@ -171,6 +171,8 @@ export const IPC = {
   ReactImportProgress: 'react-import:progress',
   /** The names a React app's source gives its lists, read in main from the app's folder. */
   ReactImportListNames: 'react-import:list-names',
+  /** Where a finished React import's elements came from, kept for the AI pass and re-import. */
+  ReactImportRecord: 'react-import:record',
   /** Download one remote image into the project's assets. */
   ImportFetchImage: 'import:fetchImage',
   /** Which of these families does Google Fonts serve? */

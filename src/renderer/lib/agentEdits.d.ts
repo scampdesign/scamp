@@ -119,4 +119,24 @@ export declare const editFeedback: (result: Extract<AgentEditResult, {
     summary: string;
     text: string;
 };
+/**
+ * Show an element only when a boolean prop is true — the `{flag && …}` a
+ * React app writes. The sample on the root decides what the canvas shows.
+ * see docs/notes/view-bindings.md
+ */
+export declare const setShow: (ctx: AgentEditContext, args: {
+    element: unknown;
+    flag: unknown;
+    shown?: unknown;
+}) => AgentEditResult;
+/**
+ * Rename a repeated list — the list prop, its row variable, and row
+ * fields — everywhere the view uses them and in its sample rows.
+ */
+export declare const renameList: (ctx: AgentEditContext, args: {
+    list: unknown;
+    to?: unknown;
+    row?: unknown;
+    fields?: unknown;
+}) => AgentEditResult;
 export {};

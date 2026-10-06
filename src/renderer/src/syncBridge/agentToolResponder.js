@@ -1,4 +1,4 @@
-import { addElement, deleteElement, editFeedback, mergeThemeTokens, planExtraction, moveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
+import { addElement, deleteElement, editFeedback, mergeThemeTokens, planExtraction, renameList, setShow, moveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
 import { generateComponentFromSubtree } from '@lib/extractComponent';
 import { classNameFor } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
@@ -15,6 +15,8 @@ const EDITS = {
     scamp_move_element: (ctx, a) => moveElement(ctx, { ...a, element: a['element'], parent: a['parent'] }),
     scamp_wrap_elements: (ctx, a) => wrapElements(ctx, { ...a, elements: a['elements'] }),
     scamp_delete_element: (ctx, a) => deleteElement(ctx, { element: a['element'] }),
+    scamp_set_show: (ctx, a) => setShow(ctx, { element: a['element'], flag: a['flag'], shown: a['shown'] }),
+    scamp_rename_list: (ctx, a) => renameList(ctx, { list: a['list'], to: a['to'], row: a['row'], fields: a['fields'] }),
 };
 /** The turn whose history transaction is open, and what it touched. */
 let open = null;

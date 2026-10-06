@@ -10,6 +10,7 @@ import { AgentCleanupCard } from './AgentCleanupCard';
 import { AgentConnect } from './AgentConnect';
 import { AgentPlanBar } from './AgentPlanBar';
 import { AgentReply } from './AgentReply';
+import { ReactTidyCard } from './ReactTidyCard';
 import { useAgentKey } from './useAgentKey';
 import styles from './AgentPanel.module.css';
 
@@ -62,6 +63,7 @@ export const AgentPanel = (): JSX.Element => {
     openConversation,
     focus,
     setFocus,
+    reactImport,
   } = useAgentStore();
   // Recomputed from the canvas on every store change; a string, so the
   // panel only re-renders when the line actually changes.
@@ -185,7 +187,13 @@ export const AgentPanel = (): JSX.Element => {
       ) : (
         <>
           <div className={styles.messages} ref={listRef} data-testid="agent-messages">
-            {visible.length === 0 && cleanupOffer !== null ? (
+            {visible.length === 0 &&
+            reactImport !== null &&
+            reactImport.projectPath === projectPath &&
+            openViewName !== null &&
+            reactImport.views.includes(openViewName) ? (
+              <ReactTidyCard viewName={openViewName} appName={reactImport.appName} />
+            ) : visible.length === 0 && cleanupOffer !== null ? (
               <AgentCleanupCard projectPath={cleanupOffer.projectPath} viewName={cleanupOffer.viewName} />
             ) : visible.length === 0 ? (
               <div className={styles.empty}>

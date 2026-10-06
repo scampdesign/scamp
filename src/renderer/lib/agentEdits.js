@@ -521,3 +521,136 @@ export const editFeedback = (result, rootId, themeTokenNames) => {
         text: [result.summary, `Touched: ${ids.join(', ')}`, ...result.notes, ...findings].join('\n'),
     };
 };
+const PROP_NAME = /^[a-z][A-Za-z0-9]*$/;
+const RESERVED_PROP_NAMES = new Set(['className', 'children', 'key', 'ref', 'style']);
+/**
+ * Show an element only when a boolean prop is true — the `{flag && …}` a
+ * React app writes. The sample on the root decides what the canvas shows.
+ * see docs/notes/view-bindings.md
+ */
+export const setShow = (ctx, args) => {
+    const el = resolveElement(ctx, args.element);
+    if (el === null)
+        return fail(notFound(args.element));
+    if (el.id === ctx.rootId)
+        return fail('The root always shows. Put the condition on the element inside it.');
+    if (typeof args.flag !== 'string')
+        return fail('"flag" must be a string.');
+    const root = ctx.elements[ctx.rootId];
+    if (root === undefined)
+        return fail('The view has no root.');
+    const flag = args.flag.trim();
+    if (flag.length === 0) {
+        const { showIf: _removed, ...rest } = el;
+        return {
+            ok: true,
+            elements: { ...ctx.elements, [el.id]: rest },
+            summary: `${classNameFor(el)} always shows`,
+            touched: [el.id],
+            notes: [],
+        };
+    }
+    const name = flag.startsWith('!') ? flag.slice(1) : flag;
+    if (!PROP_NAME.test(name) || RESERVED_PROP_NAMES.has(name)) {
+        return fail(`"${name}" isn't a prop name Scamp can use: camelCase letters and digits, starting with a lowercase letter.`);
+    }
+    const existing = root.samples?.[name];
+    if (Array.isArray(existing))
+        return fail(`"${name}" is a list. Pick another name for the flag.`);
+    const shown = typeof args.shown === 'boolean' ? args.shown : true;
+    // The sample is the flag's value; "!flag" shows when it's false.
+    const sample = flag.startsWith('!') ? !shown : shown;
+    return {
+        ok: true,
+        elements: {
+            ...ctx.elements,
+            [el.id]: { ...el, showIf: flag },
+            [root.id]: { ...root, samples: { ...(root.samples ?? {}), [name]: sample } },
+        },
+        summary: `${classNameFor(el)} shows when ${flag}`,
+        touched: [el.id],
+        notes: shown ? [] : ['It is hidden on the canvas now: its sample is off.'],
+    };
+};
+/** Rewrite a row path's head and field: `item.text2` → `claim.patientName`. */
+const renamePath = (path, from, to, fields) => {
+    const [head, field, ...rest] = path.split('.');
+    if (head !== from || field === undefined)
+        return path;
+    return [to, fields[field] ?? field, ...rest].join('.');
+};
+/**
+ * Rename a repeated list — the list prop, its row variable, and row
+ * fields — everywhere the view uses them and in its sample rows.
+ */
+export const renameList = (ctx, args) => {
+    if (typeof args.list !== 'string')
+        return fail('"list" must be a string.');
+    const root = ctx.elements[ctx.rootId];
+    const repeated = Object.values(ctx.elements).filter((el) => el.repeat?.over === args.list);
+    if (root === undefined || repeated.length === 0) {
+        return fail(`No list "${args.list}" here. scamp_get_element_tree shows each repeat's list.`);
+    }
+    const to = typeof args.to === 'string' && args.to.length > 0 ? args.to : args.list;
+    const fields = args.fields !== null && typeof args.fields === 'object' && !Array.isArray(args.fields)
+        ? Object.fromEntries(Object.entries(args.fields).filter((e) => typeof e[1] === 'string'))
+        : {};
+    for (const name of [to, ...Object.values(fields), ...(typeof args.row === 'string' ? [args.row] : [])]) {
+        if (!PROP_NAME.test(name) || RESERVED_PROP_NAMES.has(name))
+            return fail(`"${name}" isn't a name Scamp can use: camelCase, starting with a lowercase letter.`);
+    }
+    if (to !== args.list && root.samples?.[to] !== undefined)
+        return fail(`The view already has a prop "${to}".`);
+    const rows = root.samples?.[args.list];
+    const nextRows = Array.isArray(rows)
+        ? rows.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [fields[k] ?? k, v])))
+        : rows;
+    const fieldNames = new Set(Array.isArray(rows) ? rows.flatMap((r) => Object.keys(r)) : []);
+    const unknownField = Object.keys(fields).find((f) => !fieldNames.has(f));
+    if (unknownField !== undefined)
+        return fail(`The rows of "${args.list}" have no field "${unknownField}".`);
+    const elements = { ...ctx.elements };
+    const touched = [];
+    for (const el of repeated) {
+        const as = el.repeat?.as ?? '';
+        const row = typeof args.row === 'string' && args.row.length > 0 ? args.row : as;
+        const key = el.repeat?.key;
+        elements[el.id] = {
+            ...el,
+            repeat: { over: to, as: row, ...(key !== undefined ? { key: fields[key] ?? key } : {}) },
+        };
+        touched.push(el.id);
+        // Every row path under it, its own included.
+        const walk = (id) => {
+            const cur = elements[id];
+            if (cur === undefined)
+                return;
+            const prop = cur.prop !== undefined ? renamePath(cur.prop, as, row, fields) : undefined;
+            const bind = cur.bind !== undefined ? Object.fromEntries(Object.entries(cur.bind).map(([k, v]) => [k, renamePath(v, as, row, fields)])) : undefined;
+            if (prop !== cur.prop || JSON.stringify(bind) !== JSON.stringify(cur.bind)) {
+                elements[id] = { ...cur, ...(prop !== undefined ? { prop } : {}), ...(bind !== undefined ? { bind } : {}) };
+                touched.push(id);
+            }
+            for (const c of cur.childIds)
+                walk(c);
+        };
+        walk(el.id);
+    }
+    const samples = { ...(root.samples ?? {}) };
+    delete samples[args.list];
+    if (nextRows !== undefined)
+        samples[to] = nextRows;
+    elements[root.id] = { ...(elements[root.id] ?? root), samples };
+    const renamed = [
+        ...(to !== args.list ? [`list ${args.list} → ${to}`] : []),
+        ...(typeof args.row === 'string' ? [`row → ${args.row}`] : []),
+        ...Object.entries(fields).map(([a, b]) => `${a} → ${b}`),
+    ];
+    return {
+        ok: true,
+        elements,
+        summary: `Renamed ${renamed.join(', ') || 'nothing'}`,
+        touched,
+        notes: [],
+    };
+};

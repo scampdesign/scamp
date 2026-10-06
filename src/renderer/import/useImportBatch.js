@@ -15,7 +15,7 @@ const pathOf = (url) => {
         return '';
     }
 };
-export const useImportBatch = ({ webviewRef, projectPath, baseUrl, readAllWidths, }) => {
+export const useImportBatch = ({ webviewRef, projectPath, baseUrl, appName, readAllWidths, }) => {
     const [batch, setBatch] = useState(null);
     const stopRequested = useRef(false);
     const awaiting = useRef(null);
@@ -106,6 +106,8 @@ export const useImportBatch = ({ webviewRef, projectPath, baseUrl, readAllWidths
                     id,
                     index,
                     total: targets.length,
+                    route: target.route,
+                    app: appName,
                 });
                 if (!sent.ok) {
                     awaiting.current = null;
@@ -127,7 +129,7 @@ export const useImportBatch = ({ webviewRef, projectPath, baseUrl, readAllWidths
         if (!finished.ok) {
             setBatch((b) => b !== null && b.id === id ? { ...b, finishing: false, finishError: finished.error ?? 'Scamp couldn’t look for components.' } : b);
         }
-    }, [webviewRef, projectPath, baseUrl, readAllWidths]);
+    }, [webviewRef, projectPath, baseUrl, appName, readAllWidths]);
     const stop = useCallback(() => {
         stopRequested.current = true;
     }, []);

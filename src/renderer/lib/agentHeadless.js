@@ -9,7 +9,7 @@
 // see docs/plans/builtin-agent-plan.md
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
 import { createToolInvoker } from '../../main/mcp/tools';
-import { addElement, deleteElement, editFeedback, mergeThemeTokens, moveElement, planExtraction, setAttributes, setStyles, setTag, setText, wrapElements, } from './agentEdits';
+import { addElement, deleteElement, editFeedback, mergeThemeTokens, moveElement, planExtraction, renameList, setShow, setAttributes, setStyles, setTag, setText, wrapElements, } from './agentEdits';
 import { answerSnapshotTool } from './canvasSnapshot';
 import { replaceSubtreeWithInstancePure } from './componentInstance';
 import { generateElementId } from './element/tree';
@@ -26,6 +26,8 @@ const EDITS = {
     scamp_move_element: (ctx, a) => moveElement(ctx, { ...a, element: a['element'], parent: a['parent'] }),
     scamp_wrap_elements: (ctx, a) => wrapElements(ctx, { ...a, elements: a['elements'] }),
     scamp_delete_element: (ctx, a) => deleteElement(ctx, { element: a['element'] }),
+    scamp_set_show: (ctx, a) => setShow(ctx, { element: a['element'], flag: a['flag'], shown: a['shown'] }),
+    scamp_rename_list: (ctx, a) => renameList(ctx, { list: a['list'], to: a['to'], row: a['row'], fields: a['fields'] }),
 };
 const text = (value, isError = false) => ({
     content: [{ type: 'text', text: value }],
@@ -114,6 +116,12 @@ export const createHeadlessCanvas = (initial, options) => {
         return { ...text(summary), summary };
     };
     const invoke = async (name, args) => {
+        if (name === 'scamp_get_react_source') {
+            if (options.reactSource === undefined)
+                return text('This page didn’t come from a React app.', true);
+            const answer = await options.reactSource(typeof args['target'] === 'string' ? args['target'] : '', typeof args['element'] === 'string' ? args['element'] : undefined);
+            return answer.ok ? text(answer.text) : text(answer.error, true);
+        }
         if (name === 'scamp_set_theme_tokens')
             return setThemeTokens(args);
         if (name === 'scamp_extract_component')

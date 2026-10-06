@@ -160,5 +160,38 @@ export const WRITE_TOOLS = [
             additionalProperties: false,
         },
     },
+    {
+        name: 'scamp_set_show',
+        description: 'Make an element appear only when a boolean prop is true — the `{flag && …}` a React app writes. "flag" names the prop (camelCase; prefix with "!" to show when it is false); "shown" is its sample value, which decides whether the canvas shows the element now. Pass flag "" to remove the condition.',
+        input_schema: {
+            type: 'object',
+            properties: {
+                element,
+                flag: { type: 'string', description: 'The prop, e.g. "hasOverdue" or "!isEmpty". Empty to remove.' },
+                shown: { type: 'boolean', description: 'The sample: whether the element shows on the canvas now. Default true.' },
+            },
+            required: ['element', 'flag'],
+            additionalProperties: false,
+        },
+    },
+    {
+        name: 'scamp_rename_list',
+        description: 'Rename a repeated list in the open view or component: the list prop, its row variable, and any of its row fields — everywhere they are used, and in the sample rows. Use the names the source gives (`claims.map((claim) => …)`, `claim.patientName`).',
+        input_schema: {
+            type: 'object',
+            properties: {
+                list: { type: 'string', description: 'The list as it is named now.' },
+                to: { type: 'string', description: 'Its new name.' },
+                row: { type: 'string', description: 'A new name for its row variable.' },
+                fields: {
+                    type: 'object',
+                    additionalProperties: { type: 'string' },
+                    description: 'Row fields to rename, old name → new name.',
+                },
+            },
+            required: ['list'],
+            additionalProperties: false,
+        },
+    },
 ];
 export const WRITE_TOOL_NAMES = new Set(WRITE_TOOLS.map((t) => t.name));

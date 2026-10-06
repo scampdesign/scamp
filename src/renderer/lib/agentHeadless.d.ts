@@ -21,6 +21,17 @@ export type HeadlessOptions = {
         html: string;
         css: string;
     };
+    /**
+     * A React app's source, for `scamp_get_react_source` — answered by the
+     * caller, which has the app's files. see docs/plans/react-import-plan.md
+     */
+    reactSource?: (target: string, element: string | undefined) => Promise<{
+        ok: true;
+        text: string;
+    } | {
+        ok: false;
+        error: string;
+    }>;
 };
 type AgentAnswer = ToolResult & {
     summary?: string;

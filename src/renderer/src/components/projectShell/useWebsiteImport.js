@@ -217,6 +217,8 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     if (batch !== undefined) {
                         batchView = {
                             name: created.name,
+                            ...(batch.route !== undefined ? { route: batch.route } : {}),
+                            ...(batch.app !== undefined ? { app: batch.app } : {}),
                             tsxPath: created.tsxPath,
                             cssPath: created.cssPath,
                             elements: result.elements,
@@ -562,6 +564,25 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     });
                     rewritten.set(view.name, { tsxContent: code.tsx, cssContent: code.css });
                 }
+                // Where every element came from, for the AI pass to read the
+                // source by and for re-import. Main adds the app's folder.
+                const sitesOf = (elements, react) => Object.fromEntries(Object.entries(react).flatMap(([id, info]) => (info.site !== undefined && id in elements ? [[id, info.site]] : [])));
+                const appName = views.find((v) => v.app !== undefined)?.app;
+                if (appName !== undefined) {
+                    await window.scamp
+                        .reactImportRecord({
+                        projectPath,
+                        appName,
+                        views: Object.fromEntries(plan.views.map((v, i) => [
+                            v.name,
+                            { ...(views[i]?.route !== undefined ? { route: views[i]?.route } : {}), sites: sitesOf(v.elements, v.react) },
+                        ])),
+                        components: Object.fromEntries(plan.components.map((c, i) => [madeFiles[i]?.name ?? c.name, { sites: sitesOf(c.elements, c.react) }])),
+                    })
+                        .catch(() => {
+                        // The record serves the AI pass; an import that worked stands without it.
+                    });
+                }
                 onProjectChange?.((prev) => ({
                     ...prev,
                     components: [
@@ -576,6 +597,10 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                     useAppLogStore
                         .getState()
                         .log('info', `Made ${plan.components.length} components from the React app: ${plan.components.map((c) => c.name).join(', ')}.`);
+                }
+                // The Agent panel offers to tidy these views from the app's source.
+                if (appName !== undefined) {
+                    useAgentStore.getState().recordReactImport(projectPath, appName, views.map((v) => v.name), plan.findings.map(describeReactFinding));
                 }
                 send({
                     kind: 'finished',

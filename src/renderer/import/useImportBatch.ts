@@ -71,6 +71,8 @@ type Options = {
   projectPath: string;
   /** The app's address, routes are visited relative to it. */
   baseUrl: string;
+  /** The React app's name, recorded with what the import made. */
+  appName: string;
   readAllWidths: (onWidth?: (label: string) => void) => Promise<{
     payload: unknown;
     narrower: Array<{ breakpointId: string; payload: unknown }>;
@@ -81,6 +83,7 @@ export const useImportBatch = ({
   webviewRef,
   projectPath,
   baseUrl,
+  appName,
   readAllWidths,
 }: Options): {
   batch: BatchState | null;
@@ -193,6 +196,8 @@ export const useImportBatch = ({
             id,
             index,
             total: targets.length,
+            route: target.route,
+            app: appName,
           });
           if (!sent.ok) {
             awaiting.current = null;
@@ -220,7 +225,7 @@ export const useImportBatch = ({
         );
       }
     },
-    [webviewRef, projectPath, baseUrl, readAllWidths]
+    [webviewRef, projectPath, baseUrl, appName, readAllWidths]
   );
 
   const stop = useCallback((): void => {

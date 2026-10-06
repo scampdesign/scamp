@@ -43,6 +43,16 @@ export type AgentState = {
     openConversation: (projectPath: string, key: AgentConversationKey) => Promise<void>;
     setFocus: (focus: AgentFocus) => void;
     recordImport: (projectPath: string, viewName: string, report: ImportReportGroup[]) => void;
+    /** The views a React import made in this project, and what it kept as copies. */
+    reactImport: {
+        projectPath: string;
+        appName: string;
+        views: string[];
+        notes: string[];
+    } | null;
+    recordReactImport: (projectPath: string, appName: string, views: string[], notes: string[]) => void;
+    /** Tidy one of those views from the app's source, in a new conversation. */
+    startReactTidy: (viewName: string) => Promise<void>;
     /** Start a cleanup of the last import in a new conversation. */
     startCleanup: (tokenMode: AgentTokenMode) => Promise<void>;
     /** The user approved the plan as written. */

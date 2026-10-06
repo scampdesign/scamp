@@ -66,6 +66,10 @@ export const describeToolCall = ({ name, input }: ToolCall): string => {
     }
     case 'scamp_set_text':
       return `Change the text of ${element} to "${clip(str(input, 'text'), 60)}"`;
+    case 'scamp_set_show':
+      return str(input, 'flag') ? `Show ${element} only when ${str(input, 'flag')}` : `Always show ${element}`;
+    case 'scamp_rename_list':
+      return `Rename the list ${str(input, 'list')}${str(input, 'to') ? ` to ${str(input, 'to')}` : ''}`;
     case 'scamp_set_tag':
       return `Change ${element} to <${str(input, 'tag')}>`;
     case 'scamp_set_attributes':

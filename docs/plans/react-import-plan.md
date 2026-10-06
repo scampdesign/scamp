@@ -454,11 +454,53 @@ unchanged. Tests: `test/appTokens.test.ts` (with
 browser), and the batch e2e, whose fixture app now has tokens and a dark
 theme.
 
-### Phase 6 — the AI pass
+### Phase 6 — the AI pass — **built; real-model eval pending**
 
-The `react-import` skill, `scamp_get_react_source`, an eval rubric on
-the test project's views (findings per element, `showIf` found, names
-kept, pixels unchanged).
+**Where things came from.** When a multi-page import finishes, the app
+window sends each view's and component's element → JSX call site map to
+main, which writes `.scamp/react-import.json` with the app's folder — its
+own record of what it started, never the renderer's word
+(`reactImport/record.ts`, `ReactImportRecord`). Phase 7 builds on it.
+
+**The tools.**
+
+- `scamp_get_react_source` (read, answered in main): the JSX around an
+  element's line, marked and numbered, or the files a view drew from.
+  Only files inside the app's folder are read.
+- `scamp_set_show` (write): `showIf` on an element, its sample on the
+  root; `!flag` stores the flag's own value.
+- `scamp_rename_list` (write): a list, its row variable, its fields and
+  key — every row path beneath it and the sample rows.
+
+Both writes are pure (`@lib/agentEdits`), round-trip through
+generate → parse, and run in the renderer and the headless canvas.
+
+**The skill** (`skills/reactImport.ts`, `react-import`, v1): read the
+source for elements that look conditional and for each list; plan
+conditions (named for the source's condition), names (the source's) and
+tags; apply on approval; report what it couldn't do — the selected nav
+item above all. Tools: reads, the source, `set_show`, `rename_list`,
+`set_tag`; no styles, deletes or components. The view must look the
+same.
+
+**The entry.** The Agent panel shows **Tidy up with AI** on a view a React
+import made in this session, and starts it as a new conversation under
+the skill, with the import's leftovers in the first message
+(`reactTidyRequest`).
+
+**The eval**, `scripts/react-agent-eval.mjs`: imports routes as the app
+does (`scripts/lib/reactImportPipeline.mjs`, shared with the import
+eval), runs the skill per view in the headless canvas with the source
+answered by the same `sourceFor`, and reports show conditions, generic
+names (`items`, `text2`), pixels, findings, the round trip, edits and
+cost. Scripted: before equals after, round trip ok. **A real-model run
+needs a budget.**
+
+Tests: `test/agentBindingEdits.test.ts`, the skill and request cases in
+`test/agentSkills.test.ts` and `test/agentCleanup.test.ts`,
+`test/integration/reactImportRecord.integration.test.ts` (including a
+path that tries to leave the app's folder), and
+`test/e2e/agent/agent-react-tidy.spec.ts` on the scripted provider.
 
 ### Phase 7 — re-import
 

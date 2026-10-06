@@ -346,7 +346,13 @@ export const ImportApp = (): JSX.Element => {
     }
   }, [projectPath, readAllWidths, react, routes, currentPath]);
 
-  const importBatch = useImportBatch({ webviewRef, projectPath, baseUrl: loadedUrl, readAllWidths });
+  const importBatch = useImportBatch({
+    webviewRef,
+    projectPath,
+    baseUrl: loadedUrl,
+    appName: react?.appName ?? '',
+    readAllWidths,
+  });
   const batchRunning = importBatch.batch?.running === true;
 
   const handleToggleRoute = useCallback((route: string): void => {

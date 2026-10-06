@@ -7,6 +7,7 @@ import { listNamesAt, parseCallSite } from '@shared/reactSource';
 import type {
   ReactImportInspectResult,
   ReactImportListNamesArgs,
+  ReactImportRecordArgs,
   ReactImportListNamesResult,
   ReactImportProgress,
   ReactImportStartArgs,
@@ -14,6 +15,8 @@ import type {
 } from '@shared/types';
 
 import { inspectReactFolder, reactAppFolder, startReactApp } from '../reactImport/appServer';
+import { mergeRecord } from '../reactImport/record';
+import { assertInsideActiveProject } from './pathContainment';
 import type { ReactFramework } from '../reactImport/detect';
 
 /**
@@ -63,6 +66,19 @@ const listNames = async (args: ReactImportListNamesArgs): Promise<ReactImportLis
 
 export const registerReactImportIpc = (): void => {
   ipcMain.handle(IPC.ReactImportListNames, (_e, args: ReactImportListNamesArgs) => listNames(args));
+
+  // Where a finished import's elements came from. The app's folder is
+  // main's own record of what it started, never the renderer's word.
+  ipcMain.handle(IPC.ReactImportRecord, async (_e, args: ReactImportRecordArgs): Promise<void> => {
+    if (typeof args?.projectPath !== 'string' || typeof args.appName !== 'string') return;
+    assertInsideActiveProject(args.projectPath);
+    await mergeRecord(args.projectPath, {
+      appName: args.appName,
+      folder: reactAppFolder(args.projectPath),
+      views: typeof args.views === 'object' && args.views !== null ? args.views : {},
+      components: typeof args.components === 'object' && args.components !== null ? args.components : {},
+    });
+  });
 
   ipcMain.handle(IPC.ReactImportInspect, async (e): Promise<ReactImportInspectResult> => {
     const owner = BrowserWindow.fromWebContents(e.sender);

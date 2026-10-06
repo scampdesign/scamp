@@ -4,6 +4,8 @@ import { BrowserWindow, dialog, ipcMain } from 'electron';
 import { IPC } from '@shared/ipcChannels';
 import { listNamesAt, parseCallSite } from '@shared/reactSource';
 import { inspectReactFolder, reactAppFolder, startReactApp } from '../reactImport/appServer';
+import { mergeRecord } from '../reactImport/record';
+import { assertInsideActiveProject } from './pathContainment';
 /**
  * React app import, app window side. A folder is chosen through the
  * system dialog here, and only a folder chosen that way can be started:
@@ -51,6 +53,19 @@ const listNames = async (args) => {
 };
 export const registerReactImportIpc = () => {
     ipcMain.handle(IPC.ReactImportListNames, (_e, args) => listNames(args));
+    // Where a finished import's elements came from. The app's folder is
+    // main's own record of what it started, never the renderer's word.
+    ipcMain.handle(IPC.ReactImportRecord, async (_e, args) => {
+        if (typeof args?.projectPath !== 'string' || typeof args.appName !== 'string')
+            return;
+        assertInsideActiveProject(args.projectPath);
+        await mergeRecord(args.projectPath, {
+            appName: args.appName,
+            folder: reactAppFolder(args.projectPath),
+            views: typeof args.views === 'object' && args.views !== null ? args.views : {},
+            components: typeof args.components === 'object' && args.components !== null ? args.components : {},
+        });
+    });
     ipcMain.handle(IPC.ReactImportInspect, async (e) => {
         const owner = BrowserWindow.fromWebContents(e.sender);
         const options = {

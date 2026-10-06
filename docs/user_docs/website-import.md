@@ -82,6 +82,23 @@ stays as separate elements.
 highlights something differently on each page, such as the current item
 in a navigation menu, the component shows the look most pages have.
 
+### Tidy up a React import with AI
+
+Some things one look at a page can't tell, such as which parts show only
+sometimes, or what the app calls its lists. The Scamp Agent can read the
+app's source for them.
+
+1. Open a page you imported from the React app.
+1. In the **Agent** panel, click **Tidy up with AI**.
+1. Read the agent's plan. It names the conditions it will add, such as
+   showing a badge only when `isOverdue` is true, and the names it will
+   give each list, taken from the app's code.
+1. Click **Apply this plan**, or reply to change it.
+
+The agent doesn't change how the page looks. The **Agent** panel offers
+this for pages imported since you opened the project, from an app Scamp
+ran from its folder.
+
 To import one page at a time instead, click a page in the list, then
 click **Import** at the top of the window.
 

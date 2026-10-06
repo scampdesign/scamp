@@ -627,6 +627,34 @@ export type ReactImportStartResult = {
     ok: false;
     error: string;
 };
+/**
+ * Where a React import's elements came from, kept in
+ * `.scamp/react-import.json`: each element's JSX call site, by element
+ * id, per view and component, and the app's folder (main's, never the
+ * renderer's say). The AI pass reads the source through it; re-import
+ * maps routes to views with it. see docs/plans/react-import-plan.md
+ */
+export type ReactImportRecord = {
+    version: 1;
+    app: {
+        name: string;
+        folder: string | null;
+    };
+    views: Record<string, {
+        route?: string;
+        sites: Record<string, string>;
+    }>;
+    components: Record<string, {
+        sites: Record<string, string>;
+    }>;
+};
+/** The app window's part of the record, after a multi-page import finishes. */
+export type ReactImportRecordArgs = {
+    projectPath: string;
+    appName: string;
+    views: ReactImportRecord['views'];
+    components: ReactImportRecord['components'];
+};
 /** JSX call sites to read list names at, for one Scamp project's running app. */
 export type ReactImportListNamesArgs = {
     projectPath: string;
@@ -704,6 +732,10 @@ export type ImportBatchRef = {
     id: string;
     index: number;
     total: number;
+    /** The route this page was, as the app's router has it: `/patients/:id`. */
+    route?: string;
+    /** The React app it came from. */
+    app?: string;
 };
 /**
  * Something to do with one multi-page import, asked by the import window:
@@ -1364,6 +1396,10 @@ export type AgentStartCleanupArgs = {
 export type AgentSkillRequest = {
     id: 'import-cleanup';
     tokenMode: AgentTokenMode;
+}
+/** Tidy a view imported from a React app, from its source. */
+ | {
+    id: 'react-import';
 };
 /**
  * Which conversation: each page, view and component has its own, kept in

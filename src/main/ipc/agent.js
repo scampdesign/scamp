@@ -17,6 +17,8 @@ import { readE2eSeams } from '../e2eSeams';
 import { notifyPagesChanged } from '../watcher';
 import { TOOL_DESCRIPTORS } from '../mcp/tools';
 import { WRITE_TOOLS, WRITE_TOOL_NAMES } from '../agent/writeTools';
+import { REACT_SOURCE_TOOL } from '../agent/reactSourceTool';
+import { readRecord, sourceFor } from '../reactImport/record';
 import { deleteComponent } from './componentOps';
 import { restoreSnapshotAndReload } from './snapshot';
 import { createSnapshot } from './snapshotOps';
@@ -54,6 +56,7 @@ const scriptedProvider = async (path) => {
 // heads the cached prefix.
 const AGENT_TOOLS = [
     ...agentToolsFrom(TOOL_DESCRIPTORS),
+    REACT_SOURCE_TOOL,
     ...[...WRITE_TOOLS].sort((a, b) => a.name.localeCompare(b.name)),
 ];
 /** The open project's conversations — one per page, view and component. */
@@ -104,6 +107,12 @@ const createConversation = async (projectPath, key, holder) => {
                 return providerKey === null ? null : createAnthropicProvider(providerKey);
             },
             invoke: async (name, args, turnId) => {
+                if (name === REACT_SOURCE_TOOL.name) {
+                    const answer = await sourceFor(await readRecord(projectPath), typeof args['target'] === 'string' ? args['target'] : '', typeof args['element'] === 'string' ? args['element'] : undefined);
+                    return answer.ok
+                        ? { content: [{ type: 'text', text: answer.text }] }
+                        : { content: [{ type: 'text', text: answer.error }], isError: true };
+                }
                 if (!WRITE_TOOL_NAMES.has(name))
                     return read(name, args);
                 // A restore point before the conversation's first edit, taken
@@ -194,7 +203,7 @@ export const registerAgentIpc = () => {
                     : `The agent is still working on ${busy.key.name}. Wait for it to finish, or go back and stop it.`,
             };
         }
-        const skill = args.skill?.id === 'import-cleanup' ? skillFor(args.skill) : undefined;
+        const skill = args.skill?.id === 'import-cleanup' || args.skill?.id === 'react-import' ? skillFor(args.skill) : undefined;
         const startsSkill = skill !== undefined && conversation.agent.skill() === null;
         const before = conversation.transcript;
         conversation.transcript = startTurn(before, args.turnId, args.text.trim(), args.context);

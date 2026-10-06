@@ -24,3 +24,16 @@ export const cleanupRequest = (viewName: string, report: ReadonlyArray<ImportRep
       : ['The importer reported:', ...lines, ...more].join('\n');
   return `Clean up ${viewName}, the page I just imported.\n\n${reported}`;
 };
+
+/**
+ * The first message of a React import tidy-up: the view, and what the
+ * import kept as copies or simplified — the leftovers the source may
+ * explain, like a navigation whose selected item differs by page.
+ * see docs/plans/react-import-plan.md, Phase 6
+ */
+export const reactTidyRequest = (viewName: string, appName: string, notes: ReadonlyArray<string>): string => {
+  const listed = notes.slice(0, MAX_LINES).map((note) => `- ${note}`);
+  const more = notes.length > MAX_LINES ? [`- and ${notes.length - MAX_LINES} more`] : [];
+  const reported = listed.length === 0 ? '' : `\n\nThe import kept these as copies or simplified them:\n${[...listed, ...more].join('\n')}`;
+  return `Tidy up ${viewName}, which I imported from the React app ${appName}.${reported}`;
+};

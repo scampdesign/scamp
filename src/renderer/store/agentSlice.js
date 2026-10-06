@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { cleanupRequest } from '@lib/agentCleanup';
+import { cleanupRequest, reactTidyRequest } from '@lib/agentCleanup';
 import { agentContextLine, applyAgentEvent, startTurn, } from '@lib/agentTranscript';
 import { classNameFor } from '@lib/generateCode';
 import { useCanvasStore } from './canvasSlice';
@@ -84,6 +84,25 @@ export const useAgentStore = create((set, get) => ({
         set({ entries: state.entries, busy: state.busy, edited: state.canUndo });
     },
     setFocus: (focus) => set({ focus }),
+    reactImport: null,
+    recordReactImport: (projectPath, appName, views, notes) => {
+        set({ reactImport: { projectPath, appName, views: [...views], notes: [...notes] } });
+    },
+    startReactTidy: async (viewName) => {
+        const record = get().reactImport;
+        if (record === null || !record.views.includes(viewName) || get().busy)
+            return;
+        const conversation = { kind: 'view', name: viewName };
+        if (get().projectPath !== record.projectPath || !sameConversation(get().conversation, conversation)) {
+            await get().openConversation(record.projectPath, conversation);
+        }
+        await get().reset();
+        set({ cleanupPhase: 'planning', cleanupConversation: conversation });
+        await get().send(reactTidyRequest(viewName, record.appName, record.notes), {
+            skill: { id: 'react-import' },
+            conversation,
+        });
+    },
     recordImport: (projectPath, viewName, report) => {
         set({ lastImport: { projectPath, viewName, report: [...report] } });
     },

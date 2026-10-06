@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { stubOpenDialog, test, expect } from '../fixtures/app';
 import { openPagesSection } from '../fixtures/components';
+import { copyFixtureApp } from '../fixtures/reactApp';
 import { pageRoot } from '../fixtures/selectors';
 /**
  * React app import, end to end: choose a project folder, let Scamp run
@@ -14,13 +15,6 @@ import { pageRoot } from '../fixtures/selectors';
  * see docs/plans/react-import-plan.md
  */
 test.use({ projectOptions: { format: 'scamp' } });
-const REPO = path.resolve(__dirname, '../../..');
-const copyFixtureApp = async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'scamp-react-app-'));
-    await fs.cp(path.join(REPO, 'test/fixtures/react-app'), dir, { recursive: true });
-    await fs.symlink(path.join(REPO, 'node_modules'), path.join(dir, 'node_modules'), 'dir');
-    return dir;
-};
 test('runs a React app, lists its routes, and imports one as a view', async ({ app, window, project }) => {
     const appDir = await copyFixtureApp();
     try {

@@ -7,7 +7,7 @@ import type {
   AgentTokenMode,
   ImportReportGroup,
 } from '@shared/types';
-import { cleanupRequest } from '@lib/agentCleanup';
+import { cleanupRequest, reactTidyRequest } from '@lib/agentCleanup';
 import {
   agentContextLine,
   applyAgentEvent,
@@ -57,6 +57,11 @@ export type AgentState = {
   openConversation: (projectPath: string, key: AgentConversationKey) => Promise<void>;
   setFocus: (focus: AgentFocus) => void;
   recordImport: (projectPath: string, viewName: string, report: ImportReportGroup[]) => void;
+  /** The views a React import made in this project, and what it kept as copies. */
+  reactImport: { projectPath: string; appName: string; views: string[]; notes: string[] } | null;
+  recordReactImport: (projectPath: string, appName: string, views: string[], notes: string[]) => void;
+  /** Tidy one of those views from the app's source, in a new conversation. */
+  startReactTidy: (viewName: string) => Promise<void>;
   /** Start a cleanup of the last import in a new conversation. */
   startCleanup: (tokenMode: AgentTokenMode) => Promise<void>;
   /** The user approved the plan as written. */
@@ -163,6 +168,27 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   },
 
   setFocus: (focus) => set({ focus }),
+
+  reactImport: null,
+
+  recordReactImport: (projectPath, appName, views, notes) => {
+    set({ reactImport: { projectPath, appName, views: [...views], notes: [...notes] } });
+  },
+
+  startReactTidy: async (viewName) => {
+    const record = get().reactImport;
+    if (record === null || !record.views.includes(viewName) || get().busy) return;
+    const conversation: AgentConversationKey = { kind: 'view', name: viewName };
+    if (get().projectPath !== record.projectPath || !sameConversation(get().conversation, conversation)) {
+      await get().openConversation(record.projectPath, conversation);
+    }
+    await get().reset();
+    set({ cleanupPhase: 'planning', cleanupConversation: conversation });
+    await get().send(reactTidyRequest(viewName, record.appName, record.notes), {
+      skill: { id: 'react-import' },
+      conversation,
+    });
+  },
 
   recordImport: (projectPath, viewName, report) => {
     set({ lastImport: { projectPath, viewName, report: [...report] } });

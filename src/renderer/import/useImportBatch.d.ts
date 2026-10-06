@@ -50,6 +50,8 @@ type Options = {
     projectPath: string;
     /** The app's address, routes are visited relative to it. */
     baseUrl: string;
+    /** The React app's name, recorded with what the import made. */
+    appName: string;
     readAllWidths: (onWidth?: (label: string) => void) => Promise<{
         payload: unknown;
         narrower: Array<{
@@ -58,7 +60,7 @@ type Options = {
         }>;
     }>;
 };
-export declare const useImportBatch: ({ webviewRef, projectPath, baseUrl, readAllWidths, }: Options) => {
+export declare const useImportBatch: ({ webviewRef, projectPath, baseUrl, appName, readAllWidths, }: Options) => {
     batch: BatchState | null;
     start: (targets: ReadonlyArray<{
         route: string;
