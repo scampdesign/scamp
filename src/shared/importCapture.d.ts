@@ -120,6 +120,12 @@ export type CapturedNode = {
     };
     /** React's account of this element, on a React app in development. */
     react?: CapturedReact;
+    /**
+     * Properties whose winning declaration was the page's own token —
+     * exactly `var(--name)` — by property: `{ 'background-color':
+     * '--surface-nav' }`. Only when the capture was asked for them.
+     */
+    tokens?: Record<string, string>;
     /** Static `::before` / `::after` content, recoverable as elements. */
     pseudo?: {
         before?: CapturedPseudo;
@@ -269,6 +275,21 @@ export type CapturePayload = {
     react?: {
         instances: Record<string, CapturedReactInstance>;
     };
+    /** The tokens nodes use, with their values; only when asked for. */
+    tokens?: CapturedTokens;
+};
+/**
+ * The page's own design tokens, as far as its elements use them: each
+ * one's value in the theme the page was showing, and in each other theme
+ * the page declares (`[data-theme="dark"]`, `.dark`), read by switching
+ * the page into it for a moment.
+ * see docs/plans/react-import-plan.md
+ */
+export type CapturedTokens = {
+    values: Record<string, string>;
+    /** The theme the page was showing, by its name; null when it has none. */
+    active: string | null;
+    themes: Record<string, Record<string, string>>;
 };
 export type CapturedSource = {
     /** `document.documentElement.outerHTML` at capture time. */

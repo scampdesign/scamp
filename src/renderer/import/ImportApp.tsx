@@ -105,7 +105,7 @@ export const ImportApp = (): JSX.Element => {
     { kind: 'idle' } | { kind: 'started' } | { kind: 'failed'; message: string }
   >({ kind: 'idle' });
   /** Importing a React app: its name, its routes, and where they led. */
-  const [react, setReact] = useState<{ appName: string } | null>(null);
+  const [react, setReact] = useState<{ appName: string; tokens: boolean } | null>(null);
   const [routes, setRoutes] = useState<RoutesState>({ kind: 'reading' });
   const [currentPath, setCurrentPath] = useState('');
   const requested = useRef<{ path: string; at: number } | null>(null);
@@ -278,7 +278,9 @@ export const ImportApp = (): JSX.Element => {
       const run = (code: string): Promise<unknown> => node.executeJavaScript!(code);
       const readPage = async (): Promise<unknown> => {
         await run(`(${prepareFn.toString()})()`);
-        return run(`(${captureFn.toString()})(${JSON.stringify(capturePolicy())})`);
+        // A React import that keeps the app's tokens reads where it used them.
+        const policy = { ...capturePolicy(), authoredTokens: react?.tokens === true };
+        return run(`(${captureFn.toString()})(${JSON.stringify(policy)})`);
       };
       // `flex: none` as well as the width: the webview is a flex item
       // with `flex: 1 1 auto`, so grow wins over any width set on it and
@@ -318,7 +320,7 @@ export const ImportApp = (): JSX.Element => {
         }
       }
     },
-    [breakpoints]
+    [breakpoints, react]
   );
 
   const handleImport = useCallback(async (): Promise<void> => {

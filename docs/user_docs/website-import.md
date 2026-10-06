@@ -91,6 +91,13 @@ of results. Scamp removes the views that import made, and nothing else.
 Each view is named after its route: `/billing/dashboard` becomes
 `BillingDashboard`, and `/` becomes `Home`.
 
+If the app uses CSS custom properties for its colors, spacing, and type,
+choose **Use the app's own theme tokens** in the dialog. Scamp adds those
+tokens to the project's [theme](design-tokens.md), with any dark theme
+the app has, and uses them wherever the app did. A value the app wrote
+directly stays as it is. To import plain values instead, choose **Keep
+plain values**.
+
 If the app is already running, enter its address, such as
 `http://localhost:5173`, and click **Open** instead of choosing a
 folder.

@@ -69,6 +69,13 @@ export type CapturePolicy = {
    * see docs/plans/website-import-plan.md
    */
   includeRects?: boolean;
+  /**
+   * Work out, per element, which properties came from the page's own
+   * tokens (`var(--name)`), by running the cascade over its stylesheets.
+   * Off by default: it costs a pass over every rule, and only an import
+   * that keeps the page's tokens wants it.
+   */
+  authoredTokens?: boolean;
 };
 
 /** The policy as the page receives it: plain arrays, JSON-safe. */
@@ -138,6 +145,250 @@ export const captureFn = (policy: CapturePolicy): CapturePayload => {
 
   type Note = { kind: string; at?: string; detail?: string };
   const pageNotes: Note[] = [];
+
+  /**
+   * The page's own tokens, element by element: which properties the
+   * cascade settled on a declaration that is exactly `var(--name)`.
+   * Rules are matched with `querySelectorAll`, once each, and ranked by
+   * `!important`, a specificity approximation, then source order. A value
+   * the page wrote literally stays literal — nothing here guesses a token
+   * from a matching colour.
+   * see docs/plans/react-import-plan.md
+   */
+  const tokenReader = ((): {
+    tokensOf: (el: Element) => Record<string, string> | null;
+    palette: () => { values: Record<string, string>; active: string | null; themes: Record<string, Record<string, string>> };
+  } | null => {
+    if (policy.authoredTokens !== true) return null;
+    const TOKENISABLE = new Set([
+      'color', 'background-color',
+      'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
+      'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
+      'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+      'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+      'row-gap', 'column-gap',
+      'border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius',
+      'font-size', 'font-weight', 'font-family', 'line-height', 'letter-spacing', 'box-shadow',
+      'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
+    ]);
+    const SIDES = ['top', 'right', 'bottom', 'left'];
+    const CORNERS = ['top-left', 'top-right', 'bottom-right', 'bottom-left'];
+    /** Split on top-level spaces (or `sep`), keeping `var(--a, 1px 2px)` whole. */
+    const parts = (value: string, sep = ' '): string[] => {
+      const out: string[] = [];
+      let depth = 0;
+      let current = '';
+      for (const ch of value.trim()) {
+        if (ch === '(') depth += 1;
+        if (ch === ')') depth -= 1;
+        if (depth === 0 && (sep === ' ' ? /\s/.test(ch) : ch === sep)) {
+          if (current.length > 0) out.push(current);
+          current = '';
+        } else current += ch;
+      }
+      if (current.length > 0) out.push(current);
+      return out;
+    };
+    const fourSides = (values: string[]): string[] => {
+      const [a, b = a, c = a, d = b] = values;
+      return [a ?? '', b ?? '', c ?? '', d ?? ''];
+    };
+    /** A shorthand's longhands, for the ones that can hold a token. */
+    const longhands = (prop: string, value: string): Array<[string, string]> => {
+      const v = parts(value);
+      if (prop === 'padding' || prop === 'margin') return fourSides(v).map((x, i) => [`${prop}-${SIDES[i]}`, x]);
+      if (prop === 'border-color' || prop === 'border-width') {
+        const kind = prop.slice('border-'.length);
+        return fourSides(v).map((x, i) => [`border-${SIDES[i]}-${kind}`, x]);
+      }
+      if (prop === 'border-radius') {
+        const [h] = parts(value, '/');
+        return fourSides(parts(h ?? '')).map((x, i) => [`border-${CORNERS[i]}-radius`, x]);
+      }
+      if (prop === 'gap') {
+        const [row, column = row] = v;
+        return [['row-gap', row ?? ''], ['column-gap', column ?? '']];
+      }
+      const border = prop.match(/^border(?:-(top|right|bottom|left))?$/);
+      if (border !== null) {
+        const sides = border[1] !== undefined ? [border[1]] : SIDES;
+        const color = v.find((x) => x.startsWith('var(')) ?? '';
+        return color.length === 0 ? [] : sides.map((side) => [`border-${side}-color`, color]);
+      }
+      if (prop === 'background' && v.length === 1) return [['background-color', v[0] ?? '']];
+      return [];
+    };
+    const SHORTHAND_OF: Record<string, string[]> = {};
+    for (const sh of ['padding', 'margin', 'border-color', 'border-width', 'border-radius', 'gap', 'border', 'border-top', 'border-right', 'border-bottom', 'border-left', 'background']) {
+      // One value expands to every longhand a shorthand can set.
+      for (const [lh] of longhands(sh, 'var(--x)')) {
+        SHORTHAND_OF[lh] = [...(SHORTHAND_OF[lh] ?? []), sh];
+      }
+    }
+    /** Specificity, approximately: ids, then classes/attributes/pseudo-classes, then types. */
+    const specificityOf = (selector: string): number => {
+      let sel = selector;
+      // `:where(…)` adds nothing; `:is` / `:not` / `:has` count as what they hold.
+      sel = sel.replace(/:where\((?:[^()]|\([^()]*\))*\)/g, '');
+      sel = sel.replace(/:(?:is|not|has)\(((?:[^()]|\([^()]*\))*)\)/g, ' $1 ');
+      const ids = (sel.match(/#[\w-]+/g) ?? []).length;
+      const classes = (sel.match(/\.[\w-]+|\[[^\]]*\]|:(?!:)[\w-]+/g) ?? []).length;
+      const types = (sel.replace(/\[[^\]]*\]|\.[\w-]+|#[\w-]+|:+[\w-]+(?:\([^)]*\))?/g, ' ').match(/(^|[\s>+~(])([a-zA-Z][\w-]*)/g) ?? []).length;
+      return ids * 1_000_000 + classes * 1_000 + types;
+    };
+    type Win = { value: string; important: boolean; spec: number; order: number };
+    const wins = new Map<Element, Map<string, Win>>();
+    let order = 0;
+    const consider = (el: Element, prop: string, value: string, important: boolean, spec: number): void => {
+      if (!TOKENISABLE.has(prop)) return;
+      const byProp = wins.get(el) ?? new Map<string, Win>();
+      const prev = byProp.get(prop);
+      const beats =
+        prev === undefined ||
+        (important && !prev.important) ||
+        (important === prev.important && (spec > prev.spec || (spec === prev.spec && order >= prev.order)));
+      if (beats) byProp.set(prop, { value, important, spec, order });
+      wins.set(el, byProp);
+    };
+    const declarations = (style: CSSStyleDeclaration): Array<[string, string, boolean]> => {
+      const out: Array<[string, string, boolean]> = [];
+      const seen = new Set<string>();
+      for (let i = 0; i < style.length; i += 1) {
+        const name = style[i] as string;
+        const important = style.getPropertyPriority(name) === 'important';
+        const value = style.getPropertyValue(name);
+        if (value !== '') {
+          out.push([name, value, important]);
+          continue;
+        }
+        // A longhand of a shorthand holding `var()` reads empty; the
+        // shorthand holds the text.
+        for (const sh of SHORTHAND_OF[name] ?? []) {
+          if (seen.has(sh)) continue;
+          const shValue = style.getPropertyValue(sh);
+          if (shValue === '') continue;
+          seen.add(sh);
+          for (const [lh, v] of longhands(sh, shValue)) out.push([lh, v, style.getPropertyPriority(sh) === 'important']);
+        }
+      }
+      return out;
+    };
+    const visit = (rules: CSSRuleList): void => {
+      for (const rule of Array.from(rules)) {
+        order += 1;
+        if (rule instanceof CSSStyleRule) {
+          const decls = declarations(rule.style).filter(([name]) => TOKENISABLE.has(name));
+          if (decls.length === 0) continue;
+          for (const selector of parts(rule.selectorText, ',')) {
+            let matched: NodeListOf<Element>;
+            try {
+              matched = document.querySelectorAll(selector);
+            } catch {
+              continue;
+            }
+            if (matched.length === 0) continue;
+            const spec = specificityOf(selector);
+            for (const el of Array.from(matched)) for (const [name, value, important] of decls) consider(el, name, value, important, spec);
+          }
+        } else if (rule instanceof CSSMediaRule) {
+          if (window.matchMedia(rule.conditionText).matches) visit(rule.cssRules);
+        } else if (typeof CSSSupportsRule !== 'undefined' && rule instanceof CSSSupportsRule) {
+          if (CSS.supports(rule.conditionText)) visit(rule.cssRules);
+        } else if (rule instanceof CSSImportRule) {
+          try {
+            if (rule.styleSheet !== null) visit(rule.styleSheet.cssRules);
+          } catch {
+            // Cross-origin.
+          }
+        } else if ('cssRules' in rule) {
+          // Layers, containers, scopes: their rules still apply.
+          visit((rule as CSSGroupingRule).cssRules);
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        visit(sheet.cssRules);
+      } catch {
+        // A cross-origin sheet without CORS can't be read.
+      }
+    }
+
+    const TOKEN = /^\s*var\(\s*(--[\w-]+)\s*(?:,[^)]*)?\)\s*$/;
+    /** The element each token was first read on, to read its value where it applies. */
+    const usedAt = new Map<string, Element>();
+    const conflicting = new Set<string>();
+    return {
+      tokensOf: (el) => {
+        const byProp = new Map(wins.get(el) ?? []);
+        const inline = (el as HTMLElement).style;
+        if (inline !== undefined) for (const [name, value, important] of declarations(inline)) {
+          if (TOKENISABLE.has(name)) byProp.set(name, { value, important, spec: 1e9, order: Number.MAX_SAFE_INTEGER });
+        }
+        const out: Record<string, string> = {};
+        for (const [prop, win] of byProp) {
+          const m = win.value.match(TOKEN);
+          if (m === null || m[1] === undefined) continue;
+          const name = m[1];
+          const first = usedAt.get(name);
+          if (first === undefined) usedAt.set(name, el);
+          else if (
+            window.getComputedStyle(first).getPropertyValue(name).trim() !==
+            window.getComputedStyle(el).getPropertyValue(name).trim()
+          ) {
+            // The same name meaning two things in two places: not one token.
+            conflicting.add(name);
+          }
+          out[prop] = name;
+        }
+        return Object.keys(out).length > 0 ? out : null;
+      },
+      palette: () => {
+        const names = [...usedAt.keys()].filter((n) => !conflicting.has(n));
+        const read = (): Record<string, string> => {
+          const values: Record<string, string> = {};
+          for (const name of names) {
+            const at = usedAt.get(name) as Element;
+            const value = window.getComputedStyle(at).getPropertyValue(name).trim();
+            if (value.length > 0) values[name] = value;
+          }
+          return values;
+        };
+        const values = read();
+        // The page's other themes: `[data-theme="x"]`, or a `.dark` class,
+        // on the root. Each is shown for a moment and read the same way.
+        const html = document.documentElement;
+        const themeNames = new Set<string>();
+        let viaClass = false;
+        for (const sheet of Array.from(document.styleSheets)) {
+          let text = '';
+          try {
+            text = Array.from(sheet.cssRules).map((r) => r.cssText).join('\n');
+          } catch {
+            continue;
+          }
+          for (const m of text.matchAll(/\[data-theme=["']?([\w-]+)["']?\]/g)) if (m[1] !== undefined) themeNames.add(m[1]);
+          if (/(?:^|[\s,}])(?:html|:root)?\.dark\b/.test(text)) viaClass = true;
+        }
+        const active = html.getAttribute('data-theme') ?? (html.classList.contains('dark') ? 'dark' : null);
+        const themes: Record<string, Record<string, string>> = {};
+        const before = html.getAttribute('data-theme');
+        for (const theme of themeNames) {
+          if (theme === active) continue;
+          html.setAttribute('data-theme', theme);
+          themes[theme] = read();
+        }
+        if (before === null) html.removeAttribute('data-theme');
+        else html.setAttribute('data-theme', before);
+        if (viaClass && active !== 'dark' && themes['dark'] === undefined) {
+          html.classList.add('dark');
+          themes['dark'] = read();
+          html.classList.remove('dark');
+        }
+        return { values, active: active ?? (themeNames.size > 0 || viaClass ? 'light' : null), themes };
+      },
+    };
+  })();
 
   /**
    * React's own account of the page, when it is a React app in
@@ -920,6 +1171,8 @@ export const captureFn = (policy: CapturePolicy): CapturePayload => {
     }
     const react = reactReader?.annotate(el) ?? null;
     if (react !== null) built['react'] = react;
+    const tokens = tokenReader?.tokensOf(el) ?? null;
+    if (tokens !== null) built['tokens'] = tokens;
     if (policy.includeRects) {
       const box = el.getBoundingClientRect();
       built['rect'] = {
@@ -978,5 +1231,6 @@ export const captureFn = (policy: CapturePolicy): CapturePayload => {
     notes: pageNotes,
     source: readSource(),
     ...(reactReader !== null ? { react: { instances: reactReader.instances } } : {}),
+    ...(tokenReader !== null ? { tokens: tokenReader.palette() } : {}),
   } as CapturePayload;
 };

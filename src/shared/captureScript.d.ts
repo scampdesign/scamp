@@ -47,6 +47,13 @@ export type CapturePolicy = {
      * see docs/plans/website-import-plan.md
      */
     includeRects?: boolean;
+    /**
+     * Work out, per element, which properties came from the page's own
+     * tokens (`var(--name)`), by running the cascade over its stylesheets.
+     * Off by default: it costs a pass over every rule, and only an import
+     * that keeps the page's tokens wants it.
+     */
+    authoredTokens?: boolean;
 };
 /** The policy as the page receives it: plain arrays, JSON-safe. */
 export declare const capturePolicy: () => CapturePolicy;

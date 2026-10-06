@@ -24,6 +24,7 @@ type Props = {
 export type PendingReactImport = {
     url: string;
     appName: string;
+    tokens: boolean;
 };
 export declare const ProjectShell: ({ project, onClose, onProjectChange, onSwitchProject, pendingImport, onPendingImportHandled, }: Props) => JSX.Element;
 export {};

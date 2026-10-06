@@ -53,6 +53,7 @@ const { DEFAULT_THEME_CSS } = await bundleOf('src/shared/templates/themeCss.ts')
 // No token extraction: the import writes literal values, and a harness
 // that tokenised would be measuring a pipeline nobody runs.
 const { parseThemeFile, serializeThemeFile } = await bundleOf('src/renderer/lib/parseTheme.ts');
+const { themeFromTokens, tokenizeCapture } = await bundleOf('src/renderer/lib/appTokens.ts');
 const { fontsNeededBy, googleFontsUrlFor, needsResolving } = await bundleOf(
   'src/renderer/lib/importFonts.ts'
 );
@@ -265,7 +266,7 @@ const writeDiffPng = async (a, b, w, h, file) => {
  * page instance without reloading. Reload between the two and a rotating
  * hero or a lazily-swapped image guarantees a diff that is nobody's bug.
  */
-export const capturePage = async (page) => {
+export const capturePage = async (page, { authoredTokens = false } = {}) => {
   await page.addStyleTag({ content: FREEZE_CSS });
   await page.evaluate(() => document.fonts?.ready);
 
@@ -296,7 +297,7 @@ export const capturePage = async (page) => {
 
   const payload = await page.evaluate(
     ([src, policy]) => new Function(`return (${src})`)()(policy),
-    [captureFn.toString(), { ...capturePolicy(), includeRects: true }]
+    [captureFn.toString(), { ...capturePolicy(), includeRects: true, authoredTokens }]
   );
   const sourcePng = await page.screenshot({ fullPage: true });
   return { payload, sourcePng, masks };
@@ -310,12 +311,12 @@ export const capturePage = async (page) => {
  * the importer getting every text height wrong.
  * see docs/notes/parity-harness.md
  */
-export const renderView = async (browser, { tsx, css, components = [], fontElements }) => {
+export const renderView = async (browser, { tsx, css, components = [], fontElements, themeCss = DEFAULT_THEME_CSS }) => {
   const exported = buildHtmlExport({
     projectName: 'pixels',
     pages: [{ name: 'imported', tsxContent: tsx, cssContent: css }],
     components,
-    themeCss: DEFAULT_THEME_CSS,
+    themeCss,
   });
   const html = exported.files.find((f) => f.path.endsWith('.html'))?.contents;
   const themeSheet = exported.files.find((f) => f.path === 'theme.css')?.contents ?? '';
@@ -402,8 +403,19 @@ export const compareShots = async ({ sourcePng, importPng, masks, importedRects 
  * import, compare. Returns the numbers and the intermediate results, so a
  * caller can lint or round-trip the same reduction without capturing twice.
  */
-export const measurePage = async (browser, page, { label, outDir: out = outDir } = {}) => {
-  const { payload, sourcePng, masks } = await capturePage(page);
+export const measurePage = async (browser, page, { label, outDir: out = outDir, tokens = false } = {}) => {
+  const captured = await capturePage(page, { authoredTokens: tokens });
+  const { sourcePng, masks } = captured;
+  // With the app's tokens: the references back where the app had them,
+  // and the tokens in the theme the view is rendered with.
+  let themeCss = DEFAULT_THEME_CSS;
+  let payload = captured.payload;
+  let tokenMerge = null;
+  if (tokens && payload.tokens !== undefined) {
+    tokenMerge = themeFromTokens(payload.tokens, parseThemeFile(DEFAULT_THEME_CSS));
+    themeCss = serializeThemeFile(tokenMerge.theme, DEFAULT_THEME_CSS);
+    payload = tokenizeCapture(payload, new Set(tokenMerge.conflicts));
+  }
   const reduced = reduceCapture(payload);
   const { tsx, css } = generateCode({
     elements: reduced.elements,
@@ -412,7 +424,7 @@ export const measurePage = async (browser, page, { label, outDir: out = outDir }
     cssModuleImportName: 'Imported',
     isComponent: true,
   });
-  const { importPng, importedRects } = await renderView(browser, { tsx, css, fontElements: reduced.elements });
+  const { importPng, importedRects } = await renderView(browser, { tsx, css, fontElements: reduced.elements, themeCss });
   const compared = await compareShots({
     sourcePng,
     importPng,
@@ -421,7 +433,7 @@ export const measurePage = async (browser, page, { label, outDir: out = outDir }
     label: label ?? page.url(),
     outDir: out,
   });
-  return { ...compared, payload, reduced, code: { tsx, css }, sourcePng };
+  return { ...compared, payload, reduced, code: { tsx, css }, sourcePng, themeCss, tokenMerge };
 };
 
 /** Remove the bundle cache. Screenshots stay. */

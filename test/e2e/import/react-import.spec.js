@@ -124,6 +124,14 @@ test('imports several routes into a new project, and removes them in one step', 
         expect(about).not.toContain('<nav');
         const shell = await fs.readFile(path.join(newProject, 'components', 'Shell', 'Shell.tsx'), 'utf-8');
         expect(shell).toContain('{children}');
+        // The app's own tokens, where it used them, with its dark theme.
+        const theme = await fs.readFile(path.join(newProject, 'design', 'theme.css'), 'utf-8');
+        expect(theme).toContain('--surface-nav: #eef3f9');
+        expect(theme).toMatch(/\.dark\s*\{[^}]*--surface-nav: #16181c/);
+        const shellCss = await fs.readFile(path.join(newProject, 'components', 'Shell', 'Shell.module.css'), 'utf-8');
+        expect(shellCss).toContain('var(--surface-nav)');
+        // A colour the app wrote as a literal stays one.
+        expect(theme).not.toContain('#f5f8fc');
         // The team page's list, drawn with `.map()`, is one repeated row now.
         await expect(batch.getByTestId('import-batch-repeats')).toContainText('members (3 rows)');
         const team = await fs.readFile(path.join(newProject, 'views', 'TeamDetail', 'TeamDetail.tsx'), 'utf-8');

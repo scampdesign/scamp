@@ -16,7 +16,7 @@ type Props = {
    * Open the import window on the running app — in a new project when
    * `newProject` is given, which the caller switches to first.
    */
-  onReady: (url: string, appName: string, newProject?: ProjectData) => void;
+  onReady: (url: string, appName: string, tokens: boolean, newProject?: ProjectData) => void;
   onClose: () => void;
 };
 
@@ -68,6 +68,8 @@ export const ReactImportDialog = ({ projectPath, projectName, onReady, onClose }
   /** Where new projects go; null when none is set, which leaves only this project. */
   const [projectsFolder, setProjectsFolder] = useState<string | null>(null);
   const [target, setTarget] = useState<Target>('current');
+  /** Keep the app's own design tokens, or plain values. */
+  const [tokens, setTokens] = useState(true);
   /** A project already made for this import, reused if the server needs another try. */
   const created = useRef<ProjectData | null>(null);
 
@@ -121,14 +123,14 @@ export const ReactImportDialog = ({ projectPath, projectName, onReady, onClose }
       }
     }
     const result = await window.scamp.reactImportStart({ projectPath: fresh?.path ?? projectPath, folder: app.folder });
-    if (result.ok) onReady(result.url, app.name, fresh);
+    if (result.ok) onReady(result.url, app.name, tokens, fresh);
     else setStep({ kind: 'failed', app, error: result.error });
   };
 
   const url = asAppUrl(address);
   const handleOpenAddress = (): void => {
     if (url === null) return;
-    onReady(url, new URL(url).host);
+    onReady(url, new URL(url).host, tokens);
   };
 
   return (
@@ -228,6 +230,17 @@ export const ReactImportDialog = ({ projectPath, projectName, onReady, onClose }
                 <span>
                   This project, <code className={styles.code}>{projectName}</code>
                 </span>
+              </label>
+            </fieldset>
+            <fieldset className={styles.target}>
+              <legend className={styles.targetLegend}>Colors, spacing, and type</legend>
+              <label className={styles.targetOption}>
+                <input type="radio" name="react-import-tokens" checked={tokens} onChange={() => setTokens(true)} />
+                <span>Use the app’s own theme tokens, where it uses them</span>
+              </label>
+              <label className={styles.targetOption}>
+                <input type="radio" name="react-import-tokens" checked={!tokens} onChange={() => setTokens(false)} />
+                <span>Keep plain values</span>
               </label>
             </fieldset>
             <div className={dialogStyles.actions}>

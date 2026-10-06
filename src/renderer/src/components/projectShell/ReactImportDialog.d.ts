@@ -7,7 +7,7 @@ type Props = {
      * Open the import window on the running app — in a new project when
      * `newProject` is given, which the caller switches to first.
      */
-    onReady: (url: string, appName: string, newProject?: ProjectData) => void;
+    onReady: (url: string, appName: string, tokens: boolean, newProject?: ProjectData) => void;
     onClose: () => void;
 };
 /**

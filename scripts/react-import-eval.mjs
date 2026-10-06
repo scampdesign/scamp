@@ -15,6 +15,7 @@
 // the page, and the sibling groups one `.map()` call site drew.
 //
 // Env:
+//   TOKENS=1   import with the app's own tokens (Create theme tokens)
 //   SRC=dir    the app's folder, for list names, when the target is a URL
 //   OUT=dir    screenshots (default .pixels-tmp/react)
 //   TOP=n      diff clusters listed per route (default 3)
@@ -228,11 +229,14 @@ try {
         continue;
       }
       const tree = await page.evaluate((src) => new Function(`return (${src})`)()(), reactTreeFn.toString());
-      const m = await measurePage(browser, page, { label: route, outDir: OUT });
+      const m = await measurePage(browser, page, { label: route, outDir: OUT, tokens: process.env.TOKENS === '1' });
 
       captured.push({ route, row, measured: m });
       const elementCount = Object.keys(m.reduced.elements).length - 1;
-      const findings = lintView({ elements: m.reduced.elements, rootId: m.reduced.rootId, themeTokens: [] });
+      // Linted against the theme the view is rendered with: with the app's
+      // tokens, every one it references is declared there.
+      const themeTokens = (m.tokenMerge?.theme.tokens ?? []).map((t) => t.name);
+      const findings = lintView({ elements: m.reduced.elements, rootId: m.reduced.rootId, themeTokens });
       // The view as the app opens it: written as a component, read back as
       // a view, saved like a page. see scripts/agent-cleanup-eval.mjs
       const opened = parseCode(m.code.tsx, m.code.css, { isComponent: false });
@@ -248,6 +252,9 @@ try {
         findingsPerElement: elementCount === 0 ? 0 : findings.length / elementCount,
         findingsByKind: findings.reduce((acc, f) => ({ ...acc, [f.kind]: (acc[f.kind] ?? 0) + 1 }), {}),
         roundTrip: once.tsx === twice.tsx && once.css === twice.css,
+        tokenRefs: (m.code.css.match(/var\(--/g) ?? []).length,
+        tokensAdded: m.tokenMerge?.added.length ?? 0,
+        tokenConflicts: m.tokenMerge?.conflicts ?? [],
         react: {
           fiberCoverage: tree.elements === 0 ? 0 : tree.withFiber / tree.elements,
           userSited: tree.userSited,
@@ -353,7 +360,7 @@ try {
         const code = generateCode({ elements: view.elements, rootId: view.rootId, pageName: view.name, cssModuleImportName: view.name, isComponent: true });
         await writeFile(join(codeDir, `view-${view.name}.tsx`), code.tsx);
         await writeFile(join(codeDir, `view-${view.name}.module.css`), code.css);
-        const { importPng, importedRects } = await renderView(browser, { ...code, components, fontElements });
+        const { importPng, importedRects } = await renderView(browser, { ...code, components, fontElements, themeCss: measured.themeCss });
         const after = await compareShots({
           sourcePng: measured.sourcePng,
           importPng,
@@ -410,6 +417,8 @@ const summary = {
     (results.componentPlan?.components ?? []).reduce((n, c) => n + c.elements, 0),
   meanPixelsWithComponents: mean(measured.map((r) => r.withComponents?.pixels).filter((p) => typeof p === 'number')),
   repeats: results.repeatPlan ?? null,
+  tokenRefs: measured.reduce((n, r) => n + (r.tokenRefs ?? 0), 0),
+  tokensPerRoute: mean(measured.map((r) => r.tokensAdded ?? 0)),
 };
 
 console.log('\n— summary —');
@@ -418,6 +427,9 @@ if (summary.redirected.length > 0) console.log(`  redirected: ${summary.redirect
 if (summary.failed.length > 0) console.log(`  failed: ${summary.failed.join(', ')}`);
 console.log(`  pixels: mean ${summary.meanPixels.toFixed(2)}%, lowest ${summary.minPixels.toFixed(2)}%`);
 console.log(`  findings per element: mean ${summary.meanFindingsPerElement.toFixed(2)}`);
+if (process.env.TOKENS === '1') {
+  console.log(`  tokens: ${summary.tokenRefs} var() references across the views; ${summary.tokensPerRoute.toFixed(1)} tokens per route`);
+}
 console.log(`  round trip: ${summary.roundTripBroken.length === 0 ? 'ok on every route' : `BROKEN on ${summary.roundTripBroken.join(', ')}`}`);
 console.log(`  components drawn on 2+ routes: ${shared.length}${shared.length > 0 ? ` — ${shared.slice(0, 8).map(([n, c]) => `${n} (${c})`).join(', ')}` : ''}`);
 console.log(`  repeat groups (one call site, 2+ siblings): ${summary.repeatGroups}`);

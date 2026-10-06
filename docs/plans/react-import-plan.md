@@ -416,10 +416,43 @@ trip and a real React 18 capture), `test/reactSource.test.ts`, the
 repeat cases in `test/generateHtml.test.ts`, and the team list in the
 batch e2e.
 
-### Phase 5 — tokens from the app
+### Phase 5 — tokens from the app — **done**
 
-Authored `var()` per property, `:root` / `[data-theme]` tokens and
-themes, behind **Create theme tokens**.
+**The capture** (`authoredTokens`, asked for only by a React import that
+keeps tokens) runs the cascade over the page's stylesheets: each style
+rule matched once with `querySelectorAll`, declarations ranked by
+`!important`, an approximate specificity (`:where` counts nothing,
+`:is`/`:not`/`:has` count their argument), then source order; media and
+supports rules only when they apply; inline styles last. A property is
+the app's token when its winning declaration is exactly
+`var(--name)`, including through a shorthand (`padding: var(--space)
+8px` gives the top and bottom, not the sides; `border: 1px solid
+var(--line)` gives the colours). Each token's value is read where it was
+used, and a name that means two things in two places is dropped. Every
+other theme the page declares (`[data-theme="x"]`, `.dark`) is read by
+switching the page into it for a moment.
+
+**The import** (`@lib/appTokens`): `themeFromTokens` adds the tokens to
+the project's theme — the theme the page was showing as `:root`, `dark`
+as `.dark`, anything else as `.theme-<name>`, each holding only what
+differs — and reuses one the project has with the same value. One it has
+with another value is left literal everywhere (`conflicts`).
+`tokenizeCapture` writes `var(--name)` back into the capture before the
+reducer runs, so references reach the elements through the usual
+mappers — except where the panel has a control that can't read one
+(`font-weight`, `box-shadow`): there the literal stays, so it can be
+edited.
+
+**The choice** is in the dialog: *Use the app's own theme tokens* (the
+default) or *Keep plain values*.
+
+**On riq_frontend_demo** (39 routes): 43 tokens a route, 18,700 `var()`
+references across the views; pixels 94.10% against 94.12% with plain
+values; findings per element 0.06 against 0.08; components and repeats
+unchanged. Tests: `test/appTokens.test.ts` (with
+`test/fixtures/import/pages/tokens.html`, the cascade cases in a real
+browser), and the batch e2e, whose fixture app now has tokens and a dark
+theme.
 
 ### Phase 6 — the AI pass
 

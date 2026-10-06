@@ -97,7 +97,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
             projectPath: project.path,
             url: pendingImport.url,
             breakpoints: projectConfig.breakpoints,
-            react: { appName: pendingImport.appName },
+            react: { appName: pendingImport.appName, tokens: pendingImport.tokens },
         });
     }, [pendingImport, onPendingImportHandled, project.path, projectConfig.breakpoints]);
     // An undone multi-page import can remove the view that's open.
@@ -345,17 +345,17 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
                                             }, onDismiss: () => handleProjectConfigChange({
                                                 ...projectConfig,
                                                 scampMigrationDismissed: true,
-                                            }) })) : null, routesSection: project.format === 'scamp' ? (_jsx(RoutesSection, { routes: routesApi.routes, views: project.components.filter((c) => componentKindOf(c) === 'view'), activeViewName: activeViewName, busy: routesApi.busy, onOpen: (file) => void routesApi.openRoute(file), onSetRender: (file, render) => void routesApi.setRender(file, render), onGenerate: (name) => void routesApi.generateRoute(name) })) : null })] })), reactImportOpen && (_jsx(ReactImportDialog, { projectPath: project.path, projectName: project.name, onClose: () => setReactImportOpen(false), onReady: (url, appName, newProject) => {
+                                            }) })) : null, routesSection: project.format === 'scamp' ? (_jsx(RoutesSection, { routes: routesApi.routes, views: project.components.filter((c) => componentKindOf(c) === 'view'), activeViewName: activeViewName, busy: routesApi.busy, onOpen: (file) => void routesApi.openRoute(file), onSetRender: (file, render) => void routesApi.setRender(file, render), onGenerate: (name) => void routesApi.generateRoute(name) })) : null })] })), reactImportOpen && (_jsx(ReactImportDialog, { projectPath: project.path, projectName: project.name, onClose: () => setReactImportOpen(false), onReady: (url, appName, tokens, newProject) => {
                                     setReactImportOpen(false);
                                     if (newProject !== undefined && onSwitchProject !== undefined) {
-                                        onSwitchProject(newProject, { url, appName });
+                                        onSwitchProject(newProject, { url, appName, tokens });
                                         return;
                                     }
                                     void window.scamp.openImport({
                                         projectPath: project.path,
                                         url,
                                         breakpoints: projectConfig.breakpoints,
-                                        react: { appName },
+                                        react: { appName, tokens },
                                     });
                                 } })), showProjectSettings && (_jsx(ProjectSettingsPage, { projectName: project.name, projectPath: project.path, config: projectConfig, onChange: handleProjectConfigChange, onBack: () => setShowProjectSettings(false), routes: project.format === 'scamp'
                                     ? {

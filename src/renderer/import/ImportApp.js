@@ -242,7 +242,9 @@ export const ImportApp = () => {
         const run = (code) => node.executeJavaScript(code);
         const readPage = async () => {
             await run(`(${prepareFn.toString()})()`);
-            return run(`(${captureFn.toString()})(${JSON.stringify(capturePolicy())})`);
+            // A React import that keeps the app's tokens reads where it used them.
+            const policy = { ...capturePolicy(), authoredTokens: react?.tokens === true };
+            return run(`(${captureFn.toString()})(${JSON.stringify(policy)})`);
         };
         // `flex: none` as well as the width: the webview is a flex item
         // with `flex: 1 1 auto`, so grow wins over any width set on it and
@@ -286,7 +288,7 @@ export const ImportApp = () => {
                 frame.style.flex = restoreFlex;
             }
         }
-    }, [breakpoints]);
+    }, [breakpoints, react]);
     const handleImport = useCallback(async () => {
         if (projectPath.length === 0)
             return;

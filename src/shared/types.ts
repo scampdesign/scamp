@@ -641,7 +641,15 @@ export type ImportOpenArgs = {
    * Importing a React app: the window lists the app's routes beside the
    * page and keeps one session for it. see docs/plans/react-import-plan.md
    */
-  react?: { appName: string };
+  react?: {
+    appName: string;
+    /**
+     * Keep the app's own design tokens: the capture reads where the app
+     * used `var(--name)`, and the import puts those references and tokens
+     * into the project. Off: plain values.
+     */
+    tokens: boolean;
+  };
 };
 
 /** A React project folder, as the import read it. */

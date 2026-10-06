@@ -93,7 +93,7 @@ type Props = {
 };
 
 /** A React app running at `url`, waiting for its import window. */
-export type PendingReactImport = { url: string; appName: string };
+export type PendingReactImport = { url: string; appName: string; tokens: boolean };
 
 export const ProjectShell = ({
   project,
@@ -151,7 +151,7 @@ export const ProjectShell = ({
       projectPath: project.path,
       url: pendingImport.url,
       breakpoints: projectConfig.breakpoints,
-      react: { appName: pendingImport.appName },
+      react: { appName: pendingImport.appName, tokens: pendingImport.tokens },
     });
   }, [pendingImport, onPendingImportHandled, project.path, projectConfig.breakpoints]);
 
@@ -639,17 +639,17 @@ export const ProjectShell = ({
             projectPath={project.path}
             projectName={project.name}
             onClose={() => setReactImportOpen(false)}
-            onReady={(url, appName, newProject) => {
+            onReady={(url, appName, tokens, newProject) => {
               setReactImportOpen(false);
               if (newProject !== undefined && onSwitchProject !== undefined) {
-                onSwitchProject(newProject, { url, appName });
+                onSwitchProject(newProject, { url, appName, tokens });
                 return;
               }
               void window.scamp.openImport({
                 projectPath: project.path,
                 url,
                 breakpoints: projectConfig.breakpoints,
-                react: { appName },
+                react: { appName, tokens },
               });
             }}
           />

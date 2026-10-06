@@ -1,10 +1,13 @@
-body { margin: 0; font: 15px/22px system-ui, sans-serif; color: #1d2732; background: #f5f8fc; }
+/* The app's own design tokens, with a dark theme, as a design system would have them. */
+:root { --surface-nav: #eef3f9; --line: #d9e2ee; --ink: #1d2732; --radius-card: 12px; }
+[data-theme="dark"] { --surface-nav: #16181c; --line: #2e333b; --ink: #f3f3f7; }
+body { margin: 0; font: 15px/22px system-ui, sans-serif; color: var(--ink); background: #f5f8fc; }
 .shell { display: grid; grid-template-areas: "nav main"; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
-.nav { grid-area: nav; display: flex; flex-direction: column; gap: 4px; padding: 24px 12px; background: #eef3f9; border-right: 1px solid #d9e2ee; }
+.nav { grid-area: nav; display: flex; flex-direction: column; gap: 4px; padding: 24px 12px; background: var(--surface-nav); border-right: 1px solid var(--line); }
 .nav-item { padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; font: inherit; text-align: left; cursor: pointer; }
 .nav-item.is-active { background: #dbe8f6; font-weight: 600; }
 .main { grid-area: main; padding: 32px; }
-.card { padding: 24px; border: 1px solid #d9e2ee; border-radius: 12px; background: #fff; }
+.card { padding: 24px; border: 1px solid var(--line); border-radius: var(--radius-card); background: #fff; }
 .card h1 { margin: 0 0 8px; font-size: 24px; line-height: 32px; }
 .members { margin: 16px 0 0; padding: 0; list-style: none; }
 .member { padding: 8px 12px; border-bottom: 1px solid #d9e2ee; }

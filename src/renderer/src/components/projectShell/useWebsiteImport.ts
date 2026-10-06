@@ -23,6 +23,8 @@ import {
 import { buildReport } from '@lib/importReport';
 import { describeReactFinding, planReactComponents } from '@lib/reactComponents';
 import { planRepeats, type PlannedRepeat } from '@lib/reactRepeats';
+import { themeFromTokens, tokenizeCapture } from '@lib/appTokens';
+import { useCanvasStore } from '@store/canvasSlice';
 import { generateElementId } from '@lib/element/tree';
 import type { ScampElement } from '@lib/element';
 import {
@@ -143,15 +145,40 @@ export const useWebsiteImport = ({
           // The narrower readings become @media overrides. Folded in
           // before anything else so tokens and fonts see the whole
           // design rather than only its widest form.
-          const reduced = applyBreakpointCaptures(
-            reduceCapture(payload as CapturePayload),
-            (narrower ?? []).map((n) => ({
-              breakpointId: n.breakpointId,
-              payload: n.payload as CapturePayload,
-            }))
-          );
+          // A React import that keeps the app's tokens: the references go
+          // back where the app had them, and the tokens into the theme. Only
+          // where the app's own cascade used `var(--name)` — nothing here is
+          // inferred from a matching value. see lib/appTokens.ts
+          const captured = payload as CapturePayload;
+          let base = captured;
+          let narrowerPayloads = (narrower ?? []).map((n) => ({
+            breakpointId: n.breakpointId,
+            payload: n.payload as CapturePayload,
+          }));
+          let appTokens: { added: string[]; used: number; conflicts: string[] } | null = null;
+          if (captured.tokens !== undefined && Object.keys(captured.tokens.values).length > 0) {
+            const existingTheme = await window.scamp.readTheme({ projectPath: project.path });
+            const merged = themeFromTokens(captured.tokens, parseThemeFile(existingTheme));
+            if (merged.added.length > 0) {
+              await window.scamp.writeTheme({
+                projectPath: project.path,
+                content: serializeThemeFile(merged.theme, existingTheme),
+              });
+              useCanvasStore.getState().setThemeData(merged.theme);
+            }
+            const skip = new Set(merged.conflicts);
+            base = tokenizeCapture(captured, skip);
+            narrowerPayloads = narrowerPayloads.map((n) => ({ ...n, payload: tokenizeCapture(n.payload, skip) }));
+            appTokens = {
+              added: merged.added,
+              used: Object.keys(captured.tokens.values).length - merged.conflicts.length,
+              conflicts: merged.conflicts,
+            };
+          }
 
-          // Literal colours, not tokens.
+          const reduced = applyBreakpointCaptures(reduceCapture(base), narrowerPayloads);
+
+          // Literal colours, unless the app's own tokens were asked for (above).
           //
           // This used to lift repeated colours into theme tokens so a
           // view referenced `var(--color-accent)` rather than the same
@@ -456,6 +483,15 @@ export const useWebsiteImport = ({
           ): void => {
             if (count > 0) extras.push({ kind, label, count, examples: [], fidelity });
           };
+          if (appTokens !== null) {
+            note('app-tokens', `${appTokens.used} of the app’s theme tokens kept where it used them (${appTokens.added.length} new to the project)`, appTokens.used, 'exact');
+            note(
+              'app-token-conflicts',
+              `${appTokens.conflicts.length} of the app’s tokens kept as plain values — the project already has ${appTokens.conflicts.slice(0, 3).join(', ')} with another value`,
+              appTokens.conflicts.length,
+              'approximated'
+            );
+          }
           note('font-embedded', `${embedded.map((f) => f.family).join(', ')} embedded from Google Fonts`, embedded.length, 'exact');
           note(
             'font-missing',
