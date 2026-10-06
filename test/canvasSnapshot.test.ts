@@ -11,6 +11,7 @@ import {
   getSelectedElement,
   getThemeTokens,
   getRecentEdits,
+  getViewCheck,
   getViewProps,
   listComponents,
   listPages,
@@ -694,5 +695,36 @@ describe('scamp_get_element_by_id on a table', () => {
     expect(answerSnapshotTool('scamp_get_element_by_id', { id: 'a1b2' }, build())).not.toHaveProperty(
       'tableRules'
     );
+  });
+});
+
+describe('getViewCheck', () => {
+  const stored = (): Record<string, ScampElement> => ({
+    [ROOT_ELEMENT_ID]: el({ id: ROOT_ELEMENT_ID, parentId: null, childIds: ['card'] }),
+    card: el({ id: 'card', parentId: ROOT_ELEMENT_ID, customProperties: { 'padding-top': '24px' } }),
+  });
+  const live = (): Record<string, ScampElement> => ({
+    [ROOT_ELEMENT_ID]: el({ id: ROOT_ELEMENT_ID, parentId: null, childIds: ['card'] }),
+    card: el({ id: 'card', parentId: ROOT_ELEMENT_ID }),
+  });
+  const lobby = { kind: 'view' as const, name: 'Lobby', tsxPath: 'views/Lobby/Lobby.tsx', cssPath: 'views/Lobby/Lobby.module.css' };
+  const input = (target: SnapshotInput['target']): SnapshotInput =>
+    build({
+      target,
+      elements: live(),
+      viewNames: ['Lobby'],
+      trees: { Lobby: { kind: 'view', elements: stored(), rootId: ROOT_ELEMENT_ID } },
+    });
+
+  it('checks the open view as it is on the canvas, not as it was loaded', () => {
+    expect(getViewCheck(input(lobby), 'Lobby')?.findings).toEqual([]);
+  });
+
+  it('checks a view that is not open from its stored tree', () => {
+    expect(getViewCheck(input(pageTarget), 'Lobby')?.findings.length).toBeGreaterThan(0);
+  });
+
+  it('returns null for a name that is not a view or component', () => {
+    expect(getViewCheck(input(lobby), 'Nope')).toBeNull();
   });
 });

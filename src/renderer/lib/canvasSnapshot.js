@@ -155,7 +155,12 @@ export const listPages = (input) => [
  * from the same formatter the generator uses, so what the agent reads
  * here is byte-for-byte what the file declares.
  */
-export const getViewProps = (input, name) => {
+/**
+ * A view or component by name or route slug. The one open on the canvas
+ * is read from the canvas itself: its stored tree is how it was when the
+ * project loaded, so an agent checking its own edits saw none of them.
+ */
+const treeNamed = (input, name) => {
     const trees = input.trees ?? {};
     const match = trees[name] !== undefined
         ? name
@@ -163,6 +168,17 @@ export const getViewProps = (input, name) => {
     const tree = match === undefined ? undefined : trees[match];
     if (match === undefined || tree === undefined)
         return null;
+    const open = input.target;
+    if (open !== null && open.kind !== 'page' && open.name === match) {
+        return { name: match, tree: { kind: tree.kind, elements: input.elements, rootId: input.rootElementId } };
+    }
+    return { name: match, tree };
+};
+export const getViewProps = (input, name) => {
+    const found = treeNamed(input, name);
+    if (found === null)
+        return null;
+    const { name: match, tree } = found;
     const props = collectViewProps(tree.elements, tree.rootId);
     const samples = {};
     for (const prop of props) {
@@ -216,13 +232,10 @@ export const listComponents = (input) => input.componentNames.map((name) => ({
  * see docs/notes/view-lint.md
  */
 export const getViewCheck = (input, name) => {
-    const trees = input.trees ?? {};
-    const match = trees[name] !== undefined
-        ? name
-        : Object.keys(trees).find((candidate) => trees[candidate]?.kind === 'view' && viewSlugFor(candidate) === name);
-    const tree = match === undefined ? undefined : trees[match];
-    if (match === undefined || tree === undefined)
+    const found = treeNamed(input, name);
+    if (found === null)
         return null;
+    const { name: match, tree } = found;
     return {
         name: match,
         kind: tree.kind,

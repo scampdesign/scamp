@@ -201,14 +201,6 @@ export declare const getElementTree: (input: SnapshotInput) => {
     root: TreeNode;
 } | null;
 export declare const listPages: (input: SnapshotInput) => FileListItem[];
-/**
- * The props a view or component accepts, from its live tree.
- *
- * `name` is the PascalCase file name, or — because `scamp_list_pages`
- * reports a view by its route slug — that slug. The type text comes
- * from the same formatter the generator uses, so what the agent reads
- * here is byte-for-byte what the file declares.
- */
 export declare const getViewProps: (input: SnapshotInput, name: string) => ViewPropsResult;
 /**
  * Components by name and path.

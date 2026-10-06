@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { answerSnapshotTool, CANVAS_STATE_ELEMENT_LIMIT, componentPathsRelative, getActiveTarget, getCanvasState, getElementById, getElementTree, getSelectedElement, getThemeTokens, getRecentEdits, getViewProps, listComponents, listPages, pagePathsRelative, } from '@lib/canvasSnapshot';
+import { answerSnapshotTool, CANVAS_STATE_ELEMENT_LIMIT, componentPathsRelative, getActiveTarget, getCanvasState, getElementById, getElementTree, getSelectedElement, getThemeTokens, getRecentEdits, getViewCheck, getViewProps, listComponents, listPages, pagePathsRelative, } from '@lib/canvasSnapshot';
 import { DEFAULT_RECT_STYLES } from '@lib/defaults';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 /**
@@ -583,5 +583,31 @@ describe('scamp_get_element_by_id on a table', () => {
     });
     it('omits tableRules on anything that is not a table', () => {
         expect(answerSnapshotTool('scamp_get_element_by_id', { id: 'a1b2' }, build())).not.toHaveProperty('tableRules');
+    });
+});
+describe('getViewCheck', () => {
+    const stored = () => ({
+        [ROOT_ELEMENT_ID]: el({ id: ROOT_ELEMENT_ID, parentId: null, childIds: ['card'] }),
+        card: el({ id: 'card', parentId: ROOT_ELEMENT_ID, customProperties: { 'padding-top': '24px' } }),
+    });
+    const live = () => ({
+        [ROOT_ELEMENT_ID]: el({ id: ROOT_ELEMENT_ID, parentId: null, childIds: ['card'] }),
+        card: el({ id: 'card', parentId: ROOT_ELEMENT_ID }),
+    });
+    const lobby = { kind: 'view', name: 'Lobby', tsxPath: 'views/Lobby/Lobby.tsx', cssPath: 'views/Lobby/Lobby.module.css' };
+    const input = (target) => build({
+        target,
+        elements: live(),
+        viewNames: ['Lobby'],
+        trees: { Lobby: { kind: 'view', elements: stored(), rootId: ROOT_ELEMENT_ID } },
+    });
+    it('checks the open view as it is on the canvas, not as it was loaded', () => {
+        expect(getViewCheck(input(lobby), 'Lobby')?.findings).toEqual([]);
+    });
+    it('checks a view that is not open from its stored tree', () => {
+        expect(getViewCheck(input(pageTarget), 'Lobby')?.findings.length).toBeGreaterThan(0);
+    });
+    it('returns null for a name that is not a view or component', () => {
+        expect(getViewCheck(input(lobby), 'Nope')).toBeNull();
     });
 });

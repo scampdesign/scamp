@@ -352,20 +352,35 @@ export const listPages = (input: SnapshotInput): FileListItem[] => [
  * from the same formatter the generator uses, so what the agent reads
  * here is byte-for-byte what the file declares.
  */
-export const getViewProps = (
-  input: SnapshotInput,
-  name: string
-): ViewPropsResult => {
+/**
+ * A view or component by name or route slug. The one open on the canvas
+ * is read from the canvas itself: its stored tree is how it was when the
+ * project loaded, so an agent checking its own edits saw none of them.
+ */
+const treeNamed = (input: SnapshotInput, name: string): { name: string; tree: SnapshotTree } | null => {
   const trees = input.trees ?? {};
   const match =
     trees[name] !== undefined
       ? name
       : Object.keys(trees).find(
-          (candidate) =>
-            trees[candidate]?.kind === 'view' && viewSlugFor(candidate) === name
+          (candidate) => trees[candidate]?.kind === 'view' && viewSlugFor(candidate) === name
         );
   const tree = match === undefined ? undefined : trees[match];
   if (match === undefined || tree === undefined) return null;
+  const open = input.target;
+  if (open !== null && open.kind !== 'page' && open.name === match) {
+    return { name: match, tree: { kind: tree.kind, elements: input.elements, rootId: input.rootElementId } };
+  }
+  return { name: match, tree };
+};
+
+export const getViewProps = (
+  input: SnapshotInput,
+  name: string
+): ViewPropsResult => {
+  const found = treeNamed(input, name);
+  if (found === null) return null;
+  const { name: match, tree } = found;
   const props = collectViewProps(tree.elements, tree.rootId);
   const samples: Record<string, SampleValue> = {};
   for (const prop of props) {
@@ -421,16 +436,9 @@ export const listComponents = (input: SnapshotInput): FileListItem[] =>
  * see docs/notes/view-lint.md
  */
 export const getViewCheck = (input: SnapshotInput, name: string): ViewCheckResult => {
-  const trees = input.trees ?? {};
-  const match =
-    trees[name] !== undefined
-      ? name
-      : Object.keys(trees).find(
-          (candidate) =>
-            trees[candidate]?.kind === 'view' && viewSlugFor(candidate) === name
-        );
-  const tree = match === undefined ? undefined : trees[match];
-  if (match === undefined || tree === undefined) return null;
+  const found = treeNamed(input, name);
+  if (found === null) return null;
+  const { name: match, tree } = found;
   return {
     name: match,
     kind: tree.kind,
