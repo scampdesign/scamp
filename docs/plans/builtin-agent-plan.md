@@ -361,73 +361,76 @@ refused, for case-insensitive disks); the IO in the responder.
   is that an edit made during a turn folds into the agent's undo step.
   Worth doing if that bites in testing.
 
-### Phase 5 — the import cleanup skill
+### Phase 5 — the import cleanup skill — **built; real-model eval not yet run**
 
-There is no skill concept in the codebase yet. Define the smallest one
-that is versioned and testable:
+**The skill** (`src/main/agent/skills/`) is a versioned module:
+instructions, the tools it may use, its effort (`high`), and the token
+mode. Its first rule is that the page must look the same. It reads
+(`scamp_check_view`, the tree, the imported original), posts a plan and
+waits, then works in order: editability, layout, structure, components,
+tokens. `IMPORT_CLEANUP_VERSION` is bumped with every change to the
+text, and every eval result records it.
+
+**Running under a skill.** `agent:send` takes `skill: { id, tokenMode }`.
+The skill holds for the rest of the conversation:
+
+- Its instructions arrive once, as a mid-conversation `system` message
+  after the user's first words — so the cached system prompt in front of
+  them never changes.
+- Its tool list and effort apply to every turn. In keep-literal mode the
+  theme tool is gone from the list *and* refused if called anyway.
+- Once the plan is approved, the more-than-five-edits check is off —
+  it would only interrupt agreed work. Deletes, components and theme
+  changes still ask.
+
+**The headless runner** (`@lib/agentHeadless`) is the agent's canvas
+without a window: the same read tools through the MCP server's own
+invoker and snapshot answers, the same edits through `@lib/agentEdits`,
+the same feedback text (`editFeedback`, now shared with the app's
+responder). Subtree-to-instance replacement moved into a pure module
+(`@lib/componentInstance`) the store also uses.
+
+**The eval** — `node scripts/agent-cleanup-eval.mjs` — captures each page
+in `scripts/agent-eval/pages/` in Chromium exactly as the importer
+does, reduces it, runs the skill on the headless canvas, and reports
+before → after for each page and token mode:
+
+| Measure | Bar |
+|---|---|
+| Findings per element (`lintView`) | must fall |
+| Pixels against the source | must hold |
+| Geometry of surviving elements within 2px | must hold |
+| generate → parse → generate | must be stable |
+| Keep-literal: `theme.css` | untouched |
+| Create-tokens: undeclared tokens | zero |
+
+Confirmations are approved automatically and counted. Results go to
+`.agent-eval/results-*.json` with the skill version and model.
+
+The corpus is three local pages — the existing `marketing.html`
+fixture, the patient list from the tables work, and a dashboard written
+with the importer's known editability gaps (one-sided borders,
+per-corner radii). Baselines from the scripted run:
+
+| Page | Findings / element | Pixels | Geometry |
+|---|---|---|---|
+| dashboard | 0.964 | 99.7% | 100% |
+| marketing | 0.333 | 98.6% | 93.3% |
+| patients | 1.760 | 100% | 100% |
+
+**Budget.** The real-model run is capped at **$5** for the whole eval
+(`--max-usd`), costed at Claude Opus 5.5's prices from each response's
+usage. It stops before a call that would cross the cap, estimating the
+next call from the last. The scripted provider runs the whole pipeline
+for nothing and is the default. Calibrate on one page first:
 
 ```
-src/main/agent/skills/import-cleanup/
-├── SKILL.md       instructions: cleanup targets, order, what to propose vs apply
-├── tools.ts       the tool subset it may use
-└── rubric.md      what "clean" means, for the eval
+ANTHROPIC_API_KEY=… node scripts/agent-cleanup-eval.mjs --provider anthropic --pages dashboard --modes keep-literal --max-usd 1.5
 ```
 
-A skill is loaded into the system prompt when invoked, and narrows the
-tool set. The cleanup targets, in the order the skill works them:
-
-1. **Editability first** — the importer writes many per-side longhands
-   (`side-not-typed` at 0.288 per element against 0.046 for agent-written
-   views) and values the panel can't read. Fold them into the typed form.
-   This is the cheapest, safest, most measurable win.
-2. **Layout intent** — absolute placements the structure makes clear,
-   into flex or grid.
-3. **Semantic structure** — tags for what things are; collapse wrappers
-   the deterministic pass couldn't.
-4. **Components** — repeated structures, proposed with names.
-5. **Tokens** — only in **Create theme tokens** mode (below).
-
-Fidelity is the constraint on every step: the skill re-checks with the
-same measurements the importer is tuned against.
-
-**Token mode.** Starting a cleanup asks one question before the agent
-reads anything, as two choices in the panel:
-
-- **Create theme tokens** — the agent finds the colours, spacing and
-  type values the page repeats, names them by role, and lists them in
-  its plan (`--color-text: #1a1a1a`, used 42 times). Accepting the plan
-  writes them to `theme.css` with `scamp_set_theme_tokens`, then
-  rewrites the matching values to `var(--…)`. A token the project
-  already declares with the same value is reused rather than duplicated,
-  which is what stops two imported sites colliding.
-- **Keep hex values** — literal values stay literal, matching the
-  importer. The agent doesn't touch `theme.css`.
-
-Both modes obey the one rule that holds everywhere: never reference a
-token `theme.css` doesn't declare. The mode is a skill parameter that
-changes which tools are in the skill's set (`scamp_set_theme_tokens` is
-absent in **Keep hex values**), so the model can't drift out of it
-mid-session. The choice is remembered per project as the next default.
-
-Ordinary chat edits outside a cleanup follow the PRD's convention
-instead: use an existing token when one matches, and never invent one
-unasked.
-
-**The eval** is the deliverable that makes the skill improvable. A corpus
-of 6–10 captured pages, graded on:
-
-- geometry and pixels against the source (`scripts/import-fidelity.mjs`,
-  `scripts/import-pixels.mjs`) — must not regress;
-- `lintView` findings per element — must fall;
-- `parseCode` round-trip — must hold, every page;
-- the rubric, judged by a model, for semantic tags and component choices.
-
-Each page runs in both token modes. **Keep hex values** must leave
-`theme.css` byte-identical; **Create theme tokens** must leave no
-repeated literal the plan named, and no undeclared token.
-
-Every eval run spends real money on a real key. Agree a budget before the
-first run.
+**Not done:** the rubric judged by a model for semantic tags and
+component choices. The deterministic measures come first; a judge is
+worth adding once those are stable.
 
 ### Phase 6 — AI-assisted import
 
