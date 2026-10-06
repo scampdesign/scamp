@@ -119,13 +119,102 @@ describe('what the page wrote, in the spelling Scamp and React need', () => {
     expect(box?.margin).toEqual(want);
   });
 
-  it('leaves a partial set alone, rather than inventing the other sides', () => {
+  it('folds a set with sides missing, because a missing side is at its initial value', () => {
+    // The capture leaves out every value equal to its initial one, so a
+    // sidebar's `padding: 24px 0 24px 16px` arrives as three sides.
     const { elements } = reduce(
-      node({ children: [node({ id: 1, styles: { 'padding-left': '16px' } })] })
+      node({
+        children: [
+          node({ id: 1, styles: { 'padding-top': '24px', 'padding-bottom': '24px', 'padding-left': '16px' } }),
+        ],
+      })
     );
     const box = Object.values(elements).find((e) => e.id !== ROOT_ELEMENT_ID);
-    expect(box?.padding).toEqual([0, 0, 0, 0]);
-    expect(box?.customProperties['padding-left']).toBe('16px');
+    expect(box?.padding).toEqual([24, 0, 24, 16]);
+    expect(box?.customProperties['padding-left']).toBeUndefined();
+  });
+
+  it('folds a one-sided border to widths per side and one style and colour', () => {
+    const { elements, rootId } = reduce(
+      node({
+        children: [
+          node({
+            id: 1,
+            styles: {
+              'border-right-width': '1px',
+              'border-right-style': 'solid',
+              'border-right-color': 'rgb(217, 226, 238)',
+            },
+          }),
+        ],
+      })
+    );
+    const css = generateCode({ elements, rootId, pageName: 'Page', cssModuleImportName: 'Page', isComponent: true }).css;
+    const box = Object.values(elements).find((e) => e.id !== ROOT_ELEMENT_ID);
+    expect(box?.borderWidth).toEqual([0, 1, 0, 0]);
+    expect(box?.borderStyle).toBe('solid');
+    expect(box?.borderColor).toBe('rgb(217, 226, 238)');
+    expect(css).not.toContain('border-right-');
+  });
+
+  it('keeps every side of a border whose sides paint differently', () => {
+    const { elements } = reduce(
+      node({
+        children: [
+          node({
+            id: 1,
+            styles: {
+              'border-top-width': '1px',
+              'border-bottom-width': '1px',
+              'border-top-style': 'solid',
+              'border-bottom-style': 'dashed',
+              'border-top-color': 'red',
+              'border-bottom-color': 'red',
+            },
+          }),
+        ],
+      })
+    );
+    const box = Object.values(elements).find((e) => e.id !== ROOT_ELEMENT_ID);
+    expect(box?.borderWidth).toEqual([1, 0, 1, 0]);
+    expect(box?.borderColor).toBe('red');
+    expect(box?.customProperties['border-top-style']).toBe('solid');
+    expect(box?.customProperties['border-bottom-style']).toBe('dashed');
+  });
+
+  it('writes a gap once, not as the shorthand and both axes', () => {
+    const { elements, rootId } = reduce(
+      node({
+        styles: { display: 'flex', gap: '8px', 'row-gap': '8px', 'column-gap': '8px' },
+        children: [node({ id: 1 }), node({ id: 2 })],
+      })
+    );
+    const css = generateCode({ elements, rootId, pageName: 'Page', cssModuleImportName: 'Page', isComponent: true }).css;
+    expect(css).toContain('gap: 8px;');
+    expect(css).not.toContain('row-gap');
+    expect(css).not.toContain('column-gap');
+  });
+
+  it('keeps the axes of a gap that differs per axis', () => {
+    const { elements } = reduce(
+      node({
+        styles: { display: 'grid', gap: '12px 16px', 'row-gap': '12px', 'column-gap': '16px' },
+        children: [node({ id: 1 })],
+      })
+    );
+    const root = elements[ROOT_ELEMENT_ID];
+    expect(root?.rowGap).toEqual(12);
+    expect(root?.columnGap).toEqual(16);
+    expect(root?.customProperties['gap']).toBeUndefined();
+  });
+
+  it('folds a radius on some corners only', () => {
+    const { elements } = reduce(
+      node({ children: [node({ id: 1, styles: { 'border-top-left-radius': '8px', 'border-top-right-radius': '8px' } })] })
+    );
+    const box = Object.values(elements).find((e) => e.id !== ROOT_ELEMENT_ID);
+    expect(box?.customProperties['border-top-left-radius']).toBeUndefined();
+    expect(box?.borderRadius).toEqual([8, 8, 0, 0]);
   });
 
   it('folds a border the same way, all three of its sets', () => {
@@ -1654,6 +1743,12 @@ describe('an app shell captured from a real browser', () => {
     const avatar = els.find((el) => el.text === 'PR');
     expect(avatar?.heightMode).toBe('fixed');
     expect(avatar?.heightValue).toBe(40);
+  });
+
+  it('drops the resolved right and bottom of a relative box that was never moved', () => {
+    // left/top come from the generator's typed x/y, which it writes on
+    // every positioned box; right/bottom were only ever the resolved 0px.
+    expect(css).not.toMatch(/\b(right|bottom): 0px;/);
   });
 
   it('keeps the width of an icon button its wrapper hugs', () => {

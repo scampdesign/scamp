@@ -220,6 +220,40 @@ reported on the CANVAS are not coming from there.
 
 ---
 
+## FIXED — per-side values the panel can't edit, left for the agent to fold
+
+**Measured.** The same dashboard, captured fresh and reduced, then run
+through `lintView`: 305 elements, **179 findings**, 149 of them
+`side-not-typed` (`padding-top` with no `padding-right`,
+`border-right-*` alone). The cleanup agent spent 68 edits and about 2.5M
+tokens folding them by hand. The rest of the CSS repeated itself:
+`gap: 8px; column-gap: 8px; row-gap: 8px`, and every `position:
+relative` box carried `right: 0px; bottom: 0px`.
+
+**Before.** `foldShorthands` folded a set only when all four sides were
+present, on the reasoning that a missing side would be invented.
+
+**Cause.** The capture leaves out every value equal to its initial
+value, so a missing side IS known: `0px` for padding, margin, border
+width and radius, and no paint for a border side with no width. The gap
+shorthand was captured alongside both its longhands. And Chromium
+reports all four insets of a relative box (`0px` when none was set, the
+end as the start negated when one was).
+
+**Fix.** `importReduce.ts`: `foldShorthands` fills missing sides from
+their initial value, folds border style and colour to the one value the
+painted sides share, and keeps `gap` alone when both axes match (or the
+axes alone when they differ). `captureScript.ts`: a relative box keeps
+only a non-zero start inset. Tests in `test/importReduce.test.ts`
+("folds a set with sides missing", "a one-sided border", "writes a gap
+once"), and the app-shell fixture for the relative insets.
+
+**Re-run.** **29 findings** (all `not-panel-editable`), down from 179.
+Pixels unchanged: dashboard 85.77 → 85.83, gainwix.com 93.39,
+linear.app 88.27, vercel.com 95.59.
+
+---
+
 ## FIXED — a dashboard laid out by named grid areas stacked its columns
 
 **Measured.** A clinic dashboard (resovaiq, served locally at

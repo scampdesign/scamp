@@ -239,6 +239,22 @@ export const captureFn = (policy) => {
      */
     const dropResolvedInsets = (styles) => {
         const position = styles['position'];
+        // A relative box reports all four insets — `0px` when none was set,
+        // and the end as the start negated when one was. Zero offsets are no
+        // offset, and the end side only restates the start.
+        if (position === 'relative') {
+            for (const [start, end] of [['left', 'right'], ['top', 'bottom']]) {
+                const from = styles[start];
+                const to = styles[end];
+                if (from === undefined || to === undefined)
+                    continue;
+                if (parseFloat(from) === -parseFloat(to))
+                    delete styles[end];
+                if (parseFloat(from) === 0)
+                    delete styles[start];
+            }
+            return;
+        }
         if (position !== 'absolute' && position !== 'fixed')
             return;
         for (const [start, end, size, mStart, mEnd] of [

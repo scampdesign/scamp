@@ -259,10 +259,6 @@
                     "styles": {
                       "display": "flex",
                       "position": "relative",
-                      "top": "0px",
-                      "right": "0px",
-                      "bottom": "0px",
-                      "left": "0px",
                       "width": "40px",
                       "height": "40px"
                     },

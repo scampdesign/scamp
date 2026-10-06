@@ -877,23 +877,79 @@ const collapseSides = ([top, right, bottom, left]: ReadonlyArray<string>): strin
   return `${top} ${right} ${bottom} ${left}`;
 };
 
+/** What a side the capture left out is: the capture omits initial values. */
+const SIDE_INITIAL: Readonly<Record<string, string>> = {
+  padding: '0px',
+  margin: '0px',
+  'border-width': '0px',
+  'border-radius': '0px',
+};
+
+const sidesOf = (shorthand: string): ReadonlyArray<string> =>
+  SHORTHAND_SETS.find((set) => set.shorthand === shorthand)?.sides ?? [];
+
+/** The one value every entry shares, or null. */
+const shared = (values: ReadonlyArray<string | undefined>): string | null => {
+  const [first] = values;
+  return first !== undefined && values.every((value) => value === first) ? first : null;
+};
+
 /**
- * Fold every complete longhand set into the shorthand, so the values
- * land in Scamp's typed fields instead of `customProperties`.
+ * Fold every longhand set into its shorthand, so the values land in
+ * Scamp's typed fields instead of `customProperties`.
  *
- * Only when all four sides are present: a partial set is a value the
- * page set on one edge, and writing a shorthand would invent the other
- * three.
+ * A side that isn't there is at its initial value — the capture omits
+ * those — so a sidebar's `padding: 24px 0 24px 16px` arrives as three
+ * sides and folds with the fourth at `0px`. Folding only complete sets
+ * left 149 of one page's 179 findings for the agent to fold by hand.
+ *
+ * Border style and colour fold to ONE value taken from the sides that
+ * paint: a side with no width shows neither, so `border-right: 1px solid`
+ * reads `border-width: 0px 1px 0px 0px; border-style: solid`, the form
+ * the panel can edit. Sides that paint differently keep every side.
  */
 const foldShorthands = (styles: Record<string, string>): Record<string, string> => {
-  let next = styles;
+  const next = { ...styles };
+  // `gap` is captured alongside its longhands, so every gap was written
+  // three times. One axis value: keep `gap`. Two: keep the axes, which
+  // the panel types separately, and drop the two-value shorthand.
+  const rowGap = next['row-gap'];
+  const columnGap = next['column-gap'];
+  if (rowGap !== undefined && rowGap === columnGap) {
+    next['gap'] = rowGap;
+    delete next['row-gap'];
+    delete next['column-gap'];
+  } else if (rowGap !== undefined || columnGap !== undefined) {
+    delete next['gap'];
+  }
+  const widthSides = sidesOf('border-width');
+  // Read before border-width folds, which deletes the sides.
+  const painted = widthSides
+    .map((side, index) => ({ index, width: styles[side] }))
+    .filter((side) => side.width !== undefined && Number.parseFloat(side.width) !== 0)
+    .map((side) => side.index);
+
   for (const { shorthand, sides } of SHORTHAND_SETS) {
     if (shorthand in next) continue;
     const values = sides.map((side) => next[side]);
-    if (values.some((value) => value === undefined)) continue;
-    if (next === styles) next = { ...styles };
-    next[shorthand] = collapseSides(values as string[]);
-    for (const side of sides) delete next[side];
+    if (values.every((value) => value === undefined)) continue;
+
+    const initial = SIDE_INITIAL[shorthand];
+    if (initial !== undefined) {
+      next[shorthand] = collapseSides(values.map((value) => value ?? initial));
+      for (const side of sides) delete next[side];
+      continue;
+    }
+
+    // border-style / border-color
+    const one = shared(painted.map((index) => values[index]));
+    if (painted.length > 0 && one !== null) {
+      next[shorthand] = one;
+      for (const side of sides) delete next[side];
+    } else if (values.every((value) => value !== undefined)) {
+      next[shorthand] = collapseSides(values as string[]);
+      for (const side of sides) delete next[side];
+    }
   }
   return next;
 };
