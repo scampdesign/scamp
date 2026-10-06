@@ -17,6 +17,10 @@ export type ScriptedBlock = {
     input: Record<string, unknown>;
 } | {
     type: 'echo_tool_result';
+}
+/** Answers with the start of the last system message — proof a skill arrived. */
+ | {
+    type: 'echo_system';
 };
 export type ScriptedTurn = {
     content: ScriptedBlock[];

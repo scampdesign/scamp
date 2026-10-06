@@ -366,3 +366,61 @@
   color: var(--text-primary);
   overflow-wrap: anywhere;
 }
+
+.cleanupCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cleanupTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cleanupChoice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cleanupChoice:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+/* The mode picked last time in this project. */
+.cleanupChoiceLast {
+  border-color: var(--accent);
+}
+
+.cleanupChoiceLabel {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cleanupChoiceHint {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.planBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.planHint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}

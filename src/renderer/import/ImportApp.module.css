@@ -205,3 +205,45 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
 }
+
+/* "Clean up with AI", offered under a successful import. Same fixed dark
+   palette and currentColor outlines as the rest of this window, which
+   doesn't load the app theme. */
+.cleanup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #2e333b;
+}
+
+.cleanupText {
+  flex: 1 1 320px;
+}
+
+.cleanupActions {
+  display: flex;
+  gap: 6px;
+}
+
+.cleanupBtn {
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+.cleanupBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cleanupError {
+  flex-basis: 100%;
+  color: #e08b87;
+}

@@ -699,6 +699,12 @@ export type ImportResultPayload = {
    * would be unreadable exactly when it matters most.
    */
   findings?: ImportReportGroup[];
+  /**
+   * Offer "Clean up with AI" — only for a signed-in user with a provider
+   * key connected. Decided by the app window, which knows both; the import
+   * window shows nothing at all otherwise.
+   */
+  cleanupAvailable?: boolean;
   error?: string;
 };
 
@@ -1288,6 +1294,13 @@ export type AgentEvent =
 
 /** How an import cleanup treats repeated values; the user picks when it starts. */
 export type AgentTokenMode = 'create-tokens' | 'keep-literal';
+
+/** Start an import cleanup in the app window, from the import window. */
+export type AgentStartCleanupArgs = {
+  projectPath: string;
+  viewName: string;
+  tokenMode: AgentTokenMode;
+};
 
 /** A Scamp-authored skill to run this conversation under. */
 export type AgentSkillRequest = { id: 'import-cleanup'; tokenMode: AgentTokenMode };

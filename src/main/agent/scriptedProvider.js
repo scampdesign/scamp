@@ -12,6 +12,14 @@ const lastToolResult = (messages) => {
     }
     return '(no tool result)';
 };
+const lastSystem = (messages) => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+        const message = messages[i];
+        if (message?.role === 'system' && typeof message.content === 'string')
+            return message.content;
+    }
+    return '(no system message)';
+};
 export const createScriptedProvider = (script) => {
     let next = 0;
     const provider = {
@@ -38,7 +46,9 @@ export const createScriptedProvider = (script) => {
                 }
                 const text = block.type === 'text'
                     ? block.text
-                    : `Tool said: ${lastToolResult(request.messages).slice(0, 200)}`;
+                    : block.type === 'echo_system'
+                        ? `System: ${lastSystem(request.messages).slice(0, 80)}`
+                        : `Tool said: ${lastToolResult(request.messages).slice(0, 200)}`;
                 callbacks.onText(text);
                 content.push({ type: 'text', text, citations: null });
             }

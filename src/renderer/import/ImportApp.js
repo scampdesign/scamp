@@ -63,6 +63,8 @@ export const ImportApp = () => {
      */
     const [webviewReady, setWebviewReady] = useState(false);
     const [reportOpen, setReportOpen] = useState(false);
+    /** "Clean up with AI", once the user picks a token mode. */
+    const [cleanup, setCleanup] = useState({ kind: 'idle' });
     useEffect(() => {
         const offOpen = window.scampImport.onOpen((args) => {
             setProjectPath(args.projectPath);
@@ -209,6 +211,14 @@ export const ImportApp = () => {
         node?.[method]?.();
     };
     const busy = status.kind === 'capturing';
+    // A new import gets its own offer.
+    useEffect(() => {
+        setCleanup({ kind: 'idle' });
+    }, [status]);
+    const handleCleanup = async (viewName, tokenMode) => {
+        const result = await window.scampImport.startCleanup(projectPath, viewName, tokenMode);
+        setCleanup(result.ok ? { kind: 'started' } : { kind: 'failed', message: result.error ?? 'Couldn’t start the cleanup.' });
+    };
     return (_jsxs("div", { className: styles.shell, children: [_jsxs("div", { className: styles.toolbar, children: [_jsx("button", { className: styles.navBtn, onClick: nav('goBack'), disabled: !canGoBack, title: "Back", children: "\u2039" }), _jsx("button", { className: styles.navBtn, onClick: nav('goForward'), disabled: !canGoForward, title: "Forward", children: "\u203A" }), _jsx("button", { className: styles.navBtn, onClick: nav('reload'), disabled: !loadedUrl, title: "Reload", children: "\u27F3" }), _jsx("input", { className: styles.urlBar, value: draftUrl, onChange: (e) => setDraftUrl(e.target.value), onKeyDown: (e) => {
                             if (e.key === 'Enter')
                                 handleGo();
@@ -216,7 +226,7 @@ export const ImportApp = () => {
                             ? status.kind === 'capturing' && status.at
                                 ? `Reading at ${status.at}…`
                                 : 'Reading the page…'
-                            : 'Import' })] }), status.kind !== 'idle' && status.kind !== 'capturing' && (_jsx("div", { className: `${styles.banner} ${status.kind === 'failed' || !status.result?.ok ? styles.bannerBad : styles.bannerGood}`, children: status.kind === 'failed' ? (_jsx("span", { children: status.message })) : status.result.ok ? (_jsxs(_Fragment, { children: [_jsxs("div", { className: styles.bannerHead, children: [_jsxs("span", { children: ["Imported ", _jsx("strong", { children: status.result.viewName }), " \u2014", ' ', status.result.elementCount, " elements"] }), (status.result.findings?.length ?? 0) > 0 && (_jsxs("button", { className: styles.reportToggle, onClick: () => setReportOpen((v) => !v), type: "button", children: [reportOpen ? 'Hide' : 'What changed', " (", status.result.findings?.length, ")"] }))] }), reportOpen && (
+                            : 'Import' })] }), status.kind !== 'idle' && status.kind !== 'capturing' && (_jsx("div", { className: `${styles.banner} ${status.kind === 'failed' || !status.result?.ok ? styles.bannerBad : styles.bannerGood}`, children: status.kind === 'failed' ? (_jsx("span", { children: status.message })) : status.result.ok ? (_jsxs(_Fragment, { children: [_jsxs("div", { className: styles.bannerHead, children: [_jsxs("span", { children: ["Imported ", _jsx("strong", { children: status.result.viewName }), " \u2014", ' ', status.result.elementCount, " elements"] }), (status.result.findings?.length ?? 0) > 0 && (_jsxs("button", { className: styles.reportToggle, onClick: () => setReportOpen((v) => !v), type: "button", children: [reportOpen ? 'Hide' : 'What changed', " (", status.result.findings?.length, ")"] }))] }), status.result.cleanupAvailable === true && status.result.viewName !== undefined && (_jsx("div", { className: styles.cleanup, "data-testid": "import-cleanup", children: cleanup.kind === 'started' ? (_jsx("span", { children: "Cleanup started. Continue in the Scamp window, where the agent shows its plan." })) : (_jsxs(_Fragment, { children: [_jsxs("span", { className: styles.cleanupText, children: [_jsx("strong", { children: "Clean up with AI." }), " The Scamp Agent makes this page easier to edit without changing how it looks, and shows you a plan first. For repeated colors and sizes:"] }), _jsxs("span", { className: styles.cleanupActions, children: [_jsx("button", { type: "button", className: styles.cleanupBtn, onClick: () => void handleCleanup(status.result.viewName ?? '', 'create-tokens'), children: "Create theme tokens" }), _jsx("button", { type: "button", className: styles.cleanupBtn, onClick: () => void handleCleanup(status.result.viewName ?? '', 'keep-literal'), children: "Keep hex values" })] }), cleanup.kind === 'failed' && _jsx("span", { className: styles.cleanupError, children: cleanup.message })] })) })), reportOpen && (
                         // An import is a lossy translation, and it is lossy in
                         // more than one way. Worst first, each marked with how
                         // faithfully it survived.

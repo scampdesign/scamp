@@ -89,6 +89,19 @@ export const App = (): JSX.Element => {
     };
   }, []);
 
+  // "Clean up with AI" from the import window: open the Agent panel and
+  // start the cleanup of the view just imported.
+  useEffect(
+    () =>
+      window.scamp.onAgentStartCleanup(({ projectPath, viewName, tokenMode }) => {
+        const agent = useAgentStore.getState();
+        if (agent.lastImport?.projectPath !== projectPath || agent.lastImport.viewName !== viewName) return;
+        useCanvasStore.getState().setSidebarSection('agent');
+        void agent.startCleanup(tokenMode);
+      }),
+    []
+  );
+
   // Scamp Agent replies stream in whether or not the panel is open.
   useEffect(
     () =>

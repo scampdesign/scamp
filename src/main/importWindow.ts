@@ -7,8 +7,7 @@ import type { CapturedSource } from '@shared/importCapture';
 import type {
   ImportCapturedArgs,
   ImportOpenArgs,
-  ImportResultPayload,
-} from '@shared/types';
+  ImportResultPayload, AgentStartCleanupArgs } from '@shared/types';
 
 /**
  * The import window: a browser you point at a page, and a button that
@@ -147,6 +146,30 @@ export const registerImportIpc = (): void => {
       }
     }
   );
+
+  // Import window → app window: start an AI cleanup of the view just
+  // imported. The import window is the least-trusted renderer in the app
+  // (it hosts a third-party page), so it can name a view and a mode and
+  // nothing else; both are checked here before anything is forwarded.
+  ipcMain.handle(IPC.ImportStartCleanup, (_e, args: AgentStartCleanupArgs) => {
+    const target = appWindow();
+    if (!target) return { ok: false, error: 'Scamp is not open on a project.' };
+    const valid =
+      typeof args?.projectPath === 'string' &&
+      typeof args.viewName === 'string' &&
+      args.viewName.length > 0 &&
+      args.viewName.length < 200 &&
+      (args.tokenMode === 'create-tokens' || args.tokenMode === 'keep-literal');
+    if (!valid) return { ok: false, error: 'That cleanup request was malformed.' };
+    const forwarded: AgentStartCleanupArgs = {
+      projectPath: args.projectPath,
+      viewName: args.viewName,
+      tokenMode: args.tokenMode,
+    };
+    target.webContents.send(IPC.AgentStartCleanup, forwarded);
+    target.focus();
+    return { ok: true };
+  });
 
   // App window → import window, so the importer can report the outcome
   // without knowing anything about projects.

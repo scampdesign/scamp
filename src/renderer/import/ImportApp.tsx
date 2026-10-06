@@ -78,6 +78,10 @@ export const ImportApp = (): JSX.Element => {
    */
   const [webviewReady, setWebviewReady] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  /** "Clean up with AI", once the user picks a token mode. */
+  const [cleanup, setCleanup] = useState<
+    { kind: 'idle' } | { kind: 'started' } | { kind: 'failed'; message: string }
+  >({ kind: 'idle' });
 
   useEffect(() => {
     const offOpen = window.scampImport.onOpen((args) => {
@@ -237,6 +241,17 @@ export const ImportApp = (): JSX.Element => {
 
   const busy = status.kind === 'capturing';
 
+
+  // A new import gets its own offer.
+  useEffect(() => {
+    setCleanup({ kind: 'idle' });
+  }, [status]);
+
+  const handleCleanup = async (viewName: string, tokenMode: 'create-tokens' | 'keep-literal'): Promise<void> => {
+    const result = await window.scampImport.startCleanup(projectPath, viewName, tokenMode);
+    setCleanup(result.ok ? { kind: 'started' } : { kind: 'failed', message: result.error ?? 'Couldn’t start the cleanup.' });
+  };
+
   return (
     <div className={styles.shell}>
       <div className={styles.toolbar}>
@@ -292,6 +307,38 @@ export const ImportApp = (): JSX.Element => {
                   </button>
                 )}
               </div>
+              {status.result.cleanupAvailable === true && status.result.viewName !== undefined && (
+                <div className={styles.cleanup} data-testid="import-cleanup">
+                  {cleanup.kind === 'started' ? (
+                    <span>Cleanup started. Continue in the Scamp window, where the agent shows its plan.</span>
+                  ) : (
+                    <>
+                      <span className={styles.cleanupText}>
+                        <strong>Clean up with AI.</strong> The Scamp Agent makes this page easier to edit
+                        without changing how it looks, and shows you a plan first. For repeated colors and
+                        sizes:
+                      </span>
+                      <span className={styles.cleanupActions}>
+                        <button
+                          type="button"
+                          className={styles.cleanupBtn}
+                          onClick={() => void handleCleanup(status.result.viewName ?? '', 'create-tokens')}
+                        >
+                          Create theme tokens
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.cleanupBtn}
+                          onClick={() => void handleCleanup(status.result.viewName ?? '', 'keep-literal')}
+                        >
+                          Keep hex values
+                        </button>
+                      </span>
+                      {cleanup.kind === 'failed' && <span className={styles.cleanupError}>{cleanup.message}</span>}
+                    </>
+                  )}
+                </div>
+              )}
               {reportOpen && (
                 // An import is a lossy translation, and it is lossy in
                 // more than one way. Worst first, each marked with how

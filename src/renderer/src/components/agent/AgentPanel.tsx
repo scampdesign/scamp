@@ -5,7 +5,9 @@ import { useAgentStore, currentAgentContext } from '@store/agentSlice';
 import { useCanvasStore } from '@store/canvasSlice';
 
 import { Tooltip } from '../controls/Tooltip';
+import { AgentCleanupCard } from './AgentCleanupCard';
 import { AgentConnect } from './AgentConnect';
+import { AgentPlanBar } from './AgentPlanBar';
 import { AgentReply } from './AgentReply';
 import { useAgentKey } from './useAgentKey';
 import styles from './AgentPanel.module.css';
@@ -35,7 +37,14 @@ export const AgentPanel = (): JSX.Element => {
   // Recomputed from the canvas on every store change; a string, so the
   // panel only re-renders when the line actually changes.
   const context = useCanvasStore(() => currentAgentContext());
-  const { entries, busy, sendError, send, cancel, reset, edited, undoSession } = useAgentStore();
+  const { entries, busy, sendError, send, cancel, reset, edited, undoSession, lastImport, cleanupPhase } =
+    useAgentStore();
+  const openViewName = useCanvasStore((s) => s.activeComponent?.name ?? null);
+  // Offered for the view imported most recently, while it's the one open.
+  const cleanupOffer =
+    lastImport !== null && lastImport.projectPath === projectPath && lastImport.viewName === openViewName
+      ? lastImport
+      : null;
   const [confirmingUndo, setConfirmingUndo] = useState(false);
   const [undoError, setUndoError] = useState<string | null>(null);
   const conversationProject = useAgentStore((s) => s.projectPath);
@@ -132,7 +141,9 @@ export const AgentPanel = (): JSX.Element => {
       ) : (
         <>
           <div className={styles.messages} ref={listRef} data-testid="agent-messages">
-            {visible.length === 0 ? (
+            {visible.length === 0 && cleanupOffer !== null ? (
+              <AgentCleanupCard projectPath={cleanupOffer.projectPath} viewName={cleanupOffer.viewName} />
+            ) : visible.length === 0 ? (
               <div className={styles.empty}>
                 <p className={styles.emptyText}>
                   Ask about the page you’re designing, or ask for a change. Each reply’s edits undo together
@@ -163,6 +174,7 @@ export const AgentPanel = (): JSX.Element => {
                 )
               )
             )}
+            {cleanupPhase === 'awaiting-approval' && !busy && <AgentPlanBar />}
           </div>
 
           <footer className={styles.composer}>

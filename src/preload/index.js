@@ -187,6 +187,12 @@ const api = {
     agentReset: () => ipcRenderer.invoke(IPC.AgentReset),
     agentUndoSession: (args) => ipcRenderer.invoke(IPC.AgentUndoSession, args),
     agentConfirm: (args) => ipcRenderer.invoke(IPC.AgentConfirm, args),
+    /** The import window asked for a cleanup of the view it just imported. */
+    onAgentStartCleanup: (handler) => {
+        const listener = (_e, args) => handler(args);
+        ipcRenderer.on(IPC.AgentStartCleanup, listener);
+        return () => ipcRenderer.removeListener(IPC.AgentStartCleanup, listener);
+    },
     onAgentEvent: (handler) => {
         const listener = (_e, event) => handler(event);
         ipcRenderer.on(IPC.AgentEvent, listener);

@@ -9,6 +9,8 @@ import { needsFileTreatment, svgAssetName, svgDocument, } from '@lib/importSvgAs
 import { useFontsStore } from '@store/fontsSlice';
 import { parseThemeFile, serializeThemeFile } from '@lib/parseTheme';
 import { useAppLogStore } from '@store/appLogSlice';
+import { useAgentStore } from '@store/agentSlice';
+import { useAuthStore } from '@store/authSlice';
 /**
  * A view name the project doesn't already use. An import should never
  * silently land on top of existing work.
@@ -346,10 +348,17 @@ export const useWebsiteImport = ({ project, breakpoints, onProjectChange, openVi
                         (findings.length > 0
                             ? `. ${findings.map((f) => f.label).join('; ')}.`
                             : '.'));
+                    // The Scamp Agent can clean this up — offered only to a signed-in
+                    // user with a key connected; anyone else sees nothing of it.
+                    useAgentStore.getState().recordImport(projectPath, name, findings);
+                    const keyStatus = useAuthStore.getState().status === 'signed-in'
+                        ? (await window.scamp.agentKeyStatus().catch(() => ({ status: 'not-connected' }))).status
+                        : 'not-connected';
                     report({
                         projectPath,
                         ok: true,
                         viewName: name,
+                        cleanupAvailable: keyStatus === 'connected' || keyStatus === 'session-only',
                         elementCount: Object.keys(result.elements).length,
                         findings,
                     });

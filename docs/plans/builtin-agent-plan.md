@@ -471,24 +471,44 @@ ANTHROPIC_API_KEY=… node scripts/agent-cleanup-eval.mjs --provider anthropic -
 component choices. The deterministic measures come first; a judge is
 worth adding once those are stable.
 
-### Phase 6 — AI-assisted import
+### Phase 6 — AI-assisted import — **done**
 
-- A **Clean up with AI** option in the import window (signed in and
-  connected only), and a **Clean up this import** suggested prompt on a
-  view that was just imported. Both start with the token-mode choice.
-- The import report moves its findings to the agent as context — they
-  are the cleanup's to-do list.
-- The flow: the skill reads the view, the findings and the original
-  source (`scamp_get_import_source`); posts a plan in the panel as a card
-  listing what it will change; the user accepts all or part of it; it
-  applies through the write tools with the pre-session snapshot already
-  taken.
-- The deterministic importer is unchanged and works with no key
-  connected.
-- **The beta is HTML import only.** What the skill keeps having to fix
-  is evidence for the deterministic importer: a cleanup step that fires
-  on most pages becomes a candidate for a reduce pass, so every user
-  benefits, key or not. Phase 5's eval measures both.
+**Two ways in, one cleanup.**
+
+- **The import window** shows **Clean up with AI** under a successful
+  import, with the token question as two buttons: **Create theme
+  tokens** and **Keep hex values**. Only for a signed-in user with a key
+  connected — the app window decides and says so in the import result;
+  anyone else sees nothing. The import window hosts a third-party page,
+  so it's the least-trusted renderer in the app: its API grows by one
+  call that names a view and a mode, and main checks both before
+  forwarding to the app window.
+- **The Agent panel**, while the view just imported is open, offers the
+  same choice as a card in its empty state. The mode picked last time in
+  the project is outlined (remembered in `localStorage`, a convenience
+  only).
+
+Either way the app window opens the Agent panel, starts a **new
+conversation** under the skill, and sends a first message carrying the
+import report's losses and approximations (`@lib/agentCleanup`) — the
+report lives in the import window, so the agent couldn't read it
+otherwise.
+
+**Plan, then apply.** The skill posts a plan and waits; the panel shows
+**Apply this plan** under it, or the user replies to change it. A reply
+about the plan keeps it waiting; an edit (approval in words) or the
+button moves it to applying; anything that doesn't finish ends the
+cleanup, so the panel never offers to apply a plan that wasn't written.
+
+**The deterministic importer is unchanged** and works with no key.
+
+Tests: `test/agentCleanup.test.ts`, and
+`test/e2e/agent/agent-import-cleanup.spec.ts` — a real import through
+the import window, signed out (no offer) and signed in (mode picked in
+the import window → plan → nothing edited → **Apply this plan** →
+edit), plus the panel's own card. The scripted provider echoes the last
+system message, which is how the e2e proves the skill's instructions
+reached the model.
 
 ### Phase 7 — panel completeness
 

@@ -35,6 +35,17 @@ const importApi = {
   ): Promise<{ ok: boolean; error?: string }> =>
     ipcRenderer.invoke(IPC.ImportCaptured, { projectPath, payload, narrower }),
 
+  /**
+   * Ask the app window to start an AI cleanup of the view just imported.
+   * A view name and a mode, and nothing else; main checks both.
+   */
+  startCleanup: (
+    projectPath: string,
+    viewName: string,
+    tokenMode: 'create-tokens' | 'keep-literal'
+  ): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC.ImportStartCleanup, { projectPath, viewName, tokenMode }),
+
   close: (projectPath: string): Promise<void> =>
     ipcRenderer.invoke(IPC.ImportClose, { projectPath }),
 };

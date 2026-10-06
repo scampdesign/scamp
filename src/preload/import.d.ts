@@ -21,6 +21,14 @@ declare const importApi: {
         ok: boolean;
         error?: string;
     }>;
+    /**
+     * Ask the app window to start an AI cleanup of the view just imported.
+     * A view name and a mode, and nothing else; main checks both.
+     */
+    startCleanup: (projectPath: string, viewName: string, tokenMode: "create-tokens" | "keep-literal") => Promise<{
+        ok: boolean;
+        error?: string;
+    }>;
     close: (projectPath: string) => Promise<void>;
 };
 export type ScampImportApi = typeof importApi;

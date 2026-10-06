@@ -18,7 +18,9 @@ import type { AgentProvider } from './provider';
 export type ScriptedBlock =
   | { type: 'text'; text: string }
   | { type: 'tool_use'; name: string; input: Record<string, unknown> }
-  | { type: 'echo_tool_result' };
+  | { type: 'echo_tool_result' }
+  /** Answers with the start of the last system message — proof a skill arrived. */
+  | { type: 'echo_system' };
 
 export type ScriptedTurn = {
   content: ScriptedBlock[];
@@ -38,6 +40,14 @@ const lastToolResult = (messages: ReadonlyArray<BetaMessageParam>): string => {
     }
   }
   return '(no tool result)';
+};
+
+const lastSystem = (messages: ReadonlyArray<BetaMessageParam>): string => {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (message?.role === 'system' && typeof message.content === 'string') return message.content;
+  }
+  return '(no system message)';
 };
 
 export const createScriptedProvider = (
@@ -71,7 +81,9 @@ export const createScriptedProvider = (
         const text =
           block.type === 'text'
             ? block.text
-            : `Tool said: ${lastToolResult(request.messages).slice(0, 200)}`;
+            : block.type === 'echo_system'
+              ? `System: ${lastSystem(request.messages).slice(0, 80)}`
+              : `Tool said: ${lastToolResult(request.messages).slice(0, 200)}`;
         callbacks.onText(text);
         content.push({ type: 'text', text, citations: null });
       }

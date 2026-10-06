@@ -118,6 +118,10 @@ export const IPC = {
   AgentToolResult: 'agent:tool-result',
   /** Renderer → main: the user's answer to a confirmation request. */
   AgentConfirm: 'agent:confirm',
+  /** Import window → main: start a cleanup of the view just imported. */
+  ImportStartCleanup: 'import:start-cleanup',
+  /** Main → app window: start that cleanup in the Agent panel. */
+  AgentStartCleanup: 'agent:start-cleanup',
   /** Restore the project to before the conversation's first edit. */
   AgentUndoSession: 'agent:undo-session',
 

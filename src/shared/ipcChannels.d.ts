@@ -63,6 +63,10 @@ export declare const IPC: {
     readonly AgentToolResult: "agent:tool-result";
     /** Renderer → main: the user's answer to a confirmation request. */
     readonly AgentConfirm: "agent:confirm";
+    /** Import window → main: start a cleanup of the view just imported. */
+    readonly ImportStartCleanup: "import:start-cleanup";
+    /** Main → app window: start that cleanup in the Agent panel. */
+    readonly AgentStartCleanup: "agent:start-cleanup";
     /** Restore the project to before the conversation's first edit. */
     readonly AgentUndoSession: "agent:undo-session";
     readonly ThemeRead: "theme:read";

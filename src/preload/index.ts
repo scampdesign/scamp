@@ -25,6 +25,7 @@ import type {
   AgentKeySetResult,
   AgentKeyStatusResult,
   AgentSendArgs,
+  AgentStartCleanupArgs,
   AgentToolCallArgs,
   AgentUndoSessionResult,
   AgentSendResult,
@@ -443,6 +444,12 @@ const api = {
     ipcRenderer.invoke(IPC.AgentUndoSession, args),
   agentConfirm: (args: { confirmId: string; approved: boolean }): Promise<void> =>
     ipcRenderer.invoke(IPC.AgentConfirm, args),
+  /** The import window asked for a cleanup of the view it just imported. */
+  onAgentStartCleanup: (handler: (args: AgentStartCleanupArgs) => void): (() => void) => {
+    const listener = (_e: unknown, args: AgentStartCleanupArgs): void => handler(args);
+    ipcRenderer.on(IPC.AgentStartCleanup, listener);
+    return () => ipcRenderer.removeListener(IPC.AgentStartCleanup, listener);
+  },
   onAgentEvent: (handler: (event: AgentEvent) => void): (() => void) => {
     const listener = (_e: unknown, event: AgentEvent): void => handler(event);
     ipcRenderer.on(IPC.AgentEvent, listener);
