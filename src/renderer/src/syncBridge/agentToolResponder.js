@@ -7,6 +7,7 @@ import { parseThemeFile, serializeThemeFile } from '@lib/parseTheme';
 import { currentConversationKey, sameConversation, useAgentStore } from '@store/agentSlice';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useHistoryStore } from '@store/historySlice';
+import { findOverflow } from './agentOverflow';
 import { editOffCanvas, extractOffCanvas, forgetOffCanvasDraft, forgetOffCanvasDrafts, swapInOffCanvas, } from './agentOffCanvas';
 const EDITS = {
     scamp_set_styles: (ctx, a) => setStyles(ctx, { ...a, element: a['element'] }),
@@ -161,6 +162,24 @@ const destinationFor = (input, turnId) => {
     }
     return { on: 'files', name, kind: state.componentTrees[name]?.kind ?? 'component' };
 };
+/** `scamp_find_overflow` on the view `destinationFor` picks — it reads, it doesn't edit. */
+const measureFor = async (projectPath, input, turnId) => {
+    const destination = destinationFor(input, turnId);
+    if (destination.on === 'refused')
+        return { ok: false, text: destination.text };
+    const state = useCanvasStore.getState();
+    if (destination.on === 'files') {
+        const tree = state.componentTrees[destination.name];
+        if (tree === undefined)
+            return { ok: false, text: `No view or component named "${destination.name}".` };
+        return findOverflow(projectPath, { name: destination.name, kind: destination.kind, elements: tree.elements, rootId: tree.rootId }, input);
+    }
+    const open = state.activeComponent ?? state.activePage;
+    if (open === null)
+        return { ok: false, text: 'Nothing is open on the canvas.' };
+    const kind = state.activeComponent === null ? 'page' : state.activeComponent.kind === 'view' ? 'view' : 'component';
+    return findOverflow(projectPath, { name: open.name, kind, elements: state.elements, rootId: state.rootElementId }, input);
+};
 /** Make one edit, for turn `turnId`. Exported for tests. */
 export const executeAgentEdit = async (tool, input, turnId) => {
     const state = useCanvasStore.getState();
@@ -169,6 +188,8 @@ export const executeAgentEdit = async (tool, input, turnId) => {
     if (state.snapshotPreview !== null) {
         return { ok: false, text: 'Scamp is showing a snapshot preview, which is read-only. Ask the user to exit it.' };
     }
+    if (tool === 'scamp_find_overflow')
+        return measureFor(state.projectPath, input, turnId);
     // The theme is the project's, whichever view is open.
     if (tool === 'scamp_set_theme_tokens')
         return setThemeTokens(state.projectPath, input);

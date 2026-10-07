@@ -11,6 +11,7 @@ import type {
   AgentSkillRequest,
   AgentKeySetResult,
   AgentKeyStatusResult,
+  AgentMeasureOverflowArgs,
   AgentSendArgs,
   AgentSendResult,
   AgentUndoSessionResult,
@@ -38,6 +39,8 @@ import { notifyPagesChanged } from '../watcher';
 import { TOOL_DESCRIPTORS } from '../mcp/tools';
 import { WRITE_TOOLS, WRITE_TOOL_NAMES } from '../agent/writeTools';
 import { REACT_SOURCE_TOOL } from '../agent/reactSourceTool';
+import { OVERFLOW_TOOL } from '../agent/overflowTool';
+import { measureOverflow } from '../agent/overflowRender';
 import { readRecord, sourceFor } from '../reactImport/record';
 import { deleteComponent } from './componentOps';
 import { restoreSnapshotAndReload } from './snapshot';
@@ -86,6 +89,7 @@ const scriptedProvider = async (path: string): Promise<AgentProvider> => {
 const AGENT_TOOLS = [
   ...agentToolsFrom(TOOL_DESCRIPTORS),
   REACT_SOURCE_TOOL,
+  OVERFLOW_TOOL,
   ...[...WRITE_TOOLS].sort((a, b) => a.name.localeCompare(b.name)),
 ];
 
@@ -181,6 +185,15 @@ const createConversation = async (
           return answer.ok
             ? { content: [{ type: 'text', text: answer.text }] }
             : { content: [{ type: 'text', text: answer.error }], isError: true };
+        }
+        // Answered by the renderer, which builds the view's export; no restore point, it reads.
+        if (name === OVERFLOW_TOOL.name) {
+          try {
+            const answer = await runAgentEdit(name, args, turnId);
+            return { content: [{ type: 'text', text: answer.text }], ...(answer.ok ? {} : { isError: true }) };
+          } catch (err) {
+            return { content: [{ type: 'text', text: `${name} failed: ${err instanceof Error ? err.message : String(err)}` }], isError: true };
+          }
         }
         if (!WRITE_TOOL_NAMES.has(name)) return read(name, args);
         // A restore point before the conversation's first edit, taken
@@ -337,6 +350,8 @@ export const registerAgentIpc = (): void => {
     conversation.saving = conversation.saving.then(() => deleteConversation(args.projectPath, key)).catch(() => {});
     await conversation.saving;
   });
+
+  ipcMain.handle(IPC.AgentMeasureOverflow, (_e, args: AgentMeasureOverflowArgs) => measureOverflow(args));
 
   ipcMain.handle(IPC.AgentConfirm, async (_e, args: { confirmId: string; approved: boolean }): Promise<void> => {
     for (const conversation of await openConversations()) conversation.agent.answer(args.confirmId, args.approved === true);

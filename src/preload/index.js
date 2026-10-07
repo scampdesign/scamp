@@ -109,6 +109,8 @@ const api = {
     sendAgentToolResult: (result) => {
         ipcRenderer.send(IPC.AgentToolResult, result);
     },
+    /** For the agent's overflow check: main lays the view out and measures it. */
+    agentMeasureOverflow: (args) => ipcRenderer.invoke(IPC.AgentMeasureOverflow, args),
     getMcpStatus: () => ipcRenderer.invoke(IPC.McpStatus),
     writeComponentThumbnail: (args) => ipcRenderer.invoke(IPC.ComponentWriteThumbnail, args),
     readComponentThumbnail: (args) => ipcRenderer.invoke(IPC.ComponentReadThumbnail, args),

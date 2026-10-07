@@ -48,7 +48,7 @@ export const createScriptedProvider = (script) => {
                     ? block.text
                     : block.type === 'echo_system'
                         ? `System: ${lastSystem(request.messages).slice(0, 80)}`
-                        : `Tool said: ${lastToolResult(request.messages).slice(0, 200)}`;
+                        : `Tool said: ${lastToolResult(request.messages).slice(0, 2000)}`;
                 callbacks.onText(text);
                 content.push({ type: 'text', text, citations: null });
             }

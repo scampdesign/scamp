@@ -3,6 +3,7 @@
  * All IPC payloads must have explicit types defined here.
  */
 import type { TranscriptEntry } from './agentTranscript';
+import type { OverflowReport } from './overflowMeasure';
 export type PageFile = {
     name: string;
     tsxPath: string;
@@ -1443,6 +1444,23 @@ export type AgentSendArgs = {
      * the conversation is ordinary chat again, with every tool.
      */
     endSkill?: boolean;
+};
+/** A view's HTML export, to lay out at `width` and measure. see docs/notes/agent-overflow-check.md */
+export type AgentMeasureOverflowArgs = {
+    projectPath: string;
+    /** Paths relative to the export root; `index.html` is the page. */
+    files: Array<{
+        path: string;
+        contents: string;
+    }>;
+    width: number;
+};
+export type AgentMeasureOverflowResult = {
+    ok: true;
+    report: OverflowReport;
+} | {
+    ok: false;
+    error: string;
 };
 /**
  * Main asks the renderer to make one edit for the agent. `turnId` lets

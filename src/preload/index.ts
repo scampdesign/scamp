@@ -39,6 +39,8 @@ import type {
   AgentStartCleanupArgs,
   AgentToolCallArgs,
   AgentUndoSessionResult,
+  AgentMeasureOverflowArgs,
+  AgentMeasureOverflowResult,
   AgentSendResult,
   AuthSignInResult,
   AuthStatusResult,
@@ -288,6 +290,10 @@ const api = {
   sendAgentToolResult: (result: McpQueryResultArgs): void => {
     ipcRenderer.send(IPC.AgentToolResult, result);
   },
+
+  /** For the agent's overflow check: main lays the view out and measures it. */
+  agentMeasureOverflow: (args: AgentMeasureOverflowArgs): Promise<AgentMeasureOverflowResult> =>
+    ipcRenderer.invoke(IPC.AgentMeasureOverflow, args),
 
   getMcpStatus: (): Promise<McpStatusResult> =>
     ipcRenderer.invoke(IPC.McpStatus),

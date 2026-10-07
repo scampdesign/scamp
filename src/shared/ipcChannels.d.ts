@@ -65,6 +65,8 @@ export declare const IPC: {
     readonly AgentToolResult: "agent:tool-result";
     /** Renderer → main: the user's answer to a confirmation request. */
     readonly AgentConfirm: "agent:confirm";
+    /** Renderer → main: lay a view's HTML export out and measure what overflows. */
+    readonly AgentMeasureOverflow: "agent:measure-overflow";
     /** Import window → main: start a cleanup of the view just imported. */
     readonly ImportStartCleanup: "import:start-cleanup";
     /** Main → app window: start that cleanup in the Agent panel. */
