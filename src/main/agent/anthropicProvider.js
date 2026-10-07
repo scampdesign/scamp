@@ -7,6 +7,10 @@ import { AGENT_MODEL } from './config';
  *   short notes it writes between tool calls, which is what the panel's
  *   "working" line shows. Effort is set explicitly — this model's default
  *   is `medium`, one below what agentic work usually wants.
+ * - Each thinking block is bound to the system prompt and tools it was
+ *   written under. A saved conversation outlives both — every Scamp update
+ *   that changes them would otherwise 400 it ("couldn't accept this
+ *   conversation") — so a stale block is dropped, not the whole request.
  * - Server-side fallbacks are opt-in and cost nothing unless a request is
  *   declined, so they're on.
  * - The system prompt carries a cache breakpoint (tools render before it,
@@ -21,9 +25,9 @@ export const createAnthropicProvider = (apiKey) => {
             const stream = client.beta.messages.stream({
                 model: AGENT_MODEL,
                 max_tokens: 64_000,
-                betas: ['thinking-display-updates-2026-08-18', 'server-side-fallback-2026-07-01'],
+                betas: ['thinking-display-updates-2026-08-18', 'server-side-fallback-2026-07-01', 'thinking-binding-controls-2026-08-01'],
                 fallbacks: 'default',
-                thinking: { type: 'adaptive', display: 'updates' },
+                thinking: { type: 'adaptive', display: 'updates', block_binding: { prefix_mismatch_behavior: 'drop_block' } },
                 output_config: { effort: request.effort },
                 cache_control: { type: 'ephemeral' },
                 system: [{ type: 'text', text: request.system, cache_control: { type: 'ephemeral' } }],

@@ -125,6 +125,8 @@ export const runTurn = async (options: RunTurnOptions): Promise<RunTurnResult> =
     } catch (err) {
       if (signal.aborted) return end('cancelled');
       const described = describeProviderError(err);
+      // The panel's sentence is for the user; this is what Anthropic said.
+      if (described.reason === 'unknown') console.warn('[agent] request failed:', err instanceof Error ? err.message : err);
       return {
         ...end('error', described.message),
         ...(described.reason === 'invalid-key' ? { keyRejected: true } : {}),

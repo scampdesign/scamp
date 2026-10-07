@@ -6,6 +6,10 @@ import type { AgentProvider } from './provider';
  *   short notes it writes between tool calls, which is what the panel's
  *   "working" line shows. Effort is set explicitly — this model's default
  *   is `medium`, one below what agentic work usually wants.
+ * - Each thinking block is bound to the system prompt and tools it was
+ *   written under. A saved conversation outlives both — every Scamp update
+ *   that changes them would otherwise 400 it ("couldn't accept this
+ *   conversation") — so a stale block is dropped, not the whole request.
  * - Server-side fallbacks are opt-in and cost nothing unless a request is
  *   declined, so they're on.
  * - The system prompt carries a cache breakpoint (tools render before it,
