@@ -224,13 +224,17 @@ export const registerAgentIpc = () => {
         const startsSkill = skill !== undefined && conversation.agent.skill() === null;
         const before = conversation.transcript;
         conversation.transcript = startTurn(before, args.turnId, args.text.trim(), args.context);
+        const endsSkill = skill === undefined && args.endSkill === true && conversation.agent.skill() !== null;
         const result = await conversation.agent.send(args.text, args.context, args.turnId, {
             ...(skill !== undefined ? { skill } : {}),
+            ...(endsSkill ? { endSkill: true } : {}),
         });
         if (!result.ok)
             conversation.transcript = before;
         else if (startsSkill && args.skill !== undefined)
             conversation.skill = args.skill;
+        else if (endsSkill)
+            conversation.skill = null;
         return result;
     });
     ipcMain.handle(IPC.AgentLoad, async (e, args) => {

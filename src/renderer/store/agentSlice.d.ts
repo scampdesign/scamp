@@ -86,6 +86,8 @@ export declare const currentAgentContext: (focus?: AgentFocus) => string;
 export declare const nextCleanupPhase: (phase: AgentState["cleanupPhase"], event: Extract<AgentEvent, {
     kind: "turn-end";
 }>) => AgentState["cleanupPhase"];
+/** A skill in this conversation is planning, waiting on approval, or applying. */
+export declare const skillAtWork: (state: Pick<AgentState, "cleanupPhase" | "cleanupConversation">, conversation: AgentConversationKey) => boolean;
 /** The token mode picked last time in this project — a convenience only. */
 export declare const rememberedTokenMode: (projectPath: string) => AgentTokenMode | null;
 export declare const useAgentStore: import("zustand").UseBoundStore<import("zustand").StoreApi<AgentState>>;

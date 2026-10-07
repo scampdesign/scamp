@@ -37,13 +37,14 @@ export type AgentSessionDeps = {
 export type AgentSession = {
   /**
    * `skill` starts a skill for the rest of the conversation; ignored if
-   * one is already running.
+   * one is already running. `endSkill` ends the running one: its work is
+   * done, and this message is ordinary chat.
    */
   send: (
     text: string,
     context: string,
     turnId: string,
-    options?: { skill?: AgentSkill }
+    options?: { skill?: AgentSkill; endSkill?: boolean }
   ) => Promise<AgentSendResult>;
   /** The skill this conversation runs, if any. */
   skill: () => AgentSkill | null;
@@ -72,6 +73,10 @@ export const userContentFor = (text: string, context: string, note: string | nul
   ];
   return lines.length > 0 ? `${lines.join('\n')}\n\n${text}` : text;
 };
+
+/** Told to the model when a skill's session ends and ordinary chat resumes. */
+export const SKILL_ENDED_NOTE =
+  'That session is over, and its instructions and limits no longer apply. You have every Scamp tool again, including edits to any view in the project; follow your standing instructions from here.';
 
 export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
   let history: BetaMessageParam[] = [...(deps.initial?.history ?? [])];
@@ -108,8 +113,17 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
       const note = pendingNote;
       pendingNote = null;
       const startsSkill = skill === null && options.skill !== undefined;
+      const ended = !startsSkill && options.endSkill === true ? skill : null;
       if (startsSkill && options.skill !== undefined) skill = options.skill;
+      if (ended !== null) skill = null;
       const active = skill;
+      // Its instructions stay in the history, so say they're over.
+      const systemNote =
+        startsSkill && active !== null
+          ? active.instructions
+          : ended !== null
+            ? SKILL_ENDED_NOTE
+            : undefined;
       void (async () => {
         try {
           const result = await runTurn({
@@ -126,7 +140,7 @@ export const createAgentSession = (deps: AgentSessionDeps): AgentSession => {
             history,
             userContent: userContentFor(text, context, note),
             effort: active?.effort ?? 'medium',
-            ...(startsSkill && active !== null ? { systemNote: active.instructions } : {}),
+            ...(systemNote !== undefined ? { systemNote } : {}),
             signal: controller.signal,
             emit: (event) => deps.emit({ ...event, turnId }),
             review: async (calls) => {

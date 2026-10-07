@@ -4,7 +4,7 @@ import type { BetaMessageParam, BetaTool } from '@anthropic-ai/sdk/resources/bet
 import type { AgentEvent } from '@shared/types';
 import { createScriptedProvider, type ScriptedTurn } from '../src/main/agent/scriptedProvider';
 import type { AgentProvider, ProviderRequest } from '../src/main/agent/provider';
-import { createAgentSession } from '../src/main/agent/session';
+import { createAgentSession, SKILL_ENDED_NOTE } from '../src/main/agent/session';
 import { importCleanupSkill, IMPORT_CLEANUP_VERSION } from '../src/main/agent/skills/importCleanup';
 import { skillFor } from '../src/main/agent/skills';
 import { reactImportSkill } from '../src/main/agent/skills/reactImport';
@@ -107,6 +107,41 @@ describe('a session running a skill', () => {
       expect(request.effort).toBe('high');
       expect(request.tools.map((t) => t.name)).not.toContain('scamp_set_theme_tokens');
     }
+  });
+
+  it('ends the skill when told: every tool and the usual effort come back, and the model hears it', async () => {
+    const requests: ProviderRequest[] = [];
+    const agent = session(
+      [{ content: [{ type: 'text', text: 'a' }] }, { content: [{ type: 'text', text: 'b' }] }, { content: [{ type: 'text', text: 'c' }] }],
+      requests,
+      []
+    );
+    await agent.send('Clean up', '', 't1', { skill: importCleanupSkill('keep-literal') });
+    await agent.idle();
+    await agent.send('Now fix every page', '', 't2', { endSkill: true });
+    await agent.idle();
+    expect(agent.skill()).toBeNull();
+    const after = requests[1];
+    expect(after?.effort).toBe('medium');
+    expect(after?.tools.map((t) => t.name)).toContain('scamp_set_theme_tokens');
+    const last = after?.messages.at(-1);
+    expect(last?.role).toBe('system');
+    expect(last?.content).toBe(SKILL_ENDED_NOTE);
+    // Said once, not on every message after.
+    await agent.send('And another', '', 't3', { endSkill: true });
+    await agent.idle();
+    expect(requests[2]?.messages.filter((m) => m.content === SKILL_ENDED_NOTE)).toHaveLength(1);
+  });
+
+  it('ignores endSkill when no skill is running, and when the same message starts one', async () => {
+    const requests: ProviderRequest[] = [];
+    const agent = session([{ content: [{ type: 'text', text: 'a' }] }, { content: [{ type: 'text', text: 'b' }] }], requests, []);
+    await agent.send('Hi', '', 't1', { endSkill: true });
+    await agent.idle();
+    expect(requests[0]?.messages.map((m) => m.role)).toEqual(['user']);
+    await agent.send('Clean up', '', 't2', { skill: importCleanupSkill('keep-literal'), endSkill: true });
+    await agent.idle();
+    expect(agent.skill()?.id).toBe('import-cleanup');
   });
 
   it('refuses the theme tool in keep-literal mode even when the model calls it', async () => {

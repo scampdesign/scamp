@@ -30,10 +30,12 @@ export type AgentSessionDeps = {
 export type AgentSession = {
     /**
      * `skill` starts a skill for the rest of the conversation; ignored if
-     * one is already running.
+     * one is already running. `endSkill` ends the running one: its work is
+     * done, and this message is ordinary chat.
      */
     send: (text: string, context: string, turnId: string, options?: {
         skill?: AgentSkill;
+        endSkill?: boolean;
     }) => Promise<AgentSendResult>;
     /** The skill this conversation runs, if any. */
     skill: () => AgentSkill | null;
@@ -55,4 +57,6 @@ export type AgentSession = {
 };
 /** The user's words, with the lines Scamp adds in front of them. */
 export declare const userContentFor: (text: string, context: string, note?: string | null) => string;
+/** Told to the model when a skill's session ends and ordinary chat resumes. */
+export declare const SKILL_ENDED_NOTE = "That session is over, and its instructions and limits no longer apply. You have every Scamp tool again, including edits to any view in the project; follow your standing instructions from here.";
 export declare const createAgentSession: (deps: AgentSessionDeps) => AgentSession;

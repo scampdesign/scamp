@@ -48,7 +48,7 @@ describe('cleanupRequest', () => {
   });
 });
 
-import { nextCleanupPhase, rememberedTokenMode } from '@store/agentSlice';
+import { nextCleanupPhase, rememberedTokenMode, skillAtWork } from '@store/agentSlice';
 
 describe('nextCleanupPhase', () => {
   const end = (outcome: 'done' | 'cancelled' | 'error') => ({
@@ -101,5 +101,18 @@ describe('reactTidyRequest', () => {
     const text = reactTidyRequest('Home', 'app', Array.from({ length: 14 }, (_, i) => `note ${i}`));
     expect(text).toContain('- and 4 more');
     expect(text).not.toContain('note 13');
+  });
+});
+
+describe('skillAtWork', () => {
+  const page = { kind: 'view' as const, name: 'AdminAudit' };
+  it('holds while this conversation’s skill plans, waits, or applies', () => {
+    for (const cleanupPhase of ['planning', 'awaiting-approval', 'applying'] as const) {
+      expect(skillAtWork({ cleanupPhase, cleanupConversation: page }, page)).toBe(true);
+    }
+  });
+  it('is over when nothing is under way, or the work is another conversation’s', () => {
+    expect(skillAtWork({ cleanupPhase: null, cleanupConversation: page }, page)).toBe(false);
+    expect(skillAtWork({ cleanupPhase: 'awaiting-approval', cleanupConversation: page }, { kind: 'view', name: 'Billing' })).toBe(false);
   });
 });

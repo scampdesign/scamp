@@ -1457,6 +1457,11 @@ export type AgentSendArgs = {
   context: string;
   /** Start a skill for the rest of this conversation. */
   skill?: AgentSkillRequest;
+  /**
+   * The user typed this after a skill's work finished: the skill ends, and
+   * the conversation is ordinary chat again, with every tool.
+   */
+  endSkill?: boolean;
 };
 
 /**

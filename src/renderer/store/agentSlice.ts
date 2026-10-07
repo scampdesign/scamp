@@ -122,6 +122,12 @@ export const nextCleanupPhase = (
   return phase === 'planning' || phase === 'awaiting-approval' ? 'awaiting-approval' : null;
 };
 
+/** A skill in this conversation is planning, waiting on approval, or applying. */
+export const skillAtWork = (
+  state: Pick<AgentState, 'cleanupPhase' | 'cleanupConversation'>,
+  conversation: AgentConversationKey
+): boolean => state.cleanupPhase !== null && sameConversation(state.cleanupConversation, conversation);
+
 const TOKEN_MODE_KEY = 'scamp.agent.tokenMode:';
 
 /** The token mode picked last time in this project — a convenience only. */
@@ -249,6 +255,8 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       text: trimmed,
       context,
       ...(options.skill !== undefined ? { skill: options.skill } : {}),
+      // Typed after a skill finished (no plan waiting, none applying): ordinary chat.
+      ...(options.skill === undefined && !skillAtWork(get(), conversation) ? { endSkill: true } : {}),
     });
     if (!result.ok) {
       // Nothing was sent: take the message back out rather than leave a
