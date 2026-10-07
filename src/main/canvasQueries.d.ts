@@ -6,6 +6,8 @@ export type AgentEditAnswer = {
     text: string;
     summary?: string;
     createdComponent?: string;
+    /** The edit changed a view behind the canvas; the project needs re-reading. */
+    refreshProject?: boolean;
 };
 /** Ask the renderer to make one edit for the agent's turn `turnId`. */
 export declare const runAgentEdit: (tool: string, input: Record<string, unknown>, turnId: string) => Promise<AgentEditAnswer>;

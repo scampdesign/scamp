@@ -23,5 +23,5 @@ export type ToolCall = {
 export declare const needsConfirmation: (calls: ReadonlyArray<ToolCall>, options?: {
     planApproved?: boolean;
 }) => boolean;
-/** One edit, said as the confirmation card lists it. */
-export declare const describeToolCall: ({ name, input }: ToolCall) => string;
+/** One edit, said as the confirmation card lists it — naming the view when it isn't the conversation's. */
+export declare const describeToolCall: (call: ToolCall) => string;

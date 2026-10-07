@@ -201,6 +201,23 @@ export declare const getElementTree: (input: SnapshotInput) => {
     root: TreeNode;
 } | null;
 export declare const listPages: (input: SnapshotInput) => FileListItem[];
+/**
+ * The props a view or component accepts, from its live tree.
+ *
+ * `name` is the PascalCase file name, or — because `scamp_list_pages`
+ * reports a view by its route slug — that slug. The type text comes
+ * from the same formatter the generator uses, so what the agent reads
+ * here is byte-for-byte what the file declares.
+ */
+/**
+ * A view or component by name or route slug. The one open on the canvas
+ * is read from the canvas itself: its stored tree is how it was when the
+ * project loaded, so an agent checking its own edits saw none of them.
+ */
+/** The stored tree's name for a view or component name, or a view's route slug. */
+export declare const treeNameFor: (trees: Readonly<Record<string, {
+    kind?: "component" | "view";
+}>>, name: string) => string | null;
 export declare const getViewProps: (input: SnapshotInput, name: string) => ViewPropsResult;
 /**
  * Components by name and path.
@@ -233,6 +250,12 @@ export declare const getViewCheck: (input: SnapshotInput, name: string) => ViewC
  */
 export declare const getConventions: (input: SnapshotInput, section: string) => ConventionsResult;
 export declare const getThemeTokens: (input: SnapshotInput) => ThemeTokensResult;
+/**
+ * The input as if `view` were open on the canvas, so the element reads
+ * answer about any view or component, not only the open one. No `view`,
+ * or the open one, reads the canvas. Throws for a name that isn't there.
+ */
+export declare const inputForView: (input: SnapshotInput, view: unknown) => SnapshotInput;
 /**
  * Map an MCP tool name onto its snapshot function.
  *

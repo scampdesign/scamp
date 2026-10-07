@@ -60,6 +60,16 @@ describe('createHeadlessCanvas', () => {
     expect(textOf(await c.invoke('scamp_check_view', { name: 'Imported' }))).not.toContain('side-not-typed');
   });
 
+  it('edits its own view when named, and refuses any other', async () => {
+    const c = canvas();
+    expect((await c.invoke('scamp_set_styles', { view: 'Imported', element: 'a1b2', set: 'gap: 2px' })).isError).toBeUndefined();
+    const before = c.state();
+    const other = await c.invoke('scamp_set_styles', { view: 'Billing', element: 'a1b2', set: 'gap: 9px' });
+    expect(other.isError).toBe(true);
+    expect(textOf(other)).toBe('Only Imported is loaded here.');
+    expect(c.state()).toBe(before);
+  });
+
   it('reports a refused edit as an error and changes nothing', async () => {
     const c = canvas();
     const before = c.state();

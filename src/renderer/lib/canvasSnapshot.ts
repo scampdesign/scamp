@@ -357,14 +357,18 @@ export const listPages = (input: SnapshotInput): FileListItem[] => [
  * is read from the canvas itself: its stored tree is how it was when the
  * project loaded, so an agent checking its own edits saw none of them.
  */
+/** The stored tree's name for a view or component name, or a view's route slug. */
+export const treeNameFor = (
+  trees: Readonly<Record<string, { kind?: 'component' | 'view' }>>,
+  name: string
+): string | null => {
+  if (trees[name] !== undefined) return name;
+  return Object.keys(trees).find((candidate) => trees[candidate]?.kind === 'view' && viewSlugFor(candidate) === name) ?? null;
+};
+
 const treeNamed = (input: SnapshotInput, name: string): { name: string; tree: SnapshotTree } | null => {
   const trees = input.trees ?? {};
-  const match =
-    trees[name] !== undefined
-      ? name
-      : Object.keys(trees).find(
-          (candidate) => trees[candidate]?.kind === 'view' && viewSlugFor(candidate) === name
-        );
+  const match = treeNameFor(trees, name) ?? undefined;
   const tree = match === undefined ? undefined : trees[match];
   if (match === undefined || tree === undefined) return null;
   const open = input.target;
@@ -475,6 +479,28 @@ export const getThemeTokens = (input: SnapshotInput): ThemeTokensResult => ({
 });
 
 /**
+ * The input as if `view` were open on the canvas, so the element reads
+ * answer about any view or component, not only the open one. No `view`,
+ * or the open one, reads the canvas. Throws for a name that isn't there.
+ */
+export const inputForView = (input: SnapshotInput, view: unknown): SnapshotInput => {
+  if (typeof view !== 'string' || view.trim().length === 0) return input;
+  const found = treeNamed(input, view.trim());
+  if (found === null) {
+    throw new Error(`No view or component named "${view}". scamp_list_pages (the \`view\` field) and scamp_list_components list them.`);
+  }
+  if (input.target !== null && input.target.name === found.name) return input;
+  const paths = found.tree.kind === 'view' ? viewPathsRelative(found.name) : componentPathsRelative(found.name);
+  return {
+    ...input,
+    target: { kind: found.tree.kind, name: found.name, tsxPath: paths.tsx, cssPath: paths.css },
+    elements: found.tree.elements,
+    rootElementId: found.tree.rootId,
+    selectedIds: [],
+  };
+};
+
+/**
  * Map an MCP tool name onto its snapshot function.
  *
  * Lives here rather than in the renderer's IPC responder so the whole tool
@@ -496,9 +522,9 @@ export const answerSnapshotTool = (
     case 'scamp_get_selected_element':
       return getSelectedElement(input);
     case 'scamp_get_element_by_id':
-      return getElementById(input, String(args['id'] ?? ''));
+      return getElementById(inputForView(input, args['view']), String(args['id'] ?? ''));
     case 'scamp_get_element_tree':
-      return getElementTree(input);
+      return getElementTree(inputForView(input, args['view']));
     case 'scamp_get_canvas_state':
       return getCanvasState(input);
     case 'scamp_list_pages':

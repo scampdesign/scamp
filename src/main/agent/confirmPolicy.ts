@@ -14,6 +14,7 @@ import { WRITE_TOOL_NAMES } from './writeTools';
 export const ALWAYS_CONFIRM: ReadonlySet<string> = new Set([
   'scamp_delete_element',
   'scamp_extract_component',
+  'scamp_use_component',
   'scamp_set_theme_tokens',
 ]);
 
@@ -45,8 +46,14 @@ const clip = (text: string, max = 80): string => {
   return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
 };
 
-/** One edit, said as the confirmation card lists it. */
-export const describeToolCall = ({ name, input }: ToolCall): string => {
+/** One edit, said as the confirmation card lists it — naming the view when it isn't the conversation's. */
+export const describeToolCall = (call: ToolCall): string => {
+  const view = str(call.input, 'view').trim();
+  const said = describeEdit(call);
+  return view.length > 0 ? `${said} (in ${view})` : said;
+};
+
+const describeEdit = ({ name, input }: ToolCall): string => {
   const element = str(input, 'element');
   switch (name) {
     case 'scamp_delete_element':
@@ -78,6 +85,8 @@ export const describeToolCall = ({ name, input }: ToolCall): string => {
       return `Move ${element} into ${str(input, 'parent')}`;
     case 'scamp_wrap_elements':
       return 'Wrap elements in a new container';
+    case 'scamp_use_component':
+      return `Replace ${element} with the component ${str(input, 'component')}`;
     case 'scamp_extract_component':
       return `Make ${element} into a component named ${str(input, 'name')}`;
     case 'scamp_set_theme_tokens': {

@@ -185,6 +185,13 @@ export const createHeadlessCanvas = (
       return answer.ok ? text(answer.text) : text(answer.error, true);
     }
     if (name === 'scamp_set_theme_tokens') return setThemeTokens(args);
+    // One view is loaded here; the app edits any (see agentOffCanvas).
+    const asked = typeof args['view'] === 'string' ? args['view'].trim() : '';
+    const edits = EDITS[name] !== undefined || name === 'scamp_extract_component' || name === 'scamp_use_component';
+    if (edits && asked.length > 0 && asked !== view) {
+      return text(`Only ${view} is loaded here.`, true);
+    }
+    if (name === 'scamp_use_component') return text('No other components are loaded here.', true);
     if (name === 'scamp_extract_component') return extract(args);
     const edit = EDITS[name];
     if (edit === undefined) return read(name, args);

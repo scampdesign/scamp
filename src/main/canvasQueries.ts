@@ -61,7 +61,14 @@ const editRegistry: QueryRegistry = createQueryRegistry({
 });
 
 /** What the renderer answers an edit with. */
-export type AgentEditAnswer = { ok: boolean; text: string; summary?: string; createdComponent?: string };
+export type AgentEditAnswer = {
+  ok: boolean;
+  text: string;
+  summary?: string;
+  createdComponent?: string;
+  /** The edit changed a view behind the canvas; the project needs re-reading. */
+  refreshProject?: boolean;
+};
 
 const isAgentEditAnswer = (value: unknown): value is AgentEditAnswer =>
   value !== null &&

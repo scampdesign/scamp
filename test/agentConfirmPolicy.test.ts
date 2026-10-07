@@ -57,3 +57,17 @@ describe('describeToolCall', () => {
     expect(describeToolCall({ name: 'scamp_set_tag', input: null })).toBe('Change  to <>');
   });
 });
+
+describe('edits to another view', () => {
+  it('names the view in the confirmation line', () => {
+    expect(describeToolCall({ name: 'scamp_delete_element', input: { view: 'Settings', element: 'skip_c3d4' } })).toBe(
+      'Delete skip_c3d4 and everything inside it (in Settings)'
+    );
+  });
+
+  it('always asks before putting a component in place of a container', () => {
+    const swap = { name: 'scamp_use_component', input: { element: 'header_a1b2', component: 'Shell', view: 'Billing' } };
+    expect(needsConfirmation([swap], { planApproved: true })).toBe(true);
+    expect(describeToolCall(swap)).toBe('Replace header_a1b2 with the component Shell (in Billing)');
+  });
+});

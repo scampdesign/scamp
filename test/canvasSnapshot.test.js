@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { answerSnapshotTool, CANVAS_STATE_ELEMENT_LIMIT, componentPathsRelative, getActiveTarget, getCanvasState, getElementById, getElementTree, getSelectedElement, getThemeTokens, getRecentEdits, getViewCheck, getViewProps, listComponents, listPages, pagePathsRelative, } from '@lib/canvasSnapshot';
+import { answerSnapshotTool, CANVAS_STATE_ELEMENT_LIMIT, componentPathsRelative, getActiveTarget, getCanvasState, getElementById, getElementTree, getSelectedElement, getThemeTokens, getRecentEdits, getViewCheck, getViewProps, listComponents, listPages, inputForView, pagePathsRelative, treeNameFor, } from '@lib/canvasSnapshot';
 import { DEFAULT_RECT_STYLES } from '@lib/defaults';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 /**
@@ -609,5 +609,43 @@ describe('getViewCheck', () => {
     });
     it('returns null for a name that is not a view or component', () => {
         expect(getViewCheck(input(lobby), 'Nope')).toBeNull();
+    });
+});
+describe('reading a view that isn’t open', () => {
+    const settings = () => ({
+        [ROOT_ELEMENT_ID]: el({ id: ROOT_ELEMENT_ID, parentId: null, childIds: ['f1f1'] }),
+        f1f1: el({ id: 'f1f1', parentId: ROOT_ELEMENT_ID, gap: 4 }),
+    });
+    const withSettings = () => build({ trees: { Settings: { kind: 'view', elements: settings(), rootId: ROOT_ELEMENT_ID } } });
+    it('answers the element tree for the named view', () => {
+        const answer = answerSnapshotTool('scamp_get_element_tree', { view: 'Settings' }, withSettings());
+        expect(answer.root.children.map((c) => c.id)).toEqual(['f1f1']);
+    });
+    it('finds a view by its route slug', () => {
+        expect(answerSnapshotTool('scamp_get_element_by_id', { id: 'f1f1', view: 'settings' }, withSettings())).toMatchObject({ id: 'f1f1' });
+    });
+    it('answers about the open page when no view is named', () => {
+        expect(answerSnapshotTool('scamp_get_element_by_id', { id: 'a1b2', view: '' }, withSettings())).toMatchObject({ id: 'a1b2' });
+        expect(answerSnapshotTool('scamp_get_element_by_id', { id: 'f1f1' }, withSettings())).toBeNull();
+    });
+    it('describes the element as part of that view’s files', () => {
+        const input = inputForView(withSettings(), 'Settings');
+        expect(input.target).toEqual({ kind: 'view', name: 'Settings', tsxPath: 'views/Settings/Settings.tsx', cssPath: 'views/Settings/Settings.module.css' });
+        expect(input.selectedIds).toEqual([]);
+    });
+    it('throws for a name that is neither a view nor a component', () => {
+        expect(() => answerSnapshotTool('scamp_get_element_tree', { view: 'Nowhere' }, withSettings())).toThrow(/No view or component named "Nowhere"/);
+    });
+});
+describe('treeNameFor', () => {
+    const trees = { Settings: { kind: 'view' }, Button: {} };
+    it('matches a name, a view’s slug, and a component stored before kinds existed', () => {
+        expect(treeNameFor(trees, 'Settings')).toBe('Settings');
+        expect(treeNameFor(trees, 'settings')).toBe('Settings');
+        expect(treeNameFor(trees, 'Button')).toBe('Button');
+    });
+    it('returns null for an unknown name or a component’s slug', () => {
+        expect(treeNameFor(trees, 'button')).toBeNull();
+        expect(treeNameFor(trees, '')).toBeNull();
     });
 });

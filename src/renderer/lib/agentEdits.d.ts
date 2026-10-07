@@ -107,6 +107,18 @@ export declare const planExtraction: (ctx: AgentEditContext, args: {
     replaceIds: string[];
 } | string;
 /**
+ * Which container becomes an instance of which existing component. Refuses
+ * the root, text, and a component the container sits inside — an instance
+ * of itself would never finish rendering.
+ */
+export declare const planInstanceSwap: (ctx: AgentEditContext, args: {
+    element: unknown;
+    component: unknown;
+}, components: ReadonlyArray<string>, editing: string | null) => {
+    id: string;
+    name: string;
+} | string;
+/**
  * What the model is told after an edit: the summary, what it touched, any
  * notes, and Scamp's own check findings on those elements — the same
  * findings the Checks section shows, so the agent can fix what it caused.

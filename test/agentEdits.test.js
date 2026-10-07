@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
-import { addElement, deleteElement, mergeThemeTokens, planExtraction, moveElement, parseDeclarationList, resolveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
+import { addElement, deleteElement, mergeThemeTokens, planExtraction, planInstanceSwap, moveElement, parseDeclarationList, resolveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
 import { generateCode } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
 import { lintView } from '@lib/viewLint';
@@ -362,5 +362,24 @@ describe('the import-cleanup recipes', () => {
         const result = ok(setStyles(ctx, { element: 'a1b2', remove: ['padding-top', 'padding-bottom'], set: 'padding: 10px 0' }));
         expect(result.elements['a1b2']?.padding).toEqual([10, 0, 10, 0]);
         expect(findingsOn(result.elements)).toEqual([]);
+    });
+});
+describe('planInstanceSwap', () => {
+    it('plans a container into an instance, matching the component name in any case', () => {
+        expect(planInstanceSwap(context(), { element: 'card_a1b2', component: 'card' }, ['Card'], null)).toEqual({ id: 'a1b2', name: 'Card' });
+    });
+    it('refuses the root and a text element', () => {
+        expect(planInstanceSwap(context(), { element: 'root', component: 'Card' }, ['Card'], null)).toBe('The root can’t become an instance.');
+        expect(planInstanceSwap(context(), { element: 'c3d4', component: 'Card' }, ['Card'], null)).toBe('text_c3d4 isn\'t a container.');
+    });
+    it('names the components there are when the one asked for isn’t one', () => {
+        expect(planInstanceSwap(context(), { element: 'a1b2', component: 'Header' }, ['Card', 'Shell'], null)).toBe('No component named "Header". scamp_list_components lists them: Card, Shell.');
+        expect(planInstanceSwap(context(), { element: 'a1b2', component: 42 }, [], null)).toBe('No component named "". scamp_list_components lists them.');
+    });
+    it('refuses a component inside itself', () => {
+        expect(planInstanceSwap(context(), { element: 'a1b2', component: 'Card' }, ['Card'], 'Card')).toBe('Card can’t contain an instance of itself.');
+    });
+    it('refuses an element that isn’t there', () => {
+        expect(typeof planInstanceSwap(context(), { element: 'zzzz', component: 'Card' }, ['Card'], null)).toBe('string');
     });
 });

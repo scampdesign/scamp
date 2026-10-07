@@ -502,6 +502,28 @@ export const planExtraction = (ctx, args, existingComponents) => {
     return { id: el.id, name: validated.value, replaceIds };
 };
 /**
+ * Which container becomes an instance of which existing component. Refuses
+ * the root, text, and a component the container sits inside — an instance
+ * of itself would never finish rendering.
+ */
+export const planInstanceSwap = (ctx, args, components, editing) => {
+    const el = resolveElement(ctx, args.element);
+    if (el === null)
+        return notFound(args.element);
+    if (el.id === ctx.rootId)
+        return 'The root can’t become an instance.';
+    if (el.type !== 'rectangle')
+        return `${classNameFor(el)} isn't a container.`;
+    const wanted = typeof args.component === 'string' ? args.component.trim() : '';
+    const name = components.find((c) => c === wanted) ?? components.find((c) => c.toLowerCase() === wanted.toLowerCase());
+    if (name === undefined) {
+        return `No component named "${wanted}". scamp_list_components lists them${components.length > 0 ? `: ${components.join(', ')}` : ''}.`;
+    }
+    if (name === editing)
+        return `${name} can’t contain an instance of itself.`;
+    return { id: el.id, name };
+};
+/**
  * What the model is told after an edit: the summary, what it touched, any
  * notes, and Scamp's own check findings on those elements — the same
  * findings the Checks section shows, so the agent can fix what it caused.

@@ -23,12 +23,18 @@ import {
  * see docs/plans/mcp-server-plan.md
  */
 
-/** Every tool takes no arguments except `get_element_by_id`,
- *  `get_component_scaffold`, and `get_view_props`. */
+/** The tools that take no arguments. */
 const NO_ARGS = {
   type: 'object',
   properties: {},
   additionalProperties: false,
+} as const;
+
+/** Reads another view or component than the open one. */
+const VIEW_ARG = {
+  type: 'string',
+  description:
+    'A view or component name (scamp_list_pages `view`, scamp_list_components), or a view’s route slug. Omit for the one open on the canvas.',
 } as const;
 
 export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
@@ -55,6 +61,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
           type: 'string',
           description: 'The Scamp element id, e.g. "a1b2" (not the CSS class).',
         },
+        view: VIEW_ARG,
       },
       required: ['id'],
       additionalProperties: false,
@@ -63,8 +70,12 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   {
     name: 'scamp_get_element_tree',
     description:
-      'The full element tree for the open page or component — ids, classes, and tags only, no styles. This is the cheap way to understand structure; follow up with scamp_get_element_by_id for the details of specific elements.',
-    inputSchema: { ...NO_ARGS },
+      'The full element tree for the open page or component, or for any view or component named by `view` — ids, classes, and tags only, no styles. This is the cheap way to understand structure; follow up with scamp_get_element_by_id for the details of specific elements.',
+    inputSchema: {
+      type: 'object',
+      properties: { view: VIEW_ARG },
+      additionalProperties: false,
+    },
   },
   {
     name: 'scamp_get_canvas_state',
@@ -232,7 +243,11 @@ const format = (
       return textResult('No element is currently selected on the Scamp canvas.');
     }
     if (tool === 'scamp_get_element_by_id') {
-      return textResult('No element with that id exists on the open page.');
+      return textResult(
+        args['view'] === undefined
+          ? 'No element with that id exists on the open page.'
+          : `No element with that id exists in ${String(args['view'])}.`
+      );
     }
     if (tool === 'scamp_get_active_page') {
       return textResult('No project is currently open in Scamp.');

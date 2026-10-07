@@ -45,6 +45,17 @@ export const useActiveTarget = ({ project, onProjectChange, projectConfig, handl
     // canvas keeps its last good state and this drives the inline
     // ParseErrorBanner; cleared once the target parses again.
     const [parseError, setParseError] = useState(null);
+    // A project re-read hands back the open file as disk holds it, which
+    // is what the canvas last saved — reloading that would only clear the
+    // selection and race a pending save. see docs/notes/agent-whole-project.md
+    const alreadyShowing = (tsxPath, file) => {
+        const shown = useCanvasStore.getState();
+        const openPath = shown.activeComponent?.tsxPath ?? shown.activePage?.tsxPath;
+        return (openPath === tsxPath &&
+            shown.pageSource !== null &&
+            shown.pageSource.tsx === file.tsxContent &&
+            shown.pageSource.css === file.cssContent);
+    };
     const loadPage = useCanvasStore((s) => s.loadPage);
     const loadComponent = useCanvasStore((s) => s.loadComponent);
     const resetForNewPage = useCanvasStore((s) => s.resetForNewPage);
@@ -65,6 +76,8 @@ export const useActiveTarget = ({ project, onProjectChange, projectConfig, handl
             resetForNewPage();
             return;
         }
+        if (alreadyShowing(page.tsxPath, page))
+            return;
         let parsed;
         try {
             parsed = parseCode(page.tsxContent, page.cssContent, {
@@ -129,6 +142,8 @@ export const useActiveTarget = ({ project, onProjectChange, projectConfig, handl
             resetForNewPage();
             return;
         }
+        if (activeComponent.kind === componentKindOf(component) && alreadyShowing(component.tsxPath, component))
+            return;
         let parsed;
         try {
             parsed = parseCode(component.tsxContent, component.cssContent, {

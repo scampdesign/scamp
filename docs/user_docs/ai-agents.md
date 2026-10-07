@@ -62,8 +62,8 @@ claude mcp reset-project-choices
 | Tool | Answers |
 |---|---|
 | `scamp_get_selected_element` | Everything about what's selected: class, tag, parent, children, and styles |
-| `scamp_get_element_by_id` | The same, for any element by ID |
-| `scamp_get_element_tree` | The page structure: IDs, tags, and classes, without styles |
+| `scamp_get_element_by_id` | The same, for any element by ID, on the open page or any view or component |
+| `scamp_get_element_tree` | The structure of the open page or any view or component: IDs, tags, and classes, without styles |
 | `scamp_get_active_page` | Which page or component is open, and its file paths |
 | `scamp_list_pages` | Every page in the project |
 | `scamp_list_components` | Every [component](components.md) and its files |

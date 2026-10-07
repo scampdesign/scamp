@@ -1,4 +1,5 @@
-import { addElement, deleteElement, editFeedback, mergeThemeTokens, planExtraction, renameList, setShow, moveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
+import { addElement, deleteElement, editFeedback, mergeThemeTokens, planExtraction, planInstanceSwap, renameList, setShow, moveElement, setAttributes, setStyles, setTag, setText, wrapElements, } from '@lib/agentEdits';
+import { treeNameFor } from '@lib/canvasSnapshot';
 import { generateComponentFromSubtree } from '@lib/extractComponent';
 import { classNameFor } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
@@ -6,6 +7,7 @@ import { parseThemeFile, serializeThemeFile } from '@lib/parseTheme';
 import { currentConversationKey, sameConversation, useAgentStore } from '@store/agentSlice';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useHistoryStore } from '@store/historySlice';
+import { editOffCanvas, extractOffCanvas, forgetOffCanvasDraft, forgetOffCanvasDrafts, swapInOffCanvas, } from './agentOffCanvas';
 const EDITS = {
     scamp_set_styles: (ctx, a) => setStyles(ctx, { ...a, element: a['element'] }),
     scamp_add_element: (ctx, a) => addElement(ctx, { ...a, parent: a['parent'] }),
@@ -31,6 +33,7 @@ const closeTurn = () => {
 };
 /** The turn is over: commit its edits as one undo step. */
 export const endAgentTurnHistory = (turnId) => {
+    forgetOffCanvasDrafts();
     if (open?.turnId === turnId)
         closeTurn();
 };
@@ -111,6 +114,53 @@ const extractComponent = async (projectPath, input, turnId) => {
     const summary = `Made ${classNameFor(source)} into the component ${plan.name}${others > 0 ? `, and replaced ${others} more with it` : ''}`;
     return { ok: true, summary, text: summary, createdComponent: plan.name };
 };
+const componentNames = (trees) => Object.keys(trees).filter((name) => trees[name] !== undefined && (trees[name]?.kind ?? 'component') === 'component');
+/** A container on the canvas into an instance of an existing component. */
+const swapInComponent = (input, turnId) => {
+    const state = useCanvasStore.getState();
+    const editing = state.activeComponent?.kind === 'component' ? state.activeComponent.name : null;
+    const plan = planInstanceSwap(contextFrom(state), { element: input['element'], component: input['component'] }, componentNames(state.componentTrees), editing);
+    if (typeof plan === 'string')
+        return { ok: false, text: plan };
+    const el = state.elements[plan.id];
+    const instanceId = state.replaceSubtreeWithInstance(plan.id, plan.name);
+    if (el === undefined || instanceId === null)
+        return { ok: false, text: 'Scamp couldn’t replace that element.' };
+    enterTurn(turnId).add(instanceId);
+    const summary = `Replaced ${classNameFor(el)} with ${plan.name}`;
+    return { ok: true, summary, text: summary };
+};
+/**
+ * `view` names the view; without it, the edit is for the conversation's
+ * own view — which may no longer be the open one, if the user moved on.
+ */
+const destinationFor = (input, turnId) => {
+    const state = useCanvasStore.getState();
+    const open = currentConversationKey();
+    const asked = typeof input['view'] === 'string' ? input['view'].trim() : '';
+    const running = useAgentStore.getState().runningTurn;
+    const conversation = running !== null && running.turnId === turnId ? running.conversation : null;
+    if (asked.length === 0 && (conversation === null || sameConversation(conversation, open)))
+        return { on: 'canvas' };
+    const wanted = asked.length > 0 ? asked : (conversation?.name ?? '');
+    const name = treeNameFor(state.componentTrees, wanted);
+    if (name === null) {
+        if (open !== null && open.name === wanted)
+            return { on: 'canvas' };
+        // A legacy page has no stored tree to edit behind the canvas.
+        return {
+            on: 'refused',
+            text: asked.length > 0
+                ? `No view or component named "${asked}". scamp_list_pages (the \`view\` field) and scamp_list_components list them.`
+                : `The user left ${wanted} for ${open?.name ?? 'another page'}, and ${wanted} can only be edited while it's open, so this edit wasn't made. Tell the user to go back to ${wanted} to continue.`,
+        };
+    }
+    if (open !== null && open.kind !== 'page' && open.name === name) {
+        forgetOffCanvasDraft(name);
+        return { on: 'canvas' };
+    }
+    return { on: 'files', name, kind: state.componentTrees[name]?.kind ?? 'component' };
+};
 /** Make one edit, for turn `turnId`. Exported for tests. */
 export const executeAgentEdit = async (tool, input, turnId) => {
     const state = useCanvasStore.getState();
@@ -119,22 +169,30 @@ export const executeAgentEdit = async (tool, input, turnId) => {
     if (state.snapshotPreview !== null) {
         return { ok: false, text: 'Scamp is showing a snapshot preview, which is read-only. Ask the user to exit it.' };
     }
-    // Scamp edits whatever is open, so a turn whose user has since gone to
-    // another page must not land its edits there.
-    const running = useAgentStore.getState().runningTurn;
-    const open = currentConversationKey();
-    if (running !== null && running.turnId === turnId && !sameConversation(running.conversation, open)) {
-        const from = running.conversation.name;
-        return {
-            ok: false,
-            text: `The user left ${from} for ${open?.name ?? 'another page'}, and Scamp edits whatever is open, so this edit wasn't made. Stop, and tell the user to go back to ${from} to continue.`,
-        };
-    }
+    // The theme is the project's, whichever view is open.
     if (tool === 'scamp_set_theme_tokens')
         return setThemeTokens(state.projectPath, input);
+    const edit = EDITS[tool];
+    if (edit === undefined && tool !== 'scamp_extract_component' && tool !== 'scamp_use_component') {
+        return { ok: false, text: `Unknown edit: ${tool}` };
+    }
+    const destination = destinationFor(input, turnId);
+    if (destination.on === 'refused')
+        return { ok: false, text: destination.text };
+    if (destination.on === 'files') {
+        const { name, kind } = destination;
+        if (tool === 'scamp_extract_component')
+            return extractOffCanvas(state.projectPath, name, kind, input);
+        if (tool === 'scamp_use_component')
+            return swapInOffCanvas(state.projectPath, name, kind, input);
+        if (edit === undefined)
+            return { ok: false, text: `Unknown edit: ${tool}` };
+        return editOffCanvas(state.projectPath, name, kind, (ctx) => edit(ctx, input));
+    }
     if (tool === 'scamp_extract_component')
         return extractComponent(state.projectPath, input, turnId);
-    const edit = EDITS[tool];
+    if (tool === 'scamp_use_component')
+        return swapInComponent(input, turnId);
     if (edit === undefined)
         return { ok: false, text: `Unknown edit: ${tool}` };
     const result = edit(contextFrom(state), input);

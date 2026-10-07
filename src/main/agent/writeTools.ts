@@ -1,10 +1,11 @@
 import type { BetaTool } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 
 /**
- * The edits the built-in agent can make. Answered by the renderer against
- * the live store (`agentToolResponder`), so each goes through Scamp's own
- * generate → parse round trip and the normal save path — the agent never
- * writes a file. Built-in only: the MCP server stays read-only.
+ * The edits the built-in agent can make. Answered by the renderer
+ * (`agentToolResponder`): against the live store for the open view, and
+ * against the files for any other (`view`), each through Scamp's own
+ * generate → parse round trip — the agent never writes a file itself.
+ * Built-in only: the MCP server stays read-only.
  *
  * `eager_input_streaming` so a long CSS value arrives as it's written; the
  * renderer validates every input before it acts on it.
@@ -16,6 +17,13 @@ const element = {
   description: 'The element: its Scamp id (e.g. "a1b2") or class name (e.g. "card_a1b2"). "root" is the page root.',
 } as const;
 
+/** Any view or component, not only the open one. see docs/notes/agent-whole-project.md */
+const view = {
+  type: 'string',
+  description:
+    'The view or component to edit (scamp_list_pages `view`, scamp_list_components). Omit for the one this conversation is about. Element ids are per view, so read that view’s tree first.',
+} as const;
+
 export const WRITE_TOOLS: BetaTool[] = [
   {
     name: 'scamp_set_styles',
@@ -25,6 +33,7 @@ export const WRITE_TOOLS: BetaTool[] = [
     input_schema: {
       type: 'object',
       properties: {
+        view,
         element,
         set: { type: 'string', description: 'CSS declarations to set.' },
         remove: { type: 'array', items: { type: 'string' }, description: 'CSS properties to remove.' },
@@ -42,6 +51,7 @@ export const WRITE_TOOLS: BetaTool[] = [
     input_schema: {
       type: 'object',
       properties: {
+        view,
         parent: { ...element, description: 'The container to add to.' },
         text: { type: 'string', description: 'The words, for a text element.' },
         tag: { type: 'string', description: 'An HTML tag Scamp offers for that kind of element.' },
@@ -59,7 +69,7 @@ export const WRITE_TOOLS: BetaTool[] = [
     eager_input_streaming: true,
     input_schema: {
       type: 'object',
-      properties: { element, text: { type: 'string' } },
+      properties: { view, element, text: { type: 'string' } },
       required: ['element', 'text'],
       additionalProperties: false,
     },
@@ -70,7 +80,7 @@ export const WRITE_TOOLS: BetaTool[] = [
       'Change an element’s HTML tag, to one Scamp offers for that kind of element — e.g. a container to section, nav, header, or button; text to h1–h6, p, a, or li.',
     input_schema: {
       type: 'object',
-      properties: { element, tag: { type: 'string' } },
+      properties: { view, element, tag: { type: 'string' } },
       required: ['element', 'tag'],
       additionalProperties: false,
     },
@@ -82,6 +92,7 @@ export const WRITE_TOOLS: BetaTool[] = [
     input_schema: {
       type: 'object',
       properties: {
+        view,
         element,
         attributes: {
           type: 'object',
@@ -99,6 +110,7 @@ export const WRITE_TOOLS: BetaTool[] = [
     input_schema: {
       type: 'object',
       properties: {
+        view,
         element,
         parent: { ...element, description: 'The container to move it into.' },
         index: { type: 'integer', description: 'Position among the new parent’s children. Omit for the end.' },
@@ -113,7 +125,7 @@ export const WRITE_TOOLS: BetaTool[] = [
       'Delete an element and everything inside it. Scamp always asks the user to confirm first; if they decline, the result says so — ask what they want instead of retrying.',
     input_schema: {
       type: 'object',
-      properties: { element },
+      properties: { view, element },
       required: ['element'],
       additionalProperties: false,
     },
@@ -125,6 +137,7 @@ export const WRITE_TOOLS: BetaTool[] = [
     input_schema: {
       type: 'object',
       properties: {
+        view,
         element,
         name: { type: 'string', description: 'PascalCase component name.' },
         alsoReplace: {
@@ -134,6 +147,21 @@ export const WRITE_TOOLS: BetaTool[] = [
         },
       },
       required: ['element', 'name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'scamp_use_component',
+    description:
+      'Replace a container with an instance of an existing component — e.g. the same header on every view, once one view’s header has been extracted with scamp_extract_component. The container and everything inside it are replaced by the component’s design, so check they match first. Scamp asks the user first.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        view,
+        element: { ...element, description: 'The container to replace.' },
+        component: { type: 'string', description: 'The component, by name (scamp_list_components).' },
+      },
+      required: ['element', 'component'],
       additionalProperties: false,
     },
   },
@@ -163,6 +191,7 @@ export const WRITE_TOOLS: BetaTool[] = [
     input_schema: {
       type: 'object',
       properties: {
+        view,
         elements: { type: 'array', items: { type: 'string' }, description: 'Sibling elements, by id or class.' },
         tag: { type: 'string' },
         name: { type: 'string' },
@@ -179,6 +208,7 @@ export const WRITE_TOOLS: BetaTool[] = [
     input_schema: {
       type: 'object',
       properties: {
+        view,
         element,
         flag: { type: 'string', description: 'The prop, e.g. "hasOverdue" or "!isEmpty". Empty to remove.' },
         shown: { type: 'boolean', description: 'The sample: whether the element shows on the canvas now. Default true.' },
@@ -190,10 +220,11 @@ export const WRITE_TOOLS: BetaTool[] = [
   {
     name: 'scamp_rename_list',
     description:
-      'Rename a repeated list in the open view or component: the list prop, its row variable, and any of its row fields — everywhere they are used, and in the sample rows. Use the names the source gives (`claims.map((claim) => …)`, `claim.patientName`).',
+      'Rename a repeated list in a view or component: the list prop, its row variable, and any of its row fields — everywhere they are used, and in the sample rows. Use the names the source gives (`claims.map((claim) => …)`, `claim.patientName`).',
     input_schema: {
       type: 'object',
       properties: {
+        view,
         list: { type: 'string', description: 'The list as it is named now.' },
         to: { type: 'string', description: 'Its new name.' },
         row: { type: 'string', description: 'A new name for its row variable.' },

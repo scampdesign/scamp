@@ -125,11 +125,14 @@ const createConversation = async (projectPath, key, holder) => {
                 }
                 try {
                     const answer = await runAgentEdit(name, args, turnId);
-                    if (answer.ok && typeof answer.createdComponent === 'string') {
+                    if (typeof answer.createdComponent === 'string') {
                         // Undo AI session removes it; and the project re-read puts it
                         // in the sidebar (the create itself is silent at the watcher).
                         conversation.createdComponents.push(answer.createdComponent);
                         notifyPagesChanged();
+                    }
+                    else if (answer.refreshProject === true) {
+                        refreshProjectSoon();
                     }
                     return {
                         content: [{ type: 'text', text: answer.text }],
@@ -160,6 +163,20 @@ const createConversation = async (projectPath, key, holder) => {
         }),
     };
     return conversation;
+};
+/**
+ * A view edited behind the canvas changes files the watcher reports only
+ * as changes, which don't re-read the project; without one, opening that
+ * view later would load it as it was. Debounced: a turn edits many views.
+ */
+let refreshTimer = null;
+const refreshProjectSoon = () => {
+    if (refreshTimer !== null)
+        clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        notifyPagesChanged();
+    }, 250);
 };
 /** The conversation for a page, view or component — read from disk the first time. */
 const conversationFor = (projectPath, key, target) => {
