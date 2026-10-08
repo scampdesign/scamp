@@ -129,14 +129,14 @@ export const CanvasArea = ({
                 role="navigation"
                 aria-label="Component editor breadcrumb"
               >
-                {activeComponent.returnToPage !== null && (
+                {(activeComponent.returnTo !== undefined || activeComponent.returnToPage !== null) && (
                   <>
                     <button
                       type="button"
                       className={styles.canvasBreadcrumbLink}
                       onClick={onExitComponentEditor}
                     >
-                      {activeComponent.returnToPage}
+                      {activeComponent.returnTo?.name ?? activeComponent.returnToPage}
                     </button>
                     <span aria-hidden="true">{' › '}</span>
                   </>

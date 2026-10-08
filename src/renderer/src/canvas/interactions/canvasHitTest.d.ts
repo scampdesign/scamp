@@ -13,6 +13,13 @@ export declare const elementIdOf: (node: Element) => string | undefined;
  */
 export declare const hitTest: (clientX: number, clientY: number) => string | null;
 /**
+ * The component instance under the cursor: the first element in the
+ * stack that the page knows as an instance. A component's own elements
+ * render inside the instance but aren't page elements, so `hitTest` can
+ * land on one of those first.
+ */
+export declare const instanceAt: (clientX: number, clientY: number, isInstance: (id: string) => boolean) => string | null;
+/**
  * Look for a component slot drop zone under the cursor, for the CREATE
  * tools (draw a rect / click the text tool inside a slot). Mirrors the
  * drag-path check in `resolveDropContainer`: a slot box carries

@@ -289,6 +289,7 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
                     name: newName,
                     kind,
                     returnToPage: activeComponent.returnToPage,
+                    ...(activeComponent.returnTo !== undefined ? { returnTo: activeComponent.returnTo } : {}),
                 });
             }
             // Keep active page's in-memory componentName fields consistent.

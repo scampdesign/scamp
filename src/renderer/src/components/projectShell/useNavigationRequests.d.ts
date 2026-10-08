@@ -1,8 +1,13 @@
-import type { ProjectData } from '@shared/types';
+import type { ComponentKind, ProjectData } from '@shared/types';
+import type { ActiveComponent } from './types';
 type ComponentNavRef = {
     current: {
-        openComponent: (name: string, fromPage: string | null) => void;
+        openComponent: (name: string, fromPage: string | null, kind?: ComponentKind, from?: {
+            name: string;
+            kind: ComponentKind;
+        }) => void;
         activePageName: string | null;
+        activeComponent: ActiveComponent | null;
     };
 };
 /**

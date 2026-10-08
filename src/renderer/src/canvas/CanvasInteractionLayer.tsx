@@ -14,7 +14,7 @@ import { SelectionOverlay } from './SelectionOverlay';
 import { DrawPreview } from './DrawPreview';
 import { GridOverlay } from './GridOverlay';
 import { LinkIndicators } from './LinkIndicators';
-import { hitTest, propTextHitTest } from './interactions/canvasHitTest';
+import { hitTest, instanceAt, propTextHitTest } from './interactions/canvasHitTest';
 import { resolveInsertParent } from '@lib/insertParent';
 import { useCanvasGeometry } from './interactions/useCanvasGeometry';
 import { useDrawInteraction } from './interactions/useDrawInteraction';
@@ -198,12 +198,27 @@ export const CanvasInteractionLayer = ({ frameRef, scale }: Props): JSX.Element 
       return;
     }
     const hitId = hitTest(e.clientX, e.clientY);
-    if (!hitId || hitId === ROOT_ELEMENT_ID) return;
-    const el = elements[hitId];
-    if (!el || el.type !== 'text') return;
+    if (hitId === ROOT_ELEMENT_ID) return;
+    const el = hitId === null ? undefined : elements[hitId];
+    if (el !== undefined && hitId !== null && el.type === 'text') {
+      e.preventDefault();
+      selectElement(hitId);
+      setEditingElement(hitId);
+      return;
+    }
+    // Into a component instance's editor. Page content in one of its
+    // slots is the page's own, so only the instance itself, or the
+    // component's elements drawn inside it, open the component.
+    const instanceId =
+      el?.type === 'component-instance'
+        ? el.id
+        : el === undefined
+          ? instanceAt(e.clientX, e.clientY, (id) => elements[id]?.type === 'component-instance')
+          : null;
+    const componentName = instanceId === null ? undefined : elements[instanceId]?.componentName;
+    if (componentName === undefined) return;
     e.preventDefault();
-    selectElement(hitId);
-    setEditingElement(hitId);
+    useCanvasStore.getState().requestComponentNavigation(componentName);
   };
 
   // Right-click on the canvas opens the element context menu. The layer

@@ -42,7 +42,8 @@ export type UseActiveTarget = {
   openComponent: (
     name: string,
     fromPage: string | null,
-    kind?: ComponentKind
+    kind?: ComponentKind,
+    from?: { name: string; kind: ComponentKind }
   ) => void;
   exitComponentEditor: () => void;
   latestExit: { current: () => void };
@@ -357,7 +358,8 @@ export const useActiveTarget = ({
   const openComponent = (
     name: string,
     fromPage: string | null,
-    kind?: ComponentKind
+    kind?: ComponentKind,
+    from?: { name: string; kind: ComponentKind }
   ): void => {
     flushPendingPageWrite();
     persistActiveSource();
@@ -368,11 +370,12 @@ export const useActiveTarget = ({
       name,
       kind: kind ?? (file ? componentKindOf(file) : 'component'),
       returnToPage: fromPage,
+      ...(from !== undefined ? { returnTo: from } : {}),
     });
   };
   // Latest refs for the one-shot canvas→component-editor navigation
   // effect, which binds before these are defined (see useLatest).
-  const componentNav = useLatest({ openComponent, activePageName });
+  const componentNav = useLatest({ openComponent, activePageName, activeComponent });
 
   // Consume the canvas's one-shot page / component navigation requests
   // (link indicator jump, double-click into an instance editor). Lives
@@ -392,6 +395,11 @@ export const useActiveTarget = ({
     if (activeComponent === null) return;
     flushPendingPageWrite();
     persistActiveSource();
+    const back = activeComponent.returnTo;
+    if (back !== undefined && project.components.some((c) => c.name === back.name)) {
+      setActiveComponentState({ name: back.name, kind: back.kind, returnToPage: null });
+      return;
+    }
     const next = activeComponent.returnToPage;
     setActiveComponentState(null);
     if (next !== null) setActivePageName(next);

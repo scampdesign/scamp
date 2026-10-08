@@ -267,7 +267,7 @@ export const useActiveTarget = ({ project, onProjectChange, projectConfig, handl
      * so Esc / breadcrumb click can return there; Phase 2 always
      * passes null because the only entry point is the sidebar list.
      */
-    const openComponent = (name, fromPage, kind) => {
+    const openComponent = (name, fromPage, kind, from) => {
         flushPendingPageWrite();
         persistActiveSource();
         // A just-created file isn't in `project.components` yet (the state
@@ -277,11 +277,12 @@ export const useActiveTarget = ({ project, onProjectChange, projectConfig, handl
             name,
             kind: kind ?? (file ? componentKindOf(file) : 'component'),
             returnToPage: fromPage,
+            ...(from !== undefined ? { returnTo: from } : {}),
         });
     };
     // Latest refs for the one-shot canvas→component-editor navigation
     // effect, which binds before these are defined (see useLatest).
-    const componentNav = useLatest({ openComponent, activePageName });
+    const componentNav = useLatest({ openComponent, activePageName, activeComponent });
     // Consume the canvas's one-shot page / component navigation requests
     // (link indicator jump, double-click into an instance editor). Lives
     // here because it reads `openComponent` via the `componentNav` ref.
@@ -300,6 +301,11 @@ export const useActiveTarget = ({ project, onProjectChange, projectConfig, handl
             return;
         flushPendingPageWrite();
         persistActiveSource();
+        const back = activeComponent.returnTo;
+        if (back !== undefined && project.components.some((c) => c.name === back.name)) {
+            setActiveComponentState({ name: back.name, kind: back.kind, returnToPage: null });
+            return;
+        }
         const next = activeComponent.returnToPage;
         setActiveComponentState(null);
         if (next !== null)
