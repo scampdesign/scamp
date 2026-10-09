@@ -91,9 +91,9 @@ component:
 Editing component: Card. Changes affect all instances.
 ```
 
-A breadcrumb above the canvas (`home → Card`) lets you click back to the
-page that brought you in. The instance you came from is re-selected when
-you return.
+When you open a component by double-clicking an instance, a breadcrumb
+above the canvas (`home › Card`) names the page or view you came from.
+Click it, or press **Esc**, to go back there.
 
 ### Component canvas size
 

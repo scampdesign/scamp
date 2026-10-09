@@ -22,6 +22,73 @@ release time.
 
 ## Releases
 
+### 0.9.0 (unreleased)
+
+**Added**
+
+- **The Scamp Agent, in beta.** Click **Agent** in the sidebar, connect
+  your own Claude API key, and describe a change in plain words. The
+  agent reads your design, edits it through the same tools the
+  properties panel uses, and saves the result to your files. It works on
+  the page you have open or across the whole project, and it can measure
+  a page in a browser to find what overflows. It asks before it deletes,
+  creates components, changes theme tokens, or makes many changes at
+  once, and **Undo AI changes** puts back everything it did in a
+  conversation. Each page keeps its own conversation, saved in the
+  project. The agent needs you to be signed in, and Anthropic bills its
+  use to your key. See [Scamp Agent](user_docs/scamp-agent.md).
+- **Clean up an imported page with AI.** After you import a page, click
+  **Clean up with AI** in the import window. The agent makes the page
+  easier to edit—shorthand values instead of per-side ones, flex
+  layout, theme tokens if you want them—without changing how it looks,
+  and shows you a plan before it changes anything.
+- **Import pages from a React app.** Choose a React app's folder, and
+  Scamp runs it, lists its routes, and imports the ones you pick into a
+  new project, in one step you can undo. The app's own components become
+  Scamp components, its `.map()` lists become repeats, and the theme
+  tokens it used come across where it used them. **Tidy up with AI**
+  then reads the app's source to name its lists and find what it shows
+  only some of the time. See
+  [Import pages from a React app](user_docs/website-import.md#import-pages-from-a-react-app).
+- **Tables.** Change a container's tag to `table`, and draw rows and
+  cells inside it. A table is laid out as a grid with its column widths
+  set once, on the table, so the header and the body always line up.
+  Dividers, stripes, a sticky header, cell padding, and cell alignment
+  are each set once in the new **Rows and cells** section. A table on an
+  imported page now arrives as a table, not as loose cells. See
+  [Tables](user_docs/tables.md).
+- **A Checks section lists what's wrong with a view.** Undeclared theme
+  tokens, values the panel can't edit, loose text, and misplaced table
+  parts appear at the top of the panel, grouped and worst first; click
+  one to select the element. Scamp used to find these only for agents,
+  so a project could have thousands without anyone seeing them. See
+  [Find problems in a view](user_docs/views.md#find-problems-in-a-view).
+- **Outside agents get more from the MCP server.** `scamp_get_element_tree`
+  and `scamp_get_element_by_id` read any view or component, not only the
+  open one, and two new tools measure overflow and read a React import's
+  source. Agents also learn tables from `agent.md`. See
+  [Work with AI agents](user_docs/ai-agents.md).
+
+**Fixed**
+
+- **Double-clicking a component on the canvas opens its editor.** The
+  documentation said it did, but a layer over the canvas caught the
+  double-click first. The breadcrumb and **Esc** now take you back to
+  the page or view you came from.
+- **The component editor shows a component the way your pages do.** Its
+  canvas is the size of the component, and Scamp was treating that size
+  as the screen width, so a component with tablet styles showed them at
+  Desktop. A component also showed less on a page than in its editor,
+  because text inside a nested `<span>` was dropped, and a component set
+  to `height: 100%` stopped short of the row it sat in.
+- **Edits at a breakpoint close their `@media` block on its own line.**
+  The first edit at a new breakpoint wrote the block's closing brace on
+  the same line as the rule's, which was valid CSS but hard to read.
+- **Imported pages keep more of their layout.** Values set per side are
+  combined into one shorthand where they match, gaps are written once,
+  named grid areas and form-control sizes come across, and text the page
+  hides no longer appears.
+
 ### 0.8.8 (2026-09-30)
 
 **Fixed**
@@ -705,6 +772,8 @@ Everything Scamp does today. Each entry links to its user documentation.
 - Drag to reparent and reorder on the canvas and in the layers tree,
   with drop-target feedback. [Layers panel](user_docs/layers-panel.md)
 - Aspect-ratio lock on resize. [Canvas](user_docs/canvas.md)
+- Tables with real table tags, columns set once on the table, and row and
+  cell styling. [Tables](user_docs/tables.md)
 
 ### Styling
 
@@ -734,7 +803,8 @@ Everything Scamp does today. Each entry links to its user documentation.
 
 - Reusable components shared across pages, with a dedicated editor.
 - Slots for page-owned content, and per-instance text overrides.
-- Detach an instance back into plain elements.
+- Detach an instance back into plain elements, and double-click an
+  instance to open its component.
   [Components](user_docs/components.md)
 - Views: a page's design in the component file shape, listed under
   Pages, with repeat, show, attribute, and event bindings in the Data
@@ -768,6 +838,13 @@ Everything Scamp does today. Each entry links to its user documentation.
 
 ### Work with AI agents
 
+- The Scamp Agent: a built-in AI agent on your own Claude API key that
+  edits any page, asks before big changes, and undoes in one step.
+  [Scamp Agent](user_docs/scamp-agent.md)
+- Clean up an imported page, or tidy up a React import, with AI.
+  [Scamp Agent](user_docs/scamp-agent.md#clean-up-an-imported-page)
+- A Checks section that lists what's wrong with a view.
+  [Views](user_docs/views.md#find-problems-in-a-view)
 - An MCP server that exposes the live canvas to coding agents,
   including each view's props type and sample data.
 - A live context file on disk for file-reading agents.
@@ -787,6 +864,9 @@ Everything Scamp does today. Each entry links to its user documentation.
 - Import a live web page as a view, with a report of what the
   translation changed and what it could not carry.
   [Import a page from the web](user_docs/website-import.md)
+- Import a React app's pages into a new project, with its components,
+  lists, and theme tokens.
+  [Import pages from a React app](user_docs/website-import.md#import-pages-from-a-react-app)
 - Style part of a text element: select words on the canvas and give them
   their own color or weight, written as a `<span>`.
   [Typography](user_docs/typography.md)
@@ -808,7 +888,8 @@ Everything Scamp does today. Each entry links to its user documentation.
 - App and per-project settings, including the privacy toggle.
   [Settings](user_docs/settings.md)
 - Optional sign-in to a Scamp account, with the session stored in your
-  OS's secure storage. Every feature works signed out.
+  OS's secure storage. Every feature except the Scamp Agent works signed
+  out.
   [Accounts](user_docs/accounts.md)
 - Automatic updates, and opt-in anonymous crash reporting.
 - Complete keyboard shortcuts.

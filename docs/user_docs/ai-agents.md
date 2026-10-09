@@ -9,6 +9,8 @@ Kiro.
 For how Scamp and an agent avoid overwriting each other's file edits,
 see [Bidirectional sync](bidirectional-sync.md).
 
+Scamp also has its own agent, built in. See [Scamp Agent](scamp-agent.md).
+
 ## The MCP server
 
 While Scamp is open with a project, it runs a small local server that
@@ -133,6 +135,22 @@ useful when you're asking about the whole layout.
 | The agent can't use MCP, or Scamp is closed | **The context file** |
 | You're writing a prompt by hand | **Copy context** |
 
+## The Scamp Agent or an outside agent
+
+The [Scamp Agent](scamp-agent.md) works inside Scamp, and an outside
+agent works through the MCP server. They read your design through the
+same tools, but they change it differently:
+
+| | Scamp Agent | Outside agent through MCP |
+|---|---|---|
+| **How it edits** | Through Scamp's own edit tools, the same way the properties panel does | Writes your project's `.tsx` and `.module.css` files, and the canvas reloads |
+| **Before big changes** | Shows you the list and waits for **Apply changes** | Depends on the agent |
+| **Undo** | **Cmd+Z** for one request; **Undo AI changes** for the whole conversation | Your snapshots, or the agent's version control |
+| **Cost** | Your Anthropic API key, billed per token | Whatever plan the agent runs on |
+
+The MCP server only reads. It doesn't offer the Scamp Agent's edit tools,
+so an outside agent changes your design by editing files.
+
 ## Is it working?
 
 Open the [terminal](terminal.md) panel. When the server is running, an
@@ -154,6 +172,7 @@ start.
 
 ## Related pages
 
+- [Scamp Agent](scamp-agent.md): The agent built into Scamp
 - [Bidirectional sync](bidirectional-sync.md): How Scamp and an agent
   share files without overwriting each other
 - [DESIGN.md](design-md.md): The design-system document agents read for

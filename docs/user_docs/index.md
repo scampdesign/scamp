@@ -15,6 +15,7 @@ Scamp is a local-first design tool that generates real code as you design. Draw 
 - [Grouping](grouping.md)—Group and ungroup elements into flex containers
 - [Flex layout](flex-layout.md)—Flex containers (direction, wrap, alignment, and gaps) and flex-child controls (grow, shrink, basis, align self, and order)
 - [Grid layout](grid-layout.md)—CSS Grid containers, columns, rows, and grid-item placement
+- [Tables](tables.md)—Table tags, columns set once on the table, and row and cell styling
 - [Components](components.md)—Reusable components across pages, the component editor, the Data tab, and per-instance text overrides
 - [The Scamp framework](scamp-framework.md)—What a project is made of, which files Scamp owns, and how design, routes, and agents fit together
 - [Views](views.md)—A page's design as a component-shaped file, data bindings in the Data tab, and Scamp framework projects
@@ -30,7 +31,8 @@ Scamp is a local-first design tool that generates real code as you design. Draw 
 - [Layers panel](layers-panel.md)—The element tree: selection, collapsing branches, reordering, and nesting
 - [Code output](code-output.md)—What Scamp generates, save status, and the live code preview
 - [Bidirectional sync](bidirectional-sync.md)—External editing and sharing files with AI agents
-- [Work with AI agents](ai-agents.md)—The MCP server, the live context file, and Copy context
+- [Scamp Agent](scamp-agent.md)—The built-in AI agent: ask for changes, review them, undo them, and clean up imported pages
+- [Work with AI agents](ai-agents.md)—The MCP server, the live context file, Copy context, and how outside agents compare to the Scamp Agent
 - [Design system](design-system.md)—The Design System panel, tokens, `theme.css`, and tokens in your designs
 - [Colors](colors.md)—Color palettes (primitives) and semantic color tokens
 - [Text styles](text-styles.md)—Fonts, the type scale, and reusable text styles

@@ -1,9 +1,9 @@
 # Accounts
 
 You can sign in to a Scamp account from the start screen. Signing in is
-optional: Scamp is a local-first tool, and every feature works the same
-whether you're signed in or not. Nothing prompts you on launch, and
-there's nothing to dismiss.
+optional: Scamp is a local-first tool, and every feature except the
+[Scamp Agent](scamp-agent.md) works the same whether you're signed in or
+not. Nothing prompts you on launch, and there's nothing to dismiss.
 
 ## Sign in
 

@@ -120,6 +120,25 @@ project's views by slug. The project needs `scampjs` 0.1 or later
 installed; the first preview runs `npm install` if `node_modules` is
 missing.
 
+## Find problems in a view
+
+When a view has something wrong with it, a **Checks** section appears at
+the top of the properties panel while the view's root is selected. It
+lists problems such as these, grouped by kind, worst first:
+
+- A color or size that uses a theme token `theme.css` doesn't declare, so
+  it renders as nothing
+- A value that renders but that the panel can't edit
+- Text that isn't in an editable element
+- A table element in the wrong place, or a cell with its own width
+
+Click a finding to select the element it's about. The section isn't shown
+when the view has no problems.
+
+Problems like these most often come from an import or from an agent
+editing the files. The [Scamp Agent](scamp-agent.md) sees the same
+checks after each change it makes, and fixes what it caused.
+
 ## Scamp framework projects
 
 A project that has a `views/` folder and depends on the `scampjs`

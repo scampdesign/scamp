@@ -86,18 +86,21 @@ window's partition only show up there.
 
 ## 3. Docs
 
-- [ ] **Changelog**: a `0.9.0` entry in `docs/CHANGELOG.md` (Google style:
-      bold lead sentence, then why), and the feature inventory updated
-- [ ] **User doc for the Scamp Agent** — there isn't one. Setup (key,
-      sign-in), what it can and can't do, confirmations, undo, cost, and
-      what data leaves the machine
-- [ ] **User doc for tables** — there isn't one
+- [x] **Changelog**: a `0.9.0 (unreleased)` entry and the feature
+      inventory, 2026-10-09. Put the tag date in the heading when you tag.
+- [x] **User doc for the Scamp Agent**: `docs/user_docs/scamp-agent.md`
+      (setup, scope, confirmations, undo, conversations, cleanup, cost and
+      data, troubleshooting)
+- [x] **User doc for tables**: `docs/user_docs/tables.md`
 - [ ] **User doc for Import a React app** — today it's a section in
       `website-import.md`; check it covers running the app, routes, and
       the tidy
-- [ ] `docs/user_docs/index.md` links the new pages
-- [ ] `ai-agents.md` says how the built-in agent and MCP differ (link or
-      summarise `docs/notes/agent-vs-mcp.md`)
+- [x] `docs/user_docs/index.md` links the new pages
+- [x] `ai-agents.md` says how the built-in agent and MCP differ
+- [x] Also corrected: `accounts.md` and the inventory said every feature
+      works signed out; `components.md` claimed the instance is
+      re-selected on return, which it isn't; the Checks section is now
+      documented in `views.md`
 
 ## 4. Decisions to make before tagging
 
