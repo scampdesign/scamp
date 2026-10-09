@@ -1,0 +1,707 @@
+{
+  "version": 3,
+  "url": "fixture:react-app.html",
+  "title": "React fixture",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "root": {
+    "id": 0,
+    "tag": "body",
+    "styles": {
+      "display": "block",
+      "width": "1440px",
+      "height": "357.688px",
+      "color": "rgb(0, 0, 0)",
+      "font-family": "system-ui, sans-serif",
+      "font-size": "14px",
+      "font-weight": "400",
+      "line-height": "20px",
+      "letter-spacing": "normal"
+    },
+    "text": null,
+    "attrs": {},
+    "children": [
+      {
+        "id": 1,
+        "tag": "div",
+        "styles": {
+          "display": "block",
+          "width": "1440px",
+          "height": "357.688px"
+        },
+        "text": null,
+        "attrs": {},
+        "children": [
+          {
+            "id": 2,
+            "tag": "div",
+            "styles": {
+              "display": "flex",
+              "width": "1440px",
+              "height": "357.688px"
+            },
+            "text": null,
+            "attrs": {},
+            "children": [
+              {
+                "id": 3,
+                "tag": "nav",
+                "styles": {
+                  "display": "flex",
+                  "width": "200px",
+                  "height": "357.688px",
+                  "flex-direction": "column"
+                },
+                "text": null,
+                "attrs": {},
+                "children": [
+                  {
+                    "id": 4,
+                    "tag": "button",
+                    "styles": {
+                      "display": "block",
+                      "width": "200px",
+                      "height": "21px",
+                      "padding-top": "1px",
+                      "padding-right": "6px",
+                      "padding-bottom": "1px",
+                      "padding-left": "6px",
+                      "background-color": "rgb(239, 239, 239)",
+                      "border-top-width": "2px",
+                      "border-right-width": "2px",
+                      "border-bottom-width": "2px",
+                      "border-left-width": "2px",
+                      "border-top-style": "outset",
+                      "border-right-style": "outset",
+                      "border-bottom-style": "outset",
+                      "border-left-style": "outset",
+                      "border-top-color": "rgb(0, 0, 0)",
+                      "border-right-color": "rgb(0, 0, 0)",
+                      "border-bottom-color": "rgb(0, 0, 0)",
+                      "border-left-color": "rgb(0, 0, 0)",
+                      "font-family": "Arial",
+                      "font-size": "13.3333px",
+                      "line-height": "normal",
+                      "text-align": "center"
+                    },
+                    "text": "Home",
+                    "attrs": {},
+                    "children": [],
+                    "notes": [],
+                    "path": "body>div:0>div:0>nav:0>button:0",
+                    "nameHint": "nav_item",
+                    "react": {
+                      "owners": [
+                        {
+                          "name": "NavItem",
+                          "id": 0
+                        },
+                        {
+                          "name": "Shell",
+                          "id": 1
+                        },
+                        {
+                          "name": "App",
+                          "id": 2
+                        }
+                      ]
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "w": 200,
+                      "h": 21
+                    }
+                  },
+                  {
+                    "id": 5,
+                    "tag": "button",
+                    "styles": {
+                      "display": "block",
+                      "width": "200px",
+                      "height": "21px",
+                      "padding-top": "1px",
+                      "padding-right": "6px",
+                      "padding-bottom": "1px",
+                      "padding-left": "6px",
+                      "background-color": "rgb(239, 239, 239)",
+                      "border-top-width": "2px",
+                      "border-right-width": "2px",
+                      "border-bottom-width": "2px",
+                      "border-left-width": "2px",
+                      "border-top-style": "outset",
+                      "border-right-style": "outset",
+                      "border-bottom-style": "outset",
+                      "border-left-style": "outset",
+                      "border-top-color": "rgb(0, 0, 0)",
+                      "border-right-color": "rgb(0, 0, 0)",
+                      "border-bottom-color": "rgb(0, 0, 0)",
+                      "border-left-color": "rgb(0, 0, 0)",
+                      "font-family": "Arial",
+                      "font-size": "13.3333px",
+                      "line-height": "normal",
+                      "text-align": "center"
+                    },
+                    "text": "About",
+                    "attrs": {},
+                    "children": [],
+                    "notes": [],
+                    "path": "body>div:0>div:0>nav:0>button:1",
+                    "nameHint": "nav_item",
+                    "react": {
+                      "owners": [
+                        {
+                          "name": "NavItem",
+                          "id": 3
+                        },
+                        {
+                          "name": "Shell",
+                          "id": 1
+                        },
+                        {
+                          "name": "App",
+                          "id": 2
+                        }
+                      ]
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 21,
+                      "w": 200,
+                      "h": 21
+                    }
+                  }
+                ],
+                "notes": [],
+                "path": "body>div:0>div:0>nav:0",
+                "react": {
+                  "owners": [
+                    {
+                      "name": "Shell",
+                      "id": 1
+                    },
+                    {
+                      "name": "App",
+                      "id": 2
+                    }
+                  ]
+                },
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "w": 200,
+                  "h": 357.69
+                }
+              },
+              {
+                "id": 6,
+                "tag": "main",
+                "styles": {
+                  "display": "block",
+                  "width": "1240px",
+                  "height": "357.688px",
+                  "padding-top": "16px",
+                  "padding-right": "16px",
+                  "padding-bottom": "16px",
+                  "padding-left": "16px",
+                  "flex-grow": "1",
+                  "flex-basis": "0%"
+                },
+                "text": null,
+                "attrs": {},
+                "children": [
+                  {
+                    "id": 7,
+                    "tag": "section",
+                    "styles": {
+                      "display": "block",
+                      "width": "1208px",
+                      "height": "114.844px",
+                      "margin-bottom": "8px",
+                      "padding-top": "12px",
+                      "padding-right": "12px",
+                      "padding-bottom": "12px",
+                      "padding-left": "12px",
+                      "border-top-width": "1px",
+                      "border-right-width": "1px",
+                      "border-bottom-width": "1px",
+                      "border-left-width": "1px",
+                      "border-top-style": "solid",
+                      "border-right-style": "solid",
+                      "border-bottom-style": "solid",
+                      "border-left-style": "solid",
+                      "border-top-color": "rgb(204, 204, 204)",
+                      "border-right-color": "rgb(204, 204, 204)",
+                      "border-bottom-color": "rgb(204, 204, 204)",
+                      "border-left-color": "rgb(204, 204, 204)"
+                    },
+                    "text": null,
+                    "attrs": {},
+                    "children": [
+                      {
+                        "id": 8,
+                        "tag": "h2",
+                        "styles": {
+                          "display": "block",
+                          "width": "1182px",
+                          "height": "20px",
+                          "margin-top": "17.43px",
+                          "margin-bottom": "17.43px",
+                          "font-size": "21px",
+                          "font-weight": "700"
+                        },
+                        "text": "First",
+                        "attrs": {},
+                        "children": [],
+                        "notes": [],
+                        "path": "body>div:0>div:0>main:1>section:0>h2:0",
+                        "react": {
+                          "owners": [
+                            {
+                              "name": "Card",
+                              "id": 4
+                            },
+                            {
+                              "name": "App",
+                              "id": 2
+                            }
+                          ]
+                        },
+                        "rect": {
+                          "x": 229,
+                          "y": 46.42,
+                          "w": 1182,
+                          "h": 20
+                        }
+                      },
+                      {
+                        "id": 9,
+                        "tag": "p",
+                        "styles": {
+                          "display": "block",
+                          "width": "1182px",
+                          "height": "20px",
+                          "margin-top": "14px",
+                          "margin-bottom": "14px"
+                        },
+                        "text": "Body",
+                        "attrs": {},
+                        "children": [],
+                        "notes": [],
+                        "path": "body>div:0>div:0>main:1>section:0>p:1",
+                        "react": {
+                          "owners": [
+                            {
+                              "name": "Card",
+                              "id": 4
+                            },
+                            {
+                              "name": "App",
+                              "id": 2
+                            }
+                          ]
+                        },
+                        "rect": {
+                          "x": 229,
+                          "y": 83.84,
+                          "w": 1182,
+                          "h": 20
+                        }
+                      }
+                    ],
+                    "notes": [],
+                    "path": "body>div:0>div:0>main:1>section:0",
+                    "nameHint": "card",
+                    "react": {
+                      "owners": [
+                        {
+                          "name": "Card",
+                          "id": 4
+                        },
+                        {
+                          "name": "App",
+                          "id": 2
+                        }
+                      ]
+                    },
+                    "rect": {
+                      "x": 216,
+                      "y": 16,
+                      "w": 1208,
+                      "h": 114.84
+                    }
+                  },
+                  {
+                    "id": 10,
+                    "tag": "section",
+                    "styles": {
+                      "display": "block",
+                      "width": "1208px",
+                      "height": "114.844px",
+                      "margin-bottom": "8px",
+                      "padding-top": "12px",
+                      "padding-right": "12px",
+                      "padding-bottom": "12px",
+                      "padding-left": "12px",
+                      "border-top-width": "1px",
+                      "border-right-width": "1px",
+                      "border-bottom-width": "1px",
+                      "border-left-width": "1px",
+                      "border-top-style": "solid",
+                      "border-right-style": "solid",
+                      "border-bottom-style": "solid",
+                      "border-left-style": "solid",
+                      "border-top-color": "rgb(204, 204, 204)",
+                      "border-right-color": "rgb(204, 204, 204)",
+                      "border-bottom-color": "rgb(204, 204, 204)",
+                      "border-left-color": "rgb(204, 204, 204)"
+                    },
+                    "text": null,
+                    "attrs": {},
+                    "children": [
+                      {
+                        "id": 11,
+                        "tag": "h2",
+                        "styles": {
+                          "display": "block",
+                          "width": "1182px",
+                          "height": "20px",
+                          "margin-top": "17.43px",
+                          "margin-bottom": "17.43px",
+                          "font-size": "21px",
+                          "font-weight": "700"
+                        },
+                        "text": "Second",
+                        "attrs": {},
+                        "children": [],
+                        "notes": [],
+                        "path": "body>div:0>div:0>main:1>section:1>h2:0",
+                        "react": {
+                          "owners": [
+                            {
+                              "name": "Card",
+                              "id": 5
+                            },
+                            {
+                              "name": "App",
+                              "id": 2
+                            }
+                          ]
+                        },
+                        "rect": {
+                          "x": 229,
+                          "y": 169.27,
+                          "w": 1182,
+                          "h": 20
+                        }
+                      },
+                      {
+                        "id": 12,
+                        "tag": "p",
+                        "styles": {
+                          "display": "block",
+                          "width": "1182px",
+                          "height": "20px",
+                          "margin-top": "14px",
+                          "margin-bottom": "14px"
+                        },
+                        "text": "Body",
+                        "attrs": {},
+                        "children": [],
+                        "notes": [],
+                        "path": "body>div:0>div:0>main:1>section:1>p:1",
+                        "react": {
+                          "owners": [
+                            {
+                              "name": "Card",
+                              "id": 5
+                            },
+                            {
+                              "name": "App",
+                              "id": 2
+                            }
+                          ]
+                        },
+                        "rect": {
+                          "x": 229,
+                          "y": 206.69,
+                          "w": 1182,
+                          "h": 20
+                        }
+                      }
+                    ],
+                    "notes": [],
+                    "path": "body>div:0>div:0>main:1>section:1",
+                    "nameHint": "card",
+                    "react": {
+                      "owners": [
+                        {
+                          "name": "Card",
+                          "id": 5
+                        },
+                        {
+                          "name": "App",
+                          "id": 2
+                        }
+                      ]
+                    },
+                    "rect": {
+                      "x": 216,
+                      "y": 138.84,
+                      "w": 1208,
+                      "h": 114.84
+                    }
+                  },
+                  {
+                    "id": 13,
+                    "tag": "ul",
+                    "styles": {
+                      "display": "block",
+                      "width": "1208px",
+                      "height": "60px",
+                      "margin-top": "14px",
+                      "margin-bottom": "14px",
+                      "padding-left": "40px"
+                    },
+                    "text": null,
+                    "attrs": {},
+                    "children": [
+                      {
+                        "id": 14,
+                        "tag": "li",
+                        "styles": {
+                          "display": "list-item",
+                          "width": "1168px",
+                          "height": "20px"
+                        },
+                        "text": "Design",
+                        "attrs": {},
+                        "children": [],
+                        "notes": [],
+                        "path": "body>div:0>div:0>main:1>ul:2>li:0",
+                        "react": {
+                          "owners": [
+                            {
+                              "name": "Tags",
+                              "id": 6
+                            },
+                            {
+                              "name": "App",
+                              "id": 2
+                            }
+                          ],
+                          "key": "Design"
+                        },
+                        "rect": {
+                          "x": 256,
+                          "y": 267.69,
+                          "w": 1168,
+                          "h": 20
+                        }
+                      },
+                      {
+                        "id": 15,
+                        "tag": "li",
+                        "styles": {
+                          "display": "list-item",
+                          "width": "1168px",
+                          "height": "20px"
+                        },
+                        "text": "Code",
+                        "attrs": {},
+                        "children": [],
+                        "notes": [],
+                        "path": "body>div:0>div:0>main:1>ul:2>li:1",
+                        "react": {
+                          "owners": [
+                            {
+                              "name": "Tags",
+                              "id": 6
+                            },
+                            {
+                              "name": "App",
+                              "id": 2
+                            }
+                          ],
+                          "key": "Code"
+                        },
+                        "rect": {
+                          "x": 256,
+                          "y": 287.69,
+                          "w": 1168,
+                          "h": 20
+                        }
+                      },
+                      {
+                        "id": 16,
+                        "tag": "li",
+                        "styles": {
+                          "display": "list-item",
+                          "width": "1168px",
+                          "height": "20px"
+                        },
+                        "text": "Ship",
+                        "attrs": {},
+                        "children": [],
+                        "notes": [],
+                        "path": "body>div:0>div:0>main:1>ul:2>li:2",
+                        "react": {
+                          "owners": [
+                            {
+                              "name": "Tags",
+                              "id": 6
+                            },
+                            {
+                              "name": "App",
+                              "id": 2
+                            }
+                          ],
+                          "key": "Ship"
+                        },
+                        "rect": {
+                          "x": 256,
+                          "y": 307.69,
+                          "w": 1168,
+                          "h": 20
+                        }
+                      }
+                    ],
+                    "notes": [],
+                    "path": "body>div:0>div:0>main:1>ul:2",
+                    "nameHint": "tags",
+                    "react": {
+                      "owners": [
+                        {
+                          "name": "Tags",
+                          "id": 6
+                        },
+                        {
+                          "name": "App",
+                          "id": 2
+                        }
+                      ]
+                    },
+                    "rect": {
+                      "x": 216,
+                      "y": 267.69,
+                      "w": 1208,
+                      "h": 60
+                    }
+                  }
+                ],
+                "notes": [],
+                "path": "body>div:0>div:0>main:1",
+                "nameHint": "main",
+                "react": {
+                  "owners": [
+                    {
+                      "name": "Shell",
+                      "id": 1
+                    },
+                    {
+                      "name": "App",
+                      "id": 2
+                    }
+                  ]
+                },
+                "rect": {
+                  "x": 200,
+                  "y": 0,
+                  "w": 1240,
+                  "h": 357.69
+                }
+              }
+            ],
+            "notes": [],
+            "path": "body>div:0>div:0",
+            "nameHint": "shell",
+            "react": {
+              "owners": [
+                {
+                  "name": "Shell",
+                  "id": 1
+                },
+                {
+                  "name": "App",
+                  "id": 2
+                }
+              ]
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "w": 1440,
+              "h": 357.69
+            }
+          }
+        ],
+        "notes": [],
+        "path": "body>div:0",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1440,
+          "h": 357.69
+        }
+      }
+    ],
+    "notes": [],
+    "path": "body",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 357.69
+    }
+  },
+  "assets": [],
+  "notes": [],
+  "source": {
+    "html": "<html lang=\"en\"><head>\n<meta charset=\"utf-8\">\n<title>React fixture</title>\n<!--\n  A React app in development, for the capture's React annotations: which\n  component drew each element. Loaded from Scamp's own node_modules, so\n  the fixture needs nothing installed. see docs/plans/react-import-plan.md\n-->\n<style>\n  body { margin: 0; font: 14px/20px system-ui, sans-serif; }\n  .shell { display: flex; }\n  .nav { display: flex; flex-direction: column; width: 200px; }\n  .main { flex: 1; padding: 16px; }\n  .card { padding: 12px; border: 1px solid #ccc; margin-bottom: 8px; }\n</style>\n<script src=\"../../../../node_modules/react/umd/react.development.js\"></script>\n<script src=\"../../../../node_modules/react-dom/umd/react-dom.development.js\"></script>\n</head>\n<body>\n<div id=\"root\"><div class=\"shell\"><nav class=\"nav\"><button class=\"nav-item\">Home</button><button class=\"nav-item\">About</button></nav><main class=\"main\"><section class=\"card\"><h2>First</h2><p>Body</p></section><section class=\"card\"><h2>Second</h2><p>Body</p></section><ul class=\"tags\"><li class=\"tag\">Design</li><li class=\"tag\">Code</li><li class=\"tag\">Ship</li></ul></main></div></div>\n<script>\n  const h = React.createElement;\n  function NavItem({ label }) { return h('button', { className: 'nav-item' }, label); }\n  function Card({ title }) { return h('section', { className: 'card' }, h('h2', null, title), h('p', null, 'Body')); }\n  function Shell({ children }) {\n    return h('div', { className: 'shell' },\n      h('nav', { className: 'nav' }, h(NavItem, { label: 'Home' }), h(NavItem, { label: 'About' })),\n      h('main', { className: 'main' }, children));\n  }\n  const TAGS = ['Design', 'Code', 'Ship'];\n  function Tags() { return h('ul', { className: 'tags' }, TAGS.map((tag) => h('li', { key: tag, className: 'tag' }, tag))); }\n  function App() { return h(Shell, null, h(Card, { title: 'First' }), h(Card, { title: 'Second' }), h(Tags)); }\n  ReactDOM.createRoot(document.getElementById('root')).render(h(App));\n</script>\n\n\n</body></html>",
+    "css": "/* <style> */\nbody { margin: 0px; font: 14px / 20px system-ui, sans-serif; }\n.shell { display: flex; }\n.nav { display: flex; flex-direction: column; width: 200px; }\n.main { flex: 1 1 0%; padding: 16px; }\n.card { padding: 12px; border: 1px solid rgb(204, 204, 204); margin-bottom: 8px; }",
+    "unreadable": [],
+    "truncated": false
+  },
+  "react": {
+    "instances": {
+      "0": {
+        "name": "NavItem",
+        "props": {
+          "label": "Home"
+        }
+      },
+      "1": {
+        "name": "Shell",
+        "props": {}
+      },
+      "2": {
+        "name": "App",
+        "props": {}
+      },
+      "3": {
+        "name": "NavItem",
+        "props": {
+          "label": "About"
+        }
+      },
+      "4": {
+        "name": "Card",
+        "props": {
+          "title": "First"
+        }
+      },
+      "5": {
+        "name": "Card",
+        "props": {
+          "title": "Second"
+        }
+      },
+      "6": {
+        "name": "Tags",
+        "props": {}
+      }
+    }
+  }
+}

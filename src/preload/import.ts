@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 import { IPC } from '@shared/ipcChannels';
-import type { ImportOpenArgs, ImportResultPayload } from '@shared/types';
+import type { ImportBatchRef, ImportBatchReport, ImportOpenArgs, ImportResultPayload } from '@shared/types';
 
 /**
  * Preload for the import window.
@@ -31,9 +31,45 @@ const importApi = {
   deliver: (
     projectPath: string,
     payload: unknown,
-    narrower: Array<{ breakpointId: string; payload: unknown }>
+    narrower: Array<{ breakpointId: string; payload: unknown }>,
+    nameHint?: string,
+    batch?: ImportBatchRef
   ): Promise<{ ok: boolean; error?: string }> =>
-    ipcRenderer.invoke(IPC.ImportCaptured, { projectPath, payload, narrower }),
+    ipcRenderer.invoke(IPC.ImportCaptured, {
+      projectPath,
+      payload,
+      narrower,
+      ...(nameHint !== undefined ? { nameHint } : {}),
+      ...(batch !== undefined ? { batch } : {}),
+    }),
+
+  /**
+   * Finish a multi-page import (find its components) or undo it. A batch
+   * id and an action, nothing else; the app window answers on `onBatchReport`.
+   */
+  batchAction: (
+    projectPath: string,
+    batchId: string,
+    action: 'finish' | 'undo'
+  ): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC.ImportBatchAction, { projectPath, batchId, action }),
+
+  onBatchReport: (listener: (payload: ImportBatchReport) => void): (() => void) => {
+    const handler = (_e: IpcRendererEvent, p: ImportBatchReport): void => listener(p);
+    ipcRenderer.on(IPC.ImportBatchReportChanged, handler);
+    return () => ipcRenderer.removeListener(IPC.ImportBatchReportChanged, handler);
+  },
+
+  /**
+   * Ask the app window to start an AI cleanup of the view just imported.
+   * A view name and a mode, and nothing else; main checks both.
+   */
+  startCleanup: (
+    projectPath: string,
+    viewName: string,
+    tokenMode: 'create-tokens' | 'keep-literal'
+  ): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC.ImportStartCleanup, { projectPath, viewName, tokenMode }),
 
   close: (projectPath: string): Promise<void> =>
     ipcRenderer.invoke(IPC.ImportClose, { projectPath }),

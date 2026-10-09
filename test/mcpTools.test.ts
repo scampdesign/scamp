@@ -78,7 +78,7 @@ describe('imported originals', () => {
 });
 
 describe('TOOL_DESCRIPTORS', () => {
-  it('exposes the canvas tools plus the scaffold, view props, routes, and imported originals', () => {
+  it('exposes the canvas tools plus the scaffold, view props, routes, imported originals, React source, and overflow', () => {
     expect(TOOL_NAMES).toEqual([
       'scamp_get_active_page',
       'scamp_get_selected_element',
@@ -96,6 +96,8 @@ describe('TOOL_DESCRIPTORS', () => {
       'scamp_get_recent_edits',
       'scamp_get_conventions',
       'scamp_get_theme_tokens',
+      'scamp_get_react_source',
+      'scamp_find_overflow',
     ]);
   });
 
@@ -113,7 +115,7 @@ describe('TOOL_DESCRIPTORS', () => {
     }
   });
 
-  it('requires an id on get_element_by_id, a name on the name-taking tools, and nothing else', () => {
+  it('requires an id on get_element_by_id, a name on the name-taking tools, a target on the React source, and nothing else', () => {
     const byId = TOOL_DESCRIPTORS.find((t) => t.name === 'scamp_get_element_by_id');
     expect(byId?.inputSchema['required']).toEqual(['id']);
     const scaffold = TOOL_DESCRIPTORS.find((t) => t.name === 'scamp_get_component_scaffold');
@@ -130,8 +132,10 @@ describe('TOOL_DESCRIPTORS', () => {
       'scamp_check_view',
       'scamp_get_import_source',
     ]);
+    const reactSource = TOOL_DESCRIPTORS.find((t) => t.name === 'scamp_get_react_source');
+    expect(reactSource?.inputSchema['required']).toEqual(['target']);
     for (const tool of TOOL_DESCRIPTORS) {
-      if (tool.name === 'scamp_get_element_by_id') continue;
+      if (tool.name === 'scamp_get_element_by_id' || tool.name === 'scamp_get_react_source') continue;
       if (takesName.has(tool.name)) continue;
       expect(tool.inputSchema['required']).toBeUndefined();
     }
@@ -345,5 +349,61 @@ describe('scamp_list_routes', () => {
     const result = await failing('scamp_list_routes', {});
     expect(result.isError).toBe(true);
     expect(result.content[0]?.text).toContain('disk');
+  });
+});
+
+describe('scamp_get_react_source', () => {
+  const never = (): Promise<unknown> => Promise.reject(new Error('should not ask the canvas'));
+
+  it('answers from the React import, in main, with the element when given', async () => {
+    const asked: Array<[string, string | undefined]> = [];
+    const invoke = createToolInvoker(never, {
+      reactSource: async (target, element) => {
+        asked.push([target, element]);
+        return { ok: true, text: '> 12 | {isLate && <Badge />}' };
+      },
+    });
+    const out = await invoke('scamp_get_react_source', { target: 'Patients', element: 'badge_a1b2' });
+    expect(out.isError).toBeUndefined();
+    expect(out.content[0]?.text).toBe('> 12 | {isLate && <Badge />}');
+    expect(asked).toEqual([['Patients', 'badge_a1b2']]);
+  });
+
+  it('passes on what the import record couldn’t answer, as an error', async () => {
+    const invoke = createToolInvoker(never, { reactSource: async () => ({ ok: false, error: 'Patients wasn’t imported from a React app.' }) });
+    const out = await invoke('scamp_get_react_source', { target: 'Patients' });
+    expect(out).toMatchObject({ isError: true });
+    expect(out.content[0]?.text).toBe('Patients wasn’t imported from a React app.');
+  });
+
+  it('requires a target, and says so when the project has no import to read', async () => {
+    const invoke = createToolInvoker(never, {});
+    expect((await invoke('scamp_get_react_source', {})).content[0]?.text).toContain('requires a non-empty string "target"');
+    expect((await invoke('scamp_get_react_source', { target: 'Patients' })).content[0]?.text).toBe('This project has no React import to read.');
+  });
+});
+
+describe('scamp_find_overflow', () => {
+  const never = (): Promise<unknown> => Promise.reject(new Error('should not ask the snapshot'));
+
+  it('hands its arguments to the measure and returns what it found', async () => {
+    let got: Record<string, unknown> | null = null;
+    const invoke = createToolInvoker(never, {
+      findOverflow: async (args) => {
+        got = args;
+        return { ok: true, text: 'Rendered Billing at 390px wide. Nothing overflows.' };
+      },
+    });
+    const out = await invoke('scamp_find_overflow', { view: 'Billing', width: 390 });
+    expect(out.content[0]?.text).toBe('Rendered Billing at 390px wide. Nothing overflows.');
+    expect(got).toEqual({ view: 'Billing', width: 390 });
+  });
+
+  it('reports a failed measure, and a host that can’t lay views out, as errors', async () => {
+    const failing = createToolInvoker(never, { findOverflow: async () => ({ ok: false, text: 'No view or component named "Nope".' }) });
+    expect(await failing('scamp_find_overflow', { view: 'Nope' })).toMatchObject({ isError: true });
+    const thrown = createToolInvoker(never, { findOverflow: async () => Promise.reject(new Error('timed out')) });
+    expect((await thrown('scamp_find_overflow', {})).content[0]?.text).toBe('scamp_find_overflow failed: timed out');
+    expect(await createToolInvoker(never, {})('scamp_find_overflow', {})).toMatchObject({ isError: true });
   });
 });

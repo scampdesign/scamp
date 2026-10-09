@@ -23,8 +23,9 @@ you can do here, and a wrong guess costs more context than this table.
 | Read a web page into the model | `src/shared/captureScript.ts` (runs IN the page), `src/shared/importCapture.ts` (the contract + `CAPTURED_PROPERTIES`) |
 | Change what an import produces | `src/renderer/lib/importReduce.ts` — the pure reducer |
 | The import's report of what it lost | `src/renderer/lib/importReport.ts` |
-| Import fonts, theme tokens, images | `importFonts.ts`, `importTokens.ts`, then `src/renderer/src/components/projectShell/useWebsiteImport.ts` for the orchestration |
+| Import fonts, theme tokens, images | `importFonts.ts`, `appTokens.ts` (a React app's own tokens, from the capture's cascade), then `src/renderer/src/components/projectShell/useWebsiteImport.ts` for the orchestration |
 | Measure import fidelity | `scripts/import-fidelity.mjs` (geometry), `scripts/import-pixels.mjs` (pixels), findings in `docs/notes/import-parity-log.md` |
+| Import a React app's pages | `docs/plans/react-import-plan.md`; `src/main/reactImport/detect.ts` (how to run it), `src/shared/reactRoutes.ts` (its routes, read from the running app), `src/renderer/lib/reactComponents.ts` (its components, from React's tree in the capture), `src/renderer/lib/reactRepeats.ts` (its `.map()` lists, as repeats); measured by `scripts/react-import-eval.mjs` over the shared `scripts/lib/pixelHarness.mjs` |
 | TSX / CSS output | `src/renderer/lib/generateCode/` — `declarations.ts` is where a property becomes CSS |
 | Read files back into the model | `src/renderer/lib/parseCode/` |
 | A CSS property's typed mapping | `src/renderer/lib/cssPropertyMap.ts`, `parsers/` for each shorthand |

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Northwind — Ship faster</title>
+<style>
+  /* A partial reset, as most real pages have. Deliberately NOT a full
+     one: `ul` keeps its UA padding, so the capture has to carry it. */
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, system-ui, sans-serif; color: #1a1d24; }
+  h1, h2, h3, p { margin: 0; }
+
+  .page { display: flex; flex-direction: column; }
+
+  /* Three wrappers that contribute nothing — the collapse pass should
+     take these out. */
+  .nav-outer { }
+  .nav-mid { }
+  .nav { display: flex; align-items: center; justify-content: space-between;
+         padding: 16px 32px; border-bottom: 1px solid #e4e6eb; }
+  /* A wordmark: a flex span whose three parts are span / b / sup. Read
+     as running text it collapsed into one bare <span>. */
+  .brand { display: flex; align-items: baseline; font-weight: 700;
+           font-size: 18px; letter-spacing: -0.01em; }
+  .brand b { color: #2d4a7c; }
+  .brand sup { font-size: 10px; }
+  .nav-links { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; }
+  .nav-links a { color: #4a5059; text-decoration: none; font-size: 14px; }
+
+  .hero { display: flex; flex-direction: column; align-items: center;
+          gap: 20px; padding: 96px 32px;
+          background-image: linear-gradient(#fbfbfd, #f2f4f8); }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em;
+             text-transform: uppercase; color: #2d4a7c; }
+  .hero h1 { font-size: 56px; line-height: 1.05; letter-spacing: -0.03em;
+             max-width: 16ch; text-align: center; }
+  /* A highlighted word. All of its appearance comes from this class, so
+     a bare <span> in the output would lose every bit of it. */
+  .hero h1 .mark { background: #d9e8ff; color: #16223a; padding: 0 8px;
+                   border-radius: 6px; display: inline-block; }
+  /* A span carrying nothing of its own — it must stay inline markup. */
+  .plain-span { }
+  .hero p { font-size: 18px; line-height: 1.6; color: #4a5059;
+            max-width: 52ch; text-align: center; }
+  .cta { display: flex; gap: 12px; }
+  .btn { padding: 12px 22px; border-radius: 8px; border: 1px solid #2d4a7c;
+         background: #2d4a7c; color: #fff; font-size: 15px; font-weight: 600; }
+  .btn-ghost { background: transparent; color: #2d4a7c; }
+
+  /* A decorative icon with no element behind it — must be reported. */
+  .badge::before { content: "★"; margin-right: 6px; color: #d9b36a; }
+  .badge { display: inline-flex; align-items: center; font-size: 13px;
+           color: #767d88; }
+
+  .features { display: flex; gap: 24px; padding: 64px 32px; }
+  .card { flex: 1 1 0; display: flex; flex-direction: column; gap: 10px;
+          padding: 24px; border: 1px solid #e4e6eb; border-radius: 12px;
+          background: #ffffff; }
+  .card h3 { font-size: 17px; font-weight: 600; }
+  .card p { font-size: 14px; line-height: 1.55; color: #4a5059; }
+  .shot { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; }
+
+  .footer { padding: 32px; border-top: 1px solid #e4e6eb;
+            color: #767d88; font-size: 13px; }
+
+  /* A paragraph that is really a container: a line of text plus a
+     block-level <em>. The <p> must not be typed as text, or the canvas
+     renders its `text` and drops both children. */
+  .legal { font-size: 11px; line-height: 15.4px; color: #767d88;
+           letter-spacing: 1.32px; }
+  .fineprint { display: block; font-style: italic; font-size: 10px;
+               line-height: 14.5px; margin-top: 6px; max-width: 40ch; }
+
+  /* Present but hidden — the walk should prune it and its subtree. */
+  .mobile-menu { display: none; }
+
+  /* An icon before a title, then the title's own words. The words are
+     lifted into a child of their own, and must land after the icon. */
+  .with-icon { display: flex; align-items: center; gap: 8px; }
+  .with-icon .ico { display: inline; color: #2d4a7c; }
+  /* A box whose only content is words. Scamp emits text for text
+     elements alone, so read as a box it came out empty. */
+  .just-words { font-size: 12px; color: #767d88; }
+  /* An inline-flex row: a layout container the typed model calls
+     neither flex nor grid, so its children used to fall out of flow. */
+  .chip-row { display: inline-flex; align-items: center; gap: 6px;
+              padding: 4px 10px; border: 1px solid #e4e6eb; }
+  /* An icon painted by a CSS rule rather than an attribute, which is
+     how most pages do it. Captured as `currentColor` so it keeps
+     following the colour around it. */
+  .icon-row { display: flex; align-items: center; gap: 8px; color: #2d4a7c; }
+  .icon-row svg { width: 20px; height: 20px; fill: currentColor; }
+  /* And one painted a fixed colour, which must not become currentColor. */
+  .icon-row svg.icon-fixed { fill: #d9b36a; }
+
+  /* Gradient text: the background is clipped to the glyphs and the text
+     itself is painted transparent. Capture only half of it and the
+     words are simply invisible. */
+  .gradient-title { background-image: linear-gradient(90deg, #2d4a7c, #d9b36a);
+                    -webkit-background-clip: text; background-clip: text;
+                    -webkit-text-fill-color: transparent; font-size: 32px; }
+
+  /* No border-box reset here, so this one's computed width and height
+     are CONTENT size and have to be converted. */
+  .content-box { box-sizing: content-box; width: 200px; height: 40px;
+                 padding: 12px 16px; border: 2px solid #2d4a7c; }
+
+  /* Real responsive rules, so the importer has media queries to read
+     back at its narrower breakpoints. */
+  @media (max-width: 768px) {
+    .hero { padding: 56px 20px; }
+    .hero h1 { font-size: 36px; }
+    .features { flex-direction: column; gap: 16px; }
+    .nav { padding: 12px 20px; }
+  }
+
+  @media (max-width: 390px) {
+    .hero h1 { font-size: 28px; }
+    .hero p { font-size: 15px; }
+    .card { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="nav-outer"><div class="nav-mid">
+      <nav class="nav">
+        <span class="brand"><span>North</span><b>wind</b><sup>®</sup></span>
+        <ul class="nav-links">
+          <li><a href="/product">Product</a></li>
+          <li><a href="/pricing">Pricing</a></li>
+          <li><a href="/docs">Docs</a></li>
+        </ul>
+      </nav>
+    </div></div>
+
+    <div class="mobile-menu">
+      <a href="/product">Product</a>
+      <a href="/pricing">Pricing</a>
+    </div>
+
+    <header class="hero">
+      <p class="eyebrow">Now in public beta</p>
+      <h1>Ship the <span class="mark">thing</span> you <span class="plain-span">actually</span> designed</h1>
+      <p>Northwind keeps your design and your code the same artifact, so the
+         handoff you keep rewriting stops existing.</p>
+      <div class="cta">
+        <button class="btn">Start building</button>
+        <button class="btn btn-ghost">Read the docs</button>
+      </div>
+      <span class="badge">No credit card required</span>
+    </header>
+
+    <section class="features">
+      <article class="card">
+        <img class="shot" src="shot-sync.png" alt="Two files staying in step">
+        <h3>Two-way sync</h3>
+        <p>Edit the canvas or edit the file. Both land in the same place, and
+           neither one wins by clobbering the other.</p>
+      </article>
+      <article class="card">
+        <img class="shot" src="shot-tokens.png" alt="A palette of design tokens">
+        <h3>Real tokens</h3>
+        <p>Colours and spacing live in one stylesheet. Change the token and
+           every screen follows.</p>
+      </article>
+      <article class="card">
+        <img class="shot" src="shot-agents.png" alt="An agent editing a file">
+        <h3>Agents welcome</h3>
+        <p>An agent writes the same files you do, and the canvas picks the
+           change up as it saves.</p>
+      </article>
+    </section>
+
+    <footer class="footer">© 2026 Northwind. Built in the open.</footer>
+
+    <h3 class="with-icon"><span class="ico">★</span>Icon before the words</h3>
+    <div class="just-words">A box whose only content is words.</div>
+    <h2 class="gradient-title">Painted by a gradient</h2>
+    <div class="icon-row">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 22h20z"></path></svg>
+      <span>Follows the text</span>
+      <svg class="icon-fixed" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"></path></svg>
+    </div>
+    <span class="chip-row"><b>9</b><span>open</span></span>
+    <div class="content-box">Measured in content-box</div>
+
+    <p class="legal">
+      Ships with a warranty
+      <em class="fineprint">Terms apply. Read them before you rely on any of
+         this, because the small print is where the interesting parts live.</em>
+    </p>
+  </div>
+</body>
+</html>

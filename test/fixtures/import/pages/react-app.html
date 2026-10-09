@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>React fixture</title>
+<!--
+  A React app in development, for the capture's React annotations: which
+  component drew each element. Loaded from Scamp's own node_modules, so
+  the fixture needs nothing installed. see docs/plans/react-import-plan.md
+-->
+<style>
+  body { margin: 0; font: 14px/20px system-ui, sans-serif; }
+  .shell { display: flex; }
+  .nav { display: flex; flex-direction: column; width: 200px; }
+  .main { flex: 1; padding: 16px; }
+  .card { padding: 12px; border: 1px solid #ccc; margin-bottom: 8px; }
+</style>
+<script src="../../../../node_modules/react/umd/react.development.js"></script>
+<script src="../../../../node_modules/react-dom/umd/react-dom.development.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  const h = React.createElement;
+  function NavItem({ label }) { return h('button', { className: 'nav-item' }, label); }
+  function Card({ title }) { return h('section', { className: 'card' }, h('h2', null, title), h('p', null, 'Body')); }
+  function Shell({ children }) {
+    return h('div', { className: 'shell' },
+      h('nav', { className: 'nav' }, h(NavItem, { label: 'Home' }), h(NavItem, { label: 'About' })),
+      h('main', { className: 'main' }, children));
+  }
+  const TAGS = ['Design', 'Code', 'Ship'];
+  function Tags() { return h('ul', { className: 'tags' }, TAGS.map((tag) => h('li', { key: tag, className: 'tag' }, tag))); }
+  function App() { return h(Shell, null, h(Card, { title: 'First' }), h(Card, { title: 'Second' }), h(Tags)); }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>

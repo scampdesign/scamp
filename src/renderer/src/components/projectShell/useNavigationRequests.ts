@@ -1,12 +1,20 @@
 import { useEffect } from 'react';
 
-import type { ProjectData } from '@shared/types';
+import type { ComponentKind, ProjectData } from '@shared/types';
 import { useCanvasStore } from '@store/canvasSlice';
+
+import type { ActiveComponent } from './types';
 
 type ComponentNavRef = {
   current: {
-    openComponent: (name: string, fromPage: string | null) => void;
+    openComponent: (
+      name: string,
+      fromPage: string | null,
+      kind?: ComponentKind,
+      from?: { name: string; kind: ComponentKind }
+    ) => void;
     activePageName: string | null;
+    activeComponent: ActiveComponent | null;
   };
 };
 
@@ -39,11 +47,18 @@ export const useNavigationRequests = (
   );
   useEffect(() => {
     if (pendingComponentNavigation === null) return;
-    if (project.components.some((c) => c.name === pendingComponentNavigation)) {
-      componentNav.current.openComponent(
-        pendingComponentNavigation,
-        componentNav.current.activePageName
-      );
+    const { openComponent, activePageName, activeComponent } = componentNav.current;
+    if (
+      project.components.some((c) => c.name === pendingComponentNavigation) &&
+      activeComponent?.name !== pendingComponentNavigation
+    ) {
+      // From a view or another component, the way back is that view or
+      // component; from a page, the page.
+      if (activeComponent !== null) {
+        openComponent(pendingComponentNavigation, null, undefined, { name: activeComponent.name, kind: activeComponent.kind });
+      } else {
+        openComponent(pendingComponentNavigation, activePageName);
+      }
     }
     useCanvasStore.getState().requestComponentNavigation(null);
   }, [pendingComponentNavigation, project.components, componentNav]);

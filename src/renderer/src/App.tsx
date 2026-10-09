@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { StartScreen } from './components/StartScreen';
 import { flushPendingProjectThumbnail } from './lib/projectThumbnail';
-import { ProjectShell } from './components/ProjectShell';
+import { ProjectShell, type PendingReactImport } from './components/ProjectShell';
 import { SettingsPage } from './components/SettingsPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SentryOptInPrompt } from './components/SentryOptInPrompt';
@@ -10,6 +10,9 @@ import { initSyncBridge, flushPendingPageWrite } from './syncBridge';
 import { applyAppTheme } from './lib/applyAppTheme';
 import { CONSENT_VERSION, hasCurrentConsent } from '@shared/consent';
 import { useFontsStore } from '@store/fontsSlice';
+import { useAgentStore } from '@store/agentSlice';
+import { endAgentTurnHistory } from './syncBridge/agentToolResponder';
+import { useAuthStore } from '@store/authSlice';
 import { useTerminalActivityStore } from '@store/terminalActivitySlice';
 import type { ProjectData } from '@shared/types';
 
@@ -27,6 +30,8 @@ type OptInState = 'loading' | 'pending' | 'resolved';
 
 export const App = (): JSX.Element => {
   const [project, setProject] = useState<ProjectData | null>(null);
+  /** A React import waiting for the project it was made for to open. */
+  const [pendingImport, setPendingImport] = useState<PendingReactImport | null>(null);
   const [view, setView] = useState<View>('start');
   const [optInState, setOptInState] = useState<OptInState>('loading');
 
@@ -70,6 +75,45 @@ export const App = (): JSX.Element => {
   useEffect(() => {
     return initSyncBridge();
   }, []);
+
+  // Sign-in state for gated surfaces (the Scamp Agent). Main owns the
+  // session; this mirrors it. see @store/authSlice
+  useEffect(() => {
+    let cancelled = false;
+    const apply = useAuthStore.getState().applyStatus;
+    void window.scamp.authStatus().then((status) => {
+      if (!cancelled) apply(status);
+    });
+    const off = window.scamp.onAuthChanged(apply);
+    return () => {
+      cancelled = true;
+      off();
+    };
+  }, []);
+
+  // "Clean up with AI" from the import window: open the Agent panel and
+  // start the cleanup of the view just imported.
+  useEffect(
+    () =>
+      window.scamp.onAgentStartCleanup(({ projectPath, viewName, tokenMode }) => {
+        const agent = useAgentStore.getState();
+        if (agent.lastImport?.projectPath !== projectPath || agent.lastImport.viewName !== viewName) return;
+        useCanvasStore.getState().setSidebarSection('agent');
+        void agent.startCleanup(tokenMode);
+      }),
+    []
+  );
+
+  // Scamp Agent replies stream in whether or not the panel is open.
+  useEffect(
+    () =>
+      window.scamp.onAgentEvent((event) => {
+        // A turn's edits are one undo step, committed when the turn ends.
+        if (event.kind === 'turn-end') endAgentTurnHistory(event.turnId);
+        useAgentStore.getState().applyEvent(event);
+      }),
+    []
+  );
 
   // Phase 4.2: keep the terminal-activity slice in sync with main's
   // pty foreground-process events. The sync bridge subscribes to
@@ -236,27 +280,41 @@ export const App = (): JSX.Element => {
 
   if (view === 'project' && project) {
     const closingProjectPath = project.path;
+    // Everything closing a project does, whether to the start screen or
+    // straight into another project.
+    const leaveProject = (): void => {
+      // Session-close snapshot: flush any pending debounced write
+      // so the snapshot includes the latest canvas state, then take
+      // it. Fire-and-forget — main reads the project from disk.
+      flushPendingPageWrite();
+      // Take the thumbnail before the canvas goes: the capture
+      // detaches its own copy synchronously, so it survives the
+      // unmount on the next line.
+      flushPendingProjectThumbnail(closingProjectPath);
+      void window.scamp.createSnapshot({
+        projectPath: closingProjectPath,
+        trigger: 'session_close',
+      });
+      // Close the preview window and stop its dev server
+      // before tearing down the project — preview shouldn't
+      // outlive the project that's editing it.
+      void window.scamp.closePreview(closingProjectPath);
+    };
     return (
       <ErrorBoundary>
         <ProjectShell
+          // A new project is a new shell, not this one re-rendered.
+          key={project.path}
           project={project}
+          pendingImport={pendingImport}
+          onPendingImportHandled={() => setPendingImport(null)}
+          onSwitchProject={(next, thenImport) => {
+            leaveProject();
+            setPendingImport(thenImport);
+            setProject(next);
+          }}
           onClose={() => {
-            // Session-close snapshot: flush any pending debounced write
-            // so the snapshot includes the latest canvas state, then take
-            // it. Fire-and-forget — main reads the project from disk.
-            flushPendingPageWrite();
-            // Take the thumbnail before the canvas goes: the capture
-            // detaches its own copy synchronously, so it survives the
-            // unmount on the next line.
-            flushPendingProjectThumbnail(closingProjectPath);
-            void window.scamp.createSnapshot({
-              projectPath: closingProjectPath,
-              trigger: 'session_close',
-            });
-            // Close the preview window and stop its dev server
-            // before tearing down the project — preview shouldn't
-            // outlive the project that's editing it.
-            void window.scamp.closePreview(closingProjectPath);
+            leaveProject();
             setProject(null);
             setView('start');
           }}

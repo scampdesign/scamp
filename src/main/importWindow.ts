@@ -3,12 +3,12 @@ import { join } from 'path';
 
 import { IPC } from '@shared/ipcChannels';
 import { saveImportSource } from './importSourceStore';
+import { stopReactAppAt } from './reactImport/appServer';
 import type { CapturedSource } from '@shared/importCapture';
 import type {
   ImportCapturedArgs,
   ImportOpenArgs,
-  ImportResultPayload,
-} from '@shared/types';
+  ImportResultPayload, AgentStartCleanupArgs, ImportBatchActionArgs, ImportBatchReport } from '@shared/types';
 
 /**
  * The import window: a browser you point at a page, and a button that
@@ -28,6 +28,8 @@ import type {
  */
 
 const importWindows = new Map<string, BrowserWindow>();
+/** What each window was opened for: a React app keeps its own session. */
+const openedFor = new Map<BrowserWindow, ImportOpenArgs>();
 
 /** The app window — the one that owns a project and can make a view. */
 const appWindow = (): BrowserWindow | null => {
@@ -53,8 +55,19 @@ export const openImportWindow = async (
   const { projectPath } = args;
   const existing = importWindows.get(projectPath);
   if (existing && !existing.isDestroyed()) {
-    existing.focus();
-    return { id: existing.id };
+    const before = openedFor.get(existing);
+    // A webview's session is fixed when it is created, so a different
+    // app — or a web page after an app — needs a window of its own.
+    if (before?.react?.appName === args.react?.appName) {
+      if (args.url !== undefined) {
+        openedFor.set(existing, args);
+        existing.webContents.send(IPC.ImportOpen, args);
+      }
+      existing.focus();
+      return { id: existing.id };
+    }
+    importWindows.delete(projectPath);
+    existing.close();
   }
 
   const win = new BrowserWindow({
@@ -76,6 +89,7 @@ export const openImportWindow = async (
   });
 
   importWindows.set(projectPath, win);
+  openedFor.set(win, args);
 
   // A third-party page opening a popup must not spawn an Electron
   // window inside the importer. Same rule as the preview: hand it to
@@ -89,7 +103,13 @@ export const openImportWindow = async (
     });
   });
 
-  win.on('closed', () => importWindows.delete(projectPath));
+  win.on('closed', () => {
+    if (importWindows.get(projectPath) === win) importWindows.delete(projectPath);
+    // A React app's dev server lives as long as the window importing from it.
+    const opened = openedFor.get(win);
+    openedFor.delete(win);
+    if (opened?.react !== undefined && opened.url !== undefined) stopReactAppAt(opened.url);
+  });
   win.once('ready-to-show', () => {
     win.show();
     win.webContents.send(IPC.ImportOpen, args);
@@ -147,6 +167,55 @@ export const registerImportIpc = (): void => {
       }
     }
   );
+
+  // Import window → app window: start an AI cleanup of the view just
+  // imported. The import window is the least-trusted renderer in the app
+  // (it hosts a third-party page), so it can name a view and a mode and
+  // nothing else; both are checked here before anything is forwarded.
+  ipcMain.handle(IPC.ImportStartCleanup, (_e, args: AgentStartCleanupArgs) => {
+    const target = appWindow();
+    if (!target) return { ok: false, error: 'Scamp is not open on a project.' };
+    const valid =
+      typeof args?.projectPath === 'string' &&
+      typeof args.viewName === 'string' &&
+      args.viewName.length > 0 &&
+      args.viewName.length < 200 &&
+      (args.tokenMode === 'create-tokens' || args.tokenMode === 'keep-literal');
+    if (!valid) return { ok: false, error: 'That cleanup request was malformed.' };
+    const forwarded: AgentStartCleanupArgs = {
+      projectPath: args.projectPath,
+      viewName: args.viewName,
+      tokenMode: args.tokenMode,
+    };
+    target.webContents.send(IPC.AgentStartCleanup, forwarded);
+    target.focus();
+    return { ok: true };
+  });
+
+  // Import window → app window: finish or undo one multi-page import. The
+  // window names a batch and an action and nothing else; the app window
+  // acts only on what it recorded making for that batch.
+  ipcMain.handle(IPC.ImportBatchAction, (_e, args: ImportBatchActionArgs) => {
+    const target = appWindow();
+    if (!target) return { ok: false, error: 'Scamp is not open on a project.' };
+    if (
+      typeof args?.projectPath !== 'string' ||
+      typeof args.batchId !== 'string' ||
+      !/^[a-z0-9-]{1,64}$/.test(args.batchId) ||
+      (args.action !== 'finish' && args.action !== 'undo')
+    ) {
+      return { ok: false, error: 'That request was malformed.' };
+    }
+    const forwarded: ImportBatchActionArgs = { projectPath: args.projectPath, batchId: args.batchId, action: args.action };
+    target.webContents.send(IPC.ImportBatchActionDeliver, forwarded);
+    return { ok: true };
+  });
+
+  // App window → import window: what the action did.
+  ipcMain.handle(IPC.ImportBatchReport, (_e, payload: ImportBatchReport) => {
+    const win = importWindows.get(payload.projectPath);
+    if (win && !win.isDestroyed()) win.webContents.send(IPC.ImportBatchReportChanged, payload);
+  });
 
   // App window → import window, so the importer can report the outcome
   // without knowing anything about projects.

@@ -1,4 +1,4 @@
-import type { ImportOpenArgs, ImportResultPayload } from '@shared/types';
+import type { ImportBatchRef, ImportBatchReport, ImportOpenArgs, ImportResultPayload } from '@shared/types';
 /**
  * Preload for the import window.
  *
@@ -17,7 +17,24 @@ declare const importApi: {
     deliver: (projectPath: string, payload: unknown, narrower: Array<{
         breakpointId: string;
         payload: unknown;
-    }>) => Promise<{
+    }>, nameHint?: string, batch?: ImportBatchRef) => Promise<{
+        ok: boolean;
+        error?: string;
+    }>;
+    /**
+     * Finish a multi-page import (find its components) or undo it. A batch
+     * id and an action, nothing else; the app window answers on `onBatchReport`.
+     */
+    batchAction: (projectPath: string, batchId: string, action: "finish" | "undo") => Promise<{
+        ok: boolean;
+        error?: string;
+    }>;
+    onBatchReport: (listener: (payload: ImportBatchReport) => void) => (() => void);
+    /**
+     * Ask the app window to start an AI cleanup of the view just imported.
+     * A view name and a mode, and nothing else; main checks both.
+     */
+    startCleanup: (projectPath: string, viewName: string, tokenMode: "create-tokens" | "keep-literal") => Promise<{
         ok: boolean;
         error?: string;
     }>;

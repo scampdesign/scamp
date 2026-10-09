@@ -47,6 +47,32 @@ export declare const IPC: {
     readonly AuthSignOut: "auth:signout";
     /** Broadcast to every window when the signed-in state changes. */
     readonly AuthComplete: "auth:complete";
+    readonly AgentKeySet: "agent:key-set";
+    readonly AgentKeyStatus: "agent:key-status";
+    readonly AgentKeyClear: "agent:key-clear";
+    /** Send a message; the reply streams back on `agent:event`. */
+    readonly AgentSend: "agent:send";
+    readonly AgentCancel: "agent:cancel";
+    /** Start a new conversation for one page, view or component. */
+    readonly AgentReset: "agent:reset";
+    /** A page's, view's or component's conversation, read back for the panel. */
+    readonly AgentLoad: "agent:load";
+    /** Main → renderer: one step of a turn, as it happens. */
+    readonly AgentEvent: "agent:event";
+    /** Main → renderer: make one edit for the agent. */
+    readonly AgentToolCall: "agent:tool-call";
+    /** Renderer → main: how that edit went. */
+    readonly AgentToolResult: "agent:tool-result";
+    /** Renderer → main: the user's answer to a confirmation request. */
+    readonly AgentConfirm: "agent:confirm";
+    /** Renderer → main: lay a view's HTML export out and measure what overflows. */
+    readonly AgentMeasureOverflow: "agent:measure-overflow";
+    /** Import window → main: start a cleanup of the view just imported. */
+    readonly ImportStartCleanup: "import:start-cleanup";
+    /** Main → app window: start that cleanup in the Agent panel. */
+    readonly AgentStartCleanup: "agent:start-cleanup";
+    /** Restore the project to before the conversation's first edit. */
+    readonly AgentUndoSession: "agent:undo-session";
     readonly ThemeRead: "theme:read";
     readonly ThemeChanged: "theme:changed";
     readonly ThemeWrite: "theme:write";
@@ -66,6 +92,17 @@ export declare const IPC: {
     /** main → renderer: a file under routes/ was added, changed, or removed. */
     readonly RoutesChanged: "routes:changed";
     readonly ImportOpen: "import:open";
+    readonly ImportBatchAction: "import:batch-action";
+    readonly ImportBatchActionDeliver: "import:batch-action-deliver";
+    readonly ImportBatchReport: "import:batch-report";
+    readonly ImportBatchReportChanged: "import:batch-report-changed";
+    readonly ReactImportInspect: "react-import:inspect";
+    readonly ReactImportStart: "react-import:start";
+    readonly ReactImportProgress: "react-import:progress";
+    /** The names a React app's source gives its lists, read in main from the app's folder. */
+    readonly ReactImportListNames: "react-import:list-names";
+    /** Where a finished React import's elements came from, kept for the AI pass and re-import. */
+    readonly ReactImportRecord: "react-import:record";
     /** Download one remote image into the project's assets. */
     readonly ImportFetchImage: "import:fetchImage";
     /** Which of these families does Google Fonts serve? */

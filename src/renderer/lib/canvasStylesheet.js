@@ -111,8 +111,80 @@ export const isWidthOnlyQuery = (prelude) => {
  * describe the real device and should keep answering for it.
  */
 export const mediaToContainer = (css) => css.replace(/@media\s*([^{]+)\{/gi, (full, prelude) => isWidthOnlyQuery(prelude) ? `@container ${prelude.trim()} {` : full);
-export const buildCanvasStylesheet = (css, scopeSelector = CANVAS_SCOPE_SELECTOR) => {
-    const body = mediaToContainer(stripStrippedAtRules(css)).trim();
+/** A width in px from a media value, or null for a unit it can't resolve. */
+const pxOf = (value) => {
+    const m = value.trim().match(/^(-?\d*\.?\d+)(px|em|rem)?$/i);
+    if (m === null || m[1] === undefined)
+        return null;
+    const n = Number(m[1]);
+    // Media queries resolve em against the initial font size, not the page's.
+    return (m[2] ?? 'px').toLowerCase() === 'px' ? n : n * 16;
+};
+/**
+ * Whether a width-only media prelude matches a viewport `width` wide, or
+ * null when it says something this can't decide (`not`, `print`, a unit
+ * other than px / em / rem).
+ */
+export const mediaMatchesWidth = (prelude, width) => {
+    const alternatives = prelude.split(',');
+    let any = false;
+    for (const alternative of alternatives) {
+        const rest = alternative.replace(/\(\s*([a-z-]+)\s*:\s*([^)]+)\)/gi, '').replace(/\b(?:screen|all|and)\b/gi, '').trim();
+        if (rest.length > 0)
+            return null;
+        let all = true;
+        for (const m of alternative.matchAll(/\(\s*([a-z-]+)\s*:\s*([^)]+)\)/gi)) {
+            const value = pxOf(m[2] ?? '');
+            if (value === null)
+                return null;
+            const feature = (m[1] ?? '').toLowerCase();
+            const ok = feature === 'max-width' ? width <= value : feature === 'min-width' ? width >= value : feature === 'width' ? width === value : null;
+            if (ok === null)
+                return null;
+            all &&= ok;
+        }
+        any ||= all;
+    }
+    return any;
+};
+/**
+ * Resolve width-based `@media` blocks for a viewport `width` wide: a block
+ * that matches is unwrapped, one that doesn't is dropped. For the component
+ * editor, whose frame is the component's own size rather than a viewport —
+ * evaluated there as container queries, a 232px sidebar read every
+ * `(max-width: 768px)` rule as true while the panel said Desktop. A prelude
+ * it can't decide becomes a container query, as on a page.
+ * see docs/notes/canvas-injected-stylesheet.md
+ */
+export const mediaForViewport = (css, width) => {
+    let out = '';
+    let i = 0;
+    const at = /@media\s*([^{]+)\{/gi;
+    for (let m = at.exec(css); m !== null; m = at.exec(css)) {
+        const prelude = m[1] ?? '';
+        const open = m.index + m[0].length;
+        let depth = 1;
+        let j = open;
+        for (; j < css.length && depth > 0; j += 1) {
+            if (css[j] === '{')
+                depth += 1;
+            else if (css[j] === '}')
+                depth -= 1;
+        }
+        const inner = css.slice(open, j - 1);
+        const matches = isWidthOnlyQuery(prelude) ? mediaMatchesWidth(prelude, width) : null;
+        out += css.slice(i, m.index);
+        out += matches === null ? mediaToContainer(css.slice(m.index, j)) : matches ? inner : '';
+        i = j;
+        at.lastIndex = j;
+    }
+    return out + css.slice(i);
+};
+export const buildCanvasStylesheet = (css, scopeSelector = CANVAS_SCOPE_SELECTOR, 
+/** The viewport width to resolve `@media` for; omit to follow the frame. */
+viewportWidth) => {
+    const stripped = stripStrippedAtRules(css);
+    const body = (viewportWidth === undefined ? mediaToContainer(stripped) : mediaForViewport(stripped, viewportWidth)).trim();
     if (body.length === 0)
         return '';
     return `@scope (${scopeSelector}) {\n${body}\n}`;

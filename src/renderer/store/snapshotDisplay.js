@@ -5,6 +5,7 @@ export const triggerIcon = (trigger) => {
         case 'session_close':
             return 'session-close';
         case 'agent_edit':
+        case 'agent_session':
             return 'agent';
         case 'manual':
             return 'manual';

@@ -21,6 +21,27 @@ import type {
   CreateProjectArgs,
   ExportChooseSavePathArgs,
   ExportChooseSavePathResult,
+  AgentConversationArgs,
+  ImportBatchActionArgs,
+  ImportBatchReport,
+  ReactImportInspectResult,
+  ReactImportListNamesArgs,
+  ReactImportListNamesResult,
+  ReactImportRecordArgs,
+  ReactImportProgress,
+  ReactImportStartArgs,
+  ReactImportStartResult,
+  AgentConversationState,
+  AgentEvent,
+  AgentKeySetResult,
+  AgentKeyStatusResult,
+  AgentSendArgs,
+  AgentStartCleanupArgs,
+  AgentToolCallArgs,
+  AgentUndoSessionResult,
+  AgentMeasureOverflowArgs,
+  AgentMeasureOverflowResult,
+  AgentSendResult,
   AuthSignInResult,
   AuthStatusResult,
   ExportHtmlArgs,
@@ -171,6 +192,13 @@ const api = {
   resolveImportFonts: (args: ResolveFontsArgs): Promise<ResolveFontsResult> =>
     ipcRenderer.invoke(IPC.ImportResolveFonts, args),
   /** Tell the import window how it went. */
+  /** The import window asks to finish or undo one multi-page import. */
+  onImportBatchAction: (listener: (args: ImportBatchActionArgs) => void): (() => void) => {
+    const handler = (_e: IpcRendererEvent, args: ImportBatchActionArgs): void => listener(args);
+    ipcRenderer.on(IPC.ImportBatchActionDeliver, handler);
+    return () => ipcRenderer.removeListener(IPC.ImportBatchActionDeliver, handler);
+  },
+  reportImportBatch: (payload: ImportBatchReport): Promise<void> => ipcRenderer.invoke(IPC.ImportBatchReport, payload),
   reportImportResult: (payload: ImportResultPayload): Promise<void> =>
     ipcRenderer.invoke(IPC.ImportResultReport, payload),
   /**
@@ -251,6 +279,21 @@ const api = {
   sendMcpQueryResult: (result: McpQueryResultArgs): void => {
     ipcRenderer.send(IPC.McpQueryResult, result);
   },
+
+  /** The Scamp Agent's edits — answered by `agentToolResponder`, one reply each. */
+  onAgentToolCall: (handler: (args: AgentToolCallArgs) => void): (() => void) => {
+    const listener = (_e: IpcRendererEvent, args: AgentToolCallArgs): void => handler(args);
+    ipcRenderer.on(IPC.AgentToolCall, listener);
+    return () => ipcRenderer.removeListener(IPC.AgentToolCall, listener);
+  },
+
+  sendAgentToolResult: (result: McpQueryResultArgs): void => {
+    ipcRenderer.send(IPC.AgentToolResult, result);
+  },
+
+  /** For the agent's overflow check: main lays the view out and measures it. */
+  agentMeasureOverflow: (args: AgentMeasureOverflowArgs): Promise<AgentMeasureOverflowResult> =>
+    ipcRenderer.invoke(IPC.AgentMeasureOverflow, args),
 
   getMcpStatus: (): Promise<McpStatusResult> =>
     ipcRenderer.invoke(IPC.McpStatus),
@@ -409,6 +452,46 @@ const api = {
     const listener = (_e: unknown, status: AuthStatusResult): void => handler(status);
     ipcRenderer.on(IPC.AuthComplete, listener);
     return () => ipcRenderer.removeListener(IPC.AuthComplete, listener);
+  },
+
+  // Scamp Agent provider key. Write-only from here: the key goes in, and
+  // only a status ever comes back. see docs/plans/builtin-agent-plan.md
+  // React app import. see docs/plans/react-import-plan.md
+  reactImportInspect: (): Promise<ReactImportInspectResult> => ipcRenderer.invoke(IPC.ReactImportInspect),
+  reactImportStart: (args: ReactImportStartArgs): Promise<ReactImportStartResult> =>
+    ipcRenderer.invoke(IPC.ReactImportStart, args),
+  reactImportRecord: (args: ReactImportRecordArgs): Promise<void> => ipcRenderer.invoke(IPC.ReactImportRecord, args),
+  reactImportListNames: (args: ReactImportListNamesArgs): Promise<ReactImportListNamesResult> =>
+    ipcRenderer.invoke(IPC.ReactImportListNames, args),
+  onReactImportProgress: (handler: (event: ReactImportProgress) => void): (() => void) => {
+    const listener = (_e: unknown, event: ReactImportProgress): void => handler(event);
+    ipcRenderer.on(IPC.ReactImportProgress, listener);
+    return () => ipcRenderer.removeListener(IPC.ReactImportProgress, listener);
+  },
+  agentKeySet: (key: string): Promise<AgentKeySetResult> =>
+    ipcRenderer.invoke(IPC.AgentKeySet, { key }),
+  agentKeyStatus: (): Promise<AgentKeyStatusResult> => ipcRenderer.invoke(IPC.AgentKeyStatus),
+  agentKeyClear: (): Promise<void> => ipcRenderer.invoke(IPC.AgentKeyClear),
+  agentSend: (args: AgentSendArgs): Promise<AgentSendResult> =>
+    ipcRenderer.invoke(IPC.AgentSend, args),
+  agentCancel: (): Promise<void> => ipcRenderer.invoke(IPC.AgentCancel),
+  agentReset: (args: AgentConversationArgs): Promise<void> => ipcRenderer.invoke(IPC.AgentReset, args),
+  agentLoad: (args: AgentConversationArgs): Promise<AgentConversationState> =>
+    ipcRenderer.invoke(IPC.AgentLoad, args),
+  agentUndoSession: (args: AgentConversationArgs & { note: string }): Promise<AgentUndoSessionResult> =>
+    ipcRenderer.invoke(IPC.AgentUndoSession, args),
+  agentConfirm: (args: { confirmId: string; approved: boolean }): Promise<void> =>
+    ipcRenderer.invoke(IPC.AgentConfirm, args),
+  /** The import window asked for a cleanup of the view it just imported. */
+  onAgentStartCleanup: (handler: (args: AgentStartCleanupArgs) => void): (() => void) => {
+    const listener = (_e: unknown, args: AgentStartCleanupArgs): void => handler(args);
+    ipcRenderer.on(IPC.AgentStartCleanup, listener);
+    return () => ipcRenderer.removeListener(IPC.AgentStartCleanup, listener);
+  },
+  onAgentEvent: (handler: (event: AgentEvent) => void): (() => void) => {
+    const listener = (_e: unknown, event: AgentEvent): void => handler(event);
+    ipcRenderer.on(IPC.AgentEvent, listener);
+    return () => ipcRenderer.removeListener(IPC.AgentEvent, listener);
   },
 
   // Theme

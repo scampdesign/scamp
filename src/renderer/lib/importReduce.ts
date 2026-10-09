@@ -316,9 +316,49 @@ const collapse = (
  * So the rule is not "prefer flexible" or "prefer faithful" — it is
  * "declare what the page decided, and let flow do the rest".
  */
+/** The parent's measured box and computed styles, for telling "filling" from "sized". */
+type ParentBox = { w: number; h: number; styles: Readonly<Record<string, string>> };
+
+const FLEX_DISPLAYS: ReadonlySet<string> = new Set(['flex', 'inline-flex']);
+const GRID_DISPLAYS: ReadonlySet<string> = new Set(['grid', 'inline-grid']);
+const STRETCHING: ReadonlySet<string> = new Set(['normal', 'stretch']);
+
+/**
+ * Whether the parent's layout stretches this child across its width, so
+ * a width equal to the parent's is the layout's and not the child's.
+ * Only true then: a flex item in a row is sized by its content unless it
+ * grows, so an icon button as wide as the wrapper hugging it is still
+ * the icon button's own 40px. see docs/notes/import-parity-log.md
+ */
+const parentStretchesWidth = (child: Readonly<Record<string, string>>, parent: ParentBox): boolean => {
+  const display = parent.styles['display'] ?? 'block';
+  const alignSelf = child['align-self'] ?? 'auto';
+  if (FLEX_DISPLAYS.has(display)) {
+    const row = !(parent.styles['flex-direction'] ?? 'row').startsWith('column');
+    if (row) return Number.parseFloat(child['flex-grow'] ?? '0') > 0;
+    return (alignSelf === 'auto' ? STRETCHING.has(parent.styles['align-items'] ?? 'normal') : alignSelf === 'stretch');
+  }
+  if (GRID_DISPLAYS.has(display)) {
+    const justifySelf = child['justify-self'] ?? 'auto';
+    return justifySelf === 'auto' ? STRETCHING.has(parent.styles['justify-items'] ?? 'normal') : STRETCHING.has(justifySelf);
+  }
+  // Block flow stretches block-level boxes; an inline-level one shrinks to fit.
+  return !(child['display'] ?? 'block').startsWith('inline');
+};
+
+/**
+ * A text box that centres its words in a flex or grid box — a button, an
+ * avatar, a badge — chose its height: 40px with the label in the middle.
+ * Dropping it collapses the control onto its label.
+ */
+const centresItsWords = (styles: Readonly<Record<string, string>>): boolean => {
+  const display = styles['display'] ?? '';
+  return (FLEX_DISPLAYS.has(display) || GRID_DISPLAYS.has(display)) && styles['align-items'] === 'center';
+};
+
 const dropComputedSizes = (
   node: CapturedNode,
-  parentRect: { w: number; h: number } | null,
+  parent: ParentBox | null,
   findings: ImportFinding[],
   at: string
 ): { styles: Record<string, string>; dropped: Array<'width' | 'height'> } => {
@@ -345,7 +385,7 @@ const dropComputedSizes = (
   // icon box with `line-height: 0` is a square someone chose, and
   // dropping its height collapsed it onto its own contents.
   const holdsWords = node.text !== null || node.inline !== undefined;
-  if (elementTypeFor(node.tag) === 'text' && holdsWords) {
+  if (elementTypeFor(node.tag) === 'text' && holdsWords && !centresItsWords(styles)) {
     // Round a text box's width UP, never down. Scamp's model is whole
     // pixels (`parseSizeValue` rounds), so a measured `129.484px` would
     // land at `129px` — a fraction narrower than the words it was
@@ -377,12 +417,12 @@ const dropComputedSizes = (
 
   // Everything else keeps a size it chose. A leaf with an explicit box —
   // an image, a spacer — is usually the point of that element.
-  if (node.children.length === 0 || !rect || !parentRect) {
+  if (node.children.length === 0 || !rect || !parent) {
     return { styles: next, dropped };
   }
-  // Within a pixel of the parent's content box: this element was
-  // filling, not sizing itself.
-  const fills = Math.abs(rect.w - parentRect.w) <= 1;
+  // Within a pixel of the parent's box, in a layout that stretches it:
+  // this element was filling, not sizing itself.
+  const fills = Math.abs(rect.w - parent.w) <= 1 && parentStretchesWidth(styles, parent);
   if (fills && 'width' in next) {
     findings.push({ kind: 'dropped-computed-size', at, detail: `width: ${next['width']}` });
     delete next['width'];
@@ -837,23 +877,79 @@ const collapseSides = ([top, right, bottom, left]: ReadonlyArray<string>): strin
   return `${top} ${right} ${bottom} ${left}`;
 };
 
+/** What a side the capture left out is: the capture omits initial values. */
+const SIDE_INITIAL: Readonly<Record<string, string>> = {
+  padding: '0px',
+  margin: '0px',
+  'border-width': '0px',
+  'border-radius': '0px',
+};
+
+const sidesOf = (shorthand: string): ReadonlyArray<string> =>
+  SHORTHAND_SETS.find((set) => set.shorthand === shorthand)?.sides ?? [];
+
+/** The one value every entry shares, or null. */
+const shared = (values: ReadonlyArray<string | undefined>): string | null => {
+  const [first] = values;
+  return first !== undefined && values.every((value) => value === first) ? first : null;
+};
+
 /**
- * Fold every complete longhand set into the shorthand, so the values
- * land in Scamp's typed fields instead of `customProperties`.
+ * Fold every longhand set into its shorthand, so the values land in
+ * Scamp's typed fields instead of `customProperties`.
  *
- * Only when all four sides are present: a partial set is a value the
- * page set on one edge, and writing a shorthand would invent the other
- * three.
+ * A side that isn't there is at its initial value — the capture omits
+ * those — so a sidebar's `padding: 24px 0 24px 16px` arrives as three
+ * sides and folds with the fourth at `0px`. Folding only complete sets
+ * left 149 of one page's 179 findings for the agent to fold by hand.
+ *
+ * Border style and colour fold to ONE value taken from the sides that
+ * paint: a side with no width shows neither, so `border-right: 1px solid`
+ * reads `border-width: 0px 1px 0px 0px; border-style: solid`, the form
+ * the panel can edit. Sides that paint differently keep every side.
  */
 const foldShorthands = (styles: Record<string, string>): Record<string, string> => {
-  let next = styles;
+  const next = { ...styles };
+  // `gap` is captured alongside its longhands, so every gap was written
+  // three times. One axis value: keep `gap`. Two: keep the axes, which
+  // the panel types separately, and drop the two-value shorthand.
+  const rowGap = next['row-gap'];
+  const columnGap = next['column-gap'];
+  if (rowGap !== undefined && rowGap === columnGap) {
+    next['gap'] = rowGap;
+    delete next['row-gap'];
+    delete next['column-gap'];
+  } else if (rowGap !== undefined || columnGap !== undefined) {
+    delete next['gap'];
+  }
+  const widthSides = sidesOf('border-width');
+  // Read before border-width folds, which deletes the sides.
+  const painted = widthSides
+    .map((side, index) => ({ index, width: styles[side] }))
+    .filter((side) => side.width !== undefined && Number.parseFloat(side.width) !== 0)
+    .map((side) => side.index);
+
   for (const { shorthand, sides } of SHORTHAND_SETS) {
     if (shorthand in next) continue;
     const values = sides.map((side) => next[side]);
-    if (values.some((value) => value === undefined)) continue;
-    if (next === styles) next = { ...styles };
-    next[shorthand] = collapseSides(values as string[]);
-    for (const side of sides) delete next[side];
+    if (values.every((value) => value === undefined)) continue;
+
+    const initial = SIDE_INITIAL[shorthand];
+    if (initial !== undefined) {
+      next[shorthand] = collapseSides(values.map((value) => value ?? initial));
+      for (const side of sides) delete next[side];
+      continue;
+    }
+
+    // border-style / border-color
+    const one = shared(painted.map((index) => values[index]));
+    if (painted.length > 0 && one !== null) {
+      next[shorthand] = one;
+      for (const side of sides) delete next[side];
+    } else if (values.every((value) => value !== undefined)) {
+      next[shorthand] = collapseSides(values as string[]);
+      for (const side of sides) delete next[side];
+    }
   }
   return next;
 };
@@ -1264,8 +1360,7 @@ export const reduceCapture = (
     parentIsLayout: boolean,
     /** How the parent arranges this child: down the page, or across it. */
     parentFlow: 'row' | 'column',
-    /** The parent's measured box, for telling "filling" from "sized". */
-    parentRect: { w: number; h: number } | null
+    parent: ParentBox | null
   ): string => {
     const isRoot = parentId === null;
     const at = [...path, node.tag].join(' > ');
@@ -1348,7 +1443,7 @@ export const reduceCapture = (
     const needsTextChild = inlineRun === null && node.text !== null && hasElementChildren;
 
     const host = node;
-    const sized = dropComputedSizes(host, parentRect, findings, at);
+    const sized = dropComputedSizes(host, parent, findings, at);
     const tablePart = tableRoles.get(node.id) ?? null;
     const styles = normalizedStyles(
       { ...host, styles: sized.styles },
@@ -1510,7 +1605,14 @@ export const reduceCapture = (
     );
     built.forEach((child, index) => {
       childIds.push(
-        build(child, id, [...path, node.tag], selfIsLayout, ownFlow, node.rect ?? null)
+        build(
+          child,
+          id,
+          [...path, node.tag],
+          selfIsLayout,
+          ownFlow,
+          node.rect ? { w: node.rect.w, h: node.rect.h, styles: node.styles } : null
+        )
       );
       if (liftedTextId !== null && wordsAfter === index) childIds.push(liftedTextId);
     });

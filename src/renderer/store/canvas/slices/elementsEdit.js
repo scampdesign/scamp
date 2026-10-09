@@ -353,6 +353,17 @@ export const createElementsEditSlice = (set) => ({
             });
         }
     },
+    applyAgentElements: (elements, touched) => {
+        if (useCanvasStore.getState().snapshotPreview !== null)
+            return;
+        // An edit can remove elements; nothing may stay selected that's gone.
+        set((state) => ({
+            elements,
+            selectedElementIds: state.selectedElementIds.filter((id) => id in elements),
+            editingElementId: state.editingElementId !== null && !(state.editingElementId in elements) ? null : state.editingElementId,
+        }));
+        commitElementsToHistory({ kind: 'agent-edit', elementIds: [...touched] });
+    },
     patchCustomProperties: (id, patch) => {
         const state = useCanvasStore.getState();
         const el = state.elements[id];

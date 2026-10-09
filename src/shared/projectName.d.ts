@@ -25,3 +25,9 @@ export declare const validateProjectName: (raw: unknown) => ValidationResult;
  * when the user starts typing.
  */
 export declare const suggestProjectName: (raw: string) => string;
+/**
+ * A name that always validates, made from someone else's — a React app's
+ * `package.json` name. `@scope/riq_frontend` → `riq-frontend`. Unlike
+ * `suggestProjectName`, never empty and never ending on a hyphen.
+ */
+export declare const projectNameFrom: (raw: string) => string;

@@ -43,4 +43,22 @@ export declare const isWidthOnlyQuery: (prelude: string) => boolean;
  * describe the real device and should keep answering for it.
  */
 export declare const mediaToContainer: (css: string) => string;
-export declare const buildCanvasStylesheet: (css: string, scopeSelector?: string) => string;
+/**
+ * Whether a width-only media prelude matches a viewport `width` wide, or
+ * null when it says something this can't decide (`not`, `print`, a unit
+ * other than px / em / rem).
+ */
+export declare const mediaMatchesWidth: (prelude: string, width: number) => boolean | null;
+/**
+ * Resolve width-based `@media` blocks for a viewport `width` wide: a block
+ * that matches is unwrapped, one that doesn't is dropped. For the component
+ * editor, whose frame is the component's own size rather than a viewport —
+ * evaluated there as container queries, a 232px sidebar read every
+ * `(max-width: 768px)` rule as true while the panel said Desktop. A prelude
+ * it can't decide becomes a container query, as on a page.
+ * see docs/notes/canvas-injected-stylesheet.md
+ */
+export declare const mediaForViewport: (css: string, width: number) => string;
+export declare const buildCanvasStylesheet: (css: string, scopeSelector?: string, 
+/** The viewport width to resolve `@media` for; omit to follow the frame. */
+viewportWidth?: number) => string;

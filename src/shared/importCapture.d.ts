@@ -62,6 +62,37 @@ export type CapturedPseudo = {
     /** Computed values, filtered exactly as an element's are. */
     styles: Record<string, string>;
 };
+/**
+ * What React says about an element, when the page is a React app in
+ * development. Absent everywhere else, so an HTML import is untouched.
+ * see docs/plans/react-import-plan.md
+ */
+export type CapturedReact = {
+    /**
+     * The app's own components that drew this element, nearest first: the
+     * one whose render wrote its JSX, then the one that rendered that, and
+     * so on. Library components (anything defined under `node_modules`)
+     * are left out. Each `id` is one instance, the same across elements.
+     */
+    owners: Array<{
+        name: string;
+        id: number;
+        key?: string;
+    }>;
+    /** The JSX call site, `/src/app/nav.tsx:102:72`. React 19 only. */
+    site?: string;
+    /**
+     * The element's own React `key`. With the owners' keys, the sign of a
+     * `.map()` where React has no call site to give (React 18): React
+     * requires a key on every element of a list.
+     */
+    key?: string;
+};
+/** One component instance: its name, and its props that are plain values. */
+export type CapturedReactInstance = {
+    name: string;
+    props: Record<string, string | number | boolean>;
+};
 export type CapturedNode = {
     /** Assigned by the walk, depth-first from 0. Stable within one capture. */
     id: number;
@@ -87,6 +118,14 @@ export type CapturedNode = {
         w: number;
         h: number;
     };
+    /** React's account of this element, on a React app in development. */
+    react?: CapturedReact;
+    /**
+     * Properties whose winning declaration was the page's own token —
+     * exactly `var(--name)` — by property: `{ 'background-color':
+     * '--surface-nav' }`. Only when the capture was asked for them.
+     */
+    tokens?: Record<string, string>;
     /** Static `::before` / `::after` content, recoverable as elements. */
     pseudo?: {
         before?: CapturedPseudo;
@@ -232,6 +271,25 @@ export type CapturePayload = {
      * see docs/notes/import-source-store.md
      */
     source?: CapturedSource;
+    /** The React component instances named by nodes' `react.owners`, by id. */
+    react?: {
+        instances: Record<string, CapturedReactInstance>;
+    };
+    /** The tokens nodes use, with their values; only when asked for. */
+    tokens?: CapturedTokens;
+};
+/**
+ * The page's own design tokens, as far as its elements use them: each
+ * one's value in the theme the page was showing, and in each other theme
+ * the page declares (`[data-theme="dark"]`, `.dark`), read by switching
+ * the page into it for a moment.
+ * see docs/plans/react-import-plan.md
+ */
+export type CapturedTokens = {
+    values: Record<string, string>;
+    /** The theme the page was showing, by its name; null when it has none. */
+    active: string | null;
+    themes: Record<string, Record<string, string>>;
 };
 export type CapturedSource = {
     /** `document.documentElement.outerHTML` at capture time. */

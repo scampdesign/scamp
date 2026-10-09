@@ -162,7 +162,7 @@ export type BottomPanel = 'code' | 'terminal' | 'none';
  * rail, so they aren't sidebar-panel sections.) Per-session preference —
  * not persisted to disk. see docs/plans/icon-sidebar-nav-plan.md
  */
-export type SidebarSection = 'pages' | 'components' | 'history';
+export type SidebarSection = 'pages' | 'components' | 'history' | 'agent';
 /** Properties panel display mode. 'data' is component-scoped. */
 export type PanelMode = 'ui' | 'css' | 'data';
 export { MIN_ZOOM, MAX_ZOOM } from '@lib/zoom';
@@ -589,6 +589,13 @@ export type CanvasState = {
     moveElement: (id: string, x: number, y: number) => void;
     resizeElement: (id: string, x: number, y: number, width: number, height: number) => void;
     patchElement: (id: string, patch: Partial<ScampElement>) => void;
+    /**
+     * Replace the element map with one the Scamp Agent computed. The agent's
+     * edits are already resolved (breakpoints included), so this bypasses
+     * the panel's axis routing. One history entry — or none inside a turn's
+     * transaction, which commits the whole turn as one.
+     */
+    applyAgentElements: (elements: Record<string, ScampElement>, touched: ReadonlyArray<string>) => void;
     /**
      * Merge `patch` into an element's `customProperties` and write the
      * result through `patchElement` (so axis routing + history apply). A

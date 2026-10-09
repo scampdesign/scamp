@@ -151,10 +151,16 @@ export type ScampFixtures = {
  */
 export type ScampOptions = {
   projectOptions: CreateTestProjectOptions;
+  /**
+   * Extra environment for the app, for the e2e seams in
+   * `src/main/e2eSeams.ts` — e.g. `{ SCAMP_E2E_SIGNED_IN: '1' }`.
+   */
+  appEnv: Record<string, string>;
 };
 
 export const test = base.extend<ScampFixtures & ScampOptions>({
   projectOptions: [{}, { option: true }],
+  appEnv: [{}, { option: true }],
 
   project: async ({ projectOptions }, use) => {
     const project = await createTestProject(projectOptions);
@@ -165,7 +171,7 @@ export const test = base.extend<ScampFixtures & ScampOptions>({
     }
   },
 
-  app: async ({ project }, use) => {
+  app: async ({ project, appEnv }, use) => {
     const userDataDir = await makeUserDataDir();
     const app = await electron.launch({
       args: [MAIN_ENTRY, `--user-data-dir=${userDataDir}`, ...OZONE_ARGS],
@@ -174,6 +180,7 @@ export const test = base.extend<ScampFixtures & ScampOptions>({
         SCAMP_E2E: '1',
         SCAMP_E2E_OPEN_PROJECT: project.dir,
         NODE_ENV: 'test',
+        ...appEnv,
       },
     });
     try {

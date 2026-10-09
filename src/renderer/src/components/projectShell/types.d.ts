@@ -9,6 +9,14 @@ export type ActiveComponent = {
     name: string;
     kind: ComponentKind;
     returnToPage: string | null;
+    /**
+     * The view or component it was opened from — a double-click on an
+     * instance there. Takes precedence over `returnToPage` on the way back.
+     */
+    returnTo?: {
+        name: string;
+        kind: ComponentKind;
+    };
 };
 /** Per-page impact summary used in the multi-instance confirm dialogs. */
 export type PageImpact = {

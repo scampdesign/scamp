@@ -220,6 +220,103 @@ reported on the CANVAS are not coming from there.
 
 ---
 
+## FIXED — per-side values the panel can't edit, left for the agent to fold
+
+**Measured.** The same dashboard, captured fresh and reduced, then run
+through `lintView`: 305 elements, **179 findings**, 149 of them
+`side-not-typed` (`padding-top` with no `padding-right`,
+`border-right-*` alone). The cleanup agent spent 68 edits and about 2.5M
+tokens folding them by hand. The rest of the CSS repeated itself:
+`gap: 8px; column-gap: 8px; row-gap: 8px`, and every `position:
+relative` box carried `right: 0px; bottom: 0px`.
+
+**Before.** `foldShorthands` folded a set only when all four sides were
+present, on the reasoning that a missing side would be invented.
+
+**Cause.** The capture leaves out every value equal to its initial
+value, so a missing side IS known: `0px` for padding, margin, border
+width and radius, and no paint for a border side with no width. The gap
+shorthand was captured alongside both its longhands. And Chromium
+reports all four insets of a relative box (`0px` when none was set, the
+end as the start negated when one was).
+
+**Fix.** `importReduce.ts`: `foldShorthands` fills missing sides from
+their initial value, folds border style and colour to the one value the
+painted sides share, and keeps `gap` alone when both axes match (or the
+axes alone when they differ). `captureScript.ts`: a relative box keeps
+only a non-zero start inset. Tests in `test/importReduce.test.ts`
+("folds a set with sides missing", "a one-sided border", "writes a gap
+once"), and the app-shell fixture for the relative insets.
+
+**Re-run.** **29 findings** (all `not-panel-editable`), down from 179.
+Pixels unchanged: dashboard 85.77 → 85.83, gainwix.com 93.39,
+linear.app 88.27, vercel.com 95.59.
+
+---
+
+## FIXED — a dashboard laid out by named grid areas stacked its columns
+
+**Measured.** A clinic dashboard (resovaiq, served locally at
+`/dashboard`) is `.dp-root { display: grid; grid-template-areas: "nav
+centre panel"; grid-template-columns: var(--size-sidebar) minmax(0, 1fr)
+var(--size-panel) }`, with each column placing itself by name
+(`grid-area: nav`). `scripts/import-pixels.mjs` against a frozen copy of
+the captured page (scripts stripped, styles inlined, `<base>` at the dev
+server, because headless Chromium is shown the onboarding screen
+instead): **49.66%** of pixels match.
+
+**Before.** The sidebar rendered at x=600, with the main column and the
+right panel overlapping it. Three smaller losses on the same page: every
+button and avatar collapsed onto its label, the top-right icon buttons
+lost their width, and the logo read "Resova iQ iQ".
+
+**Cause.** Four, in two files.
+1. `grid-template-areas` was not in `CAPTURED_PROPERTIES`, so the
+   children's `grid-column: nav` named lines that didn't exist and each
+   landed in an implicit track after the grid.
+2. `dropComputedSizes` dropped the height of every text element, and a
+   flex box that centres its label in 40px (a button, an avatar) chose
+   that height.
+3. It dropped a width equal to the parent's as "filling" whatever the
+   parent's layout. A flex item in a row is never stretched across, so
+   an icon button as wide as the wrapper hugging it is its own 40px.
+4. In `captureScript.ts`, a `display: none` span inside a run of text (the
+   logo's short form) was turned back into its words.
+
+**Fix.** `importCapture.ts` (areas), `importReduce.ts`
+(`parentStretchesWidth`, `centresItsWords`), `captureScript.ts` (hidden
+spans leave the run). Tests: the new "filling depends on how the parent
+lays out" and "a control keeps the height" groups in
+`test/importReduce.test.ts`, and a real-browser fixture,
+`test/fixtures/import/pages/app-shell.html`, with the four cases.
+
+**Re-run.** **85.77%**. The columns, controls and logo match. No
+regression elsewhere: gainwix.com 93.39 → 93.39, linear.app 88.19 →
+88.26, vercel.com 95.59 → 95.59.
+
+---
+
+## NOTICED (not fixed) — a text box keeps its measured width with no slack
+
+**Measured.** On the same dashboard, after the fix above, most of the
+remaining 14% is one cascade. The banner summary line wraps its last
+word ("…need you"), the banner grows 22px, and the schedule card below
+shifts down with it, a 142,000-pixel cluster. The source's line is 541px
+in a 550px box. "Allergy: None recorded" and "Last visit: Oct 1 · In
+person" in the side panel wrap the same way.
+
+**Not the font.** The import substitutes Google's Inter for the site's
+own `InterVariable.woff2`, and measured in the source page Google's is
+narrower (529.3px vs 541px), not wider.
+
+**Next to check:** the measured width the reducer pins on a text
+element, which is rounded up by at most a pixel. Any difference in
+metrics, letter-spacing rounding or `font-variant-numeric: tabular-nums`
+(not captured) leaves no room. Also seen: in an inline run,
+"DOB Dec 12, 1991 · MRN 9001" comes out as "· DOB Dec 12, 1991 MRN 9001".
+
+---
+
 ## DEFERRED — the spaces around an inline span are lost
 
 **Measured.** gainwix.com's hero is

@@ -36,6 +36,8 @@ type Props = {
   persistActiveSource: () => void;
   /** Opens the importer's browser window. Absent hides the entry point. */
   onImportWebsite?: () => void;
+  /** Import pages from a React app's project folder. */
+  onImportReact?: () => void;
   setActiveComponentState: (next: ActiveComponent | null) => void;
   setActivePageName: (name: string | null) => void;
 };
@@ -80,6 +82,7 @@ export const PageSidebar = ({
   handleRenameView,
   persistActiveSource,
   onImportWebsite,
+  onImportReact,
   setActiveComponentState,
   setActivePageName,
 }: Props): JSX.Element => {
@@ -252,6 +255,16 @@ export const PageSidebar = ({
           title="Open a browser, navigate to a page, and import it as a view"
         >
           ↧ Import a page…
+        </button>
+      )}
+      {pageEdit !== 'new' && onImportReact && (
+        <button
+          className={styles.addPageButton}
+          onClick={onImportReact}
+          type="button"
+          title="Run a React app from its project folder and import its pages as views"
+        >
+          ↧ Import a React app…
         </button>
       )}
     </div>

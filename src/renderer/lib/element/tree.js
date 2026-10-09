@@ -37,6 +37,38 @@ export const slugifyName = (name) => {
     return slug;
 };
 /**
+ * Remove an element and everything inside it. Pure: returns the new map
+ * and the ids it removed, or null for the root or a missing element.
+ */
+export const removeSubtree = (elements, id) => {
+    if (id === ROOT_ELEMENT_ID)
+        return null;
+    const target = elements[id];
+    if (!target)
+        return null;
+    const removed = new Set();
+    const visit = (visitId) => {
+        if (removed.has(visitId))
+            return;
+        removed.add(visitId);
+        for (const childId of elements[visitId]?.childIds ?? [])
+            visit(childId);
+    };
+    visit(id);
+    const next = {};
+    for (const [key, value] of Object.entries(elements)) {
+        if (!removed.has(key))
+            next[key] = value;
+    }
+    if (target.parentId) {
+        const parent = next[target.parentId];
+        if (parent) {
+            next[target.parentId] = { ...parent, childIds: parent.childIds.filter((childId) => childId !== id) };
+        }
+    }
+    return { elements: next, removed };
+};
+/**
  * Move an element to a new parent and/or position within its current parent.
  *
  * Pure: returns a new elements map. Returns null when the move isn't valid:

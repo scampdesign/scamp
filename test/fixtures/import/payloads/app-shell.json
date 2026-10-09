@@ -1,0 +1,409 @@
+{
+  "version": 3,
+  "url": "fixture:app-shell.html",
+  "title": "App shell",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "root": {
+    "id": 0,
+    "tag": "body",
+    "styles": {
+      "display": "block",
+      "width": "1440px",
+      "height": "600px",
+      "color": "rgb(0, 0, 0)",
+      "font-family": "system-ui, sans-serif",
+      "font-size": "14px",
+      "font-weight": "400",
+      "line-height": "20px",
+      "letter-spacing": "normal"
+    },
+    "text": null,
+    "attrs": {},
+    "children": [
+      {
+        "id": 1,
+        "tag": "div",
+        "styles": {
+          "display": "grid",
+          "width": "1440px",
+          "height": "600px",
+          "min-height": "600px",
+          "grid-template-columns": "240px 840px 360px",
+          "grid-template-rows": "600px",
+          "grid-template-areas": "\"nav centre panel\""
+        },
+        "text": null,
+        "attrs": {},
+        "children": [
+          {
+            "id": 2,
+            "tag": "nav",
+            "styles": {
+              "display": "block",
+              "width": "240px",
+              "height": "600px",
+              "padding-top": "24px",
+              "padding-right": "16px",
+              "padding-bottom": "24px",
+              "padding-left": "16px",
+              "grid-column": "nav",
+              "grid-row": "nav",
+              "background-color": "rgb(238, 243, 249)"
+            },
+            "text": null,
+            "attrs": {},
+            "children": [
+              {
+                "id": 3,
+                "tag": "p",
+                "styles": {
+                  "display": "block",
+                  "width": "208px",
+                  "height": "20px",
+                  "margin-top": "14px",
+                  "margin-bottom": "14px"
+                },
+                "text": null,
+                "attrs": {},
+                "children": [],
+                "notes": [],
+                "path": "body>div:0>nav:0>p:0",
+                "inline": [
+                  {
+                    "kind": "element",
+                    "node": {
+                      "id": 4,
+                      "tag": "span",
+                      "styles": {
+                        "display": "inline",
+                        "width": "auto",
+                        "height": "auto",
+                        "font-weight": "700"
+                      },
+                      "text": "Resova iQ",
+                      "attrs": {},
+                      "children": [],
+                      "notes": [],
+                      "path": "body>div:0>nav:0>p:0>span:0",
+                      "nameHint": "logo_name",
+                      "rect": {
+                        "x": 16,
+                        "y": 38,
+                        "w": 68.34,
+                        "h": 19
+                      }
+                    }
+                  }
+                ],
+                "nameHint": "logo",
+                "rect": {
+                  "x": 16,
+                  "y": 38,
+                  "w": 208,
+                  "h": 20
+                }
+              }
+            ],
+            "notes": [],
+            "path": "body>div:0>nav:0",
+            "nameHint": "sidebar",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "w": 240,
+              "h": 600
+            }
+          },
+          {
+            "id": 5,
+            "tag": "main",
+            "styles": {
+              "display": "block",
+              "width": "840px",
+              "height": "600px",
+              "padding-top": "24px",
+              "padding-right": "24px",
+              "padding-bottom": "24px",
+              "padding-left": "24px",
+              "grid-column": "centre",
+              "grid-row": "centre"
+            },
+            "text": null,
+            "attrs": {},
+            "children": [
+              {
+                "id": 6,
+                "tag": "button",
+                "styles": {
+                  "display": "inline-flex",
+                  "width": "126.797px",
+                  "height": "40px",
+                  "padding-right": "16px",
+                  "padding-left": "16px",
+                  "justify-content": "center",
+                  "align-items": "center",
+                  "background-color": "rgb(255, 255, 255)",
+                  "border-top-width": "1px",
+                  "border-right-width": "1px",
+                  "border-bottom-width": "1px",
+                  "border-left-width": "1px",
+                  "border-top-style": "solid",
+                  "border-right-style": "solid",
+                  "border-bottom-style": "solid",
+                  "border-left-style": "solid",
+                  "border-top-color": "rgb(122, 138, 161)",
+                  "border-right-color": "rgb(122, 138, 161)",
+                  "border-bottom-color": "rgb(122, 138, 161)",
+                  "border-left-color": "rgb(122, 138, 161)",
+                  "border-top-left-radius": "12px",
+                  "border-top-right-radius": "12px",
+                  "border-bottom-right-radius": "12px",
+                  "border-bottom-left-radius": "12px",
+                  "font-weight": "600",
+                  "text-align": "center",
+                  "white-space": "nowrap"
+                },
+                "text": "Upload audio",
+                "attrs": {
+                  "type": "button"
+                },
+                "children": [],
+                "notes": [],
+                "path": "body>div:0>main:1>button:0",
+                "nameHint": "button",
+                "rect": {
+                  "x": 264,
+                  "y": 24,
+                  "w": 126.8,
+                  "h": 40
+                }
+              },
+              {
+                "id": 7,
+                "tag": "span",
+                "styles": {
+                  "display": "inline-flex",
+                  "width": "40px",
+                  "height": "40px",
+                  "justify-content": "center",
+                  "align-items": "center",
+                  "background-color": "rgb(230, 244, 252)",
+                  "border-top-left-radius": "50%",
+                  "border-top-right-radius": "50%",
+                  "border-bottom-right-radius": "50%",
+                  "border-bottom-left-radius": "50%",
+                  "font-weight": "600"
+                },
+                "text": "PR",
+                "attrs": {},
+                "children": [],
+                "notes": [],
+                "path": "body>div:0>main:1>span:1",
+                "nameHint": "avatar",
+                "rect": {
+                  "x": 394.44,
+                  "y": 24,
+                  "w": 40,
+                  "h": 40
+                }
+              }
+            ],
+            "notes": [],
+            "path": "body>div:0>main:1",
+            "nameHint": "centre",
+            "rect": {
+              "x": 240,
+              "y": 0,
+              "w": 840,
+              "h": 600
+            }
+          },
+          {
+            "id": 8,
+            "tag": "aside",
+            "styles": {
+              "display": "block",
+              "width": "360px",
+              "height": "600px",
+              "padding-top": "24px",
+              "padding-right": "24px",
+              "padding-bottom": "24px",
+              "padding-left": "24px",
+              "grid-column": "panel",
+              "grid-row": "panel",
+              "background-color": "rgb(245, 248, 252)"
+            },
+            "text": null,
+            "attrs": {},
+            "children": [
+              {
+                "id": 9,
+                "tag": "div",
+                "styles": {
+                  "display": "flex",
+                  "width": "312px",
+                  "height": "40px",
+                  "gap": "8px",
+                  "row-gap": "8px",
+                  "column-gap": "8px"
+                },
+                "text": null,
+                "attrs": {},
+                "children": [
+                  {
+                    "id": 10,
+                    "tag": "div",
+                    "styles": {
+                      "display": "flex",
+                      "position": "relative",
+                      "width": "40px",
+                      "height": "40px"
+                    },
+                    "text": null,
+                    "attrs": {},
+                    "children": [
+                      {
+                        "id": 11,
+                        "tag": "button",
+                        "styles": {
+                          "display": "flex",
+                          "width": "40px",
+                          "height": "40px",
+                          "justify-content": "center",
+                          "align-items": "center",
+                          "border-top-width": "1px",
+                          "border-right-width": "1px",
+                          "border-bottom-width": "1px",
+                          "border-left-width": "1px",
+                          "border-top-style": "solid",
+                          "border-right-style": "solid",
+                          "border-bottom-style": "solid",
+                          "border-left-style": "solid",
+                          "border-top-color": "rgb(217, 226, 238)",
+                          "border-right-color": "rgb(217, 226, 238)",
+                          "border-bottom-color": "rgb(217, 226, 238)",
+                          "border-left-color": "rgb(217, 226, 238)",
+                          "border-top-left-radius": "50%",
+                          "border-top-right-radius": "50%",
+                          "border-bottom-right-radius": "50%",
+                          "border-bottom-left-radius": "50%",
+                          "font-family": "Arial",
+                          "font-size": "13.3333px",
+                          "line-height": "normal",
+                          "text-align": "center"
+                        },
+                        "text": null,
+                        "attrs": {
+                          "type": "button"
+                        },
+                        "children": [
+                          {
+                            "id": 12,
+                            "tag": "svg",
+                            "styles": {
+                              "display": "block",
+                              "width": "20px",
+                              "height": "20px",
+                              "overflow-x": "hidden",
+                              "overflow-y": "hidden",
+                              "stroke": "currentColor"
+                            },
+                            "text": null,
+                            "attrs": {
+                              "viewBox": "0 0 24 24",
+                              "fill": "none",
+                              "stroke": "currentColor"
+                            },
+                            "children": [],
+                            "notes": [
+                              {
+                                "kind": "svg",
+                                "at": "div.tools > div.anchor > button.icon-button > svg"
+                              }
+                            ],
+                            "svgSource": "<circle cx=\"12\" cy=\"12\" r=\"4\"></circle>",
+                            "path": "body>div:0>aside:2>div:0>div:0>button:0>svg:0",
+                            "rect": {
+                              "x": 1114,
+                              "y": 34,
+                              "w": 20,
+                              "h": 20
+                            }
+                          }
+                        ],
+                        "notes": [],
+                        "path": "body>div:0>aside:2>div:0>div:0>button:0",
+                        "nameHint": "icon_button",
+                        "rect": {
+                          "x": 1104,
+                          "y": 24,
+                          "w": 40,
+                          "h": 40
+                        }
+                      }
+                    ],
+                    "notes": [],
+                    "path": "body>div:0>aside:2>div:0>div:0",
+                    "nameHint": "anchor",
+                    "rect": {
+                      "x": 1104,
+                      "y": 24,
+                      "w": 40,
+                      "h": 40
+                    }
+                  }
+                ],
+                "notes": [],
+                "path": "body>div:0>aside:2>div:0",
+                "nameHint": "tools",
+                "rect": {
+                  "x": 1104,
+                  "y": 24,
+                  "w": 312,
+                  "h": 40
+                }
+              }
+            ],
+            "notes": [],
+            "path": "body>div:0>aside:2",
+            "nameHint": "panel",
+            "rect": {
+              "x": 1080,
+              "y": 0,
+              "w": 360,
+              "h": 600
+            }
+          }
+        ],
+        "notes": [],
+        "path": "body>div:0",
+        "nameHint": "shell",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1440,
+          "h": 600
+        }
+      }
+    ],
+    "notes": [],
+    "path": "body",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 600
+    }
+  },
+  "assets": [],
+  "notes": [],
+  "source": {
+    "html": "<html lang=\"en\"><head>\n<meta charset=\"utf-8\">\n<title>App shell</title>\n<!--\n  Three cases from a real dashboard import (see docs/notes/import-parity-log.md):\n  a grid laid out by named areas, a logo whose short form is hidden at this\n  width, and controls sized by the author inside wrappers that hug them.\n-->\n<style>\n  body { margin: 0; font: 14px/20px system-ui, sans-serif; }\n  .shell { display: grid; grid-template-areas: \"nav centre panel\"; grid-template-columns: 240px minmax(0, 1fr) 360px; min-height: 600px; }\n  .sidebar { grid-area: nav; background: #eef3f9; padding: 24px 16px; }\n  .centre { grid-area: centre; padding: 24px; }\n  .panel { grid-area: panel; background: #f5f8fc; padding: 24px; }\n  .logo-name { font-weight: 700; }\n  .logo-short { display: none; }\n  .tools { display: flex; gap: 8px; }\n  .anchor { position: relative; display: flex; }\n  .icon-button { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 1px solid #d9e2ee; border-radius: 50%; background: transparent; }\n  .icon-button svg { width: 20px; height: 20px; }\n  .button { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 16px; border: 1px solid #7a8aa1; border-radius: 12px; background: #fff; font: 600 14px/20px system-ui, sans-serif; white-space: nowrap; }\n  .avatar { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #e6f4fc; font-weight: 600; }\n</style>\n</head>\n<body>\n  <div class=\"shell\">\n    <nav class=\"sidebar\">\n      <p class=\"logo\"><span class=\"logo-name\">Resova iQ</span><span class=\"logo-short\" aria-hidden=\"true\">iQ</span></p>\n    </nav>\n    <main class=\"centre\">\n      <button class=\"button\" type=\"button\">Upload audio</button>\n      <span class=\"avatar\">PR</span>\n    </main>\n    <aside class=\"panel\">\n      <div class=\"tools\">\n        <div class=\"anchor\">\n          <button class=\"icon-button\" type=\"button\" aria-label=\"Theme\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\"><circle cx=\"12\" cy=\"12\" r=\"4\"></circle></svg></button>\n        </div>\n      </div>\n    </aside>\n  </div>\n\n\n</body></html>",
+    "css": "/* <style> */\nbody { margin: 0px; font: 14px / 20px system-ui, sans-serif; }\n.shell { display: grid; grid-template-areas: \"nav centre panel\"; grid-template-columns: 240px minmax(0px, 1fr) 360px; min-height: 600px; }\n.sidebar { grid-area: nav; background: rgb(238, 243, 249); padding: 24px 16px; }\n.centre { grid-area: centre; padding: 24px; }\n.panel { grid-area: panel; background: rgb(245, 248, 252); padding: 24px; }\n.logo-name { font-weight: 700; }\n.logo-short { display: none; }\n.tools { display: flex; gap: 8px; }\n.anchor { position: relative; display: flex; }\n.icon-button { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0px; border: 1px solid rgb(217, 226, 238); border-radius: 50%; background: transparent; }\n.icon-button svg { width: 20px; height: 20px; }\n.button { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0px 16px; border: 1px solid rgb(122, 138, 161); border-radius: 12px; background: rgb(255, 255, 255); font: 600 14px / 20px system-ui, sans-serif; white-space: nowrap; }\n.avatar { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: rgb(230, 244, 252); font-weight: 600; }",
+    "unreadable": [],
+    "truncated": false
+  }
+}

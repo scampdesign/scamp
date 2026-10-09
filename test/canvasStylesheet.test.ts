@@ -3,6 +3,8 @@ import {
   buildCanvasStylesheet,
   CANVAS_SCOPE_SELECTOR,
   isWidthOnlyQuery,
+  mediaForViewport,
+  mediaMatchesWidth,
   mediaToContainer,
   stripStrippedAtRules,
 } from '@lib/canvasStylesheet';
@@ -167,5 +169,67 @@ describe('mediaToContainer', () => {
 
   it('does not touch a stylesheet with no media queries', () => {
     expect(mediaToContainer('.a { color: red; }')).toBe('.a { color: red; }');
+  });
+});
+
+describe('mediaMatchesWidth', () => {
+  it('decides max-width, min-width and both together', () => {
+    expect(mediaMatchesWidth('(max-width: 768px)', 1440)).toBe(false);
+    expect(mediaMatchesWidth('(max-width: 768px)', 768)).toBe(true);
+    expect(mediaMatchesWidth('(min-width: 769px)', 1440)).toBe(true);
+    expect(mediaMatchesWidth('screen and (min-width: 400px) and (max-width: 800px)', 600)).toBe(true);
+    expect(mediaMatchesWidth('screen and (min-width: 400px) and (max-width: 800px)', 300)).toBe(false);
+  });
+
+  it('reads em and rem at 16px, and matches any of a list', () => {
+    expect(mediaMatchesWidth('(max-width: 48em)', 768)).toBe(true);
+    expect(mediaMatchesWidth('(max-width: 30rem), (min-width: 1200px)', 1440)).toBe(true);
+  });
+
+  it('can’t decide a query with not, a print type, or another unit', () => {
+    expect(mediaMatchesWidth('not all and (max-width: 768px)', 1440)).toBeNull();
+    expect(mediaMatchesWidth('print and (max-width: 768px)', 1440)).toBeNull();
+    expect(mediaMatchesWidth('(max-width: 50vw)', 1440)).toBeNull();
+  });
+});
+
+describe('mediaForViewport', () => {
+  const CSS = `.a { color: red; }
+@media (max-width: 768px) {
+  .a { color: blue; }
+}
+@media (min-width: 1024px) {
+  .b { gap: 4px; }
+}
+@media (prefers-color-scheme: dark) {
+  .a { color: white; }
+}`;
+
+  it('keeps the rules of a block that matches the viewport and drops one that doesn’t', () => {
+    const out = mediaForViewport(CSS, 1440);
+    expect(out).not.toContain('color: blue');
+    expect(out).toContain('.b { gap: 4px; }');
+    expect(out).not.toContain('@media (min-width');
+  });
+
+  it('answers for the viewport, not for the frame the component sits in', () => {
+    const out = mediaForViewport(CSS, 768);
+    expect(out).toContain('.a { color: blue; }');
+    expect(out).not.toContain('gap: 4px');
+  });
+
+  it('leaves a query about the device alone', () => {
+    expect(mediaForViewport(CSS, 1440)).toContain('@media (prefers-color-scheme: dark)');
+  });
+
+  it('turns a width query it can’t decide into a container query, as on a page', () => {
+    expect(mediaForViewport('@media (max-width: 50vw) { .a { gap: 1px; } }', 1440)).toContain('@container (max-width: 50vw) {');
+  });
+
+  it('is used by buildCanvasStylesheet when given a viewport width', () => {
+    const sheet = buildCanvasStylesheet(CSS, CANVAS_SCOPE_SELECTOR, 1440);
+    expect(sheet).not.toContain('@container');
+    expect(sheet).not.toContain('color: blue');
+    expect(buildCanvasStylesheet(CSS)).toContain('@container (max-width: 768px)');
   });
 });

@@ -2,6 +2,8 @@
  * Shared types used by main, preload, and renderer.
  * All IPC payloads must have explicit types defined here.
  */
+import type { TranscriptEntry } from './agentTranscript';
+import type { OverflowReport } from './overflowMeasure';
 export type PageFile = {
     name: string;
     tsxPath: string;
@@ -584,6 +586,93 @@ export type ImportOpenArgs = {
      * than correct at one size.
      */
     breakpoints?: Breakpoint[];
+    /**
+     * Importing a React app: the window lists the app's routes beside the
+     * page and keeps one session for it. see docs/plans/react-import-plan.md
+     */
+    react?: {
+        appName: string;
+        /**
+         * Keep the app's own design tokens: the capture reads where the app
+         * used `var(--name)`, and the import puts those references and tokens
+         * into the project. Off: plain values.
+         */
+        tokens: boolean;
+    };
+};
+/** A React project folder, as the import read it. */
+export type ReactImportInspectResult = {
+    kind: 'cancelled';
+} | {
+    kind: 'unsupported';
+    folder: string;
+    reason: string;
+} | {
+    kind: 'ok';
+    folder: string;
+    name: string;
+    /** For the user to read: `Vite`, `Next.js`, `Create React App`. */
+    framework: string;
+    /** The exact commands Scamp would run, shown before it runs them. */
+    installCommand: string | null;
+    devCommand: string;
+};
+export type ReactImportStartArgs = {
+    projectPath: string;
+    folder: string;
+};
+export type ReactImportStartResult = {
+    ok: true;
+    url: string;
+} | {
+    ok: false;
+    error: string;
+};
+/**
+ * Where a React import's elements came from, kept in
+ * `.scamp/react-import.json`: each element's JSX call site, by element
+ * id, per view and component, and the app's folder (main's, never the
+ * renderer's say). The AI pass reads the source through it; re-import
+ * maps routes to views with it. see docs/plans/react-import-plan.md
+ */
+export type ReactImportRecord = {
+    version: 1;
+    app: {
+        name: string;
+        folder: string | null;
+    };
+    views: Record<string, {
+        route?: string;
+        sites: Record<string, string>;
+    }>;
+    components: Record<string, {
+        sites: Record<string, string>;
+    }>;
+};
+/** The app window's part of the record, after a multi-page import finishes. */
+export type ReactImportRecordArgs = {
+    projectPath: string;
+    appName: string;
+    views: ReactImportRecord['views'];
+    components: ReactImportRecord['components'];
+};
+/** JSX call sites to read list names at, for one Scamp project's running app. */
+export type ReactImportListNamesArgs = {
+    projectPath: string;
+    sites: string[];
+};
+/** Each call site's list and row name, where the source says. */
+export type ReactImportListNamesResult = Record<string, {
+    over: string;
+    as: string;
+}>;
+/** The dev server getting ready, streamed to the dialog. */
+export type ReactImportProgress = {
+    kind: 'phase';
+    phase: 'installing' | 'starting';
+} | {
+    kind: 'log';
+    text: string;
 };
 /** The import window handing a captured page to the app window. */
 export type ImportCapturedArgs = {
@@ -600,6 +689,13 @@ export type ImportCapturedArgs = {
         breakpointId: string;
         payload: unknown;
     }>;
+    /**
+     * The view's name, when the window knows better than the page's title —
+     * a React route. PascalCase; the app window still makes it unique.
+     */
+    nameHint?: string;
+    /** One page of several imported in one go, so they can be undone together. */
+    batch?: ImportBatchRef;
 };
 /** One kind of thing the import changed or dropped. */
 /**
@@ -632,9 +728,58 @@ export type ImportReportGroup = {
     editable?: string;
 };
 /** What became of an import, sent back so the import window can say so. */
+/** Which run of a multi-page import a page belongs to. */
+export type ImportBatchRef = {
+    id: string;
+    index: number;
+    total: number;
+    /** The route this page was, as the app's router has it: `/patients/:id`. */
+    route?: string;
+    /** The React app it came from. */
+    app?: string;
+};
+/**
+ * Something to do with one multi-page import, asked by the import window:
+ * `finish` finds the app's components across its views; `undo` removes
+ * everything it made.
+ */
+export type ImportBatchActionArgs = {
+    projectPath: string;
+    batchId: string;
+    action: 'finish' | 'undo';
+};
+/** A component a React import made, for the report. */
+export type ImportBatchComponent = {
+    name: string;
+    instances: number;
+    views: number;
+};
+/** What a batch action did, sent back to the import window. */
+export type ImportBatchReport = {
+    kind: 'undone';
+    projectPath: string;
+    batchId: string;
+    removed: string[];
+    error?: string;
+} | {
+    kind: 'finished';
+    projectPath: string;
+    batchId: string;
+    components: ImportBatchComponent[];
+    /** Lists the app draws with `.map()`, now one repeated element each. */
+    repeats?: Array<{
+        list: string;
+        rows: number;
+    }>;
+    /** Copies that stayed copies, and why — `AppFrame: the nav item differs by page`. */
+    notes: string[];
+    error?: string;
+};
 export type ImportResultPayload = {
     projectPath: string;
     ok: boolean;
+    /** Set when the page was one of a multi-page import. */
+    batchId?: string;
     /** The created view's name, when it worked. */
     viewName?: string;
     /** How many elements the page reduced to. */
@@ -647,6 +792,12 @@ export type ImportResultPayload = {
      * would be unreadable exactly when it matters most.
      */
     findings?: ImportReportGroup[];
+    /**
+     * Offer "Clean up with AI" — only for a signed-in user with a provider
+     * key connected. Decided by the app window, which knows both; the import
+     * window shows nothing at all otherwise.
+     */
+    cleanupAvailable?: boolean;
     error?: string;
 };
 export type PageCreateArgs = {
@@ -818,7 +969,9 @@ export type ProjectReadThumbnailResult = {
 export type ComponentReadThumbnailResult = {
     base64: string | null;
 };
-export type SnapshotTrigger = 'session_open' | 'agent_edit' | 'session_close' | 'manual' | 'auto_save' | 'before_restore';
+export type SnapshotTrigger = 'session_open' | 'agent_edit' | 'session_close' | 'manual' | 'auto_save' | 'before_restore'
+/** Taken before the Scamp Agent's first edit in a conversation. */
+ | 'agent_session';
 export type SnapshotMeta = {
     id: string;
     /** ISO 8601 UTC timestamp the snapshot was taken. */
@@ -1150,6 +1303,188 @@ export type AuthSignInResult = {
     status: 'timeout';
 } | {
     status: 'failed';
+    message: string;
+};
+/**
+ * The Scamp Agent's provider connection, as the renderer sees it. The key
+ * itself never leaves the main process.
+ *
+ * - `connected` — a key is stored and the provider accepted it.
+ * - `session-only` — accepted, but the OS could not encrypt it, so it is
+ *   held in memory and gone at the next launch.
+ * - `invalid` — a stored key the provider has since rejected.
+ * - `not-connected` — no key.
+ */
+export type AgentKeyStatus = 'connected' | 'session-only' | 'invalid' | 'not-connected';
+export type AgentKeyStatusResult = {
+    status: AgentKeyStatus;
+};
+/** Why a key was not accepted, in terms the panel can explain. */
+export type AgentKeyRejection = 'signed-out' | 'empty' | 'invalid-key' | 'no-model-access' | 'rate-limited' | 'overloaded' | 'billing' | 'too-long' | 'network' | 'unknown';
+export type AgentKeySetResult = {
+    ok: true;
+    status: AgentKeyStatus;
+} | {
+    ok: false;
+    reason: AgentKeyRejection;
+    message: string;
+};
+/** What one user message to the agent cost, as the provider reported it. */
+export type AgentUsage = {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+};
+/**
+ * How a turn ended. Everything but `done` is something the panel says
+ * out loud — none of them is an error the user caused.
+ */
+export type AgentTurnOutcome = 'done' | 'cancelled' | 'refusal' | 'max-tokens' | 'too-many-steps' | 'error';
+/** One step of an agent turn, streamed to the panel as it happens. */
+export type AgentEvent = {
+    kind: 'text';
+    turnId: string;
+    text: string;
+}
+/** A short note on what the agent is doing between tool calls. */
+ | {
+    kind: 'progress';
+    turnId: string;
+    text: string;
+} | {
+    kind: 'tool-start';
+    turnId: string;
+    toolId: string;
+    name: string;
+} | {
+    kind: 'tool-end';
+    turnId: string;
+    toolId: string;
+    name: string;
+    ok: boolean;
+    /** What an edit changed, in one line — "Updated card_a1b2 — gap: 24px;". */
+    summary?: string;
+}
+/** The agent wants to make these edits and is waiting for an answer. */
+ | {
+    kind: 'confirm-request';
+    turnId: string;
+    confirmId: string;
+    items: string[];
+} | {
+    kind: 'confirm-resolved';
+    turnId: string;
+    confirmId: string;
+    approved: boolean;
+} | {
+    kind: 'turn-end';
+    turnId: string;
+    outcome: AgentTurnOutcome;
+    usage: AgentUsage;
+    /** Plain-language detail for anything but `done`. */
+    message?: string;
+};
+/** How an import cleanup treats repeated values; the user picks when it starts. */
+export type AgentTokenMode = 'create-tokens' | 'keep-literal';
+/** Start an import cleanup in the app window, from the import window. */
+export type AgentStartCleanupArgs = {
+    projectPath: string;
+    viewName: string;
+    tokenMode: AgentTokenMode;
+};
+/** A Scamp-authored skill to run this conversation under. */
+export type AgentSkillRequest = {
+    id: 'import-cleanup';
+    tokenMode: AgentTokenMode;
+}
+/** Tidy a view imported from a React app, from its source. */
+ | {
+    id: 'react-import';
+};
+/**
+ * Which conversation: each page, view and component has its own, kept in
+ * `.scamp/agent-history/`.
+ */
+export type AgentConversationKey = {
+    kind: 'page' | 'view' | 'component';
+    name: string;
+};
+export type AgentConversationArgs = {
+    projectPath: string;
+    conversation: AgentConversationKey;
+};
+/** A conversation as the panel opens it. */
+export type AgentConversationState = {
+    entries: TranscriptEntry[];
+    /** A turn is in flight — in this conversation or another. */
+    busy: boolean;
+    /** The agent edited the canvas in this conversation since it opened, and Undo AI changes can revert it. */
+    canUndo: boolean;
+};
+export type AgentSendArgs = {
+    projectPath: string;
+    conversation: AgentConversationKey;
+    /**
+     * Chosen by the renderer, so the reply exists in the transcript before
+     * main can stream the first event for it.
+     */
+    turnId: string;
+    text: string;
+    /**
+     * What the user is looking at, in one or two lines — the page and the
+     * selection. Sent with each message rather than fetched, because the
+     * renderer already knows it and the panel shows the same line.
+     */
+    context: string;
+    /** Start a skill for the rest of this conversation. */
+    skill?: AgentSkillRequest;
+    /**
+     * The user typed this after a skill's work finished: the skill ends, and
+     * the conversation is ordinary chat again, with every tool.
+     */
+    endSkill?: boolean;
+};
+/** A view's HTML export, to lay out at `width` and measure. see docs/notes/agent-overflow-check.md */
+export type AgentMeasureOverflowArgs = {
+    projectPath: string;
+    /** Paths relative to the export root; `index.html` is the page. */
+    files: Array<{
+        path: string;
+        contents: string;
+    }>;
+    width: number;
+};
+export type AgentMeasureOverflowResult = {
+    ok: true;
+    report: OverflowReport;
+} | {
+    ok: false;
+    error: string;
+};
+/**
+ * Main asks the renderer to make one edit for the agent. `turnId` lets
+ * the renderer fold a turn's edits into a single undo step.
+ */
+export type AgentToolCallArgs = {
+    requestId: string;
+    tool: string;
+    args: {
+        turnId: string;
+        input: Record<string, unknown>;
+    };
+};
+export type AgentUndoSessionResult = {
+    ok: true;
+} | {
+    ok: false;
+    error: string;
+};
+export type AgentSendResult = {
+    ok: true;
+} | {
+    ok: false;
+    reason: 'busy' | 'signed-out' | 'not-connected';
     message: string;
 };
 /** One text file in an HTML export, at a path relative to the export root. */

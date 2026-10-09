@@ -148,6 +148,8 @@ export const formatHistoryLabel = (
     }
     case 'external-edit':
       return 'External edit detected';
+    case 'agent-edit':
+      return 'Scamp Agent edit';
     case 'load':
       return 'Initial state';
   }

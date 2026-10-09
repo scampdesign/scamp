@@ -12,6 +12,8 @@ type Props = {
     designSystemOpen: boolean;
     /** Highlight Settings while its overlay is open. */
     settingsOpen: boolean;
+    /** Offer the Scamp Agent — signed-in users only. */
+    agentAvailable: boolean;
 };
 /**
  * The project view's left icon rail (VS Code activity-bar style). Pages,
@@ -19,5 +21,5 @@ type Props = {
  * launch their existing overlays (rework into inline panels is a follow-up).
  * see docs/plans/icon-sidebar-nav-plan.md
  */
-export declare const SidebarRail: ({ section, onSelectSection, onOpenDesignSystem, onOpenSettings, designSystemOpen, settingsOpen, }: Props) => JSX.Element;
+export declare const SidebarRail: ({ section, onSelectSection, onOpenDesignSystem, onOpenSettings, designSystemOpen, settingsOpen, agentAvailable, }: Props) => JSX.Element;
 export {};

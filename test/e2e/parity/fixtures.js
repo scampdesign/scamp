@@ -840,4 +840,94 @@ export default function Home() {
 }
 `,
     },
+    {
+        name: 'component-root-fills-grid-row',
+        why: "An imported app shell: a sidebar component beside the page content in a grid row. The sidebar's root is `height: 100%` with its own background, so in a browser it fills the row the taller content sets. The canvas wraps an instance in boxes the page doesn't have, and a content-sized one stopped the percentage — the sidebar's background ended where its links did.",
+        components: [
+            {
+                name: 'Side',
+                tsx: `import styles from './Side.module.css';
+
+type SideProps = { className?: string };
+
+export default function Side({ className }: SideProps) {
+  return (
+    <nav data-scamp-id="root" className={\`\${styles.root} \${className ?? ''}\`}>
+      <div data-scamp-id="link_s001" className={styles.link_s001} />
+    </nav>
+  );
+}
+`,
+                css: `.root {
+  width: 120px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #445566;
+}
+
+.link_s001 {
+  width: 100%;
+  height: 40px;
+  background: #99aabb;
+}
+`,
+            },
+        ],
+        tsx: `import styles from './home.module.css';
+import Side from '@/components/Side/Side';
+
+export default function Home() {
+  return (
+    <div data-scamp-id="root" className={styles.root}>
+      <div data-scamp-id="shell_a001" className={styles.shell_a001}>
+        <Side data-scamp-instance-id="inst_s1d3" />
+        <div data-scamp-id="main_a002" className={styles.main_a002} />
+      </div>
+    </div>
+  );
+}
+`,
+        html: `    <div data-scamp-id="root" class="root">
+      <div data-scamp-id="shell_a001" class="shell_a001">
+        <nav data-scamp-instance-id="inst_s1d3" data-scamp-id="root" class="Side_root">
+          <div data-scamp-id="link_s001" class="Side_link_s001"></div>
+        </nav>
+        <div data-scamp-id="main_a002" class="main_a002"></div>
+      </div>
+    </div>`,
+        css: `.root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.shell_a001 {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+}
+
+.main_a002 {
+  height: 400px;
+  background: #ddeeff;
+}
+`,
+        truthCss: `.Side_root {
+  width: 120px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #445566;
+}
+
+.Side_link_s001 {
+  width: 100%;
+  height: 40px;
+  background: #99aabb;
+}
+`,
+    },
 ];

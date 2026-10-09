@@ -2,6 +2,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useCallback, useEffect, useState } from 'react';
 import { IconMoon, IconSun } from '@tabler/icons-react';
 import { applyAppTheme } from '../lib/applyAppTheme';
+import { AiProviderSection } from './AiProviderSection';
 import { SegmentedControl } from './controls/SegmentedControl';
 import { Tooltip } from './controls/Tooltip';
 import styles from './SettingsPage.module.css';
@@ -59,7 +60,7 @@ export const SettingsPage = ({ onBack }) => {
                                                         ariaLabel: 'Light',
                                                         tooltip: 'Light',
                                                     },
-                                                ], onChange: (next) => void handleThemeChange(next) }) }) })] })] }), _jsxs("div", { className: styles.section, children: [_jsx("h2", { className: styles.sectionTitle, children: "Privacy" }), _jsxs("div", { className: styles.row, children: [_jsxs("div", { className: styles.rowLabel, children: [_jsx("div", { children: "Send anonymous crash reports and usage counts" }), _jsx("div", { className: styles.rowHint, children: "Helps fix bugs faster and shows how many people use Scamp. No personal data or project files are ever shared \u2014 just a random ID for this install." })] }), _jsxs("div", { className: styles.rowControl, children: [_jsx("button", { type: "button", className: `${styles.smallButton} ${settings.sentryOptIn === true ? styles.smallButtonActive : ''}`, onClick: () => void handleSentryToggle(true), children: "On" }), _jsx("button", { type: "button", className: `${styles.smallButton} ${settings.sentryOptIn === false
+                                                ], onChange: (next) => void handleThemeChange(next) }) }) })] })] }), _jsx(AiProviderSection, {}), _jsxs("div", { className: styles.section, children: [_jsx("h2", { className: styles.sectionTitle, children: "Privacy" }), _jsxs("div", { className: styles.row, children: [_jsxs("div", { className: styles.rowLabel, children: [_jsx("div", { children: "Send anonymous crash reports and usage counts" }), _jsx("div", { className: styles.rowHint, children: "Helps fix bugs faster and shows how many people use Scamp. No personal data or project files are ever shared \u2014 just a random ID for this install." })] }), _jsxs("div", { className: styles.rowControl, children: [_jsx("button", { type: "button", className: `${styles.smallButton} ${settings.sentryOptIn === true ? styles.smallButtonActive : ''}`, onClick: () => void handleSentryToggle(true), children: "On" }), _jsx("button", { type: "button", className: `${styles.smallButton} ${settings.sentryOptIn === false
                                                     ? styles.smallButtonActive
                                                     : ''}`, onClick: () => void handleSentryToggle(false), children: "Off" })] })] })] }), _jsxs("div", { className: styles.section, children: [_jsx("h2", { className: styles.sectionTitle, children: "About" }), _jsxs("div", { className: styles.row, children: [_jsx("span", { className: styles.rowLabel, children: "Version" }), _jsx("div", { className: styles.rowControl, children: _jsx("span", { className: styles.versionValue, children: version === null ? '—' : `Scamp ${version}` }) })] })] })] })] }));
 };

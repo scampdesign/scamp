@@ -22,6 +22,20 @@ export const hitTest = (clientX, clientY) => {
     return null;
 };
 /**
+ * The component instance under the cursor: the first element in the
+ * stack that the page knows as an instance. A component's own elements
+ * render inside the instance but aren't page elements, so `hitTest` can
+ * land on one of those first.
+ */
+export const instanceAt = (clientX, clientY, isInstance) => {
+    for (const node of document.elementsFromPoint(clientX, clientY)) {
+        const id = elementIdOf(node);
+        if (id !== undefined && isInstance(id))
+            return id;
+    }
+    return null;
+};
+/**
  * Look for a component slot drop zone under the cursor, for the CREATE
  * tools (draw a rect / click the text tool inside a slot). Mirrors the
  * drag-path check in `resolveDropContainer`: a slot box carries

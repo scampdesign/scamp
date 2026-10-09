@@ -1,10 +1,11 @@
-import { cloneElementSubtree, generateElementId, groupSiblings, reorderElementPure, reparentWithPositionPure, ROOT_ELEMENT_ID, ungroupSiblings, wrapElement, } from '@lib/element';
+import { cloneElementSubtree, generateElementId, groupSiblings, reorderElementPure, reparentWithPositionPure, ROOT_ELEMENT_ID, removeSubtree, ungroupSiblings, wrapElement, } from '@lib/element';
 import { dropDrawnOffset, preserveDrawnSize } from '@lib/flexChild';
 import { classNameFor } from '@lib/generateCode';
 import { resolveInsertParent } from '@lib/insertParent';
 import { normalizeCopySelection } from '@lib/clipboardSelection';
 import { defaultTextFontFamily, makeComponentInstance, makeImage, makeSvg, makeInput, makeRectangle, makeRootElement, makeText, tagForListChildContext, } from '../factories';
 import { commitElementsToHistory, freshId } from '../history';
+import { replaceSubtreeWithInstancePure } from '@lib/componentInstance';
 import { useCanvasStore, } from '../../canvasSlice';
 /** How far a paste lands from where it was copied, matching the offset
  *  `duplicateElement` uses. Cmd+Shift+V skips it. */
@@ -163,69 +164,13 @@ export const createElementsCreateSlice = (set) => ({
         const newId = generateElementId();
         let replaced = false;
         set((state) => {
-            const subtreeRoot = state.elements[subtreeRootId];
-            if (!subtreeRoot)
+            // Null for the page root — there's no parent to splice the
+            // instance into — or a missing element.
+            const next = replaceSubtreeWithInstancePure(state.elements, subtreeRootId, componentName, newId);
+            if (next === null)
                 return state;
-            // Page-root replacement isn't meaningful — the user can't
-            // convert the whole page into a component (no parent to
-            // splice the instance into).
-            if (subtreeRoot.parentId === null)
-                return state;
-            const parent = state.elements[subtreeRoot.parentId];
-            if (!parent)
-                return state;
-            // Collect every descendant id so we can drop them from
-            // the elements map in one pass. The subtree root's id is
-            // included for removal too.
-            const idsToRemove = new Set();
-            const walk = (id) => {
-                if (idsToRemove.has(id))
-                    return;
-                idsToRemove.add(id);
-                const el = state.elements[id];
-                if (!el)
-                    return;
-                for (const childId of el.childIds)
-                    walk(childId);
-            };
-            walk(subtreeRootId);
-            // Build the new element map: every surviving element kept
-            // as-is, plus the new instance element. Position + sizing
-            // copied from the source subtree's root so the instance
-            // visually lands where the user converted from.
-            const nextElements = {};
-            for (const [id, el] of Object.entries(state.elements)) {
-                if (idsToRemove.has(id))
-                    continue;
-                nextElements[id] = el;
-            }
-            const newInstance = makeComponentInstance({
-                parentId: parent.id,
-                componentName,
-                x: subtreeRoot.x,
-                y: subtreeRoot.y,
-            }, newId);
-            nextElements[newId] = newInstance;
-            // Splice the new instance into the parent's childIds at
-            // the same index as the old subtree root so source order
-            // (for flex / grid layout) is preserved.
-            const idx = parent.childIds.indexOf(subtreeRootId);
-            const nextParentChildIds = idx < 0
-                ? [...parent.childIds.filter((c) => c !== subtreeRootId), newId]
-                : [
-                    ...parent.childIds.slice(0, idx),
-                    newId,
-                    ...parent.childIds.slice(idx + 1),
-                ];
-            nextElements[parent.id] = {
-                ...parent,
-                childIds: nextParentChildIds,
-            };
             replaced = true;
-            return {
-                elements: nextElements,
-                selectedElementIds: [newId],
-            };
+            return { elements: next, selectedElementIds: [newId] };
         });
         if (!replaced)
             return null;
@@ -389,45 +334,13 @@ export const createElementsCreateSlice = (set) => ({
         const beforeEl = useCanvasStore.getState().elements[id];
         const previousName = beforeEl ? classNameFor(beforeEl) : undefined;
         set((state) => {
-            // Root is the page frame and can't be removed.
-            if (id === ROOT_ELEMENT_ID)
+            // Root is the page frame and can't be removed (removeSubtree refuses).
+            const result = removeSubtree(state.elements, id);
+            if (result === null)
                 return state;
-            const target = state.elements[id];
-            if (!target)
-                return state;
-            // Collect this element + all descendants so we can drop them in one
-            // pass. Walks childIds depth-first; safe because the canvas tree is
-            // a tree (no cycles).
-            const toRemove = new Set();
-            const visit = (visitId) => {
-                if (toRemove.has(visitId))
-                    return;
-                toRemove.add(visitId);
-                const el = state.elements[visitId];
-                if (!el)
-                    return;
-                for (const childId of el.childIds)
-                    visit(childId);
-            };
-            visit(id);
-            const nextElements = {};
-            for (const [key, value] of Object.entries(state.elements)) {
-                if (toRemove.has(key))
-                    continue;
-                nextElements[key] = value;
-            }
-            // Detach from parent's childIds.
-            if (target.parentId) {
-                const parent = nextElements[target.parentId];
-                if (parent) {
-                    nextElements[target.parentId] = {
-                        ...parent,
-                        childIds: parent.childIds.filter((childId) => childId !== id),
-                    };
-                }
-            }
+            const toRemove = result.removed;
             return {
-                elements: nextElements,
+                elements: result.elements,
                 selectedElementIds: state.selectedElementIds.filter((s) => !toRemove.has(s)),
                 editingElementId: state.editingElementId && toRemove.has(state.editingElementId)
                     ? null

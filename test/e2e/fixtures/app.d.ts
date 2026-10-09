@@ -51,6 +51,11 @@ export type ScampFixtures = {
  */
 export type ScampOptions = {
     projectOptions: CreateTestProjectOptions;
+    /**
+     * Extra environment for the app, for the e2e seams in
+     * `src/main/e2eSeams.ts` — e.g. `{ SCAMP_E2E_SIGNED_IN: '1' }`.
+     */
+    appEnv: Record<string, string>;
 };
 export declare const test: import("playwright/test").TestType<import("playwright/test").PlaywrightTestArgs & import("playwright/test").PlaywrightTestOptions & ScampFixtures & ScampOptions, import("playwright/test").PlaywrightWorkerArgs & import("playwright/test").PlaywrightWorkerOptions>;
 export { expect } from '@playwright/test';

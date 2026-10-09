@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { IconMoon, IconSun } from '@tabler/icons-react';
 import type { AppTheme, Settings } from '@shared/types';
 import { applyAppTheme } from '../lib/applyAppTheme';
+import { AiProviderSection } from './AiProviderSection';
 import { SegmentedControl } from './controls/SegmentedControl';
 import { Tooltip } from './controls/Tooltip';
 import styles from './SettingsPage.module.css';
@@ -136,6 +137,8 @@ export const SettingsPage = ({ onBack }: Props): JSX.Element => {
             </div>
           </div>
         </div>
+
+        <AiProviderSection />
 
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Privacy</h2>

@@ -95,3 +95,17 @@ pointing at whatever `--color-*-imported` holds now.
 To repair one: re-import the page. To repair by hand: find the token
 values the view should have had (re-import to a scratch project and read
 its theme) and rename the references in that view's `.module.css`.
+
+## A React import keeps the app's own tokens (2026-10-06)
+
+The React import does carry tokens, without reopening this. It doesn't
+count values: the capture runs the page's cascade over its stylesheets
+and records, per element, only the properties whose winning declaration
+was exactly `var(--name)` (`authoredTokens` in `captureScript.ts`). Those
+references go back where the app had them, and the tokens — with each
+`[data-theme]` / `.dark` variant the app declares — into the project's
+theme (`@lib/appTokens`). A token the project already has with another
+value is left literal at every use and reported, never renamed with
+`-imported`. And a React app imports into a new project by default, so
+there is usually nothing to collide with.
+see docs/plans/react-import-plan.md, Phase 5

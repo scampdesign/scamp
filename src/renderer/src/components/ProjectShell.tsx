@@ -23,6 +23,7 @@ import type { PreviewOpenArgs, ProjectData } from '@shared/types';
 import { viewSlugFor } from '@shared/templates';
 import { componentKindOf } from '@shared/types';
 import { useCanvasStore } from '@store/canvasSlice';
+import { useIsSignedIn } from '@store/authSlice';
 import { PropertiesPanel } from './PropertiesPanel';
 import { CodePanel } from './CodePanel';
 import { TerminalPanel } from './TerminalPanel';
@@ -41,6 +42,7 @@ import { CanvasArea } from './projectShell/CanvasArea';
 import { PageSidebar } from './projectShell/PageSidebar';
 import { ComponentSidebar } from './projectShell/ComponentSidebar';
 import { SidebarRail } from './projectShell/SidebarRail';
+import { AgentPanel } from './agent/AgentPanel';
 import { ThemeSectionNav } from './projectShell/ThemeSectionNav';
 import { ProjectModals } from './projectShell/ProjectModals';
 import { useCanvasKeyboardShortcuts } from './projectShell/useCanvasKeyboardShortcuts';
@@ -63,6 +65,7 @@ import { usePageManagement } from './projectShell/usePageManagement';
 import { useComponentManagement } from './projectShell/useComponentManagement';
 import { useInstanceFlows } from './projectShell/useInstanceFlows';
 import { useLatest } from './projectShell/useLatest';
+import { ReactImportDialog } from './projectShell/ReactImportDialog';
 import styles from './ProjectShell.module.css';
 
 type Props = {
@@ -79,12 +82,26 @@ type Props = {
   onProjectChange?: (
     next: ProjectData | ((prev: ProjectData) => ProjectData)
   ) => void;
+  /**
+   * Close this project and open another, then open the import window on
+   * a React app there — a React import into a new project.
+   */
+  onSwitchProject?: (next: ProjectData, thenImport: PendingReactImport) => void;
+  /** A React import to open as soon as this project is up. */
+  pendingImport?: PendingReactImport | null;
+  onPendingImportHandled?: () => void;
 };
+
+/** A React app running at `url`, waiting for its import window. */
+export type PendingReactImport = { url: string; appName: string; tokens: boolean };
 
 export const ProjectShell = ({
   project,
   onClose,
   onProjectChange,
+  onSwitchProject,
+  pendingImport,
+  onPendingImportHandled,
 }: Props): JSX.Element => {
   // Per-project config (scamp.config.json) + its canvas-store breakpoint
   // mirror, owned by the hook. Defaults render immediately so the canvas
@@ -93,6 +110,7 @@ export const ProjectShell = ({
     project.path
   );
   const [showProjectSettings, setShowProjectSettings] = useState(false);
+  const [reactImportOpen, setReactImportOpen] = useState(false);
   // Ref to the artboard scroll container. Passed to `Viewport` so
   // fit-to-width zoom can observe the real scroll area, and used here
   // for the click-to-deselect handler on empty canvas space.
@@ -124,6 +142,26 @@ export const ProjectShell = ({
   // deeply-nested readers (format, root path, page list, component-tree
   // cache, active-target canvas min-height).
   useProjectStoreSync({ project, projectConfig, activeComponent });
+  // A React import into a new project: this is that project, now open, so
+  // the import window opens on the app here.
+  useEffect(() => {
+    if (pendingImport === null || pendingImport === undefined) return;
+    onPendingImportHandled?.();
+    void window.scamp.openImport({
+      projectPath: project.path,
+      url: pendingImport.url,
+      breakpoints: projectConfig.breakpoints,
+      react: { appName: pendingImport.appName, tokens: pendingImport.tokens },
+    });
+  }, [pendingImport, onPendingImportHandled, project.path, projectConfig.breakpoints]);
+
+  // An undone multi-page import can remove the view that's open.
+  const handleImportedViewsRemoved = useCallback(
+    (names: ReadonlyArray<string>): void => {
+      if (activeComponent !== null && names.includes(activeComponent.name)) setActiveComponentState(null);
+    },
+    [activeComponent, setActiveComponentState]
+  );
   // A captured page arriving from the import window lands here: this is
   // where the project, the reducer and the generator all are.
   // see docs/plans/website-import-plan.md
@@ -132,6 +170,7 @@ export const ProjectShell = ({
     breakpoints: projectConfig.breakpoints,
     onProjectChange,
     openView: (name) => openComponent(name, null, 'view'),
+    onViewsRemoved: handleImportedViewsRemoved,
   });
 
   // Routes in a Scamp-framework project, and the dev server's request
@@ -243,7 +282,12 @@ export const ProjectShell = ({
 
   const bottomPanel = useCanvasStore((s) => s.bottomPanel);
   const toggleBottomPanel = useCanvasStore((s) => s.toggleBottomPanel);
-  const sidebarSection = useCanvasStore((s) => s.sidebarSection);
+  const storedSidebarSection = useCanvasStore((s) => s.sidebarSection);
+  const signedIn = useIsSignedIn();
+  // The agent is for signed-in users; signing out mid-session falls back
+  // to the default section rather than leaving an empty panel.
+  const sidebarSection =
+    storedSidebarSection === 'agent' && !signedIn ? 'pages' : storedSidebarSection;
   const setSidebarSection = useCanvasStore((s) => s.setSidebarSection);
 
   // Once the user opens the terminal we keep TerminalPanel mounted for
@@ -451,9 +495,14 @@ export const ProjectShell = ({
           }}
           designSystemOpen={showThemePanel}
           settingsOpen={showProjectSettings}
+          agentAvailable={signedIn}
         />
         <div className={styles.bodyContent}>
-        <aside className={styles.sidebar}>
+        <aside
+          className={`${styles.sidebar} ${
+            sidebarSection === 'agent' && !showThemePanel ? styles.sidebarWide : ''
+          }`}
+        >
           {showThemePanel ? (
             <ThemeSectionNav />
           ) : (
@@ -461,6 +510,7 @@ export const ProjectShell = ({
           {sidebarSection === 'history' && (
             <HistoryPanel projectPath={project.path} />
           )}
+          {sidebarSection === 'agent' && <AgentPanel />}
           {sidebarSection === 'pages' && (
             <>
           <PageSidebar
@@ -495,6 +545,7 @@ export const ProjectShell = ({
                 breakpoints: projectConfig.breakpoints,
               });
             }}
+            onImportReact={() => setReactImportOpen(true)}
           />
               <div
                 className={`${styles.sidebarSection} ${styles.sidebarLayers}`}
@@ -582,6 +633,26 @@ export const ProjectShell = ({
               }
             />
           </>
+        )}
+        {reactImportOpen && (
+          <ReactImportDialog
+            projectPath={project.path}
+            projectName={project.name}
+            onClose={() => setReactImportOpen(false)}
+            onReady={(url, appName, tokens, newProject) => {
+              setReactImportOpen(false);
+              if (newProject !== undefined && onSwitchProject !== undefined) {
+                onSwitchProject(newProject, { url, appName, tokens });
+                return;
+              }
+              void window.scamp.openImport({
+                projectPath: project.path,
+                url,
+                breakpoints: projectConfig.breakpoints,
+                react: { appName, tokens },
+              });
+            }}
+          />
         )}
         {showProjectSettings && (
           <ProjectSettingsPage

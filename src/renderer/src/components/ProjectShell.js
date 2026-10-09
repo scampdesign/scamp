@@ -23,6 +23,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { viewSlugFor } from '@shared/templates';
 import { componentKindOf } from '@shared/types';
 import { useCanvasStore } from '@store/canvasSlice';
+import { useIsSignedIn } from '@store/authSlice';
 import { PropertiesPanel } from './PropertiesPanel';
 import { CodePanel } from './CodePanel';
 import { TerminalPanel } from './TerminalPanel';
@@ -41,6 +42,7 @@ import { CanvasArea } from './projectShell/CanvasArea';
 import { PageSidebar } from './projectShell/PageSidebar';
 import { ComponentSidebar } from './projectShell/ComponentSidebar';
 import { SidebarRail } from './projectShell/SidebarRail';
+import { AgentPanel } from './agent/AgentPanel';
 import { ThemeSectionNav } from './projectShell/ThemeSectionNav';
 import { ProjectModals } from './projectShell/ProjectModals';
 import { useCanvasKeyboardShortcuts } from './projectShell/useCanvasKeyboardShortcuts';
@@ -60,13 +62,15 @@ import { usePageManagement } from './projectShell/usePageManagement';
 import { useComponentManagement } from './projectShell/useComponentManagement';
 import { useInstanceFlows } from './projectShell/useInstanceFlows';
 import { useLatest } from './projectShell/useLatest';
+import { ReactImportDialog } from './projectShell/ReactImportDialog';
 import styles from './ProjectShell.module.css';
-export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
+export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProject, pendingImport, onPendingImportHandled, }) => {
     // Per-project config (scamp.config.json) + its canvas-store breakpoint
     // mirror, owned by the hook. Defaults render immediately so the canvas
     // doesn't flash a wrong background while the first read is in flight.
     const { projectConfig, handleProjectConfigChange } = useProjectConfig(project.path);
     const [showProjectSettings, setShowProjectSettings] = useState(false);
+    const [reactImportOpen, setReactImportOpen] = useState(false);
     // Ref to the artboard scroll container. Passed to `Viewport` so
     // fit-to-width zoom can observe the real scroll area, and used here
     // for the click-to-deselect handler on empty canvas space.
@@ -83,6 +87,24 @@ export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
     // deeply-nested readers (format, root path, page list, component-tree
     // cache, active-target canvas min-height).
     useProjectStoreSync({ project, projectConfig, activeComponent });
+    // A React import into a new project: this is that project, now open, so
+    // the import window opens on the app here.
+    useEffect(() => {
+        if (pendingImport === null || pendingImport === undefined)
+            return;
+        onPendingImportHandled?.();
+        void window.scamp.openImport({
+            projectPath: project.path,
+            url: pendingImport.url,
+            breakpoints: projectConfig.breakpoints,
+            react: { appName: pendingImport.appName, tokens: pendingImport.tokens },
+        });
+    }, [pendingImport, onPendingImportHandled, project.path, projectConfig.breakpoints]);
+    // An undone multi-page import can remove the view that's open.
+    const handleImportedViewsRemoved = useCallback((names) => {
+        if (activeComponent !== null && names.includes(activeComponent.name))
+            setActiveComponentState(null);
+    }, [activeComponent, setActiveComponentState]);
     // A captured page arriving from the import window lands here: this is
     // where the project, the reducer and the generator all are.
     // see docs/plans/website-import-plan.md
@@ -91,6 +113,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
         breakpoints: projectConfig.breakpoints,
         onProjectChange,
         openView: (name) => openComponent(name, null, 'view'),
+        onViewsRemoved: handleImportedViewsRemoved,
     });
     // Routes in a Scamp-framework project, and the dev server's request
     // log in the app log. see docs/notes/routes-in-the-app.md
@@ -154,7 +177,11 @@ export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
     addViewRef.current = handleAddView;
     const bottomPanel = useCanvasStore((s) => s.bottomPanel);
     const toggleBottomPanel = useCanvasStore((s) => s.toggleBottomPanel);
-    const sidebarSection = useCanvasStore((s) => s.sidebarSection);
+    const storedSidebarSection = useCanvasStore((s) => s.sidebarSection);
+    const signedIn = useIsSignedIn();
+    // The agent is for signed-in users; signing out mid-session falls back
+    // to the default section rather than leaving an empty panel.
+    const sidebarSection = storedSidebarSection === 'agent' && !signedIn ? 'pages' : storedSidebarSection;
     const setSidebarSection = useCanvasStore((s) => s.setSidebarSection);
     // Once the user opens the terminal we keep TerminalPanel mounted for
     // the lifetime of the project, even when the panel is hidden, so any
@@ -301,7 +328,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
                         }, onOpenSettings: () => {
                             setShowThemePanel(false);
                             setShowProjectSettings(true);
-                        }, designSystemOpen: showThemePanel, settingsOpen: showProjectSettings }), _jsxs("div", { className: styles.bodyContent, children: [_jsx("aside", { className: styles.sidebar, children: showThemePanel ? (_jsx(ThemeSectionNav, {})) : (_jsxs(_Fragment, { children: [sidebarSection === 'history' && (_jsx(HistoryPanel, { projectPath: project.path })), sidebarSection === 'pages' && (_jsxs(_Fragment, { children: [_jsx(PageSidebar, { pages: project.pages, views: project.components.filter((c) => componentKindOf(c) === 'view'), existingPageNames: existingPageNames, pageEdit: pageEdit, pageEditError: pageEditError, pageEditBusy: pageEditBusy, isEditingPage: isEditingPage, activePageName: activePageName, activeComponent: activeComponent, setPageEdit: setPageEdit, setPageEditError: setPageEditError, resetPageEdit: resetPageEdit, handleAddPage: handleAddPage, handleDuplicatePage: handleDuplicatePage, handleRenamePage: handleRenamePage, openPageMenu: openPageMenu, openView: (name) => openComponent(name, null, 'view'), openViewMenu: openComponentMenu, handleRenameView: async (name, slug) => {
+                        }, designSystemOpen: showThemePanel, settingsOpen: showProjectSettings, agentAvailable: signedIn }), _jsxs("div", { className: styles.bodyContent, children: [_jsx("aside", { className: `${styles.sidebar} ${sidebarSection === 'agent' && !showThemePanel ? styles.sidebarWide : ''}`, children: showThemePanel ? (_jsx(ThemeSectionNav, {})) : (_jsxs(_Fragment, { children: [sidebarSection === 'history' && (_jsx(HistoryPanel, { projectPath: project.path })), sidebarSection === 'agent' && _jsx(AgentPanel, {}), sidebarSection === 'pages' && (_jsxs(_Fragment, { children: [_jsx(PageSidebar, { pages: project.pages, views: project.components.filter((c) => componentKindOf(c) === 'view'), existingPageNames: existingPageNames, pageEdit: pageEdit, pageEditError: pageEditError, pageEditBusy: pageEditBusy, isEditingPage: isEditingPage, activePageName: activePageName, activeComponent: activeComponent, setPageEdit: setPageEdit, setPageEditError: setPageEditError, resetPageEdit: resetPageEdit, handleAddPage: handleAddPage, handleDuplicatePage: handleDuplicatePage, handleRenamePage: handleRenamePage, openPageMenu: openPageMenu, openView: (name) => openComponent(name, null, 'view'), openViewMenu: openComponentMenu, handleRenameView: async (name, slug) => {
                                                         await handleRenameView(name, slug);
                                                         resetPageEdit();
                                                     }, persistActiveSource: persistActiveSource, setActiveComponentState: setActiveComponentState, setActivePageName: setActivePageName, onImportWebsite: () => {
@@ -309,7 +336,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
                                                             projectPath: project.path,
                                                             breakpoints: projectConfig.breakpoints,
                                                         });
-                                                    } }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] })), sidebarSection === 'components' && (_jsxs(_Fragment, { children: [_jsx(ComponentSidebar, { components: project.components, projectPath: project.path, componentEdit: componentEdit, componentEditError: componentEditError, renamingComponent: renamingComponent, creatingComponent: creatingComponent, activeComponent: activeComponent, setComponentEdit: setComponentEdit, setComponentEditError: setComponentEditError, handleAddComponent: handleAddComponent, handleRenameComponent: handleRenameComponent, openComponent: openComponent, openComponentMenu: openComponentMenu }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] }))] })) }), showThemePanel ? (_jsx(ThemePanel, { projectPath: project.path })) : (_jsxs(_Fragment, { children: [_jsx(CanvasArea, { activeComponent: activeComponent, activePageName: activePageName, projectConfig: projectConfig, artboardScrollRef: artboardScrollRef, onProjectConfigChange: handleProjectConfigChange, onExitComponentEditor: exitComponentEditor }), _jsx(PropertiesPanel, { migrationNotice: project.format === 'nextjs' && !projectConfig.scampMigrationDismissed ? (_jsx(ScampMigrationNotice, { project: project, convertPages: convertAllPagesToViews, onMigrated: (next) => {
+                                                    }, onImportReact: () => setReactImportOpen(true) }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] })), sidebarSection === 'components' && (_jsxs(_Fragment, { children: [_jsx(ComponentSidebar, { components: project.components, projectPath: project.path, componentEdit: componentEdit, componentEditError: componentEditError, renamingComponent: renamingComponent, creatingComponent: creatingComponent, activeComponent: activeComponent, setComponentEdit: setComponentEdit, setComponentEditError: setComponentEditError, handleAddComponent: handleAddComponent, handleRenameComponent: handleRenameComponent, openComponent: openComponent, openComponentMenu: openComponentMenu }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] }))] })) }), showThemePanel ? (_jsx(ThemePanel, { projectPath: project.path })) : (_jsxs(_Fragment, { children: [_jsx(CanvasArea, { activeComponent: activeComponent, activePageName: activePageName, projectConfig: projectConfig, artboardScrollRef: artboardScrollRef, onProjectConfigChange: handleProjectConfigChange, onExitComponentEditor: exitComponentEditor }), _jsx(PropertiesPanel, { migrationNotice: project.format === 'nextjs' && !projectConfig.scampMigrationDismissed ? (_jsx(ScampMigrationNotice, { project: project, convertPages: convertAllPagesToViews, onMigrated: (next) => {
                                                 onProjectChange?.(next);
                                                 setActivePageName(null);
                                                 const firstView = next.components.find((c) => c.kind === 'view');
@@ -318,7 +345,19 @@ export const ProjectShell = ({ project, onClose, onProjectChange, }) => {
                                             }, onDismiss: () => handleProjectConfigChange({
                                                 ...projectConfig,
                                                 scampMigrationDismissed: true,
-                                            }) })) : null, routesSection: project.format === 'scamp' ? (_jsx(RoutesSection, { routes: routesApi.routes, views: project.components.filter((c) => componentKindOf(c) === 'view'), activeViewName: activeViewName, busy: routesApi.busy, onOpen: (file) => void routesApi.openRoute(file), onSetRender: (file, render) => void routesApi.setRender(file, render), onGenerate: (name) => void routesApi.generateRoute(name) })) : null })] })), showProjectSettings && (_jsx(ProjectSettingsPage, { projectName: project.name, projectPath: project.path, config: projectConfig, onChange: handleProjectConfigChange, onBack: () => setShowProjectSettings(false), routes: project.format === 'scamp'
+                                            }) })) : null, routesSection: project.format === 'scamp' ? (_jsx(RoutesSection, { routes: routesApi.routes, views: project.components.filter((c) => componentKindOf(c) === 'view'), activeViewName: activeViewName, busy: routesApi.busy, onOpen: (file) => void routesApi.openRoute(file), onSetRender: (file, render) => void routesApi.setRender(file, render), onGenerate: (name) => void routesApi.generateRoute(name) })) : null })] })), reactImportOpen && (_jsx(ReactImportDialog, { projectPath: project.path, projectName: project.name, onClose: () => setReactImportOpen(false), onReady: (url, appName, tokens, newProject) => {
+                                    setReactImportOpen(false);
+                                    if (newProject !== undefined && onSwitchProject !== undefined) {
+                                        onSwitchProject(newProject, { url, appName, tokens });
+                                        return;
+                                    }
+                                    void window.scamp.openImport({
+                                        projectPath: project.path,
+                                        url,
+                                        breakpoints: projectConfig.breakpoints,
+                                        react: { appName, tokens },
+                                    });
+                                } })), showProjectSettings && (_jsx(ProjectSettingsPage, { projectName: project.name, projectPath: project.path, config: projectConfig, onChange: handleProjectConfigChange, onBack: () => setShowProjectSettings(false), routes: project.format === 'scamp'
                                     ? {
                                         routes: routesApi.routes,
                                         unrouted: allUnroutedViews(routesApi.routes, project.components.filter((c) => componentKindOf(c) === 'view')),

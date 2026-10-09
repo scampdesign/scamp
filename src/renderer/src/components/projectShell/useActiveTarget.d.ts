@@ -21,7 +21,10 @@ export type UseActiveTarget = {
     showMigrationBanner: boolean;
     handleDismissMigrationBanner: () => void;
     persistActiveSource: () => void;
-    openComponent: (name: string, fromPage: string | null, kind?: ComponentKind) => void;
+    openComponent: (name: string, fromPage: string | null, kind?: ComponentKind, from?: {
+        name: string;
+        kind: ComponentKind;
+    }) => void;
     exitComponentEditor: () => void;
     latestExit: {
         current: () => void;

@@ -32,7 +32,9 @@ export type HistoryActionKind =
   | 'wrap-link'
   | 'reorder'
   | 'toggle-group'
-  | 'external-edit';
+  | 'external-edit'
+  /** One Scamp Agent turn's edits, undone together. */
+  | 'agent-edit';
 
 /**
  * One entry in a page's history stack. Stores the post-action

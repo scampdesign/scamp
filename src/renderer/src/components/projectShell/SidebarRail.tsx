@@ -4,6 +4,7 @@ import {
   IconPalette,
   IconHistory,
   IconSettings,
+  IconSparkles,
 } from '@tabler/icons-react';
 
 import type { SidebarSection } from '@store/canvasSlice';
@@ -26,6 +27,8 @@ type Props = {
   designSystemOpen: boolean;
   /** Highlight Settings while its overlay is open. */
   settingsOpen: boolean;
+  /** Offer the Scamp Agent — signed-in users only. */
+  agentAvailable: boolean;
 };
 
 /**
@@ -41,6 +44,7 @@ export const SidebarRail = ({
   onOpenSettings,
   designSystemOpen,
   settingsOpen,
+  agentAvailable,
 }: Props): JSX.Element => {
   const railButton = (
     key: string,
@@ -98,6 +102,14 @@ export const SidebarRail = ({
         sectionActive && section === 'history',
         () => onSelectSection('history')
       )}
+      {agentAvailable &&
+        railButton(
+          'agent',
+          'Agent',
+          <IconSparkles size={ICON_SIZE} />,
+          sectionActive && section === 'agent',
+          () => onSelectSection('agent')
+        )}
       {railButton(
         'settings',
         'Settings',

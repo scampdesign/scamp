@@ -22,8 +22,17 @@ export const useNavigationRequests = (project, setActivePageName, componentNav) 
     useEffect(() => {
         if (pendingComponentNavigation === null)
             return;
-        if (project.components.some((c) => c.name === pendingComponentNavigation)) {
-            componentNav.current.openComponent(pendingComponentNavigation, componentNav.current.activePageName);
+        const { openComponent, activePageName, activeComponent } = componentNav.current;
+        if (project.components.some((c) => c.name === pendingComponentNavigation) &&
+            activeComponent?.name !== pendingComponentNavigation) {
+            // From a view or another component, the way back is that view or
+            // component; from a page, the page.
+            if (activeComponent !== null) {
+                openComponent(pendingComponentNavigation, null, undefined, { name: activeComponent.name, kind: activeComponent.kind });
+            }
+            else {
+                openComponent(pendingComponentNavigation, activePageName);
+            }
         }
         useCanvasStore.getState().requestComponentNavigation(null);
     }, [pendingComponentNavigation, project.components, componentNav]);

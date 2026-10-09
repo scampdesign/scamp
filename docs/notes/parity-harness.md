@@ -44,8 +44,11 @@ A fixture with `knownGap` is asserted to FAIL, via `test.fail()`. The
 suite stays green while the divergence is recorded, and the moment
 someone fixes it the test flips to failing and has to be updated.
 
-**None are recorded today.** All three the harness found on its first run
-are fixed: the `align-items` default
+**None are recorded today.** `component-root-fills-grid-row` came from a
+user, not the harness: an instance's inner wrapper was content-sized, so a
+component root's `height: 100%` stopped there instead of reaching the grid
+row (fixed by passing the wrapper's height through). All three the harness
+found on its first run are fixed: the `align-items` default
 ([note](align-items-default.md)), the grid `gap` shorthand
 ([note](grid-gap-shorthand.md)), and `::before` / custom selectors, which
 closed when the canvas started loading the page's own stylesheet

@@ -4,7 +4,9 @@ import type { PropertyGroup, ScampElement } from '@lib/element';
  * surfaces. Labels are generated from this kind plus the entry's
  * resolved metadata at display time — see `formatHistoryLabel`.
  */
-export type HistoryActionKind = 'draw-rect' | 'add-text' | 'add-image' | 'add-input' | 'add-component-instance' | 'convert-to-component' | 'detach-instance' | 'load' | 'delete' | 'delete-contents' | 'cut' | 'move' | 'resize' | 'patch' | 'raw-css' | 'rename' | 'rename-page' | 'add-page' | 'delete-page' | 'paste' | 'duplicate' | 'group' | 'ungroup' | 'wrap-link' | 'reorder' | 'toggle-group' | 'external-edit';
+export type HistoryActionKind = 'draw-rect' | 'add-text' | 'add-image' | 'add-input' | 'add-component-instance' | 'convert-to-component' | 'detach-instance' | 'load' | 'delete' | 'delete-contents' | 'cut' | 'move' | 'resize' | 'patch' | 'raw-css' | 'rename' | 'rename-page' | 'add-page' | 'delete-page' | 'paste' | 'duplicate' | 'group' | 'ungroup' | 'wrap-link' | 'reorder' | 'toggle-group' | 'external-edit'
+/** One Scamp Agent turn's edits, undone together. */
+ | 'agent-edit';
 /**
  * One entry in a page's history stack. Stores the post-action
  * snapshot of the elements map plus the metadata needed to render

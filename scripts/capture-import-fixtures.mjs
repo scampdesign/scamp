@@ -61,7 +61,8 @@ for (const file of pages) {
       const fn = new Function(`return (${fnSource})`)();
       return fn(policy);
     },
-    [captureFn.toString(), capturePolicy()]
+    // A page named for tokens is captured reading them, as a React import does.
+    [captureFn.toString(), { ...capturePolicy(), authoredTokens: file.includes('tokens') }]
   );
 
   // The page's own file: URL is machine-specific; the fixture should not be.

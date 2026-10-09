@@ -99,6 +99,36 @@ export const IPC = {
   /** Broadcast to every window when the signed-in state changes. */
   AuthComplete: 'auth:complete',
 
+  // Scamp Agent — the user's own provider key. The key goes in and never
+  // comes back out; the renderer only ever sees a status.
+  // see docs/plans/builtin-agent-plan.md
+  AgentKeySet: 'agent:key-set',
+  AgentKeyStatus: 'agent:key-status',
+  AgentKeyClear: 'agent:key-clear',
+  /** Send a message; the reply streams back on `agent:event`. */
+  AgentSend: 'agent:send',
+  AgentCancel: 'agent:cancel',
+  /** Start a new conversation for one page, view or component. */
+  AgentReset: 'agent:reset',
+  /** A page's, view's or component's conversation, read back for the panel. */
+  AgentLoad: 'agent:load',
+  /** Main → renderer: one step of a turn, as it happens. */
+  AgentEvent: 'agent:event',
+  /** Main → renderer: make one edit for the agent. */
+  AgentToolCall: 'agent:tool-call',
+  /** Renderer → main: how that edit went. */
+  AgentToolResult: 'agent:tool-result',
+  /** Renderer → main: the user's answer to a confirmation request. */
+  AgentConfirm: 'agent:confirm',
+  /** Renderer → main: lay a view's HTML export out and measure what overflows. */
+  AgentMeasureOverflow: 'agent:measure-overflow',
+  /** Import window → main: start a cleanup of the view just imported. */
+  ImportStartCleanup: 'import:start-cleanup',
+  /** Main → app window: start that cleanup in the Agent panel. */
+  AgentStartCleanup: 'agent:start-cleanup',
+  /** Restore the project to before the conversation's first edit. */
+  AgentUndoSession: 'agent:undo-session',
+
   // Theme
   ThemeRead: 'theme:read',
   ThemeChanged: 'theme:changed',
@@ -129,6 +159,22 @@ export const IPC = {
   // clicks Import; the payload reaches the app window, which reduces it
   // to a view. see docs/plans/website-import-plan.md
   ImportOpen: 'import:open',
+  // React app import: choose a folder, start its dev server with the
+  // user's say-so, and stream its progress. see docs/plans/react-import-plan.md
+  // A multi-page import, finished (components found) or undone: the
+  // import window names the batch and the action, the app window acts on
+  // what it recorded for that batch and reports back.
+  ImportBatchAction: 'import:batch-action',
+  ImportBatchActionDeliver: 'import:batch-action-deliver',
+  ImportBatchReport: 'import:batch-report',
+  ImportBatchReportChanged: 'import:batch-report-changed',
+  ReactImportInspect: 'react-import:inspect',
+  ReactImportStart: 'react-import:start',
+  ReactImportProgress: 'react-import:progress',
+  /** The names a React app's source gives its lists, read in main from the app's folder. */
+  ReactImportListNames: 'react-import:list-names',
+  /** Where a finished React import's elements came from, kept for the AI pass and re-import. */
+  ReactImportRecord: 'react-import:record',
   /** Download one remote image into the project's assets. */
   ImportFetchImage: 'import:fetchImage',
   /** Which of these families does Google Fonts serve? */

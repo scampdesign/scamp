@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Tokens fixture</title>
+<!--
+  The cascade cases the capture's token reader has to get right: a token
+  in a shorthand, a literal beating a token by specificity, !important
+  beating specificity, an inline style, and a second theme.
+  Captured with `authoredTokens` (the file name says so).
+  see docs/plans/react-import-plan.md
+-->
+<style>
+  :root { --surface: #eef3f9; --ink: #1d2732; --space: 16px; --accent: #0a84a5; }
+  [data-theme="dark"] { --surface: #16181c; --ink: #f3f3f7; }
+  body { margin: 0; font: 14px/20px system-ui, sans-serif; }
+  .panel { padding: var(--space) 8px; background: var(--surface); color: var(--ink); }
+  .panel.plain { background: #ffffff; }
+  .badge { color: var(--accent) !important; }
+  main .badge { color: red; }
+</style>
+</head>
+<body>
+  <main>
+    <section class="panel"><p>Tokens all the way</p></section>
+    <section class="panel plain"><p>A literal background</p></section>
+    <span class="badge">Important wins</span>
+    <div style="border: 2px solid var(--accent)">Inline</div>
+  </main>
+</body>
+</html>

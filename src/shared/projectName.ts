@@ -56,3 +56,13 @@ export const suggestProjectName = (raw: string): string => {
     .replace(/^-+|-+$/g, '')
     .slice(0, 64);
 };
+
+/**
+ * A name that always validates, made from someone else's — a React app's
+ * `package.json` name. `@scope/riq_frontend` → `riq-frontend`. Unlike
+ * `suggestProjectName`, never empty and never ending on a hyphen.
+ */
+export const projectNameFrom = (raw: string): string => {
+  const slug = suggestProjectName(raw.replace(/^@[^/]+\//, '')).replace(/-+$/, '');
+  return validateProjectName(slug).ok ? slug : 'react-app';
+};

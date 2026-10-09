@@ -206,6 +206,13 @@ row = null) => {
             : defaultText;
     const hasText = isText && typeof textContent === 'string' && textContent.length > 0;
     const hasChildren = element.childIds.length > 0;
+    // Words and inline markup the definition writes alongside its children,
+    // drawn as the page renderer draws them, or an instance shows less than
+    // the component editor does. A row or prop value replaces the runs.
+    const fragments = element.inlineFragments;
+    const runs = isText && rowText === undefined && overrideValue === undefined ? runsOf(element) : [];
+    const styledRuns = !hasChildren && fragments.length === 0 && (runs.length > 1 || runs.some(isStyled));
+    const prefix = instanceClassPrefix('', instanceClass);
     // Prop-text always carries the hit-test attrs and overrides the
     // inner wrapper's `pointer-events: none` so `elementsFromPoint`
     // surfaces it for `propTextHitTest`. The dashed edit affordance
@@ -249,7 +256,7 @@ row = null) => {
             style: { ...style, pointerEvents: 'auto' },
         }, content);
     }
-    if (!hasChildren && !hasText && !isEditingThisProp) {
+    if (!hasChildren && !hasText && fragments.length === 0 && !isEditingThisProp) {
         return createElement(tag, { ...props, key: element.id });
     }
     if (isEditingThisProp && propName !== null) {
@@ -290,7 +297,12 @@ row = null) => {
             },
         }, textContent ?? '');
     }
-    if (hasText && !hasChildren) {
+    if (styledRuns) {
+        return createElement(tag, { ...props, key: element.id }, runs.map((run, index) => isStyled(run)
+            ? createElement('span', { key: `run-${index}`, className: `${prefix}${runClassName(className, index)}`, style: runInlineStyle(run) }, run.text)
+            : run.text));
+    }
+    if (hasText && !hasChildren && fragments.length === 0) {
         return createElement(tag, { ...props, key: element.id }, textContent);
     }
     // Derive parent display / direction once so children's
@@ -301,7 +313,8 @@ row = null) => {
     const ownDisplay = effectiveDisplay(element);
     const childParentDisplay = ownDisplay === 'flex' || ownDisplay === 'grid' ? ownDisplay : 'none';
     const childParentDirection = ownDisplay === 'flex' ? element.flexDirection : undefined;
-    const children = expandChildren(elementsMap, element.childIds, scope)
+    const expanded = expandChildren(elementsMap, element.childIds, scope);
+    const children = expanded
         .map(({ id: childId, row: childRow }) => {
         const child = elementsMap[childId];
         if (!child)
@@ -311,9 +324,47 @@ row = null) => {
         return rendered && childRow !== null
             ? cloneElement(rendered, { key: `${childId}:${childRow.index}` })
             : rendered;
-    })
-        .filter((c) => c !== null);
-    return createElement(tag, { ...props, key: element.id }, children);
+    });
+    if (!hasText && fragments.length === 0) {
+        return createElement(tag, { ...props, key: element.id }, children.filter((c) => c !== null));
+    }
+    // Text first, then fragments and children interleaved by
+    // `afterChildIndex` — the order `generateCode` writes and the page
+    // renderer draws.
+    const composed = [];
+    if (hasText)
+        composed.push(textContent);
+    const fragmentsAt = (at) => {
+        fragments.forEach((fragment, index) => {
+            if (fragment.afterChildIndex !== at)
+                return;
+            if (fragment.kind === 'text') {
+                composed.push(fragment.value);
+                return;
+            }
+            // Verbatim source from a file, so not trusted: sanitized, as on the page.
+            const html = sanitizeInlineMarkup(fragment.source);
+            if (html.length === 0)
+                return;
+            composed.push(createElement('span', {
+                key: `fragment-${at}-${index}`,
+                style: { display: 'contents' },
+                dangerouslySetInnerHTML: { __html: html },
+            }));
+        });
+    };
+    let cursor = 0;
+    fragmentsAt(-1);
+    element.childIds.forEach((childId, index) => {
+        while (cursor < expanded.length && expanded[cursor]?.id === childId) {
+            const rendered = children[cursor];
+            cursor += 1;
+            if (rendered !== null && rendered !== undefined)
+                composed.push(rendered);
+        }
+        fragmentsAt(index);
+    });
+    return createElement(tag, { ...props, key: element.id }, composed);
 };
 export const ElementRenderer = ({ elementId, row }) => {
     const rawElement = useCanvasStore((s) => s.elements[elementId]);
@@ -691,7 +742,14 @@ export const ElementRenderer = ({ elementId, row }) => {
         // children resolve their percentage widths against the inner
         // div, which is itself content-sized, so `100%` falls back
         // to `auto` and the instance hugs its content as expected.
-        return (_jsx("div", { ...wrapperProps, children: _jsx("div", { style: { pointerEvents: 'none', display: 'block' }, "aria-hidden": "true", children: inner }) }));
+        //
+        // It passes the wrapper's height through, though: the generated page
+        // has neither box, so a root's `height: 100%` resolves against the
+        // grid row or sized parent around the instance. Stopping at a
+        // content-sized block cut an imported sidebar's background off
+        // where its links ended. Over a content-sized wrapper `100%` is
+        // still `auto`, so a hugging instance is unchanged.
+        return (_jsx("div", { ...wrapperProps, children: _jsx("div", { style: { pointerEvents: 'none', display: 'block', height: '100%' }, "aria-hidden": "true", children: inner }) }));
     }
     // The actual HTML tag — uses the element's stored override if any,
     // otherwise the type's default (`p` for text, `div` for rect).

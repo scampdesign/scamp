@@ -23,7 +23,28 @@ const importApi = {
         return () => ipcRenderer.removeListener(IPC.ImportResultChanged, handler);
     },
     /** Hand a captured page, and its narrower readings, to the app window. */
-    deliver: (projectPath, payload, narrower) => ipcRenderer.invoke(IPC.ImportCaptured, { projectPath, payload, narrower }),
+    deliver: (projectPath, payload, narrower, nameHint, batch) => ipcRenderer.invoke(IPC.ImportCaptured, {
+        projectPath,
+        payload,
+        narrower,
+        ...(nameHint !== undefined ? { nameHint } : {}),
+        ...(batch !== undefined ? { batch } : {}),
+    }),
+    /**
+     * Finish a multi-page import (find its components) or undo it. A batch
+     * id and an action, nothing else; the app window answers on `onBatchReport`.
+     */
+    batchAction: (projectPath, batchId, action) => ipcRenderer.invoke(IPC.ImportBatchAction, { projectPath, batchId, action }),
+    onBatchReport: (listener) => {
+        const handler = (_e, p) => listener(p);
+        ipcRenderer.on(IPC.ImportBatchReportChanged, handler);
+        return () => ipcRenderer.removeListener(IPC.ImportBatchReportChanged, handler);
+    },
+    /**
+     * Ask the app window to start an AI cleanup of the view just imported.
+     * A view name and a mode, and nothing else; main checks both.
+     */
+    startCleanup: (projectPath, viewName, tokenMode) => ipcRenderer.invoke(IPC.ImportStartCleanup, { projectPath, viewName, tokenMode }),
     close: (projectPath) => ipcRenderer.invoke(IPC.ImportClose, { projectPath }),
 };
 contextBridge.exposeInMainWorld('scampImport', importApi);

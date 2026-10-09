@@ -43,6 +43,9 @@ afterEach(async () => {
 });
 // --- pure helpers -----------------------------------------------------------
 describe('formatTriggerLabel', () => {
+    it('labels the Scamp Agent’s restore point', () => {
+        expect(formatTriggerLabel('agent_session')).toBe('Before Scamp Agent');
+    });
     it('returns concise labels per trigger', () => {
         expect(formatTriggerLabel('session_open')).toBe('Session opened');
         expect(formatTriggerLabel('session_close')).toBe('Session closed');
@@ -134,6 +137,33 @@ describe('enumerateProjectFiles', () => {
         const root = await makeLegacyProject();
         const files = (await enumerateProjectFiles(root, 'legacy')).map((f) => path.relative(root, f));
         expect(files.sort()).toEqual(['home.tsx', 'home.module.css', 'about.tsx', 'about.module.css'].sort());
+    });
+    it('collects the theme and DESIGN.md of a nextjs project', async () => {
+        // Without them a restore brought the pages back in the current
+        // theme — and an agent session that added tokens couldn't be undone.
+        const root = await makeNextjsProject();
+        await fs.writeFile(path.join(root, 'app', 'theme.css'), ':root {}');
+        await fs.writeFile(path.join(root, 'DESIGN.md'), '# Design');
+        const files = (await enumerateProjectFiles(root, 'nextjs')).map((f) => path.relative(root, f));
+        expect(files).toContain('app/theme.css');
+        expect(files).toContain('DESIGN.md');
+    });
+    it('collects the theme and DESIGN.md of a legacy project', async () => {
+        const root = await makeLegacyProject();
+        await fs.writeFile(path.join(root, 'theme.css'), ':root {}');
+        await fs.writeFile(path.join(root, 'DESIGN.md'), '# Design');
+        const files = (await enumerateProjectFiles(root, 'legacy')).map((f) => path.relative(root, f));
+        expect(files).toContain('theme.css');
+        expect(files).toContain('DESIGN.md');
+    });
+    it('collects the theme and DESIGN.md of a scamp project from design/', async () => {
+        const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'snap-ops-scamp-'));
+        tmpRoots.push(tmp);
+        await fs.mkdir(path.join(tmp, 'design'), { recursive: true });
+        await fs.writeFile(path.join(tmp, 'design', 'theme.css'), ':root {}');
+        await fs.writeFile(path.join(tmp, 'design', 'DESIGN.md'), '# Design');
+        const files = (await enumerateProjectFiles(tmp, 'scamp')).map((f) => path.relative(tmp, f));
+        expect(files.sort()).toEqual(['design/DESIGN.md', 'design/theme.css']);
     });
 });
 // --- createSnapshot ---------------------------------------------------------

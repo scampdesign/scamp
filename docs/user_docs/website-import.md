@@ -26,9 +26,9 @@ rights to—not to republish someone else's.
    back, forward, and reload buttons.
 1. Click **Import**.
 
-Scamp reads the page as it appears on screen, then reads it again at
-each of your project's narrower [breakpoints](breakpoints.md), which is
-what gives the view its responsive overrides. Reading takes a few
+Scamp reads the page at the width of your project's widest
+[breakpoint](breakpoints.md), then reads it again at each narrower one,
+which is what gives the view its responsive overrides. Reading takes a few
 seconds per width, and the button says which width it's on.
 
 When it finishes, Scamp brings the main window forward with the new view
@@ -40,6 +40,100 @@ the report—switch back to read what changed, or to import the next page.
 a cookie banner, a login, or a tab you haven't clicked isn't there to be
 read—dismiss it, sign in, or open it first. Scamp does scroll the page
 before reading, so content that fades in on scroll is captured.
+
+## Import pages from a React app
+
+If the design lives in a React app on your computer, Scamp can run the
+app and list its pages for you. It works with apps built on Vite,
+Next.js, or Create React App.
+
+1. In the **Pages** sidebar, click **↧ Import a React app…**.
+1. Click **Choose folder…** and select the app's project folder—the one
+   with its `package.json`.
+1. Read the commands Scamp shows you. To show the app's pages, Scamp
+   runs its dev server, such as `npm run dev`, and first installs its
+   dependencies if they aren't installed yet.
+1. Choose where the pages go: **A new project**, named after the app, or
+   **This project**. A new project is the default, so the app's design
+   stays apart from your other work. It needs a default projects folder,
+   which you set in **Settings**.
+1. Click **Run and import**. When the app is running, the import window
+   opens on it, with the app's pages listed on the left.
+1. Select the checkbox beside each page you want. Pages that open as
+   they stand are already selected.
+1. Click **Import N pages**. Scamp visits each page in turn, reads it at
+   every breakpoint, and lists how each one went.
+
+When every page is in, Scamp looks for the app's own components across
+them. A part the app draws on several pages, such as a sidebar or a
+status chip, becomes one [component](components.md), with an instance on
+each page in place of the copy. Text that differs from page to page,
+such as a page title, becomes a text prop. The list of results says
+which components Scamp made, and which copies it kept as they are and
+why.
+
+A list the app draws from data, such as the rows of a table, becomes
+one element set to repeat, with each row's words kept as sample data.
+You can edit the rows on the **Data** tab. A list whose rows look
+different from each other, such as rows with different status colors,
+stays as separate elements.
+
+**Note:** A component shows one look on every page. Where the app
+highlights something differently on each page, such as the current item
+in a navigation menu, the component shows the look most pages have.
+
+### Tidy up a React import with AI
+
+Some things one look at a page can't tell, such as which parts show only
+sometimes, or what the app calls its lists. The Scamp Agent can read the
+app's source for them.
+
+1. Open a page you imported from the React app.
+1. In the **Agent** panel, click **Tidy up with AI**.
+1. Read the agent's plan. It names the conditions it will add, such as
+   showing a badge only when `isOverdue` is true, and the names it will
+   give each list, taken from the app's code.
+1. Click **Apply this plan**, or reply to change it.
+
+The agent doesn't change how the page looks. The **Agent** panel offers
+this for pages imported since you opened the project, from an app Scamp
+ran from its folder.
+
+To import one page at a time instead, click a page in the list, then
+click **Import** at the top of the window.
+
+To undo a multi-page import, click **Remove these pages** in the list
+of results. Scamp removes the views that import made, and nothing else.
+
+Each view is named after its route: `/billing/dashboard` becomes
+`BillingDashboard`, and `/` becomes `Home`.
+
+If the app uses CSS custom properties for its colors, spacing, and type,
+choose **Use the app's own theme tokens** in the dialog. Scamp adds those
+tokens to the project's [theme](design-tokens.md), with any dark theme
+the app has, and uses them wherever the app did. A value the app wrote
+directly stays as it is. To import plain values instead, choose **Keep
+plain values**.
+
+If the app is already running, enter its address, such as
+`http://localhost:5173`, and click **Open** instead of choosing a
+folder.
+
+**Caution:** Running a dev server runs the project's own code on your
+computer. Only run apps you trust.
+
+Some pages need more than their address:
+
+- **A page with a value in its route**, such as `/patients/:patientId`,
+  shows a box under its name. Enter a value, such as an ID you know
+  exists, and then click the page.
+- **A page that sends you somewhere else**, such as to a sign-in or a
+  setup screen, is flagged in the list, and a multi-page import skips
+  it. Use the app in the import
+  window to get to the state you want, then click **Import**. The window
+  keeps the app's session, so a sign-in carries over to the next page.
+
+Scamp stops the app's dev server when you close the import window.
 
 ## What Scamp brings across
 

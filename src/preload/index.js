@@ -49,6 +49,13 @@ const api = {
     /** Which of these families does Google Fonts serve? */
     resolveImportFonts: (args) => ipcRenderer.invoke(IPC.ImportResolveFonts, args),
     /** Tell the import window how it went. */
+    /** The import window asks to finish or undo one multi-page import. */
+    onImportBatchAction: (listener) => {
+        const handler = (_e, args) => listener(args);
+        ipcRenderer.on(IPC.ImportBatchActionDeliver, handler);
+        return () => ipcRenderer.removeListener(IPC.ImportBatchActionDeliver, handler);
+    },
+    reportImportBatch: (payload) => ipcRenderer.invoke(IPC.ImportBatchReport, payload),
     reportImportResult: (payload) => ipcRenderer.invoke(IPC.ImportResultReport, payload),
     /**
      * Keep the page's original beside the view it became, in a temp
@@ -93,6 +100,17 @@ const api = {
     sendMcpQueryResult: (result) => {
         ipcRenderer.send(IPC.McpQueryResult, result);
     },
+    /** The Scamp Agent's edits — answered by `agentToolResponder`, one reply each. */
+    onAgentToolCall: (handler) => {
+        const listener = (_e, args) => handler(args);
+        ipcRenderer.on(IPC.AgentToolCall, listener);
+        return () => ipcRenderer.removeListener(IPC.AgentToolCall, listener);
+    },
+    sendAgentToolResult: (result) => {
+        ipcRenderer.send(IPC.AgentToolResult, result);
+    },
+    /** For the agent's overflow check: main lays the view out and measures it. */
+    agentMeasureOverflow: (args) => ipcRenderer.invoke(IPC.AgentMeasureOverflow, args),
     getMcpStatus: () => ipcRenderer.invoke(IPC.McpStatus),
     writeComponentThumbnail: (args) => ipcRenderer.invoke(IPC.ComponentWriteThumbnail, args),
     readComponentThumbnail: (args) => ipcRenderer.invoke(IPC.ComponentReadThumbnail, args),
@@ -167,6 +185,38 @@ const api = {
         const listener = (_e, status) => handler(status);
         ipcRenderer.on(IPC.AuthComplete, listener);
         return () => ipcRenderer.removeListener(IPC.AuthComplete, listener);
+    },
+    // Scamp Agent provider key. Write-only from here: the key goes in, and
+    // only a status ever comes back. see docs/plans/builtin-agent-plan.md
+    // React app import. see docs/plans/react-import-plan.md
+    reactImportInspect: () => ipcRenderer.invoke(IPC.ReactImportInspect),
+    reactImportStart: (args) => ipcRenderer.invoke(IPC.ReactImportStart, args),
+    reactImportRecord: (args) => ipcRenderer.invoke(IPC.ReactImportRecord, args),
+    reactImportListNames: (args) => ipcRenderer.invoke(IPC.ReactImportListNames, args),
+    onReactImportProgress: (handler) => {
+        const listener = (_e, event) => handler(event);
+        ipcRenderer.on(IPC.ReactImportProgress, listener);
+        return () => ipcRenderer.removeListener(IPC.ReactImportProgress, listener);
+    },
+    agentKeySet: (key) => ipcRenderer.invoke(IPC.AgentKeySet, { key }),
+    agentKeyStatus: () => ipcRenderer.invoke(IPC.AgentKeyStatus),
+    agentKeyClear: () => ipcRenderer.invoke(IPC.AgentKeyClear),
+    agentSend: (args) => ipcRenderer.invoke(IPC.AgentSend, args),
+    agentCancel: () => ipcRenderer.invoke(IPC.AgentCancel),
+    agentReset: (args) => ipcRenderer.invoke(IPC.AgentReset, args),
+    agentLoad: (args) => ipcRenderer.invoke(IPC.AgentLoad, args),
+    agentUndoSession: (args) => ipcRenderer.invoke(IPC.AgentUndoSession, args),
+    agentConfirm: (args) => ipcRenderer.invoke(IPC.AgentConfirm, args),
+    /** The import window asked for a cleanup of the view it just imported. */
+    onAgentStartCleanup: (handler) => {
+        const listener = (_e, args) => handler(args);
+        ipcRenderer.on(IPC.AgentStartCleanup, listener);
+        return () => ipcRenderer.removeListener(IPC.AgentStartCleanup, listener);
+    },
+    onAgentEvent: (handler) => {
+        const listener = (_e, event) => handler(event);
+        ipcRenderer.on(IPC.AgentEvent, listener);
+        return () => ipcRenderer.removeListener(IPC.AgentEvent, listener);
     },
     // Theme
     readTheme: (args) => ipcRenderer.invoke(IPC.ThemeRead, args),

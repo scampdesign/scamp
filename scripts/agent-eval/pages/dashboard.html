@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger — Dashboard</title>
+<style>
+  /* Written the way real app CSS is: one-sided borders, per-corner radii,
+     repeated literal colours. The importer carries all of it across
+     faithfully — and much of it is what the properties panel can't edit. */
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #1b2433; background: #f5f7fa; }
+  h1, h2, p { margin: 0; }
+
+  .shell { display: flex; flex-direction: column; min-height: 100vh; }
+  .topbar { display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 28px; background: #ffffff;
+            border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: #dfe3ea; }
+  .logo { font-weight: 700; font-size: 17px; color: #2357d9; }
+  .user { font-size: 13px; color: #5d6b82; }
+
+  .content { display: flex; flex-direction: column; gap: 24px; padding: 28px; }
+  .title { font-size: 24px; font-weight: 700; }
+
+  .stats { display: flex; gap: 16px; }
+  .stat { flex: 1; padding-top: 16px; padding-right: 18px; padding-bottom: 16px; padding-left: 18px;
+          background: #ffffff;
+          border-top-left-radius: 10px; border-top-right-radius: 10px;
+          border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;
+          border-left-width: 4px; border-left-style: solid; border-left-color: #2357d9; }
+  .stat-label { font-size: 12px; color: #5d6b82; text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat-value { margin-top: 6px; font-size: 26px; font-weight: 700; color: #1b2433; }
+
+  .panel { background: #ffffff; border-radius: 10px; padding: 20px 22px;
+           border-top: 1px solid #dfe3ea; border-right: 1px solid #dfe3ea;
+           border-bottom: 1px solid #dfe3ea; border-left: 1px solid #dfe3ea; }
+  .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+  .row { display: flex; justify-content: space-between; padding-top: 10px; padding-bottom: 10px;
+         border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: #eef1f5;
+         font-size: 14px; }
+  .row-amount { color: #2357d9; font-weight: 700; }
+  .footer { margin-top: auto; padding: 16px 28px; font-size: 12px; color: #5d6b82; }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="logo">Ledger</div>
+      <div class="user">Signed in as Sam</div>
+    </div>
+    <div class="content">
+      <div class="title">This month</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Revenue</div><div class="stat-value">$48,210</div></div>
+        <div class="stat"><div class="stat-label">Expenses</div><div class="stat-value">$31,904</div></div>
+        <div class="stat"><div class="stat-label">Profit</div><div class="stat-value">$16,306</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Recent payments</div>
+        <div class="row"><span>Acme Corp</span><span class="row-amount">$4,200</span></div>
+        <div class="row"><span>Globex</span><span class="row-amount">$2,950</span></div>
+        <div class="row"><span>Initech</span><span class="row-amount">$1,180</span></div>
+      </div>
+    </div>
+    <div class="footer">Ledger · Updated just now</div>
+  </div>
+</body>
+</html>
