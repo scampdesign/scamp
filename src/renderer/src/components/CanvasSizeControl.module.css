@@ -53,6 +53,13 @@
   letter-spacing: 0.5px;
 }
 
+.hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
 .presetGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;

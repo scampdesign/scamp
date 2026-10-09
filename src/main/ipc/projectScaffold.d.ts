@@ -34,6 +34,12 @@ export declare const readProjectLegacy: (folderPath: string) => Promise<PageFile
  */
 export declare const readProjectNextjs: (folderPath: string) => Promise<PageFile[]>;
 /**
+ * A `.gitignore` that ignores `.scamp` whole, rewritten to keep
+ * `.scamp/agent-history/` — git can't re-include a file inside an
+ * ignored folder, so the folder becomes `.scamp/*`.
+ */
+export declare const shareAgentHistory: (gitignore: string) => string;
+/**
  * Write the Next.js App Router scaffold into a freshly-created
  * project folder. Creates `app/` (with the home page, layout, and
  * `theme.css` co-located so `next dev` picks up the tokens),

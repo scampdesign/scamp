@@ -1231,7 +1231,9 @@ reads and writes this file; don't modify it unless the user asks.
 
 Scamp saves snapshots of the project in a \`.scamp/\` folder.
 Do not modify or delete anything inside \`.scamp/\`.
-Do not add \`.scamp/\` to version control — it is already in \`.gitignore\`.
+Do not add \`.scamp/\` to version control — it is already in \`.gitignore\`,
+except \`.scamp/agent-history/\`, the Scamp Agent's conversations, which
+are shared with the project.
 
 ## What NOT to change
 - Do not alter the import line at the top of the TSX file.
@@ -2679,7 +2681,9 @@ ${v.previewSection}
 
 Scamp saves snapshots of the project in a \`.scamp/\` folder.
 Do not modify or delete anything inside \`.scamp/\`.
-Do not add \`.scamp/\` to version control — it is already in \`.gitignore\`.
+Do not add \`.scamp/\` to version control — it is already in \`.gitignore\`,
+except \`.scamp/agent-history/\`, the Scamp Agent's conversations, which
+are shared with the project.
 
 ${v.doNotChangeSection}
 `;

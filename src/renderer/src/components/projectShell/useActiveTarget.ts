@@ -7,7 +7,7 @@ import type {
   ProjectData,
 } from '@shared/types';
 import { errorMessage } from '@shared/errorMessage';
-import { componentKindOf, type ComponentKind } from '@shared/types';
+import { componentKindOf, DESKTOP_BREAKPOINT_ID, type ComponentKind } from '@shared/types';
 import { SUPPORTED_CONTRACT, isSupportedContract } from '@shared/projectConfig';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useAppLogStore } from '@store/appLogSlice';
@@ -112,6 +112,22 @@ export const useActiveTarget = ({
       shown.pageSource.css === file.cssContent
     );
   };
+
+  // Which breakpoint is active follows the target. A component opens at
+  // Desktop, never at whatever a page was last set to; a page or view
+  // gets back the breakpoint its canvas width is, so the width it shows
+  // and the CSS its edits land in agree. see docs/notes/canvas-injected-stylesheet.md
+  const inComponentEditor = activeComponent?.kind === 'component';
+  const activeComponentName = activeComponent?.name ?? null;
+  useEffect(() => {
+    const store = useCanvasStore.getState();
+    if (inComponentEditor) {
+      store.setActiveBreakpoint(DESKTOP_BREAKPOINT_ID);
+      return;
+    }
+    const match = projectConfig.breakpoints.find((b) => b.width === projectConfig.canvasWidth);
+    store.setActiveBreakpoint(match?.id ?? DESKTOP_BREAKPOINT_ID);
+  }, [inComponentEditor, activeComponentName, projectConfig.breakpoints, projectConfig.canvasWidth]);
 
   const loadPage = useCanvasStore((s) => s.loadPage);
   const loadComponent = useCanvasStore((s) => s.loadComponent);
@@ -366,11 +382,20 @@ export const useActiveTarget = ({
     // A just-created file isn't in `project.components` yet (the state
     // update is still in flight), so creation passes the kind explicitly.
     const file = project.components.find((c) => c.name === name);
+    const nextKind = kind ?? (file ? componentKindOf(file) : 'component');
+    // A component opened from a view or another component — by double-click
+    // or from the sidebar — goes back there. In a project made of views
+    // there's no page to fall back to, and leaving drew an empty canvas.
+    const origin =
+      from ??
+      (nextKind === 'component' && fromPage === null && activeComponent !== null && activeComponent.name !== name
+        ? { name: activeComponent.name, kind: activeComponent.kind }
+        : undefined);
     setActiveComponentState({
       name,
-      kind: kind ?? (file ? componentKindOf(file) : 'component'),
+      kind: nextKind,
       returnToPage: fromPage,
-      ...(from !== undefined ? { returnTo: from } : {}),
+      ...(origin !== undefined ? { returnTo: origin } : {}),
     });
   };
   // Latest refs for the one-shot canvas→component-editor navigation

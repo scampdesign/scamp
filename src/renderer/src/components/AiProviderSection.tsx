@@ -49,7 +49,9 @@ export const AiProviderSection = (): JSX.Element | null => {
           <div className={settingsStyles.rowHint}>
             The Scamp Agent runs on your own Anthropic account. Create a key
             in the Claude Console at console.anthropic.com, then paste it here.
-            Scamp stores it encrypted on this computer.
+            Scamp stores it encrypted on this computer. When you send a
+            message, Scamp sends Anthropic your message and the parts of your
+            design the agent reads.
           </div>
         </div>
         <div className={`${settingsStyles.rowControl} ${styles.control}`}>

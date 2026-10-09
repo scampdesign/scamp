@@ -29,6 +29,18 @@ You can also type a custom width in the popover. A custom width drops
 the active breakpoint back to Desktop; use one to preview a specific
 size without committing to a breakpoint override.
 
+### Breakpoints in the component editor
+
+A component can have its own breakpoint styles. In the
+[component editor](components.md#the-component-editor), the same control
+reads, for example, `Desktop · 232 × 1308`: the breakpoint, then the
+component's canvas size. Selecting a breakpoint there shows and edits the
+component at that screen size, but doesn't resize its canvas, because the
+canvas is the component's own box.
+
+The component editor always opens at Desktop. When you go back to a page,
+the page's breakpoint comes back with its canvas width.
+
 ## Edit at a breakpoint
 
 With a non-desktop breakpoint active, every edit routes to that

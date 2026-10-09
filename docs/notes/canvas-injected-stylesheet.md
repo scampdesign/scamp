@@ -171,6 +171,12 @@ breakpoint said Desktop, and the inline styles, which follow the active
 breakpoint, kept their desktop values. Half of each tablet rule applied:
 labels offset by their tablet `left` / `top`, buttons centred.
 
+The component editor has its own breakpoint control
+(`CanvasSizeControl` in component mode): it sets the active breakpoint
+without resizing the canvas. Entering the editor resets it to Desktop,
+and a page or view gets back the breakpoint its canvas width matches
+(`useActiveTarget`), so a component never shows a page's Tablet unasked.
+
 So in the component editor `buildCanvasStylesheet` gets the active
 breakpoint's width and `mediaForViewport` resolves each width-only block
 for it: a block that matches is unwrapped, one that doesn't is dropped,

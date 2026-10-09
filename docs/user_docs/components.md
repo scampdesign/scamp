@@ -119,6 +119,15 @@ Content taller than the artboard still shows. The canvas height is a
 minimum that grows with content, and double-click to fit commits the
 grown height as the new size.
 
+### Component breakpoints
+
+A component can style itself differently at each breakpoint, for example
+a sidebar that collapses to icons at Tablet. To see and edit that, click
+the size control above the canvas and select a breakpoint. The component
+is shown at that screen size, and your edits go to that breakpoint's
+styles. The canvas keeps its size. The editor always opens at Desktop.
+See [Breakpoints](breakpoints.md#breakpoints-in-the-component-editor).
+
 ### The Data tab
 
 Inside the component editor, the properties panel gains a third tab:

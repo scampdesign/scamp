@@ -166,8 +166,10 @@ out
 # Environment variables
 .env*.local
 
-# Scamp local state (component thumbnails, etc.)
-.scamp/
+# Scamp local state (component thumbnails, snapshots, etc.), except the
+# Scamp Agent's conversations, which are shared with the project
+.scamp/*
+!.scamp/agent-history/
 
 # Scamp MCP server registration (machine-local — do not commit)
 .mcp.json
@@ -178,12 +180,20 @@ node_modules
 # Environment variables
 .env*.local
 
-# Scamp local state (component thumbnails, etc.)
-.scamp/
+# Scamp local state (component thumbnails, snapshots, etc.), except the
+# Scamp Agent's conversations, which are shared with the project
+.scamp/*
+!.scamp/agent-history/
 
 # Scamp MCP server registration (machine-local — do not commit)
 .mcp.json
 `;
+/**
+ * A `.gitignore` that ignores `.scamp` whole, rewritten to keep
+ * `.scamp/agent-history/` — git can't re-include a file inside an
+ * ignored folder, so the folder becomes `.scamp/*`.
+ */
+export const shareAgentHistory = (gitignore) => gitignore.replace(/^\/?\.scamp\/?[ \t]*$/m, '.scamp/*\n!.scamp/agent-history/');
 /** Write `.gitignore` only when missing — don't clobber user customisations. */
 const writeGitignoreIfMissing = async (projectPath, content) => {
     const target = join(projectPath, '.gitignore');
@@ -397,6 +407,10 @@ export const scaffoldScampProject = async (projectPath, name) => {
     // the app writes its full instructions, as it does on every open.
     await fs.writeFile(join(projectPath, 'agent.md'), AGENT_MD_CONTENT_SCAMP, 'utf-8');
     await fs.writeFile(join(projectPath, 'CLAUDE.md'), CLAUDE_MD_CONTENT, 'utf-8');
-    await fs.appendFile(join(projectPath, '.gitignore'), '\n# Scamp MCP server registration (machine-local — do not commit)\n.mcp.json\n', 'utf-8');
+    // The template ignores all of `.scamp`; the agent's conversations are
+    // shared with the project, so they're let back in.
+    const gitignorePath = join(projectPath, '.gitignore');
+    const gitignore = await fs.readFile(gitignorePath, 'utf-8');
+    await fs.writeFile(gitignorePath, `${shareAgentHistory(gitignore)}\n# Scamp MCP server registration (machine-local — do not commit)\n.mcp.json\n`, 'utf-8');
     await fs.mkdir(join(projectPath, 'public', 'assets'), { recursive: true });
 };

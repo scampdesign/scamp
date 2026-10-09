@@ -29,6 +29,12 @@ export const AgentConnect = ({ keyControls }: Props): JSX.Element => {
         Claude Console at console.anthropic.com, then paste it here. Scamp
         stores it encrypted on this computer.
       </p>
+      <p className={styles.connectHint}>
+        When you send a message, Scamp sends Anthropic your message and the
+        parts of your design the agent reads—for an imported page, its
+        original code too. Anthropic bills your account for what the agent
+        uses.
+      </p>
       <form
         className={styles.connectForm}
         onSubmit={(e) => {

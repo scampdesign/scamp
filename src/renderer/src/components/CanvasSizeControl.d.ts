@@ -6,9 +6,9 @@ type Props = {
      * When set, the control edits the canvas size for the named
      * component (writing to `config.componentCanvas[name]`) rather
      * than the project-wide page canvas. Switches the popover into
-     * component-mode: width + height numeric inputs, no breakpoint
-     * presets (breakpoints don't apply to component editing in
-     * Phase 3.5 — only pages have responsive cascades).
+     * component-mode: the breakpoint presets pick which screen size the
+     * component is shown and edited at without resizing its canvas, plus
+     * width + height inputs for the canvas itself.
      */
     componentName?: string;
     /** A view's artboard defaults to the page width instead of the component size. */

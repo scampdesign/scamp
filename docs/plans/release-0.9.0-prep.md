@@ -104,16 +104,17 @@ window's partition only show up there.
 
 ## 4. Decisions to make before tagging
 
-- [ ] **Beta labelling.** Is the Agent panel marked beta in the UI, and
-      is it on for everyone signed in?
-- [ ] **Data and privacy.** The agent sends page content (and, for React
-      imports, app source) to Anthropic on the user's key. Say so in the
-      docs and at connect time.
-- [ ] **`.scamp/agent-history/`** is written into projects. Should new
-      projects' `.gitignore` exclude it?
-- [ ] **Component editor breakpoint.** It follows the breakpoint last
-      picked on a page, with no control of its own. Ship as is, or add the
-      control first (see Known issues)?
+- [x] **Beta labelling.** Marked **Beta** in the panel header, and the
+      **Agent** button only shows when signed in. Both were already true.
+- [x] **Data and privacy.** Said in `scamp-agent.md` and on the connect
+      screen and in **Settings > AI provider**.
+- [x] **`.scamp/agent-history/`** is shared, not ignored: all three
+      scaffolds now write `.scamp/*` + `!.scamp/agent-history/`. Existing
+      projects' `.gitignore` is left alone; `scamp-agent.md` says what to
+      change. `agent.md` tells agents the same.
+- [x] **Component editor breakpoint.** Added: presets in the size
+      control, Desktop on open, the page's breakpoint restored on the way
+      out. `component-breakpoint.spec.ts`.
 
 ## 5. Release mechanics
 
@@ -129,9 +130,6 @@ window's partition only show up there.
 
 ## Known issues to carry (or fix first)
 
-- **Component editor breakpoint control.** No control; it inherits the
-  page's last breakpoint, so a component opened while on Tablet shows and
-  edits Tablet without saying so.
 - **Inherited text styles in the component editor.** A component that
   relies on its page for font, size, or colour shows browser defaults in
   its editor.

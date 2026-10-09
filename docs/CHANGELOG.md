@@ -35,8 +35,11 @@ release time.
   creates components, changes theme tokens, or makes many changes at
   once, and **Undo AI changes** puts back everything it did in a
   conversation. Each page keeps its own conversation, saved in the
-  project. The agent needs you to be signed in, and Anthropic bills its
-  use to your key. See [Scamp Agent](user_docs/scamp-agent.md).
+  project, and new projects keep those conversations in version control
+  so a team sharing a repository shares them. The agent needs you to be
+  signed in, and Anthropic bills its use to your key; the connect screen
+  says what's sent to Anthropic. See
+  [Scamp Agent](user_docs/scamp-agent.md).
 - **Clean up an imported page with AI.** After you import a page, click
   **Clean up with AI** in the import window. The agent makes the page
   easier to edit—shorthand values instead of per-side ones, flex
@@ -63,6 +66,13 @@ release time.
   one to select the element. Scamp used to find these only for agents,
   so a project could have thousands without anyone seeing them. See
   [Find problems in a view](user_docs/views.md#find-problems-in-a-view).
+- **The component editor has its own breakpoint.** Click the size control
+  above a component's canvas and select a breakpoint to see and edit the
+  component at that screen size, without resizing its canvas. The editor
+  always opens at Desktop, and a page gets its own breakpoint back when
+  you return. Before, a component showed whichever breakpoint a page was
+  last set to, without saying so. See
+  [Breakpoints](user_docs/breakpoints.md#breakpoints-in-the-component-editor).
 - **Outside agents get more from the MCP server.** `scamp_get_element_tree`
   and `scamp_get_element_by_id` read any view or component, not only the
   open one, and two new tools measure overflow and read a React import's
@@ -81,6 +91,10 @@ release time.
   Desktop. A component also showed less on a page than in its editor,
   because text inside a nested `<span>` was dropped, and a component set
   to `height: 100%` stopped short of the row it sat in.
+- **Leaving a component opened from the sidebar goes back to the view
+  you were on.** In a project made of views, it showed an empty canvas.
+- **Esc closes the canvas size menu without leaving the component
+  editor.**
 - **Edits at a breakpoint close their `@media` block on its own line.**
   The first edit at a new breakpoint wrote the block's closing brace on
   the same line as the rule's, which was valid CSS but hard to read.

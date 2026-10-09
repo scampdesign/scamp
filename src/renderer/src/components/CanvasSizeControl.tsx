@@ -30,9 +30,9 @@ type Props = {
    * When set, the control edits the canvas size for the named
    * component (writing to `config.componentCanvas[name]`) rather
    * than the project-wide page canvas. Switches the popover into
-   * component-mode: width + height numeric inputs, no breakpoint
-   * presets (breakpoints don't apply to component editing in
-   * Phase 3.5 — only pages have responsive cascades).
+   * component-mode: the breakpoint presets pick which screen size the
+   * component is shown and edited at without resizing its canvas, plus
+   * width + height inputs for the canvas itself.
    */
   componentName?: string;
   /** A view's artboard defaults to the page width instead of the component size. */
@@ -76,7 +76,11 @@ export const CanvasSizeControl = ({
       if (!node.contains(e.target as Node)) setOpen(false);
     };
     const handleKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      // Esc closes the popover and nothing else — in the component
+      // editor, the window's Esc handler would exit the editor too.
+      e.stopPropagation();
     };
     document.addEventListener('mousedown', handleDocClick);
     document.addEventListener('keydown', handleKey);
@@ -168,14 +172,14 @@ export const CanvasSizeControl = ({
     (b) => b.id === activeBreakpointId
   );
   const buttonLabel = componentSize
-    ? `${componentSize.width} × ${componentSize.height}`
+    ? `${activeBreakpoint?.label ?? 'Desktop'} · ${componentSize.width} × ${componentSize.height}`
     : activeBreakpoint
       ? `${activeBreakpoint.label} · ${config.canvasWidth}`
       : `${config.canvasWidth}px`;
 
   return (
     <div className={styles.wrap} ref={wrapRef}>
-      <Tooltip label="Canvas width · active breakpoint">
+      <Tooltip label={componentSize ? 'Active breakpoint · canvas size' : 'Canvas width · active breakpoint'}>
         <button
           className={styles.button}
           type="button"
@@ -194,12 +198,33 @@ export const CanvasSizeControl = ({
       {open && (
         <div className={styles.popover} role="dialog" data-testid="canvas-size-popover">
           {componentSize ? (
-            // Component-mode popover: width + height inputs only.
-            // Breakpoint presets don't apply — components edit in
-            // isolation at one breakpoint (the page on which the
-            // instance lives is what carries the responsive
-            // cascade).
+            // Component-mode popover. A component's own CSS carries
+            // breakpoint rules (an imported sidebar collapses at
+            // Tablet), so the presets choose the screen size it's shown
+            // and edited at. They don't resize the canvas: that's the
+            // component's own box, set below.
+            // see docs/notes/canvas-injected-stylesheet.md
             <>
+              <div className={styles.sectionLabel}>Breakpoint</div>
+              <div className={styles.presetGrid}>
+                {config.breakpoints.map((bp) => (
+                  <button
+                    key={bp.id}
+                    className={`${styles.presetButton} ${
+                      bp.id === activeBreakpointId ? styles.presetActive : ''
+                    }`}
+                    type="button"
+                    onClick={() => setActiveBreakpoint(bp.id)}
+                  >
+                    <span className={styles.presetName}>{bp.label}</span>
+                    <span className={styles.presetWidth}>{bp.width}</span>
+                  </button>
+                ))}
+              </div>
+              <p className={styles.hint}>
+                The screen size the component is shown and edited at. Its
+                canvas keeps the size below.
+              </p>
               <div className={styles.sectionLabel}>Canvas size</div>
               <div className={styles.customRow}>
                 <NumberInput

@@ -7,7 +7,8 @@ import type { AgentConversationKey, AgentSkillRequest } from '@shared/types';
 
 /**
  * Each page's, view's and component's conversation with the agent, on
- * disk in `.scamp/agent-history/` — gitignored in every scaffold and
+ * disk in `.scamp/agent-history/` — kept in version control by every
+ * scaffold, so coworkers sharing a repo share the conversations, and
  * ignored by the watcher.
  *
  * A file holds both sides: `model` is the history the model sees, kept

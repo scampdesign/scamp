@@ -41,8 +41,12 @@ export const CanvasSizeControl = ({ config, onChange, componentName, componentKi
                 setOpen(false);
         };
         const handleKey = (e) => {
-            if (e.key === 'Escape')
-                setOpen(false);
+            if (e.key !== 'Escape')
+                return;
+            setOpen(false);
+            // Esc closes the popover and nothing else — in the component
+            // editor, the window's Esc handler would exit the editor too.
+            e.stopPropagation();
         };
         document.addEventListener('mousedown', handleDocClick);
         document.addEventListener('keydown', handleKey);
@@ -124,17 +128,18 @@ export const CanvasSizeControl = ({ config, onChange, componentName, componentKi
     };
     const activeBreakpoint = config.breakpoints.find((b) => b.id === activeBreakpointId);
     const buttonLabel = componentSize
-        ? `${componentSize.width} × ${componentSize.height}`
+        ? `${activeBreakpoint?.label ?? 'Desktop'} · ${componentSize.width} × ${componentSize.height}`
         : activeBreakpoint
             ? `${activeBreakpoint.label} · ${config.canvasWidth}`
             : `${config.canvasWidth}px`;
-    return (_jsxs("div", { className: styles.wrap, ref: wrapRef, children: [_jsx(Tooltip, { label: "Canvas width \u00B7 active breakpoint", children: _jsxs("button", { className: styles.button, type: "button", onClick: () => setOpen((v) => !v), "aria-haspopup": "dialog", "aria-expanded": open, "data-testid": "canvas-size-button", "data-active-breakpoint": activeBreakpointId, children: [buttonLabel, _jsx("span", { className: styles.caret, "aria-hidden": "true", children: "\u25BE" })] }) }), open && (_jsx("div", { className: styles.popover, role: "dialog", "data-testid": "canvas-size-popover", children: componentSize ? (
-                // Component-mode popover: width + height inputs only.
-                // Breakpoint presets don't apply — components edit in
-                // isolation at one breakpoint (the page on which the
-                // instance lives is what carries the responsive
-                // cascade).
-                _jsxs(_Fragment, { children: [_jsx("div", { className: styles.sectionLabel, children: "Canvas size" }), _jsxs("div", { className: styles.customRow, children: [_jsx(NumberInput, { value: componentSize.width, onChange: (next) => {
+    return (_jsxs("div", { className: styles.wrap, ref: wrapRef, children: [_jsx(Tooltip, { label: componentSize ? 'Active breakpoint · canvas size' : 'Canvas width · active breakpoint', children: _jsxs("button", { className: styles.button, type: "button", onClick: () => setOpen((v) => !v), "aria-haspopup": "dialog", "aria-expanded": open, "data-testid": "canvas-size-button", "data-active-breakpoint": activeBreakpointId, children: [buttonLabel, _jsx("span", { className: styles.caret, "aria-hidden": "true", children: "\u25BE" })] }) }), open && (_jsx("div", { className: styles.popover, role: "dialog", "data-testid": "canvas-size-popover", children: componentSize ? (
+                // Component-mode popover. A component's own CSS carries
+                // breakpoint rules (an imported sidebar collapses at
+                // Tablet), so the presets choose the screen size it's shown
+                // and edited at. They don't resize the canvas: that's the
+                // component's own box, set below.
+                // see docs/notes/canvas-injected-stylesheet.md
+                _jsxs(_Fragment, { children: [_jsx("div", { className: styles.sectionLabel, children: "Breakpoint" }), _jsx("div", { className: styles.presetGrid, children: config.breakpoints.map((bp) => (_jsxs("button", { className: `${styles.presetButton} ${bp.id === activeBreakpointId ? styles.presetActive : ''}`, type: "button", onClick: () => setActiveBreakpoint(bp.id), children: [_jsx("span", { className: styles.presetName, children: bp.label }), _jsx("span", { className: styles.presetWidth, children: bp.width })] }, bp.id))) }), _jsx("p", { className: styles.hint, children: "The screen size the component is shown and edited at. Its canvas keeps the size below." }), _jsx("div", { className: styles.sectionLabel, children: "Canvas size" }), _jsxs("div", { className: styles.customRow, children: [_jsx(NumberInput, { value: componentSize.width, onChange: (next) => {
                                         if (next === undefined)
                                             return;
                                         setComponentSize({

@@ -120,6 +120,16 @@ back brings the earlier one back. Conversations are saved in your project
 in `.scamp/agent-history/`, so they're still there after you restart
 Scamp.
 
+A new project keeps `.scamp/agent-history/` in version control while
+ignoring the rest of `.scamp/`, so if you share the project's repository,
+your team sees the same conversations. In a project created before 0.9.0,
+add these lines to `.gitignore` in place of `.scamp` to do the same:
+
+```
+.scamp/*
+!.scamp/agent-history/
+```
+
 To start over on a page, click **New conversation**.
 
 If you open another page while the agent is working, it finishes the
