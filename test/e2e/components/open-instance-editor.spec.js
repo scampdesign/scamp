@@ -78,7 +78,6 @@ test('double-clicking an instance opens its component, and the breadcrumb and Es
     const words = pageRoot(window).getByText('Inside the card');
     await expect(words).toBeVisible();
     const breadcrumb = window.getByRole('navigation', { name: 'Component editor breadcrumb' });
-    process.stderr.write(`[before] ${JSON.stringify(await window.evaluate(() => Array.from(document.querySelectorAll('[data-scamp-instance-id]')).map((n) => { const r = n.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; })))}\n`);
     // On the component's own words, which aren't a page element.
     await dblclickAt(window, words);
     await expect(breadcrumb).toBeVisible();
@@ -87,7 +86,6 @@ test('double-clicking an instance opens its component, and the breadcrumb and Es
     await breadcrumb.getByRole('button', { name: 'Home' }).click();
     await expect(breadcrumb).toHaveCount(0);
     await expect(canvasFrame(window).getByText('Inside the card')).toBeVisible();
-    process.stderr.write(`[after] ${JSON.stringify(await window.evaluate(() => Array.from(document.querySelectorAll('[data-scamp-instance-id]')).map((n) => { const r = n.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; })))}\n`);
     // And again, back with Esc.
     await dblclickAt(window, pageRoot(window).getByText('Inside the card'));
     await expect(breadcrumb).toBeVisible();

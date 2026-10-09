@@ -662,6 +662,13 @@ const CanvasPageStylesheet = (): JSX.Element | null => {
   const customMediaBlocks = useCanvasStore((s) => s.pageCustomMediaBlocks);
   const pageKeyframesBlocks = useCanvasStore((s) => s.pageKeyframesBlocks);
   const componentTrees = useCanvasStore((s) => s.componentTrees);
+  // A component's frame is its own size, not a viewport; its `@media`
+  // follow the breakpoint picked instead, as its inline styles do.
+  const viewportWidth = useCanvasStore((s) =>
+    s.activeComponent?.kind === 'component'
+      ? s.breakpoints.find((b) => b.id === s.activeBreakpointId)?.width
+      : undefined
+  );
 
   const sheet = useMemo(() => {
     // `pageName` only names the generated function and the CSS-module
@@ -697,8 +704,9 @@ const CanvasPageStylesheet = (): JSX.Element | null => {
         }).css,
       };
     });
-    return buildCanvasStylesheet(assemblePageCss(css, instances));
+    return buildCanvasStylesheet(assemblePageCss(css, instances), undefined, viewportWidth);
   }, [
+    viewportWidth,
     elements,
     rootElementId,
     breakpoints,

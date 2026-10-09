@@ -161,3 +161,19 @@ The order in the parity plan therefore wants revisiting: the iframe is
 listed as an alternative scoping option, but it is really the
 prerequisite for phase 3 rather than a nicety. Nothing meaningful can be
 peeled without it.
+
+## The component editor resolves media for a viewport
+
+A component's frame is the component's own size (232px for an imported
+sidebar), not a viewport. As container queries, every
+`(max-width: 768px)` rule in its sheet fired in the editor while the
+breakpoint said Desktop, and the inline styles, which follow the active
+breakpoint, kept their desktop values. Half of each tablet rule applied:
+labels offset by their tablet `left` / `top`, buttons centred.
+
+So in the component editor `buildCanvasStylesheet` gets the active
+breakpoint's width and `mediaForViewport` resolves each width-only block
+for it: a block that matches is unwrapped, one that doesn't is dropped,
+and a prelude it can't decide (`not`, `print`, `vw`) falls back to a
+container query. Pages and views keep container queries: their frame is
+the viewport.
