@@ -53,7 +53,46 @@ export const BASE_ONLY_PATCH_FIELDS = new Set([
 export const assignPatchKey = (target, source, key) => {
     target[key] = source[key];
 };
-export const applyPatchWithAxisRouting = (el, patch, activeBreakpointId, activeStateName) => {
+export const applyPatchWithAxisRouting = (el, patch, activeBreakpointId, activeStateName) => dropKeptOffsets(routePatch(el, patch, activeBreakpointId, activeStateName), patch, activeBreakpointId, activeStateName);
+const without = (custom, keys) => {
+    if (custom === undefined || !keys.some((k) => k in custom))
+        return custom;
+    const next = { ...custom };
+    for (const k of keys)
+        delete next[k];
+    return next;
+};
+/**
+ * Setting x / y — a drag, a resize, the Position fields — replaces an
+ * offset the parser kept verbatim (`left: 50%`), which would otherwise
+ * win over the new pixels and the element wouldn't move.
+ * see docs/notes/position-offsets.md
+ */
+const dropKeptOffsets = (el, patch, activeBreakpointId, activeStateName) => {
+    const keys = [...('x' in patch ? ['left'] : []), ...('y' in patch ? ['top'] : [])];
+    if (keys.length === 0)
+        return el;
+    if (activeBreakpointId === 'desktop' && activeStateName === null) {
+        const custom = without(el.customProperties, keys);
+        return custom === el.customProperties || custom === undefined ? el : { ...el, customProperties: custom };
+    }
+    if (activeBreakpointId === 'desktop' && activeStateName !== null) {
+        const override = el.stateOverrides?.[activeStateName];
+        const custom = without(override?.customProperties, keys);
+        if (override === undefined || custom === override.customProperties)
+            return el;
+        return { ...el, stateOverrides: { ...el.stateOverrides, [activeStateName]: { ...override, customProperties: custom } } };
+    }
+    const override = el.breakpointOverrides?.[activeBreakpointId];
+    const custom = without(override?.customProperties, keys);
+    if (override === undefined || custom === override.customProperties)
+        return el;
+    return {
+        ...el,
+        breakpointOverrides: { ...el.breakpointOverrides, [activeBreakpointId]: { ...override, customProperties: custom } },
+    };
+};
+const routePatch = (el, patch, activeBreakpointId, activeStateName) => {
     // Split the patch into base (always-top-level) and style (goes to
     // override when an axis is active).
     const basePatch = {};

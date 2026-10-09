@@ -39,13 +39,25 @@ export type CssWriteInput = {
 };
 
 /** Two parses agree when they produce the same elements. */
+/**
+ * JSON with every object's keys sorted. A model's key order follows the
+ * order declarations appear in the file — a breakpoint override read from
+ * `align-items; gap` and one read from `gap; align-items` are the same
+ * model — so a plain `JSON.stringify` compare reported a difference and
+ * every save of such a file fell back to writing it whole.
+ */
+const canonicalJson = (value: unknown): string =>
+  JSON.stringify(value, (_key, v: unknown) =>
+    v !== null && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : v
+  );
+
 const sameModel = (a: string, b: string, input: CssWriteInput): boolean => {
   const options = { breakpoints: input.breakpoints, isComponent: input.isComponent };
   const left = parseCode(input.tsx, a, options);
   const right = parseCode(input.tsx, b, options);
-  // Both come from one function on one code path, so key order matches
-  // and a string compare is a fair deep compare.
-  return JSON.stringify(left.elements) === JSON.stringify(right.elements);
+  return canonicalJson(left.elements) === canonicalJson(right.elements);
 };
 
 export const cssWriteFor = (input: CssWriteInput): CssWrite => {

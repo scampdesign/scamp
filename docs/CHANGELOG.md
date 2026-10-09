@@ -95,6 +95,15 @@ release time.
   you were on.** In a project made of views, it showed an empty canvas.
 - **Esc closes the canvas size menu without leaving the component
   editor.**
+- **Opening a project no longer moves a centered element.** An offset
+  written as a percentage or a calculation, such as `left: 50%`, was read
+  as `0`, so the next save wrote `left: 0px`. Agents center elements this
+  way, and opening a project they had edited was enough to move them.
+  Scamp now keeps those values as written.
+- **Saving an agent-edited page no longer warns that it rewrote the whole
+  stylesheet.** Scamp checks each save before writing only the rules that
+  changed, and the check mistook two orderings of the same rule for
+  different designs.
 - **Edits at a breakpoint close their `@media` block on its own line.**
   The first edit at a new breakpoint wrote the block's closing brace on
   the same line as the rule's, which was valid CSS but hard to read.

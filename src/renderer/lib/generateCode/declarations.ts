@@ -540,13 +540,17 @@ export const elementDeclarationLines = (
   // `bottom` other than `el.y` come back via customProperties and
   // override the typed `top` (CSS cascade — last declaration wins
   // for the same property name within a rule).
+  // An offset the typed x / y can't hold (`left: 50%`) is written in
+  // its place; the customProperties echo below is then skipped.
+  const left = (px: number): string => el.customProperties['left'] ?? `${px}px`;
+  const top = (px: number): string => el.customProperties['top'] ?? `${px}px`;
   if (el.position === 'auto') {
     if (isRoot) {
       lines.push(`position: relative;`);
     } else if (!inLayoutParent) {
       lines.push(`position: absolute;`);
-      lines.push(`left: ${el.x}px;`);
-      lines.push(`top: ${el.y}px;`);
+      lines.push(`left: ${left(el.x)};`);
+      lines.push(`top: ${top(el.y)};`);
     } else if (mustEstablishPositioningContext) {
       // Element is laid out by its flex/grid parent (so it doesn't
       // need its own position keyword for placement) BUT it contains
@@ -563,14 +567,14 @@ export const elementDeclarationLines = (
       // it here shifted the box by that much the moment a text was
       // placed inside it. see docs/notes/parse-position-absolute-in-flex.md
       lines.push(`position: relative;`);
-      lines.push(`left: 0px;`);
-      lines.push(`top: 0px;`);
+      lines.push(`left: ${left(0)};`);
+      lines.push(`top: ${top(0)};`);
     }
   } else {
     lines.push(`position: ${el.position};`);
     if (el.position !== 'static') {
-      lines.push(`left: ${el.x}px;`);
-      lines.push(`top: ${el.y}px;`);
+      lines.push(`left: ${left(el.x)};`);
+      lines.push(`top: ${top(el.y)};`);
     }
   }
 

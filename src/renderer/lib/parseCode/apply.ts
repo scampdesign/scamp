@@ -2,7 +2,7 @@
 import { cssToScampProperty, isMappedProperty } from "../cssPropertyMap";
 import { DEFAULT_COMPONENT_ROOT_STYLES, DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from "../defaults";
 import { ROOT_ELEMENT_ID, type BreakpointOverride, type ElementType, type ScampElement, type StateOverride } from "../element";
-import { parseAnimationShorthand, parsePx, parseSpaceValueOrNull } from "../parsers";
+import { parseAnimationShorthand, parsePxOrNull, parseSpaceValueOrNull } from "../parsers";
 import { getTagDefaultPadding } from "../tagDefaults";
 import { cellSpanPlacement } from "../tableGrid";
 import { type RawDeclaration } from "./css";
@@ -24,12 +24,12 @@ export const applyDeclarationsAsOverride = (
   for (const { prop, value } of decls) {
     // `position` is now a typed field — fall through to the
     // cssPropertyMap mapper below.
-    if (prop === 'left') {
-      override = { ...override, x: parsePx(value) };
-      continue;
-    }
-    if (prop === 'top') {
-      override = { ...override, y: parsePx(value) };
+    // A pixel offset is the typed x / y; anything else (`50%`,
+    // `calc(…)`, a token) is kept verbatim, never read as 0.
+    if (prop === 'left' || prop === 'top') {
+      const px = parsePxOrNull(value);
+      if (px === null) customProperties[prop] = value;
+      else override = { ...override, [prop === 'left' ? 'x' : 'y']: px };
       continue;
     }
     if (prop === 'margin-top') {
@@ -272,12 +272,14 @@ export const applyDeclarations = (
     // — drop straight through. The legacy "skip position entirely"
     // behavior dropped agent-written `position: fixed` etc., which
     // is the bug we're fixing.
-    if (prop === 'left') {
-      element = { ...element, x: parsePx(value) };
-      continue;
-    }
-    if (prop === 'top') {
-      element = { ...element, y: parsePx(value) };
+    // A pixel offset is the typed x / y; anything else (`50%`,
+    // `calc(…)`, a token) is kept verbatim — read as 0, a centred
+    // `left: 50%` was rewritten to `left: 0px` on the next save.
+    // see docs/notes/position-offsets.md
+    if (prop === 'left' || prop === 'top') {
+      const px = parsePxOrNull(value);
+      if (px === null) customProperties[prop] = value;
+      else element = { ...element, [prop === 'left' ? 'x' : 'y']: px };
       continue;
     }
     // Per-side margin longhands write into a single tuple slot. Handled
