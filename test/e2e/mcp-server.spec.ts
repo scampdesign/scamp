@@ -120,6 +120,7 @@ test.describe('MCP server, live', () => {
     const tools = (list['result'] as { tools: Array<{ name: string }> }).tools;
     expect(tools.map((t) => t.name).sort()).toEqual([
       'scamp_check_view',
+      'scamp_find_overflow',
       'scamp_get_active_page',
       'scamp_get_canvas_state',
       'scamp_get_component_scaffold',
@@ -127,6 +128,7 @@ test.describe('MCP server, live', () => {
       'scamp_get_element_by_id',
       'scamp_get_element_tree',
       'scamp_get_import_source',
+      'scamp_get_react_source',
       'scamp_get_recent_edits',
       'scamp_get_selected_element',
       'scamp_get_theme_tokens',

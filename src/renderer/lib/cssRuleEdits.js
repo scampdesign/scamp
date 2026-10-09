@@ -204,6 +204,8 @@ const newRule = (selector, body, margin) => {
     const rule = postcss.rule({ selector });
     setBody(rule, body, `\n${margin}  `);
     rule.raws.after = `\n${margin}`;
+    // postcss borrows the leading space from a sibling, and a new block has none.
+    rule.raws.before = `\n${margin}`;
     return rule;
 };
 /**
@@ -290,6 +292,9 @@ export const applyCssChanges = (source, changes, order) => {
             const container = media ??
                 (() => {
                     const created = postcss.parse(`@media ${slot.media} {}`).first;
+                    // On its own lines, as the generator writes it.
+                    created.raws.before = '\n';
+                    created.raws.after = '\n';
                     root.append(created);
                     return created;
                 })();

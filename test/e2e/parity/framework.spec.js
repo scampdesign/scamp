@@ -22,6 +22,8 @@ import { compareGeometry, describeDivergences, launchTruthBrowser, measure, meas
 const TOLERANCE_PX = 1;
 const TMP = path.resolve(__dirname, '.tmp');
 const planFor = (fixture) => {
+    if (fixture.frameworkSkip !== undefined)
+        return { kind: 'skip', why: fixture.frameworkSkip };
     if (!fixture.components)
         return { kind: 'page' };
     const instances = [...fixture.tsx.matchAll(/<(\w+) data-scamp-instance-id="([^"]+)"([^>]*?)\/?>/g)];

@@ -39,6 +39,7 @@ type Plan =
   | { kind: 'skip'; why: string };
 
 const planFor = (fixture: ParityFixture): Plan => {
+  if (fixture.frameworkSkip !== undefined) return { kind: 'skip', why: fixture.frameworkSkip };
   if (!fixture.components) return { kind: 'page' };
   const instances = [...fixture.tsx.matchAll(/<(\w+) data-scamp-instance-id="([^"]+)"([^>]*?)\/?>/g)];
   const only = instances[0];

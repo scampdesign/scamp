@@ -53,6 +53,12 @@ export type ParityFixture = {
    */
   truthCss?: string;
   /**
+   * Set when `framework.spec.ts` can't make a fair comparison, and why. It
+   * renders a fixture's component as a view on its own, so a component
+   * sized by what's around it measures differently there by design.
+   */
+  frameworkSkip?: string;
+  /**
    * Set when the canvas is known NOT to match yet. The spec asserts these
    * fail, so the gap is recorded and we're told when it closes.
    */
@@ -890,6 +896,7 @@ export default function Home() {
   },
   {
     name: 'component-root-fills-grid-row',
+    frameworkSkip: 'the root fills the grid row around the instance, and the framework harness renders the component alone',
     why: "An imported app shell: a sidebar component beside the page content in a grid row. The sidebar's root is `height: 100%` with its own background, so in a browser it fills the row the taller content sets. The canvas wraps an instance in boxes the page doesn't have, and a content-sized one stopped the percentage — the sidebar's background ended where its links did.",
     components: [
       {

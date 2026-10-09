@@ -202,6 +202,16 @@ describe('rules the incremental writer creates', () => {
     );
     expect(out).toContain('  .b {\n    color: green;\n  }');
   });
+
+  it('closes a breakpoint block it creates on a line of its own', () => {
+    // A Tablet edit on a page with no Tablet rules yet. Written as `  }}`
+    // since the indented insert, which broke the breakpoint specs' reading.
+    const out = patch(
+      '.a {\n  padding: 24px;\n}\n',
+      '.a {\n  padding: 24px;\n}\n@media (max-width: 768px) {\n  .a {\n    padding: 12px;\n  }\n}\n'
+    );
+    expect(out).toContain('@media (max-width: 768px) {\n  .a {\n    padding: 12px;\n  }\n}');
+  });
 });
 
 describe("a table's derived rules", () => {
