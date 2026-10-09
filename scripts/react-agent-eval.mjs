@@ -166,7 +166,7 @@ try {
   const fontElements = Object.assign({}, ...plan.views.map((v) => v.elements), ...plan.components.map((c) => c.elements));
   const componentFiles = Object.fromEntries(components.map((c) => [c.name, { tsx: c.tsx, css: c.css }]));
   const skill = app.reactImportSkill();
-  const tools = [...app.agentToolsFrom(app.TOOL_DESCRIPTORS), app.REACT_SOURCE_TOOL, ...app.WRITE_TOOLS];
+  const tools = [...app.agentToolsFrom(app.TOOL_DESCRIPTORS), ...app.WRITE_TOOLS];
 
   for (const [i, view] of plan.views.entries()) {
     if (viewFilter.length > 0 && !viewFilter.includes(view.name)) continue;

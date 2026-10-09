@@ -69,6 +69,7 @@ export const createHeadlessCanvas = (initial, options) => {
         readImportSource: async (name, part) => source === undefined || name !== view
             ? null
             : { text: part === 'html' ? source.html : source.css, truncated: false, path: `(in memory)/${part}`, url: source.url },
+        ...(options.reactSource !== undefined ? { reactSource: options.reactSource } : {}),
     });
     const context = () => ({
         elements: state.elements,
@@ -116,12 +117,6 @@ export const createHeadlessCanvas = (initial, options) => {
         return { ...text(summary), summary };
     };
     const invoke = async (name, args) => {
-        if (name === 'scamp_get_react_source') {
-            if (options.reactSource === undefined)
-                return text('This page didn’t come from a React app.', true);
-            const answer = await options.reactSource(typeof args['target'] === 'string' ? args['target'] : '', typeof args['element'] === 'string' ? args['element'] : undefined);
-            return answer.ok ? text(answer.text) : text(answer.error, true);
-        }
         if (name === 'scamp_set_theme_tokens')
             return setThemeTokens(args);
         // One view is loaded here; the app edits any (see agentOffCanvas).

@@ -20,6 +20,19 @@ export type ToolInvokerOptions = {
         path: string;
         url: string;
     } | null>;
+    /** A React import's source, read from the app's folder. */
+    reactSource?: (target: string, element: string | undefined) => Promise<{
+        ok: true;
+        text: string;
+    } | {
+        ok: false;
+        error: string;
+    }>;
+    /** Lay a view out and measure what overflows. see docs/notes/agent-overflow-check.md */
+    findOverflow?: (args: Record<string, unknown>) => Promise<{
+        ok: boolean;
+        text: string;
+    }>;
 };
 /**
  * How much of an original one call returns.

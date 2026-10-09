@@ -213,6 +213,36 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
       'The design tokens defined in the project’s theme.css, as a flat list of CSS custom properties, plus the available themes. Call this before writing any colour, spacing, or typography value so you use an existing token instead of a raw literal.',
     inputSchema: { ...NO_ARGS },
   },
+  {
+    name: 'scamp_get_react_source',
+    description:
+      'Read the React source an imported view or component came from — for a project made with Import a React app. With "element", the JSX around the line that drew it (marked >), with line numbers — where to find a condition (`{isLate && …}`, `a ? <B/> : <C/>`) or a list (`claims.map((claim) => …)`). Without it, which source files the view drew from and which of its elements each wrote. Words lifted into their own element have no line of their own: ask for their parent.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        target: { type: 'string', description: 'The view or component, by name: "Patients".' },
+        element: { type: 'string', description: 'An element, by id or class name. Omit for the overview.' },
+      },
+      required: ['target'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'scamp_find_overflow',
+    description:
+      'Render a view or component the way its HTML export renders in a browser, and measure what overflows: elements past an edge of the page or widening it, elements outside their parent (shown, clipped, or scrolled to), and text wider than its box. Each finding names the element (and the component that owns it, for one inside an instance), how many px past which side, and its position. Use it to find overflow instead of guessing from styles, and again after fixing to check. Rows of a list share one finding. Measures what is saved, so write your edits before calling it.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        view: { ...VIEW_ARG, description: 'The view or component to measure. Omit for the one open on the canvas.' },
+        width: {
+          type: 'integer',
+          description: 'The window width in px to lay it out at. Omit for the desktop width; pass a breakpoint’s width to check it there.',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
 ];
 
 /** Names the invoker will accept — derived so the two can never drift. */
@@ -296,6 +326,13 @@ export type ToolInvokerOptions = {
     view: string,
     part: 'css' | 'html'
   ) => Promise<{ text: string; truncated: boolean; path: string; url: string } | null>;
+  /** A React import's source, read from the app's folder. */
+  reactSource?: (
+    target: string,
+    element: string | undefined
+  ) => Promise<{ ok: true; text: string } | { ok: false; error: string }>;
+  /** Lay a view out and measure what overflows. see docs/notes/agent-overflow-check.md */
+  findOverflow?: (args: Record<string, unknown>) => Promise<{ ok: boolean; text: string }>;
 };
 
 /**
@@ -387,6 +424,28 @@ export const createToolInvoker = (
         return errorResult(
           `scamp_get_import_source failed: ${err instanceof Error ? err.message : String(err)}`
         );
+      }
+    }
+    if (name === 'scamp_get_react_source') {
+      const target = args['target'];
+      if (typeof target !== 'string' || target.length === 0) {
+        return errorResult('scamp_get_react_source requires a non-empty string "target" — a view or component name.');
+      }
+      if (options.reactSource === undefined) return errorResult('This project has no React import to read.');
+      try {
+        const answer = await options.reactSource(target, typeof args['element'] === 'string' ? args['element'] : undefined);
+        return answer.ok ? textResult(answer.text) : errorResult(answer.error);
+      } catch (err) {
+        return errorResult(`scamp_get_react_source failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    if (name === 'scamp_find_overflow') {
+      if (options.findOverflow === undefined) return errorResult('Scamp can’t lay views out here.');
+      try {
+        const answer = await options.findOverflow(args);
+        return answer.ok ? textResult(answer.text) : errorResult(answer.text);
+      } catch (err) {
+        return errorResult(`scamp_find_overflow failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
     // Routes live on disk, not on the canvas.

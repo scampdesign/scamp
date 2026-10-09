@@ -1,16 +1,21 @@
 # The agent's overflow check
 
 `scamp_find_overflow` measures what overflows on a view, in a browser,
-instead of the agent guessing from styles. Built-in agent only.
+instead of the agent guessing from styles. The built-in agent and MCP
+both have it: `canvasToolInvoker` answers it for both, through the
+renderer's agent-tool channel.
 
 ## How it runs
 
 1. **Renderer** (`syncBridge/agentOverflow.ts`): picks the view the way
    edits do (`destinationFor`: the `view` argument, else the
-   conversation's view). It generates source from what Scamp holds now —
-   the live canvas for the open view, `componentTrees` for the rest and
-   for every component — and builds a one-page HTML export with
-   `buildHtmlExport` (the page is named `home` so it sits at the root).
+   conversation's view, which over MCP — no turn — is the open one). The
+   open target comes from the live canvas, which can be newer than disk
+   while a save is pending; every other view and component comes from its
+   files, read with `readProject`, because an MCP agent edits files and
+   `componentTrees` can lag what it wrote. It builds a one-page HTML
+   export with `buildHtmlExport` (the page is named `home` so it sits at
+   the root).
 2. **Main** (`agent/overflowRender.ts`): writes the files to a temp
    folder, symlinks the project's assets folder in, loads `index.html` in
    a hidden, sandboxed window at the requested width (default: the

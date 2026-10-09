@@ -4,6 +4,7 @@ import { IPC } from '@shared/ipcChannels';
 import type { AgentToolCallArgs, McpQueryArgs, McpQueryResultArgs } from '@shared/types';
 
 import { listImportSources, readImportSource } from './importSourceStore';
+import { readRecord, sourceFor } from './reactImport/record';
 import { listRoutes } from './ipc/routeOps';
 import { getProjectFormat } from './ipc/projectFormatCache';
 import { createQueryRegistry, type QueryRegistry } from './mcp/pendingQueries';
@@ -125,4 +126,8 @@ export const canvasToolInvoker = (projectPath: string): ToolInvoker =>
         url: found.stored.url,
       };
     },
+    reactSource: async (target, element) => sourceFor(await readRecord(projectPath), target, element),
+    // The renderer builds the view's export and main lays it out; no turn,
+    // so an omitted `view` is the one open on the canvas.
+    findOverflow: (args) => runAgentEdit('scamp_find_overflow', args, ''),
   });

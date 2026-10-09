@@ -73,6 +73,8 @@ claude mcp reset-project-choices
 | `scamp_get_recent_edits` | What you've changed on the canvas since the agent last looked, as the lines each save rewrote |
 | `scamp_get_theme_tokens` | Your [design tokens](design-tokens.md), so the agent uses a token instead of a raw hex value |
 | `scamp_get_canvas_state` | A broad snapshot; large, and capped |
+| `scamp_find_overflow` | What overflows on a page or component, measured on a rendered copy: elements past the page edge or outside their parent, and text wider than its box |
+| `scamp_get_react_source` | For a project made with **Import a React app**, the app's source code behind an imported element |
 
 In practice, you talk normally. Select a button, and then type "make
 this wider". The agent calls `scamp_get_selected_element` and knows what

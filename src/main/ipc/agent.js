@@ -17,10 +17,7 @@ import { readE2eSeams } from '../e2eSeams';
 import { notifyPagesChanged } from '../watcher';
 import { TOOL_DESCRIPTORS } from '../mcp/tools';
 import { WRITE_TOOLS, WRITE_TOOL_NAMES } from '../agent/writeTools';
-import { REACT_SOURCE_TOOL } from '../agent/reactSourceTool';
-import { OVERFLOW_TOOL } from '../agent/overflowTool';
 import { measureOverflow } from '../agent/overflowRender';
-import { readRecord, sourceFor } from '../reactImport/record';
 import { deleteComponent } from './componentOps';
 import { restoreSnapshotAndReload } from './snapshot';
 import { createSnapshot } from './snapshotOps';
@@ -58,8 +55,6 @@ const scriptedProvider = async (path) => {
 // heads the cached prefix.
 const AGENT_TOOLS = [
     ...agentToolsFrom(TOOL_DESCRIPTORS),
-    REACT_SOURCE_TOOL,
-    OVERFLOW_TOOL,
     ...[...WRITE_TOOLS].sort((a, b) => a.name.localeCompare(b.name)),
 ];
 /** The open project's conversations — one per page, view and component. */
@@ -110,14 +105,9 @@ const createConversation = async (projectPath, key, holder) => {
                 return providerKey === null ? null : createAnthropicProvider(providerKey);
             },
             invoke: async (name, args, turnId) => {
-                if (name === REACT_SOURCE_TOOL.name) {
-                    const answer = await sourceFor(await readRecord(projectPath), typeof args['target'] === 'string' ? args['target'] : '', typeof args['element'] === 'string' ? args['element'] : undefined);
-                    return answer.ok
-                        ? { content: [{ type: 'text', text: answer.text }] }
-                        : { content: [{ type: 'text', text: answer.error }], isError: true };
-                }
-                // Answered by the renderer, which builds the view's export; no restore point, it reads.
-                if (name === OVERFLOW_TOOL.name) {
+                // With the turn, so an omitted `view` is the conversation's own,
+                // not whatever is open. MCP asks the same thing without one.
+                if (name === 'scamp_find_overflow') {
                     try {
                         const answer = await runAgentEdit(name, args, turnId);
                         return { content: [{ type: 'text', text: answer.text }], ...(answer.ok ? {} : { isError: true }) };

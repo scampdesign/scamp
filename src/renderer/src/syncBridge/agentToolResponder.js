@@ -168,17 +168,13 @@ const measureFor = async (projectPath, input, turnId) => {
     if (destination.on === 'refused')
         return { ok: false, text: destination.text };
     const state = useCanvasStore.getState();
-    if (destination.on === 'files') {
-        const tree = state.componentTrees[destination.name];
-        if (tree === undefined)
-            return { ok: false, text: `No view or component named "${destination.name}".` };
-        return findOverflow(projectPath, { name: destination.name, kind: destination.kind, elements: tree.elements, rootId: tree.rootId }, input);
-    }
+    if (destination.on === 'files')
+        return findOverflow(projectPath, { name: destination.name, kind: destination.kind }, input);
     const open = state.activeComponent ?? state.activePage;
     if (open === null)
         return { ok: false, text: 'Nothing is open on the canvas.' };
     const kind = state.activeComponent === null ? 'page' : state.activeComponent.kind === 'view' ? 'view' : 'component';
-    return findOverflow(projectPath, { name: open.name, kind, elements: state.elements, rootId: state.rootElementId }, input);
+    return findOverflow(projectPath, { name: open.name, kind, live: { elements: state.elements, rootId: state.rootElementId } }, input);
 };
 /** Make one edit, for turn `turnId`. Exported for tests. */
 export const executeAgentEdit = async (tool, input, turnId) => {

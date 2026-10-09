@@ -4,7 +4,8 @@ import { createAgentSession, SKILL_ENDED_NOTE } from '../src/main/agent/session'
 import { importCleanupSkill, IMPORT_CLEANUP_VERSION } from '../src/main/agent/skills/importCleanup';
 import { skillFor } from '../src/main/agent/skills';
 import { reactImportSkill } from '../src/main/agent/skills/reactImport';
-import { REACT_SOURCE_TOOL } from '../src/main/agent/reactSourceTool';
+import { agentToolsFrom } from '../src/main/agent/agentTools';
+import { TOOL_DESCRIPTORS } from '../src/main/mcp/tools';
 import { describeToolCall } from '../src/main/agent/confirmPolicy';
 import { WRITE_TOOLS } from '../src/main/agent/writeTools';
 /**
@@ -157,7 +158,7 @@ describe('a session running a skill', () => {
 });
 describe('reactImportSkill', () => {
     const skill = reactImportSkill();
-    const all = [...WRITE_TOOLS, REACT_SOURCE_TOOL];
+    const all = [...agentToolsFrom(TOOL_DESCRIPTORS), ...WRITE_TOOLS];
     it('is chosen by its request', () => {
         expect(skillFor({ id: 'react-import' }).id).toBe('react-import');
     });
