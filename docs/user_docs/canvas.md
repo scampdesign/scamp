@@ -132,6 +132,12 @@ moves freely behind it, as in Figma, Sketch, and other design tools.
 | **Cmd+-** | Zoom out one step |
 | **Cmd+0** | Reset zoom to fit |
 
+**Fit** zooms so the page's width fits the canvas area, plus anything that
+overflows past its right edge, up to half the page's width again. A page
+with a wider overflow, such as a long scrolling marquee, fits the page
+and some of the overflow, and you scroll to see the rest. The overflow
+indicator still shows how far it goes.
+
 A blank project shows a 1440×900 white page by default. As you add
 content, the page grows vertically. Tall pages scroll inside the artboard
 like a real browser window.

@@ -104,6 +104,13 @@ release time.
   stylesheet.** Scamp checks each save before writing only the rules that
   changed, and the check mistook two orderings of the same rule for
   different designs.
+- **Fit keeps a page readable when something overflows it by a lot.**
+  Fit zoomed out to show all of an overflow, so a page with a long
+  marquee or carousel track drew 1440px of design about 45px wide. Fit
+  now shows overflow up to half the page's width, and you scroll for the
+  rest.
+- **The breakpoint menu lines up with the right edge of the page** at
+  every zoom, not with the edge of the canvas area.
 - **Edits at a breakpoint close their `@media` block on its own line.**
   The first edit at a new breakpoint wrote the block's closing brace on
   the same line as the rule's, which was valid CSS but hard to read.

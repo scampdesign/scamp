@@ -31,13 +31,21 @@ export const CanvasArea = ({ activeComponent, activePageName, projectConfig, art
         ? projectConfig.canvasOverflowHidden
         : resolveClip(projectConfig, activeBreakpointId);
     const pageHeightIsFixed = !isComponent && projectConfig.canvasFixedHeight === true;
+    const frameWidth = component !== null
+        ? componentCanvasSizeFor(projectConfig, component.name, 'component').width
+        : projectConfig.canvasWidth;
+    // The header spans the frame as drawn, so the size control sits at the
+    // frame's right edge. Fit zooms to the content, overflow included, so a
+    // page with a wide marquee draws its frame well short of the canvas area.
+    const scale = useCanvasStore((s) => s.userZoom ?? s.fitScale);
+    const headerWidth = Math.round(frameWidth * scale);
     const handleRestorePreview = () => {
         void useSnapshotsStore.getState().restorePreview();
     };
     const handleExitPreview = () => {
         useCanvasStore.getState().exitSnapshotPreview();
     };
-    return (_jsxs("div", { className: styles.artboard, children: [_jsx("div", { ref: artboardScrollRef, className: styles.artboardScroll, style: { backgroundColor: projectConfig.artboardBackground }, children: _jsxs("div", { className: styles.canvasContent, children: [_jsx(SvgReloadBanner, {}), snapshotPreview !== null && (_jsxs("div", { className: styles.snapshotPreviewBanner, "data-testid": "snapshot-preview-banner", children: [_jsxs("span", { children: ["Previewing snapshot:", ' ', _jsx("strong", { children: snapshotPreview.label }), ". The canvas is read-only \u2014 restoring replaces all project files."] }), _jsxs("div", { className: styles.snapshotPreviewActions, children: [_jsx("button", { type: "button", className: styles.snapshotPreviewRestore, onClick: handleRestorePreview, children: "Restore" }), _jsx("button", { type: "button", className: styles.snapshotPreviewExit, onClick: handleExitPreview, children: "Exit" })] })] })), activeComponent !== null && activeComponent.kind === 'component' && (_jsxs("div", { className: styles.componentEditorBanner, "data-testid": "component-editor-banner", children: [_jsxs("span", { children: ["Editing component:", ' ', _jsx("strong", { children: activeComponent.name }), ". Changes affect all instances."] }), _jsx("button", { type: "button", className: styles.componentEditorExit, onClick: onExitComponentEditor, children: "Exit" })] })), _jsxs("div", { className: styles.canvasHeader, children: [activeComponent !== null && activeComponent.kind === 'component' ? (
+    return (_jsxs("div", { className: styles.artboard, children: [_jsx("div", { ref: artboardScrollRef, className: styles.artboardScroll, style: { backgroundColor: projectConfig.artboardBackground }, children: _jsxs("div", { className: styles.canvasContent, children: [_jsx(SvgReloadBanner, {}), snapshotPreview !== null && (_jsxs("div", { className: styles.snapshotPreviewBanner, "data-testid": "snapshot-preview-banner", children: [_jsxs("span", { children: ["Previewing snapshot:", ' ', _jsx("strong", { children: snapshotPreview.label }), ". The canvas is read-only \u2014 restoring replaces all project files."] }), _jsxs("div", { className: styles.snapshotPreviewActions, children: [_jsx("button", { type: "button", className: styles.snapshotPreviewRestore, onClick: handleRestorePreview, children: "Restore" }), _jsx("button", { type: "button", className: styles.snapshotPreviewExit, onClick: handleExitPreview, children: "Exit" })] })] })), activeComponent !== null && activeComponent.kind === 'component' && (_jsxs("div", { className: styles.componentEditorBanner, "data-testid": "component-editor-banner", children: [_jsxs("span", { children: ["Editing component:", ' ', _jsx("strong", { children: activeComponent.name }), ". Changes affect all instances."] }), _jsx("button", { type: "button", className: styles.componentEditorExit, onClick: onExitComponentEditor, children: "Exit" })] })), _jsxs("div", { className: styles.canvasHeader, style: { maxWidth: headerWidth }, children: [activeComponent !== null && activeComponent.kind === 'component' ? (
                                 // Breadcrumb: "<return page> > <component>" when
                                 // entered from a page, otherwise just the
                                 // component name. Clicking a non-current segment
@@ -50,9 +58,7 @@ export const CanvasArea = ({ activeComponent, activePageName, projectConfig, art
                                         .getState()
                                         .selectElement(ROOT_ELEMENT_ID), title: "Select page root", children: activeComponent !== null
                                         ? viewSlugFor(activeComponent.name)
-                                        : activePageName ?? 'Page' })), _jsx("span", { className: styles.canvasHeaderSpacer }), _jsx(ThemeSwitcher, {}), _jsx(CanvasSizeControl, { config: projectConfig, onChange: onProjectConfigChange, componentName: component !== null ? component.name : undefined, componentKind: component !== null ? 'component' : undefined })] }), _jsx(Viewport, { canvasWidth: component !== null
-                                ? componentCanvasSizeFor(projectConfig, component.name, 'component').width
-                                : projectConfig.canvasWidth, canvasHeight: component !== null
+                                        : activePageName ?? 'Page' })), _jsx("span", { className: styles.canvasHeaderSpacer }), _jsx(ThemeSwitcher, {}), _jsx(CanvasSizeControl, { config: projectConfig, onChange: onProjectConfigChange, componentName: component !== null ? component.name : undefined, componentKind: component !== null ? 'component' : undefined })] }), _jsx(Viewport, { canvasWidth: frameWidth, canvasHeight: component !== null
                                 ? componentCanvasSizeFor(projectConfig, component.name, 'component').height
                                 : pageHeightIsFixed
                                     ? projectConfig.canvasHeight

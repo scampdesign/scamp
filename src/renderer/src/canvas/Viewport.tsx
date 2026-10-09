@@ -32,6 +32,8 @@ import styles from './Viewport.module.css';
 // padding so the fitted frame doesn't sit flush against the
 // scrollbar.
 const FRAME_FIT_INSET = 40;
+/** Fit shows overflow up to this multiple of the frame's width, and no further. */
+const FIT_OVERFLOW_CAP = 1.5;
 
 /**
  * Floor on the canvas frame's rendered height. Purely a design-tool
@@ -177,7 +179,12 @@ export const Viewport = ({
   // needs to see what's spilling past the canvas to fix it. When clip is
   // on, fit the canvas width only (overflow is hidden anyway). `content`
   // is measured in logical (scale-invariant) px, so this doesn't loop.
-  const fitWidth = clipContent ? frameW : Math.max(frameW, content.right);
+  //
+  // Capped, though: an imported marquee or carousel track can run tens of
+  // thousands of px past the edge, and fitting all of it drew a 1440px
+  // page 45px wide. Past the cap the overflow scrolls, and the overflow
+  // tag still says how far it goes.
+  const fitWidth = clipContent ? frameW : Math.max(frameW, Math.min(content.right, frameW * FIT_OVERFLOW_CAP));
   useLayoutEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;

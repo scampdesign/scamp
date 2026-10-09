@@ -52,6 +52,14 @@ export const CanvasArea = ({
     ? projectConfig.canvasOverflowHidden
     : resolveClip(projectConfig, activeBreakpointId);
   const pageHeightIsFixed = !isComponent && projectConfig.canvasFixedHeight === true;
+  const frameWidth = component !== null
+    ? componentCanvasSizeFor(projectConfig, component.name, 'component').width
+    : projectConfig.canvasWidth;
+  // The header spans the frame as drawn, so the size control sits at the
+  // frame's right edge. Fit zooms to the content, overflow included, so a
+  // page with a wide marquee draws its frame well short of the canvas area.
+  const scale = useCanvasStore((s) => s.userZoom ?? s.fitScale);
+  const headerWidth = Math.round(frameWidth * scale);
 
   const handleRestorePreview = (): void => {
     void useSnapshotsStore.getState().restorePreview();
@@ -116,7 +124,7 @@ export const CanvasArea = ({
               </button>
             </div>
           )}
-          <div className={styles.canvasHeader}>
+          <div className={styles.canvasHeader} style={{ maxWidth: headerWidth }}>
             {activeComponent !== null && activeComponent.kind === 'component' ? (
               // Breadcrumb: "<return page> > <component>" when
               // entered from a page, otherwise just the
@@ -180,11 +188,7 @@ export const CanvasArea = ({
             />
           </div>
           <Viewport
-            canvasWidth={
-              component !== null
-                ? componentCanvasSizeFor(projectConfig, component.name, 'component').width
-                : projectConfig.canvasWidth
-            }
+            canvasWidth={frameWidth}
             canvasHeight={
               component !== null
                 ? componentCanvasSizeFor(projectConfig, component.name, 'component').height
