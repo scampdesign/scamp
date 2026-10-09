@@ -933,10 +933,17 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
     // children resolve their percentage widths against the inner
     // div, which is itself content-sized, so `100%` falls back
     // to `auto` and the instance hugs its content as expected.
+    //
+    // It passes the wrapper's height through, though: the generated page
+    // has neither box, so a root's `height: 100%` resolves against the
+    // grid row or sized parent around the instance. Stopping at a
+    // content-sized block cut an imported sidebar's background off
+    // where its links ended. Over a content-sized wrapper `100%` is
+    // still `auto`, so a hugging instance is unchanged.
     return (
       <div {...wrapperProps}>
         <div
-          style={{ pointerEvents: 'none', display: 'block' }}
+          style={{ pointerEvents: 'none', display: 'block', height: '100%' }}
           aria-hidden="true"
         >
           {inner}
