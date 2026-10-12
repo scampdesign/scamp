@@ -158,7 +158,7 @@ which you only know to try if you already know CSS. Margin is the same.
   form.
 - Documented in `docs/user_docs/properties-panel.md`.
 
-## 6. Change an SVG's color
+## 6. Change an SVG's color - DONE
 
 As a designer, I want to recolor an icon I've added, so that it matches
 my design.
