@@ -372,14 +372,15 @@ export const parseCode = (
     // place both halves are in hand.
     // see docs/plans/inline-spans-plan.md
     if (raw.runs !== undefined && raw.runs.length > 0) {
-      applied.runs = raw.runs.map((run) =>
-        run.runClassName === undefined
-          ? { text: run.text }
-          : {
-              text: run.text,
-              style: runStyleFromDeclarations(parsedCss.byClass.get(run.runClassName) ?? []),
-            }
-      );
+      applied.runs = raw.runs.map((run) => {
+        const kept = {
+          ...(run.tag !== undefined ? { tag: run.tag } : {}),
+          ...(run.markup !== undefined ? { markup: run.markup } : {}),
+        };
+        if (run.runClassName === undefined) return { text: run.text, ...kept };
+        const style = runStyleFromDeclarations(parsedCss.byClass.get(run.runClassName) ?? []);
+        return { text: run.text, ...(Object.keys(style).length > 0 ? { style } : {}), ...kept };
+      });
     }
 
     // If the file didn't actually declare a width or a height for this

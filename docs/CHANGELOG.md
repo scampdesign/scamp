@@ -95,6 +95,14 @@ release time.
   you were on.** In a project made of views, it showed an empty canvas.
 - **Esc closes the canvas size menu without leaving the component
   editor.**
+- **Emphasis and other inline tags stay where they are in a sentence.**
+  An `<em>`, `<strong>`, link, or other inline tag written inside a
+  paragraph was moved to the end of it when Scamp saved: `Hello
+  <em>world</em> again` became `Hello again world`, with the emphasis on
+  the wrong word. Opening an agent-written page was enough to cause it.
+  Inline tags now stay in place, with the spaces around them, on the
+  canvas, in the files, and in the HTML export, which also now keeps
+  styled words.
 - **Opening a project no longer moves a centered element.** An offset
   written as a percentage or a calculation, such as `left: 50%`, was read
   as `0`, so the next save wrote `left: 0px`. Agents center elements this

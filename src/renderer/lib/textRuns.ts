@@ -41,12 +41,69 @@ export type TextRun = {
   style?: TextRunStyle;
   /** A run can be a link without becoming its own element. */
   href?: string;
+  /**
+   * The inline tag the words sit in, when it isn't a styling `span`:
+   * `Hello <em>world</em>` keeps its `<em>`. One of `INLINE_RUN_TAGS`.
+   */
+  tag?: string;
+  /**
+   * Inline markup Scamp doesn't model (nested tags, attributes), kept as
+   * written and written back in its place. `text` is its words, for
+   * anything that reads the sentence. Never split, styled, or merged.
+   */
+  markup?: string;
 };
 
-/** Does this run paint differently from plain text? */
+/**
+ * Tags a run can be, rather than an element: inline, holding only words.
+ * see docs/notes/inline-run-tags.md
+ */
+export const INLINE_RUN_TAGS: ReadonlySet<string> = new Set([
+  'em', 'strong', 'b', 'i', 'u', 's', 'small', 'code', 'kbd', 'mark',
+  'sub', 'sup', 'abbr', 'cite', 'q', 'del', 'ins', 'var', 'samp',
+]);
+
+/** Does the run carry style of its own, and so a run class and CSS rule? */
+export const hasRunStyle = (run: TextRun): boolean =>
+  run.style !== undefined && Object.keys(run.style).length > 0;
+
+/** Does this run need anything more than its bare words written? */
 export const isStyled = (run: TextRun): boolean =>
-  run.href !== undefined ||
-  (run.style !== undefined && Object.keys(run.style).length > 0);
+  run.href !== undefined || run.tag !== undefined || run.markup !== undefined || hasRunStyle(run);
+
+const ENTITIES: Readonly<Record<string, string>> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0' };
+
+/** JSX text as the words it shows: `{' '}` and entities decoded. */
+const decodeJsxWords = (raw: string): string =>
+  raw
+    .replace(/\{\s*(['"])((?:(?!\1).)*)\1\s*\}/g, (_m, _q: string, inner: string) => inner)
+    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, code: string) => {
+      if (code[0] === '#') {
+        const n = code[1] === 'x' || code[1] === 'X' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+        return Number.isFinite(n) ? String.fromCodePoint(n) : m;
+      }
+      return ENTITIES[code.toLowerCase()] ?? m;
+    });
+
+/**
+ * A piece of inline markup inside a text element, as a run. `<em>world</em>`
+ * — one of `INLINE_RUN_TAGS`, no attributes, only words — is a tagged
+ * run; anything else is kept verbatim as `markup`, with its words as the
+ * run's text.
+ */
+export const runFromMarkup = (source: string): TextRun => {
+  const trimmed = source.trim();
+  const simple = /^<([a-z]+)>([^<>]*)<\/\1>$/.exec(trimmed);
+  const tag = simple?.[1];
+  const inner = simple?.[2] ?? '';
+  // Only words: a `{expr}` other than a string literal is a binding, and
+  // reading it as words would write it back as literal text.
+  const onlyWords = !/\{/.test(inner.replace(/\{\s*(['"])(?:(?!\1).)*\1\s*\}/g, ''));
+  if (tag !== undefined && INLINE_RUN_TAGS.has(tag) && onlyWords) {
+    return { text: decodeJsxWords(inner), tag };
+  }
+  return { text: decodeJsxWords(trimmed.replace(/<[^>]*>/g, '')), markup: source };
+};
 
 /** One unstyled run. The shape every plain text element implies. */
 export const runsFromText = (text: string): TextRun[] => [{ text }];
@@ -73,7 +130,11 @@ export const runsOf = (element: {
 
 /** Are two runs identical apart from their words? */
 const sameStyle = (a: TextRun, b: TextRun): boolean =>
-  a.href === b.href && JSON.stringify(a.style ?? {}) === JSON.stringify(b.style ?? {});
+  a.markup === undefined &&
+  b.markup === undefined &&
+  a.href === b.href &&
+  a.tag === b.tag &&
+  JSON.stringify(a.style ?? {}) === JSON.stringify(b.style ?? {});
 
 /**
  * Join neighbours that paint the same, and drop empties.
@@ -110,7 +171,8 @@ export const splitAt = (runs: ReadonlyArray<TextRun>, offset: number): TextRun[]
   let seen = 0;
   for (const run of runs) {
     const end = seen + run.text.length;
-    if (offset > seen && offset < end) {
+    // Verbatim markup can't be cut: half of `<a href>x</a>` is no markup.
+    if (offset > seen && offset < end && run.markup === undefined) {
       const cut = offset - seen;
       out.push({ ...run, text: run.text.slice(0, cut) });
       out.push({ ...run, text: run.text.slice(cut) });
@@ -144,7 +206,7 @@ export const applyStyleToRange = (
   let seen = 0;
   for (const run of split) {
     const runEnd = seen + run.text.length;
-    const covered = seen >= start && runEnd <= end && run.text.length > 0;
+    const covered = seen >= start && runEnd <= end && run.text.length > 0 && run.markup === undefined;
     if (!covered) {
       out.push(run);
       seen = runEnd;
@@ -164,7 +226,16 @@ export const applyStyleToRange = (
     seen = runEnd;
   }
   return mergeRuns(
-    out.map((run) => (run.style === undefined ? { text: run.text, ...(run.href === undefined ? {} : { href: run.href }) } : run))
+    out.map((run) =>
+      run.style === undefined
+        ? {
+            text: run.text,
+            ...(run.href === undefined ? {} : { href: run.href }),
+            ...(run.tag === undefined ? {} : { tag: run.tag }),
+            ...(run.markup === undefined ? {} : { markup: run.markup }),
+          }
+        : run
+    )
   );
 };
 

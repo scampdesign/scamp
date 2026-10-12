@@ -20,6 +20,8 @@ export type SourceRange = {
 export type RawTextRun = {
     text: string;
     runClassName?: string;
+    tag?: string;
+    markup?: string;
 };
 export type RawElement = {
     id: string;

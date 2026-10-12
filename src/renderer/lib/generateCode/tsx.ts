@@ -3,7 +3,7 @@ import { WRITTEN_CONTRACT } from '@shared/projectConfig';
 
 import { PASSTHROUGH_PROP, rootClassNameAttribute } from "../classNamePassthrough";
 import { ROOT_ELEMENT_ID, type SampleRow, type SampleValue, type ScampElement } from "../element";
-import { isStyled, runClassName, runsOf, textFromRuns } from "../textRuns";
+import { hasRunStyle, isStyled, runClassName, runsOf, textFromRuns, type TextRun } from "../textRuns";
 import {
   collectViewProps,
   isRowPath,
@@ -341,13 +341,18 @@ const renderElement = (
     // span rather than three. see docs/plans/inline-spans-plan.md
     if (propRef === null && (runs.length > 1 || runs.some(isStyled))) {
       const cls = classNameFor(el);
-      const body = runs
-        .map((run, index) =>
-          isStyled(run)
-            ? `<span className={styles.${runClassName(cls, index)}}>${escapeJsx(run.text)}</span>`
-            : jsxText(run.text)
-        )
-        .join('');
+      // A run's own tag (`<em>`), or a span when it is only styled; a
+      // class only when it has style of its own; markup as it was written.
+      // see docs/notes/inline-run-tags.md
+      const runJsx = (run: TextRun, index: number): string => {
+        if (run.markup !== undefined) return run.markup;
+        if (!isStyled(run)) return jsxText(run.text);
+        const runTag = run.tag ?? 'span';
+        // A bare span reads back as unknown markup, so a span always has its class.
+        const className = hasRunStyle(run) || run.tag === undefined ? ` className={styles.${runClassName(cls, index)}}` : '';
+        return `<${runTag}${className}>${escapeJsx(run.text)}</${runTag}>`;
+      };
+      const body = runs.map(runJsx).join('');
       return `${indent(level)}${open}>${body}</${tag}>`;
     }
     const body = propRef !== null ? `{${propRef}}` : jsxText(textFromRuns(runs));

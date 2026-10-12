@@ -8,6 +8,7 @@ import {
   type SelectOption,
 } from "../element";
 import { requireAt } from "../safeAccess";
+import { INLINE_RUN_TAGS, runFromMarkup } from "../textRuns";
 import { Parser } from "htmlparser2";
 
 import {
@@ -35,7 +36,7 @@ export type SourceRange = {
 };
 
 /** A run as the TSX gives it: words plus the class that styles them. */
-export type RawTextRun = { text: string; runClassName?: string };
+export type RawTextRun = { text: string; runClassName?: string; tag?: string; markup?: string };
 
 export type RawElement = {
   id: string;
@@ -501,20 +502,19 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
    * as raw pieces and assembled when the host closes, because the text
    * either side of a run arrives through `ontext` on the host.
    */
-  let runTarget: { host: RawElement; className: string; text: string } | null = null;
+  let runTarget: { host: RawElement; className: string; text: string; tag?: string } | null = null;
   /**
    * Pieces of a text element's content, in source order: its own words
    * and the styled runs between them. Kept beside the element rather
    * than on it, because a host with no run never grows the field.
    */
-  const runPieces = new Map<
-    RawElement,
-    Array<{ kind: 'text'; value: string } | { kind: 'run'; className: string; value: string }>
-  >();
-  const addPiece = (
-    host: RawElement,
-    piece: { kind: 'text'; value: string } | { kind: 'run'; className: string; value: string }
-  ): void => {
+  type RunPiece =
+    | { kind: 'text'; value: string }
+    | { kind: 'run'; className: string; value: string; tag?: string }
+    /** Unclassed inline markup in the sentence, as written. */
+    | { kind: 'markup'; source: string };
+  const runPieces = new Map<RawElement, RunPiece[]>();
+  const addPiece = (host: RawElement, piece: RunPiece): void => {
     const list = runPieces.get(host);
     if (list === undefined) runPieces.set(host, [piece]);
     else list.push(piece);
@@ -724,8 +724,8 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
             );
           const runName = runClass?.[1] ?? runClass?.[2];
           const host = stack[stack.length - 1];
-          if (name === 'span' && runName !== undefined && host?.type === 'text') {
-            runTarget = { host, className: runName, text: '' };
+          if ((name === 'span' || INLINE_RUN_TAGS.has(name)) && runName !== undefined && host?.type === 'text') {
+            runTarget = { host, className: runName, text: '', ...(name !== 'span' ? { tag: name } : {}) };
             frames.push('run');
             return;
           }
@@ -904,6 +904,7 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
               kind: 'run',
               className: runTarget.className,
               value: runTarget.text,
+              ...(runTarget.tag !== undefined ? { tag: runTarget.tag } : {}),
             });
             runTarget = null;
           }
@@ -939,6 +940,10 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
               source,
               afterChildIndex: top.childIds.length - 1,
             });
+            // In a sentence it's a piece of the sentence, where it stands:
+            // as a fragment it was written after all the words.
+            // see docs/notes/inline-run-tags.md
+            if (top.type === 'text') addPiece(top, { kind: 'markup', source });
           }
           return;
         }
@@ -951,19 +956,34 @@ export const parseTsxStructure = (rawTsx: string): RawElement[] => {
           // later, from the CSS: the TSX only says which class each run
           // wears. see docs/plans/inline-spans-plan.md
           const pieces = runPieces.get(top) ?? [];
-          if (pieces.some((piece) => piece.kind === 'run')) {
-            const last = pieces.length - 1;
-            top.runs = pieces
-              .map((piece, index) => {
-                const value =
-                  piece.kind === 'text'
-                    ? decodeJsxText(piece.value, index === 0, index === last)
-                    : piece.value;
-                return piece.kind === 'run'
-                  ? { text: value, runClassName: piece.className }
-                  : { text: value };
+          // Markup becomes part of the run list only when the text holds
+          // no element: around a child element the fragments keep their
+          // place relative to it, as before.
+          const markupAsRuns = top.childIds.length === 0 && pieces.some((piece) => piece.kind === 'markup');
+          if (pieces.some((piece) => piece.kind === 'run') || markupAsRuns) {
+            // The parser can hand one stretch of words over in chunks (it
+            // splits at an entity), and each would become its own run.
+            const kept = pieces
+              .filter((piece) => piece.kind !== 'markup' || markupAsRuns)
+              .reduce<RunPiece[]>((out, piece) => {
+                const prev = out[out.length - 1];
+                if (piece.kind === 'text' && prev?.kind === 'text') {
+                  out[out.length - 1] = { kind: 'text', value: prev.value + piece.value };
+                } else {
+                  out.push(piece);
+                }
+                return out;
+              }, []);
+            top.runs = kept
+              .map((piece, index): RawTextRun => {
+                if (piece.kind === 'markup') return runFromMarkup(piece.source);
+                if (piece.kind === 'run') {
+                  return { text: piece.value, runClassName: piece.className, ...(piece.tag !== undefined ? { tag: piece.tag } : {}) };
+                }
+                return { text: decodeJsxText(piece.value, index === 0, index === kept.length - 1) };
               })
-              .filter((run) => run.text.length > 0);
+              .filter((run) => run.text.length > 0 || run.markup !== undefined);
+            if (markupAsRuns) top.inlineFragments = top.inlineFragments.filter((fragment) => fragment.kind !== 'jsx');
             // The host's own `text` is the words with the styling
             // dropped, so every existing reader keeps working.
             top.text = top.runs.map((run) => run.text).join('');

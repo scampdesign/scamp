@@ -14,6 +14,7 @@ import { planTable, TABLE_DISPLAYS, type TableRole } from './importTable';
 import {
   isStyled,
   mergeRuns,
+  runFromMarkup,
   textFromRuns,
   type TextRun,
   type TextRunStyle,
@@ -644,6 +645,27 @@ const inlineToFragments = (
         ? {}
         : { runs: merged }),
     };
+  }
+  // Words and inline markup, no element: one sentence of runs, the markup
+  // in its place (`<em>` as a tagged run). As a fragment it was written
+  // after the words, and lost the spaces around it.
+  // see docs/notes/inline-run-tags.md
+  if (!hasElement && items.some((item) => item.kind === 'markup')) {
+    const last = items.length - 1;
+    const runs: TextRun[] = [];
+    for (const [index, item] of items.entries()) {
+      if (item.kind === 'markup') {
+        runs.push(runFromMarkup(item.source));
+        continue;
+      }
+      if (item.kind !== 'text') continue;
+      let value = item.value.replace(/\s+/g, ' ');
+      if (index === 0) value = value.replace(/^ /, '');
+      if (index === last) value = value.replace(/ $/, '');
+      if (value.length > 0) runs.push({ text: value });
+    }
+    const merged = mergeRuns(runs);
+    return { text: textFromRuns(merged), fragments: [], children: [], runs: merged };
   }
   let text: string | null = null;
   if (!hasElement && items[0]?.kind === 'text') {

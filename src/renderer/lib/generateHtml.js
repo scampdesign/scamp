@@ -20,6 +20,7 @@ import { expandChildren, resolveAttr, resolveInstanceOverrides, resolveText as r
 import { svgSourceToHtml } from './svgJsx';
 import { sizeDeclarationLines } from './generateCode/declarations';
 import { classNameFor, escapeHtml, tagFor } from './generateCode/internal';
+import { hasRunStyle, isStyled, runClassName, runsOf } from './textRuns';
 /**
  * Joins an instance id to the classes of the component it expands.
  * Double underscore because a single one is already common inside
@@ -218,7 +219,7 @@ const renderElement = (el, scope, level, options, extraClass, activeComponents, 
         return `${indent(level)}${open}></${tag}>`;
     }
     if (hasText && !hasChildren && !hasFragments) {
-        return `${indent(level)}${open}>${escapeHtml(text ?? '')}</${tag}>`;
+        return `${indent(level)}${open}>${runsHtml(el, scope) ?? escapeHtml(text ?? '')}</${tag}>`;
     }
     const segments = [];
     if (hasText)
@@ -241,6 +242,35 @@ const renderElement = (el, scope, level, options, extraClass, activeComponents, 
             segments.push(after);
     });
     return `${indent(level)}${open}>\n${segments.join('\n')}\n${indent(level)}</${tag}>`;
+};
+/**
+ * A text element's styled runs as HTML, in order: a span or the run's own
+ * tag (`<em>`) with its class, and markup as it was written. Null when the
+ * words are plain, or come from a row or a prop rather than the element.
+ * see docs/notes/inline-run-tags.md
+ */
+const runsHtml = (el, scope) => {
+    if (el.type !== 'text' || resolveRowText(el, scope.binding) !== undefined)
+        return null;
+    if (scope.isComponent && el.prop !== undefined && el.prop.length > 0)
+        return null;
+    const runs = runsOf(el);
+    if (!runs.some(isStyled))
+        return null;
+    const cls = classNameFor(el);
+    return runs
+        .map((run, index) => {
+        if (run.markup !== undefined)
+            return run.markup;
+        if (!isStyled(run))
+            return escapeHtml(run.text);
+        const runTag = run.tag ?? 'span';
+        const classAttr = hasRunStyle(run) || run.tag === undefined
+            ? ` class="${escapeHtml(`${scope.classPrefix}${runClassName(cls, index)}`)}"`
+            : '';
+        return `<${runTag}${classAttr}>${escapeHtml(run.text)}</${runTag}>`;
+    })
+        .join('');
 };
 /**
  * The text a text element shows. Inside a component, a `prop`-bound element

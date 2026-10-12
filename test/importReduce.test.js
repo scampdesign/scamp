@@ -370,7 +370,7 @@ describe('a container is never typed as text', () => {
                 }),
             ],
         }));
-        const host = Object.values(elements).find((e) => e.inlineFragments.length > 0);
+        const host = Object.values(elements).find((e) => e.runs?.some((r) => r.tag === 'strong'));
         expect(host?.type).toBe('text');
         expect(host?.childIds).toEqual([]);
     });
@@ -510,13 +510,14 @@ describe('styled spans become elements in the line', () => {
         // back where the sentence had it.
         expect(fragment?.afterChildIndex).toBe(0);
     });
-    it('changes nothing for a run with no styled span in it', () => {
-        // The leading text stays on the host and the rest stay fragments,
-        // exactly as before — this is the common case and it must not move.
+    it('keeps a run with no styled span one sentence, its markup in place', () => {
+        // No element: the markup is a run where it stood, so it can't drift
+        // after the words. see docs/notes/inline-run-tags.md
         const { elements } = reduce(node({ children: [run({ kind: 'text', value: 'Read the ' }, { kind: 'markup', source: '<a href="/docs">docs</a>' })] }));
-        const host = Object.values(elements).find((e) => e.text === 'Read the');
+        const host = Object.values(elements).find((e) => e.text === 'Read the docs');
         expect(host?.childIds).toEqual([]);
-        expect(host?.inlineFragments[0]?.afterChildIndex).toBe(-1);
+        expect(host?.inlineFragments).toEqual([]);
+        expect(host?.runs).toEqual([{ text: 'Read the ' }, { text: 'docs', markup: '<a href="/docs">docs</a>' }]);
     });
     it('lets a span that positions itself keep what it asked for', () => {
         const { elements } = reduce(node({ children: [run({ kind: 'element', node: styledSpan('badge', { position: 'relative' }) })] }));
@@ -596,10 +597,9 @@ describe('materializePseudos — ticks and toggles become elements', () => {
                 }),
             ],
         }));
-        const words = Object.values(elements).find((e) => e.inlineFragments.length > 0);
-        expect(words?.text).toBe('Read the');
-        const fragment = words?.inlineFragments[0];
-        expect(fragment && 'source' in fragment && fragment.source).toContain('/docs');
+        const words = Object.values(elements).find((e) => e.runs?.some((r) => r.markup !== undefined));
+        expect(words?.text).toBe('Read the docs');
+        expect(words?.runs?.[1]?.markup).toContain('/docs');
     });
     it('gives the host a layout, so the glyph is not stacked on the words', () => {
         // An `li` is a text tag. Once its words move out it is a container,
@@ -1176,9 +1176,10 @@ describe('reduceCapture — inline content stays inline', () => {
             { kind: 'markup', source: '<strong>faster</strong>' },
         ]));
         const p = Object.values(result.elements).find((e) => e.type === 'text');
-        expect(p?.text).toBe('Ship');
+        expect(p?.text).toBe('Ship faster');
+        expect(p?.runs).toEqual([{ text: 'Ship ' }, { text: 'faster', tag: 'strong' }]);
     });
-    it('turns the markup into fragments rather than elements', () => {
+    it('keeps the markup in the sentence, in order, rather than as elements', () => {
         const result = reduce(para([
             { kind: 'text', value: 'Ship ' },
             { kind: 'markup', source: '<strong>faster</strong>' },
@@ -1187,19 +1188,16 @@ describe('reduceCapture — inline content stays inline', () => {
         // One paragraph, not a paragraph plus a box for the <strong>.
         expect(Object.keys(result.elements)).toHaveLength(2);
         const p = Object.values(result.elements).find((e) => e.type === 'text');
-        expect(p?.inlineFragments).toEqual([
-            { kind: 'jsx', source: '<strong>faster</strong>', afterChildIndex: -1 },
-            { kind: 'text', value: ' today', afterChildIndex: -1 },
-        ]);
+        expect(p?.runs).toEqual([{ text: 'Ship ' }, { text: 'faster', tag: 'strong' }, { text: ' today' }]);
+        expect(p?.inlineFragments).toEqual([]);
     });
-    it('handles a run that opens with markup, leaving text null', () => {
+    it('handles a run that opens with markup', () => {
         const result = reduce(para([
             { kind: 'markup', source: '<em>New</em>' },
             { kind: 'text', value: ' in beta' },
         ]));
         const p = Object.values(result.elements).find((e) => e.type === 'text');
-        expect(p?.text).toBeUndefined();
-        expect(p?.inlineFragments).toHaveLength(2);
+        expect(p?.runs).toEqual([{ text: 'New', tag: 'em' }, { text: ' in beta' }]);
     });
     it('reports it, because the markup is no longer selectable on canvas', () => {
         expect(kinds(para([{ kind: 'markup', source: '<b>x</b>' }]))).toContain('inline-kept');

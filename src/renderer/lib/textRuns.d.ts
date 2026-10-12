@@ -39,9 +39,34 @@ export type TextRun = {
     style?: TextRunStyle;
     /** A run can be a link without becoming its own element. */
     href?: string;
+    /**
+     * The inline tag the words sit in, when it isn't a styling `span`:
+     * `Hello <em>world</em>` keeps its `<em>`. One of `INLINE_RUN_TAGS`.
+     */
+    tag?: string;
+    /**
+     * Inline markup Scamp doesn't model (nested tags, attributes), kept as
+     * written and written back in its place. `text` is its words, for
+     * anything that reads the sentence. Never split, styled, or merged.
+     */
+    markup?: string;
 };
-/** Does this run paint differently from plain text? */
+/**
+ * Tags a run can be, rather than an element: inline, holding only words.
+ * see docs/notes/inline-run-tags.md
+ */
+export declare const INLINE_RUN_TAGS: ReadonlySet<string>;
+/** Does the run carry style of its own, and so a run class and CSS rule? */
+export declare const hasRunStyle: (run: TextRun) => boolean;
+/** Does this run need anything more than its bare words written? */
 export declare const isStyled: (run: TextRun) => boolean;
+/**
+ * A piece of inline markup inside a text element, as a run. `<em>world</em>`
+ * — one of `INLINE_RUN_TAGS`, no attributes, only words — is a tagged
+ * run; anything else is kept verbatim as `markup`, with its words as the
+ * run's text.
+ */
+export declare const runFromMarkup: (source: string) => TextRun;
 /** One unstyled run. The shape every plain text element implies. */
 export declare const runsFromText: (text: string) => TextRun[];
 /** The words, with every run's styling dropped. */

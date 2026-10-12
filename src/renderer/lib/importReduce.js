@@ -3,7 +3,7 @@ import { ROOT_ELEMENT_ID } from './element';
 import { makeBaseline, applyDeclarations, applyDeclarationsAsOverride } from './parseCode/apply';
 import { jsxAttributeName, svgSourceToJsx } from './svgJsx';
 import { planTable, TABLE_DISPLAYS } from './importTable';
-import { isStyled, mergeRuns, textFromRuns, } from './textRuns';
+import { isStyled, mergeRuns, runFromMarkup, textFromRuns, } from './textRuns';
 /**
  * Tags that become a text element. Mirrors `parseCode`'s own list —
  * a text element is one whose content is words rather than layout, and
@@ -485,6 +485,31 @@ const inlineToFragments = (host, inline) => {
                 ? {}
                 : { runs: merged }),
         };
+    }
+    // Words and inline markup, no element: one sentence of runs, the markup
+    // in its place (`<em>` as a tagged run). As a fragment it was written
+    // after the words, and lost the spaces around it.
+    // see docs/notes/inline-run-tags.md
+    if (!hasElement && items.some((item) => item.kind === 'markup')) {
+        const last = items.length - 1;
+        const runs = [];
+        for (const [index, item] of items.entries()) {
+            if (item.kind === 'markup') {
+                runs.push(runFromMarkup(item.source));
+                continue;
+            }
+            if (item.kind !== 'text')
+                continue;
+            let value = item.value.replace(/\s+/g, ' ');
+            if (index === 0)
+                value = value.replace(/^ /, '');
+            if (index === last)
+                value = value.replace(/ $/, '');
+            if (value.length > 0)
+                runs.push({ text: value });
+        }
+        const merged = mergeRuns(runs);
+        return { text: textFromRuns(merged), fragments: [], children: [], runs: merged };
     }
     let text = null;
     if (!hasElement && items[0]?.kind === 'text') {

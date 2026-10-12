@@ -1,5 +1,5 @@
 // generateCode/css.ts — split out of generateCode.ts (4.5).
-import { isStyled, runClassName, runStyleDeclarations, runsOf } from '../textRuns';
+import { hasRunStyle, runClassName, runStyleDeclarations, runsOf } from '../textRuns';
 import { isGridTable, tableCaptionRule, tableSubgridRule } from '../tableGrid';
 import { tableStyleRules } from '../tableStyle';
 import { ELEMENT_STATES, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride } from "../element";
@@ -184,7 +184,7 @@ export const generateCss = (
     if (el.type !== 'text') return chunks;
     const cls = classNameFor(el);
     for (const [index, run] of runsOf(el).entries()) {
-      if (!isStyled(run)) continue;
+      if (!hasRunStyle(run)) continue;
       const lines = runStyleDeclarations(run.style ?? {});
       if (lines.length === 0) continue;
       chunks.push(

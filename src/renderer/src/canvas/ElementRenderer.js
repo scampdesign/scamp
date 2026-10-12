@@ -43,6 +43,24 @@ const isScaffoldRoot = (root) => {
         root.opacity === DEFAULT_ROOT_STYLES.opacity &&
         root.minHeight === DEFAULT_ROOT_STYLES.minHeight);
 };
+/**
+ * One run of a text element: bare words, a styling span, its own tag
+ * (`<em>`), or markup Scamp doesn't model, sanitized and drawn in place —
+ * the same order the generator writes. see docs/notes/inline-run-tags.md
+ */
+const renderRun = (run, index, runClass) => {
+    if (run.markup !== undefined) {
+        const html = sanitizeInlineMarkup(run.markup);
+        return createElement('span', {
+            key: `run-${index}`,
+            style: { display: 'contents' },
+            dangerouslySetInnerHTML: { __html: html },
+        });
+    }
+    if (!isStyled(run))
+        return run.text;
+    return createElement(run.tag ?? 'span', { key: `run-${index}`, className: runClass, style: runInlineStyle(run) }, run.text);
+};
 const renderComponentSubtree = (element, elementsMap, parentDisplay, parentDirection, propOverrides, tokens, projectDir, projectFormat, projectPath, 
 /**
  * Threaded through every recursive call so the wrapper that
@@ -298,9 +316,7 @@ row = null) => {
         }, textContent ?? '');
     }
     if (styledRuns) {
-        return createElement(tag, { ...props, key: element.id }, runs.map((run, index) => isStyled(run)
-            ? createElement('span', { key: `run-${index}`, className: `${prefix}${runClassName(className, index)}`, style: runInlineStyle(run) }, run.text)
-            : run.text));
+        return createElement(tag, { ...props, key: element.id }, runs.map((run, index) => renderRun(run, index, `${prefix}${runClassName(className, index)}`)));
     }
     if (hasText && !hasChildren && fragments.length === 0) {
         return createElement(tag, { ...props, key: element.id }, textContent);
@@ -934,13 +950,7 @@ export const ElementRenderer = ({ elementId, row }) => {
         // each run's class. Only the STYLED ones get a wrapper — a plain
         // run is emitted bare, exactly as the generator writes it, so a
         // sentence with one coloured word is one span, not three.
-        children = runs.map((run, index) => isStyled(run)
-            ? createElement('span', {
-                key: `run-${index}`,
-                className: runClassName(classNameFor(element), index),
-                style: runInlineStyle(run),
-            }, run.text)
-            : run.text);
+        children = runs.map((run, index) => renderRun(run, index, runClassName(classNameFor(element), index)));
     }
     else if (!isComposed) {
         // The overwhelmingly common case, and the shape contentEditable
