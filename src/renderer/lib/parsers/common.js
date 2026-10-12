@@ -1,22 +1,6 @@
 // parsers/common.ts — split out of parsers.ts (4.3).
 import { tokenSpaceValue } from "../spaceValue";
 /**
- * Parse a `123px` (or bare number) into an integer. Returns 0 for empty
- * or unparseable input — keeps callers from having to special-case missing
- * values themselves.
- */
-export const parsePx = (raw) => {
-    if (typeof raw !== 'string')
-        return 0;
-    const trimmed = raw.trim();
-    if (trimmed.length === 0)
-        return 0;
-    const match = trimmed.match(/^(-?\d+(?:\.\d+)?)(?:px)?$/);
-    if (!match || match[1] === undefined)
-        return 0;
-    return Math.round(Number(match[1]));
-};
-/**
  * Split a CSS value-list on top-level commas, respecting parens. Used
  * to break a `transition` shorthand like
  *   `opacity 200ms ease, transform 300ms cubic-bezier(0.4, 0, 0.2, 1)`
@@ -87,10 +71,10 @@ export const tokenizeShorthandSegment = (raw) => {
 // the typed shape as `{ kind: 'token', ref: 'var(--name)' }` rather
 // than falling to customProperties. See `spaceValue.ts`.
 /**
- * Like `parsePx` but returns `null` for non-px tokens (so callers can
- * preserve `%`, `rem`, `em`, `auto`, etc. by falling through to
- * customProperties). Plain numbers (no unit), bare zero, and `Npx`
- * all parse to a number.
+ * Parse a `123px` (or bare number) into an integer, or `null` for non-px
+ * tokens (so callers can preserve `%`, `rem`, `em`, `auto`, etc. by
+ * falling through to customProperties). Plain numbers (no unit), bare
+ * zero, and `Npx` all parse to a number.
  */
 export const parsePxOrNull = (raw) => {
     if (typeof raw !== 'string')
@@ -103,6 +87,12 @@ export const parsePxOrNull = (raw) => {
         return null;
     return Math.round(Number(match[1]));
 };
+/**
+ * Parse a `123px` (or bare number) into an integer. Returns 0 for empty
+ * or unparseable input — keeps callers from having to special-case missing
+ * values themselves.
+ */
+export const parsePx = (raw) => parsePxOrNull(raw) ?? 0;
 /**
  * Match a `var(--name)` or `var(--name, fallback)` reference. Returns
  * the full source string (including the `var(` wrapper and any

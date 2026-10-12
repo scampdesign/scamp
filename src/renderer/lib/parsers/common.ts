@@ -1,20 +1,6 @@
 // parsers/common.ts — split out of parsers.ts (4.3).
 import { tokenSpaceValue, type SpaceValue } from "../spaceValue";
 
-/**
- * Parse a `123px` (or bare number) into an integer. Returns 0 for empty
- * or unparseable input — keeps callers from having to special-case missing
- * values themselves.
- */
-export const parsePx = (raw: string): number => {
-  if (typeof raw !== 'string') return 0;
-  const trimmed = raw.trim();
-  if (trimmed.length === 0) return 0;
-  const match = trimmed.match(/^(-?\d+(?:\.\d+)?)(?:px)?$/);
-  if (!match || match[1] === undefined) return 0;
-  return Math.round(Number(match[1]));
-};
-
 
 /**
  * Split a CSS value-list on top-level commas, respecting parens. Used
@@ -85,10 +71,10 @@ export const tokenizeShorthandSegment = (raw: string): string[] => {
 // than falling to customProperties. See `spaceValue.ts`.
 
 /**
- * Like `parsePx` but returns `null` for non-px tokens (so callers can
- * preserve `%`, `rem`, `em`, `auto`, etc. by falling through to
- * customProperties). Plain numbers (no unit), bare zero, and `Npx`
- * all parse to a number.
+ * Parse a `123px` (or bare number) into an integer, or `null` for non-px
+ * tokens (so callers can preserve `%`, `rem`, `em`, `auto`, etc. by
+ * falling through to customProperties). Plain numbers (no unit), bare
+ * zero, and `Npx` all parse to a number.
  */
 export const parsePxOrNull = (raw: string): number | null => {
   if (typeof raw !== 'string') return null;
@@ -98,6 +84,13 @@ export const parsePxOrNull = (raw: string): number | null => {
   if (!match || match[1] === undefined) return null;
   return Math.round(Number(match[1]));
 };
+
+/**
+ * Parse a `123px` (or bare number) into an integer. Returns 0 for empty
+ * or unparseable input — keeps callers from having to special-case missing
+ * values themselves.
+ */
+export const parsePx = (raw: string): number => parsePxOrNull(raw) ?? 0;
 
 
 /**
