@@ -29,6 +29,11 @@ New dependency: `@anthropic-ai/sdk`.
 - [x] `npm run test:unit` + `test:integration` — 279 files, 4,344 tests.
       Port-binding tests (`devServerPortAlloc`, `authService`) failed once
       each in a full run and passed alone; see Known issues
+- [x] **Re-run on 2026-10-12, after every fix below and since:** 549
+      passed, 2 skipped, 1 failed. The failure (`text-runs-panel.spec.ts`)
+      was in its setup — a freshly drawn text element not on the canvas
+      within 10 s — and passes 3 of 3 alone: flaky under load. Listed
+      under Known issues.
 - [x] `npm run build && npx playwright test` — the full e2e suite
       (549 tests). First run on merged `main`, 2026-10-09: **544 passed,
       4 failed, 1 skipped** (32 min). All four fixed, and those four spec
@@ -79,6 +84,24 @@ window's partition only show up there.
       the view it came from
 - [ ] Imported sidebar: editor and page match; background fills the row
 - [ ] Tables: add a table, style rows and cells, export HTML
+- [ ] Component editor breakpoint: opens at Desktop; picking Tablet shows
+      a component's tablet styles without resizing its canvas; an edit
+      lands in its `@media` block; the page gets its breakpoint back
+- [ ] A component opened from the sidebar while on a view returns to that
+      view on Esc
+- [ ] Fit on a page with a long marquee or carousel: the page stays
+      readable, and the breakpoint menu sits at the page's right edge
+
+**Text, SVG, and files**
+- [ ] A sentence with `<em>` / `<strong>` / a link in the middle keeps it
+      in place on open, after an edit, and in the HTML export
+- [ ] An agent-written page with `left: 50%` (a centered glow) stays
+      centered after opening and saving
+- [ ] SVG selected: the SVG section is above Background; a Lucide or
+      Tabler icon shows **Current color** with its inherited color, and
+      setting it recolors the icon
+- [ ] Opening an agent-written page writes no "couldn't patch the
+      stylesheet safely" warning
 
 **MCP**
 - [ ] From Claude Code: `scamp_get_element_tree` with `view`,
@@ -118,8 +141,8 @@ window's partition only show up there.
 
 ## 5. Release mechanics
 
-- [ ] Bump `version` in `package.json` to `0.9.0`, commit with the
-      changelog
+- [x] Bump `version` in `package.json` to `0.9.0`, commit with the
+      changelog (2026-10-12)
 - [ ] Push `main`; CI (`ci.yml`) green
 - [ ] Tag `v0.9.0` and push the tag — `release.yml` runs the checks, builds
       all three platforms, signs and notarises, publishes to GitHub
@@ -139,5 +162,7 @@ window's partition only show up there.
   built-in agent's confirmations and one-step undo.
 - **Flaky port tests** (`devServerPortAlloc`, `authService`) under a full
   local run; pass alone. Worth a look before they flake CI.
+- **Flaky e2e:** `text-runs-panel.spec.ts` failed once in a full run at its
+  setup step (drawing a text element) and passes alone.
 - **Agent cost.** API-key usage is billed per token and large pages are
   expensive; see `docs/plans/agent-cost-and-progress-plan.md`.
