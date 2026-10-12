@@ -26,13 +26,27 @@ import type { CapturedSource } from '@shared/importCapture';
 const roots = new Set<string>();
 let activeProject: string | null = null;
 
+const BASE = join(tmpdir(), 'scamp-import-source');
+
 /** One directory per project path, named by hash so it cannot collide. */
 const rootFor = (projectPath: string): string =>
-  join(
-    tmpdir(),
-    'scamp-import-source',
-    createHash('sha256').update(projectPath).digest('hex').slice(0, 16)
-  );
+  join(BASE, createHash('sha256').update(projectPath).digest('hex').slice(0, 16));
+
+/**
+ * Make sure the base is this account's alone. On Linux `/tmp` is shared
+ * and the name is predictable, so another account could create it first
+ * and plant records, or read the pages kept here.
+ */
+const ensurePrivateBase = async (): Promise<void> => {
+  await fs.mkdir(BASE, { recursive: true, mode: 0o700 });
+  const st = await fs.lstat(BASE);
+  const ours = process.getuid === undefined || st.uid === process.getuid();
+  if (!st.isDirectory() || !ours) {
+    throw new Error(`${BASE} belongs to another user; import sources aren't kept.`);
+  }
+  // Folders made by earlier versions were readable by everyone.
+  if (process.platform !== 'win32' && (st.mode & 0o077) !== 0) await fs.chmod(BASE, 0o700);
+};
 
 /** A view name as a single safe path segment. */
 const safeName = (name: string): string => name.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80);
@@ -71,6 +85,7 @@ export const saveImportSource = async (
   url: string,
   source: CapturedSource
 ): Promise<StoredSource> => {
+  await ensurePrivateBase();
   const dir = join(rootFor(projectPath), safeName(view));
   await fs.mkdir(dir, { recursive: true });
   const htmlPath = join(dir, 'page.html');
@@ -94,6 +109,7 @@ export const saveImportSource = async (
 
 /** Every original kept for this project, newest first. */
 export const listImportSources = async (projectPath: string): Promise<StoredSource[]> => {
+  await ensurePrivateBase();
   const root = rootFor(projectPath);
   let names: string[];
   try {
@@ -121,6 +137,7 @@ export const readImportSource = async (
   part: 'html' | 'css',
   limit: number
 ): Promise<{ stored: StoredSource; text: string; truncated: boolean } | null> => {
+  await ensurePrivateBase();
   const dir = join(rootFor(projectPath), safeName(view));
   let stored: StoredSource;
   try {
@@ -128,7 +145,9 @@ export const readImportSource = async (
   } catch {
     return null;
   }
-  const full = await fs.readFile(part === 'html' ? stored.htmlPath : stored.cssPath, 'utf-8');
+  // The fixed names, never the record's paths: a record is only as
+  // trustworthy as whoever wrote it.
+  const full = await fs.readFile(join(dir, part === 'html' ? 'page.html' : 'styles.css'), 'utf-8');
   return { stored, text: full.slice(0, limit), truncated: full.length > limit };
 };
 

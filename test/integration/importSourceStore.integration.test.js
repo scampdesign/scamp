@@ -94,6 +94,32 @@ describe('readImportSource', () => {
     it('returns null for a view nobody imported', async () => {
         expect(await readImportSource(project('l'), 'Nope', 'css', 100)).toBeNull();
     });
+    it('reads from the view\'s own folder, never a path its record names', async () => {
+        // Audit item 14: a planted record pointed the read at any file.
+        const dir = project('l2');
+        const stored = await saveImportSource(dir, 'Lobby', 'u', source());
+        const secret = path.join(tmpdir(), `scamp-src-test-${process.pid}-secret.txt`);
+        await fs.writeFile(secret, 'private key');
+        const record = path.join(path.dirname(stored.cssPath), 'source.json');
+        await fs.writeFile(record, JSON.stringify({ ...stored, cssPath: secret }));
+        try {
+            expect((await readImportSource(dir, 'Lobby', 'css', 1000))?.text).toBe('.a { color: red; }');
+        }
+        finally {
+            await fs.rm(secret, { force: true });
+        }
+    });
+});
+describe('the shared temp folder', () => {
+    it('is made private to this user, even when an earlier version left it open', async () => {
+        const base = path.join(tmpdir(), 'scamp-import-source');
+        await fs.mkdir(base, { recursive: true });
+        await fs.chmod(base, 0o755);
+        await saveImportSource(project('p1'), 'Lobby', 'u', source());
+        if (process.platform !== 'win32') {
+            expect((await fs.stat(base)).mode & 0o777).toBe(0o700);
+        }
+    });
 });
 describe('disposal', () => {
     it('removes a project\'s originals when a different project opens', async () => {

@@ -34,6 +34,14 @@ events, both wired:
 Nothing about it ever reaches a commit, and the next session starts
 clean.
 
+`/tmp` is shared between accounts on Linux and the folder name is
+predictable, so every read and write first checks that
+`scamp-import-source` is a real directory owned by this user, tightening
+it to `0700` if an earlier version left it open, and refuses to use it
+otherwise. A read takes `page.html` / `styles.css` from the view's own
+folder; the paths in `source.json` are never followed, since anyone who
+could write that record could point it at any file.
+
 ## What the agent sees
 
 Two tools, answered in **main** from disk rather than by the canvas —

@@ -1467,7 +1467,7 @@ export type AgentSendResult = {
     ok: true;
 } | {
     ok: false;
-    reason: 'busy' | 'signed-out' | 'not-connected';
+    reason: 'busy' | 'signed-out' | 'not-connected' | 'error';
     message: string;
 };
 /** One text file in an HTML export, at a path relative to the export root. */

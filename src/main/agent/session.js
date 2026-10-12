@@ -30,7 +30,9 @@ export const createAgentSession = (deps) => {
             const controller = new AbortController();
             let finish = () => { };
             inFlight = { controller, done: new Promise((resolve) => (finish = resolve)) };
-            const provider = await deps.getProvider();
+            // A key that can't be read is no key; a throw here kept the slot
+            // claimed, and every later send answered "busy" until restart.
+            const provider = await deps.getProvider().catch(() => null);
             if (provider === null) {
                 inFlight = null;
                 finish();

@@ -1471,7 +1471,7 @@ export type AgentUndoSessionResult = { ok: true } | { ok: false; error: string }
 
 export type AgentSendResult =
   | { ok: true }
-  | { ok: false; reason: 'busy' | 'signed-out' | 'not-connected'; message: string };
+  | { ok: false; reason: 'busy' | 'signed-out' | 'not-connected' | 'error'; message: string };
 
 /** One text file in an HTML export, at a path relative to the export root. */
 export type ExportHtmlFile = {

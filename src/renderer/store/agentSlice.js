@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { cleanupRequest, reactTidyRequest } from '@lib/agentCleanup';
 import { agentContextLine, applyAgentEvent, startTurn, } from '@lib/agentTranscript';
 import { classNameFor } from '@lib/generateCode';
+import { errorMessage } from '@shared/errorMessage';
 import { useCanvasStore } from './canvasSlice';
 import { useHistoryStore } from './historySlice';
 import { useSnapshotsStore } from './snapshotsSlice';
@@ -156,7 +157,8 @@ export const useAgentStore = create((set, get) => ({
             sendError: null,
             runningTurn: { turnId, conversation },
         });
-        const result = await window.scamp.agentSend({
+        const result = await window.scamp
+            .agentSend({
             projectPath,
             conversation,
             turnId,
@@ -165,7 +167,9 @@ export const useAgentStore = create((set, get) => ({
             ...(options.skill !== undefined ? { skill: options.skill } : {}),
             // Typed after a skill finished (no plan waiting, none applying): ordinary chat.
             ...(options.skill === undefined && !skillAtWork(get(), conversation) ? { endSkill: true } : {}),
-        });
+        })
+            // A throw (main unreachable, a bug) must not leave the panel busy forever.
+            .catch((err) => ({ ok: false, reason: 'error', message: errorMessage(err) }));
         if (!result.ok) {
             // Nothing was sent: take the message back out rather than leave a
             // reply waiting forever.

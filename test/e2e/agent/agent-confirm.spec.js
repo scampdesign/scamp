@@ -73,3 +73,19 @@ test('closing the project stops a waiting turn and saves what the model knows', 
     // Stopped, not approved: the card is still in the file.
     expect(await fs.readFile(path.join(project.dir, 'home.module.css'), 'utf-8')).toContain('.card_a1b2');
 });
+test('opening another project’s conversation keeps what the model knew here', async ({ window, project }) => {
+    // Audit item 11: main stopped the old project's turns with a reset,
+    // which emptied the model history the stopped turn then saved. Asked
+    // directly, because leaving through the UI now stops the turn first.
+    await askToDelete(window);
+    await window.evaluate((other) => window.scamp.agentLoad({
+        projectPath: other,
+        conversation: { kind: 'page', name: 'home' },
+    }), path.join(os.tmpdir(), `scamp-e2e-other-project-${process.pid}`));
+    const file = path.join(project.dir, '.scamp', 'agent-history', 'page-home.json');
+    await expect
+        .poll(() => fs.readFile(file, 'utf-8').then((t) => t, () => ''), { timeout: 5_000 })
+        .not.toBe('');
+    const saved = JSON.parse(await fs.readFile(file, 'utf-8'));
+    expect(saved.model.length).toBeGreaterThan(0);
+});

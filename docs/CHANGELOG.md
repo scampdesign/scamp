@@ -48,6 +48,12 @@ release time.
   land in the project you opened next. Opening another project also
   erased what the agent remembered of the conversation, though the chat
   still showed it.
+- **The Scamp Agent recovers when your key can't be read.** It used to
+  stay busy until you restarted Scamp; now it asks you to connect your
+  key again.
+- **Imported pages kept for the agent are private to your account.** On
+  a shared Linux machine, other accounts could read them, or point the
+  agent at one of your files.
 - **Leaving a page while you preview a snapshot keeps the live page.**
   Switching page or closing the project during a preview used to write
   the snapshot's version over your current one.
