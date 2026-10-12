@@ -159,9 +159,14 @@ to your canvas.
 ### Edit fill and stroke
 
 Select an inline SVG, and the **SVG** section appears in the Visual
-panel with **Fill**, **Stroke**, and **Stroke width** controls. Theme
-tokens and `currentColor` are supported. These recolor the icon, with
-fill and stroke set independently.
+panel, above **Background**, with **Fill**, **Stroke**, and **Stroke
+width** controls. Theme tokens and `currentColor` are supported. These
+recolor the icon, with fill and stroke set independently. Colors written
+on the `<svg>` tag itself, such as `stroke="#333"`, get a swatch too.
+
+An icon drawn in `currentColor` follows the text color around it. Its
+**Current color** row shows that color, marked **Inherited**, until you
+set one of its own.
 
 This works even for icons that hardcode their own colors: the Fill and
 Stroke you set on the element recolor the shapes inside. On import,

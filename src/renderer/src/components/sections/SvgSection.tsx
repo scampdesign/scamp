@@ -1,3 +1,6 @@
+import { useLayoutEffect, useState } from 'react';
+
+import { CANVAS_SCOPE_ATTR } from '@lib/canvasStylesheet';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useResolvedElement } from '@store/useResolvedElement';
@@ -19,6 +22,26 @@ const isConcreteColor = (value: string | undefined): value is string => {
 
 const usesCurrentColor = (value: string | undefined): boolean =>
   value?.trim().toLowerCase() === 'currentcolor';
+
+/** `rgb(…)` as `#rrggbb`, for the swatch; anything else as it came. */
+const toHex = (value: string): string => {
+  const m = /^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)\s*(?:[,/]\s*([\d.]+)\s*)?\)$/.exec(value.trim());
+  if (m === null || (m[4] !== undefined && Number(m[4]) < 1)) return value;
+  return `#${[m[1], m[2], m[3]].map((c) => Number(c).toString(16).padStart(2, '0')).join('')}`;
+};
+
+/**
+ * The color an icon is drawn in when it sets none of its own: its CSS
+ * `color` as the canvas resolved it, inherited from whatever is around it.
+ */
+const useInheritedColor = (elementId: string, watch: unknown): string => {
+  const [color, setColor] = useState('');
+  useLayoutEffect(() => {
+    const node = document.querySelector(`[${CANVAS_SCOPE_ATTR}] [data-element-id="${CSS.escape(elementId)}"]`);
+    setColor(node === null ? '' : toHex(getComputedStyle(node).color));
+  }, [elementId, watch]);
+  return color;
+};
 
 type Swatch = {
   /** Dedupe/react key — the lowercased colour value. */
@@ -43,6 +66,7 @@ export const SvgSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
   const patchElement = useCanvasStore((s) => s.patchElement);
   const { presetColors, themeTokens, onOpenTheme } = useColorPickerContext();
+  const inheritedColor = useInheritedColor(elementId, element);
   if (!element) return null;
 
   const source = element.svgSource ?? '';
@@ -78,6 +102,17 @@ export const SvgSection = ({ elementId }: Props): JSX.Element | null => {
     (v) => patchElement(elementId, { stroke: v }),
     'stroke'
   );
+  // Paint written on the <svg> tag itself (`stroke="#333"`), as Lucide,
+  // Tabler and agents write it. Kept as an attribute, so rewritten there.
+  const attributes = element.attributes ?? {};
+  for (const name of ['fill', 'stroke'] as const) {
+    push(
+      attributes[name] ?? '',
+      name === 'fill' ? 'Fill' : 'Stroke',
+      (v) => patchElement(elementId, { attributes: { ...attributes, [name]: v } }),
+      'attributes'
+    );
+  }
   // Per-shape colours inside the artwork — rewritten in the source.
   for (const color of colors) {
     push(
@@ -95,8 +130,13 @@ export const SvgSection = ({ elementId }: Props): JSX.Element | null => {
   const showCurrentColor =
     hasCurrentColor ||
     usesCurrentColor(element.fill) ||
-    usesCurrentColor(element.stroke);
-  const currentColorValue = element.color ?? '';
+    usesCurrentColor(element.stroke) ||
+    usesCurrentColor(attributes['fill']) ||
+    usesCurrentColor(attributes['stroke']);
+  // Unset, the icon follows the text color around it: show that, so the
+  // swatch says what the icon is drawn in rather than nothing.
+  const ownColor = element.color ?? '';
+  const currentColorValue = ownColor.length > 0 ? ownColor : inheritedColor;
 
   const hasAnyColor = swatches.length > 0 || showCurrentColor;
 
@@ -121,7 +161,10 @@ export const SvgSection = ({ elementId }: Props): JSX.Element | null => {
         </Row>
       ))}
       {showCurrentColor && (
-        <Row label="Current color">
+        <Row
+          label="Current color"
+          tooltip="The icon follows the text color around it. Set a color here to change it."
+        >
           <ColorInput
             value={currentColorValue}
             onChange={(v) => patchElement(elementId, { color: v })}
@@ -131,6 +174,11 @@ export const SvgSection = ({ elementId }: Props): JSX.Element | null => {
             tokens={themeTokens}
             onOpenTheme={onOpenTheme}
           />
+          {ownColor.length === 0 && (
+            <span data-testid="svg-color-inherited" style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
+              Inherited
+            </span>
+          )}
         </Row>
       )}
       {!hasAnyColor && (

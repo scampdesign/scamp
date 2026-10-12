@@ -66,6 +66,12 @@ release time.
   one to select the element. Scamp used to find these only for agents,
   so a project could have thousands without anyone seeing them. See
   [Find problems in a view](user_docs/views.md#find-problems-in-a-view).
+- **An icon's color controls come first.** With an SVG selected, the
+  **SVG** section, with its colors and stroke width, sits above
+  **Background** in the Visual panel instead of near the bottom. Icons
+  that set their color on the `<svg>` tag, as Lucide and Tabler icons and
+  agent-written icons do, now show their colors instead of "No editable
+  colours", and **Current color** shows the color an icon inherits.
 - **The component editor has its own breakpoint.** Click the size control
   above a component's canvas and select a breakpoint to see and edit the
   component at that screen size, without resizing its canvas. The editor

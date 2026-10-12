@@ -86,12 +86,14 @@ export const UiPanel = (): JSX.Element => {
       {!isText && !isInput && <LayoutSection elementId={elementId} />}
       {element.tag === 'table' && <TableStyleSection elementId={elementId} />}
       <SpacingSection elementId={elementId} hideMargin={isRoot} />
+      {/* An icon's own colors and stroke come before the box's background
+          and border, which an SVG rarely uses. */}
+      {isSvg && <SvgSection elementId={elementId} />}
       <BackgroundSection elementId={elementId} />
       <BorderSection elementId={elementId} />
       <ShadowsSection elementId={elementId} />
       <FiltersSection elementId={elementId} />
       <TransformSection elementId={elementId} />
-      {isSvg && <SvgSection elementId={elementId} />}
       <VisibilitySection elementId={elementId} />
       <TransitionsSection elementId={elementId} />
       <AnimationSection elementId={elementId} />

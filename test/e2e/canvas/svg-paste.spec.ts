@@ -120,6 +120,12 @@ test.describe('canvas: paste SVG from clipboard', () => {
     await expect(panelSection(window, 'SVG')).toHaveCount(0);
     await clickInFrame(window, { x: 70, y: 70 });
     await expect(panelSection(window, 'SVG')).toBeVisible();
+
+    // An icon's own color and stroke lead the color controls, above the
+    // box's Background and Border.
+    const svgTop = (await panelSection(window, 'SVG').boundingBox())?.y ?? Infinity;
+    const backgroundTop = (await panelSection(window, 'Background').boundingBox())?.y ?? -Infinity;
+    expect(svgTop).toBeLessThan(backgroundTop);
   });
 
   test('setting Fill in the SVG section recolors the shape', async ({
