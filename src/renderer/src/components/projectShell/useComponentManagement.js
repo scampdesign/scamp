@@ -221,7 +221,7 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
     const handleRenameComponent = async (oldName, newName) => {
         if (oldName === newName) {
             setComponentEdit(null);
-            return;
+            return true;
         }
         setRenamingComponent(true);
         setComponentEditError(null);
@@ -296,6 +296,7 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
             // Keep active page's in-memory componentName fields consistent.
             useCanvasStore.getState().renameComponentReferences(oldName, newName);
             setComponentEdit(null);
+            return true;
         }
         catch (err) {
             disarmTargetSwapSuppression();
@@ -304,6 +305,7 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
             useAppLogStore
                 .getState()
                 .log('warn', `Rename component "${oldName}" → "${newName}" failed: ${message}`);
+            return false;
         }
         finally {
             setRenamingComponent(false);
@@ -334,10 +336,13 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
     };
     const handleRenameView = async (viewName, newSlug) => {
         const newName = viewNameForPage(newSlug);
-        await handleRenameComponent(viewName, newName);
+        // A failed rename leaves the route alone: it still names the old view.
+        if (!(await handleRenameComponent(viewName, newName)))
+            return false;
         // After the view moved, not before: the route should point at a
         // folder that exists by the time anything reads it.
         await renameRouteFor?.(viewName, newName);
+        return true;
     };
     const requestConvertPageToView = (pageName) => {
         setConvertPageError(null);

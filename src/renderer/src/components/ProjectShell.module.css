@@ -479,6 +479,107 @@ font-size: 14px;
   border-color: var(--border-strong);
 }
 
+.addPageButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Page groups — see docs/plans/page-groups-plan.md */
+.pageGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  padding: 6px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.groupHeader:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.groupName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A collapsed group holding the open page, like the layers panel's hidden-selection dot. */
+.groupActiveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.groupPages {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.groupEmpty {
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.groupRename {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.groupNameInput {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.groupNameError {
+  font-size: 11px;
+  color: var(--error-text);
+}
+
+.dropBefore {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.dropAfter {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.dropInside {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
 .canvasArea {
   flex: 1;
   display: flex;

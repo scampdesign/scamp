@@ -27,9 +27,9 @@ export type UsePageManagement = {
     setPageEditError: Dispatch<SetStateAction<string | null>>;
     isEditingPage: boolean;
     resetPageEdit: () => void;
-    handleAddPage: (name: string) => Promise<void>;
-    handleDuplicatePage: (sourcePageName: string, newName: string) => Promise<void>;
-    handleRenamePage: (oldName: string, newName: string) => Promise<void>;
+    handleAddPage: (name: string) => Promise<boolean>;
+    handleDuplicatePage: (sourcePageName: string, newName: string) => Promise<boolean>;
+    handleRenamePage: (oldName: string, newName: string) => Promise<boolean>;
     openPageMenu: (e: ReactMouseEvent, pageName: string) => void;
     buildMenuItems: (pageName: string) => PageMenuItem[];
     pageMenu: PageMenuState | null;

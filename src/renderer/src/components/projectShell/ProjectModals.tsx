@@ -21,6 +21,8 @@ type Props = {
   // Page context menu + delete
   pageMenu: PageMenuState | null;
   buildMenuItems: (pageName: string) => PageMenuItem[];
+  /** "Move to <group>" entries for a page or view, by its slug. */
+  moveItemsFor: (slug: string) => PageMenuItem[];
   closePageMenu: () => void;
   deletingPageName: string | null;
   deletePageError: string | null;
@@ -58,6 +60,7 @@ export const ProjectModals = ({
   instanceFlows,
   pageMenu,
   buildMenuItems,
+  moveItemsFor,
   closePageMenu,
   deletingPageName,
   deletePageError,
@@ -90,7 +93,7 @@ export const ProjectModals = ({
         <PageContextMenu
           x={pageMenu.x}
           y={pageMenu.y}
-          items={buildMenuItems(pageMenu.pageName)}
+          items={[...buildMenuItems(pageMenu.pageName), ...moveItemsFor(pageMenu.pageName)]}
           onClose={closePageMenu}
         />
       )}
@@ -115,6 +118,7 @@ export const ProjectModals = ({
               destructive: true,
               onSelect: () => requestDeleteComponent(componentMenu.componentName),
             },
+            ...(componentMenu.kind === 'view' ? moveItemsFor(viewSlugFor(componentMenu.componentName)) : []),
           ]}
           onClose={closeComponentMenu}
         />

@@ -33,7 +33,7 @@ export type UseComponentManagement = {
     creatingComponent: boolean;
     renamingComponent: boolean;
     handleAddComponent: (name: string, kind: ComponentKind) => Promise<void>;
-    handleRenameComponent: (oldName: string, newName: string) => Promise<void>;
+    handleRenameComponent: (oldName: string, newName: string) => Promise<boolean>;
     openComponentMenu: (e: ReactMouseEvent, componentName: string) => void;
     componentMenu: ComponentMenuState | null;
     closeComponentMenu: () => void;
@@ -45,7 +45,7 @@ export type UseComponentManagement = {
     /** "+ Add Page": a view named from the slug, plus its route wrapper. Throws on failure. */
     handleAddView: (slug: string) => Promise<void>;
     /** Rename a view by its route slug (the Pages list's spelling). */
-    handleRenameView: (viewName: string, newSlug: string) => Promise<void>;
+    handleRenameView: (viewName: string, newSlug: string) => Promise<boolean>;
     /** The page a "Convert to view" confirm dialog is open for. */
     convertingPage: string | null;
     setConvertingPage: Dispatch<SetStateAction<string | null>>;

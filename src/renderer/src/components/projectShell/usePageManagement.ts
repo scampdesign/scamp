@@ -45,9 +45,9 @@ export type UsePageManagement = {
   setPageEditError: Dispatch<SetStateAction<string | null>>;
   isEditingPage: boolean;
   resetPageEdit: () => void;
-  handleAddPage: (name: string) => Promise<void>;
-  handleDuplicatePage: (sourcePageName: string, newName: string) => Promise<void>;
-  handleRenamePage: (oldName: string, newName: string) => Promise<void>;
+  handleAddPage: (name: string) => Promise<boolean>;
+  handleDuplicatePage: (sourcePageName: string, newName: string) => Promise<boolean>;
+  handleRenamePage: (oldName: string, newName: string) => Promise<boolean>;
   openPageMenu: (e: ReactMouseEvent, pageName: string) => void;
   buildMenuItems: (pageName: string) => PageMenuItem[];
   pageMenu: PageMenuState | null;
@@ -105,18 +105,19 @@ export const usePageManagement = ({
     setPageEditError(null);
   };
 
-  const handleAddPage = async (name: string): Promise<void> => {
+  const handleAddPage = async (name: string): Promise<boolean> => {
     setPageEditBusy(true);
     setPageEditError(null);
     if (onCreatePageAsView) {
       try {
         await onCreatePageAsView(name);
         resetPageEdit();
+        return true;
       } catch (e) {
         setPageEditError(errorMessage(e));
         setPageEditBusy(false);
+        return false;
       }
-      return;
     }
     try {
       const newPage = await window.scamp.createPage({
@@ -135,16 +136,18 @@ export const usePageManagement = ({
       }));
       setActivePageName(newPage.name);
       resetPageEdit();
+      return true;
     } catch (e) {
       setPageEditError(errorMessage(e));
       setPageEditBusy(false);
+      return false;
     }
   };
 
   const handleDuplicatePage = async (
     sourcePageName: string,
     newName: string
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     setPageEditBusy(true);
     setPageEditError(null);
     try {
@@ -159,16 +162,18 @@ export const usePageManagement = ({
       });
       setActivePageName(newPage.name);
       resetPageEdit();
+      return true;
     } catch (e) {
       setPageEditError(errorMessage(e));
       setPageEditBusy(false);
+      return false;
     }
   };
 
   const handleRenamePage = async (
     oldName: string,
     newName: string
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     setPageEditBusy(true);
     setPageEditError(null);
     try {
@@ -207,9 +212,11 @@ export const usePageManagement = ({
         useCanvasStore.getState().elements
       );
       resetPageEdit();
+      return true;
     } catch (e) {
       setPageEditError(errorMessage(e));
       setPageEditBusy(false);
+      return false;
     }
   };
 

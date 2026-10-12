@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { DEFAULT_PROJECT_CONFIG } from '@shared/types';
 import { useCanvasStore } from '@store/canvasSlice';
 /**
@@ -10,12 +10,15 @@ import { useCanvasStore } from '@store/canvasSlice';
  */
 export const useProjectConfig = (projectPath) => {
     const [projectConfig, setProjectConfig] = useState(DEFAULT_PROJECT_CONFIG);
+    const latest = useRef(projectConfig);
     useEffect(() => {
         let cancelled = false;
         const load = async () => {
             const next = await window.scamp.readProjectConfig({ projectPath });
-            if (!cancelled)
-                setProjectConfig(next);
+            if (cancelled)
+                return;
+            latest.current = next;
+            setProjectConfig(next);
         };
         void load();
         return () => {
@@ -23,14 +26,20 @@ export const useProjectConfig = (projectPath) => {
         };
     }, [projectPath]);
     const handleProjectConfigChange = useCallback((next) => {
+        latest.current = next;
         setProjectConfig(next);
         void window.scamp.writeProjectConfig({ projectPath, config: next });
     }, [projectPath]);
+    const handlePageLayoutChange = useCallback((update) => {
+        const { pageLayout: _previous, ...rest } = latest.current;
+        const pageLayout = update(latest.current.pageLayout);
+        handleProjectConfigChange(pageLayout === undefined ? rest : { ...rest, pageLayout });
+    }, [handleProjectConfigChange]);
     // Mirror the project's breakpoint table into the canvas store so
     // deeply-nested components (ElementRenderer, cascaded styles) can
     // read it without prop drilling.
     useEffect(() => {
         useCanvasStore.getState().setBreakpoints(projectConfig.breakpoints);
     }, [projectConfig.breakpoints]);
-    return { projectConfig, handleProjectConfigChange };
+    return { projectConfig, handleProjectConfigChange, handlePageLayoutChange };
 };

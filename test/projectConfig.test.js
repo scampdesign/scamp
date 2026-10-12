@@ -250,3 +250,33 @@ describe('parseProjectConfig — card meta', () => {
         expect(back.state).toBe('in progress');
     });
 });
+describe('pageLayout', () => {
+    it('round-trips groups and order through serialize → parse', () => {
+        const config = {
+            ...DEFAULT_PROJECT_CONFIG,
+            pageLayout: [{ page: 'home' }, { group: 'Marketing', pages: ['about', 'pricing'] }, { group: 'Empty', pages: [] }],
+        };
+        expect(parseProjectConfig(serializeProjectConfig(config)).pageLayout).toEqual(config.pageLayout);
+    });
+    it('leaves a config without one unchanged, byte for byte', () => {
+        const raw = serializeProjectConfig(DEFAULT_PROJECT_CONFIG);
+        expect(serializeProjectConfig(parseProjectConfig(raw))).toBe(raw);
+    });
+    it('keeps the first of a repeated page or group, and drops malformed entries', () => {
+        const raw = JSON.stringify({
+            pageLayout: [
+                { page: 'home' },
+                { page: 'home' },
+                { group: 'A', pages: ['home', 'about', 7] },
+                { group: 'A', pages: ['x'] },
+                { group: '  ', pages: [] },
+                'nonsense',
+                { page: '' },
+            ],
+        });
+        expect(parseProjectConfig(raw).pageLayout).toEqual([{ page: 'home' }, { group: 'A', pages: ['about'] }]);
+    });
+    it('ignores a pageLayout that is not a list', () => {
+        expect(parseProjectConfig(JSON.stringify({ pageLayout: { page: 'home' } })).pageLayout).toBeUndefined();
+    });
+});

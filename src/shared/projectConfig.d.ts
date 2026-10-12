@@ -1,4 +1,4 @@
-import type { Breakpoint, ComponentCanvasSize, ProjectConfig } from './types';
+import type { Breakpoint, ComponentCanvasSize, PageLayoutEntry, ProjectConfig } from './types';
 /**
  * The scampjs contract versions this build of the app can read and write.
  * Read against `scampjs.contract` in a project's installed
@@ -61,5 +61,11 @@ export declare const clampCanvasHeight: (value: unknown) => number;
  * overrides. Mirrors the forgiving pattern in `settings.ts`.
  */
 export declare const parseProjectConfig: (raw: string | null) => ProjectConfig;
+/**
+ * Read `pageLayout`, keeping what's well-formed: a slug or group name
+ * appears once (first wins), and anything else is dropped rather than
+ * failing the whole config.
+ */
+export declare const parsePageLayout: (raw: unknown) => PageLayoutEntry[] | undefined;
 /** Serialize a `ProjectConfig` to its on-disk JSON form. */
 export declare const serializeProjectConfig: (config: ProjectConfig) => string;

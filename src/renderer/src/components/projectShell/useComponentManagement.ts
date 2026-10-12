@@ -75,7 +75,7 @@ export type UseComponentManagement = {
   creatingComponent: boolean;
   renamingComponent: boolean;
   handleAddComponent: (name: string, kind: ComponentKind) => Promise<void>;
-  handleRenameComponent: (oldName: string, newName: string) => Promise<void>;
+  handleRenameComponent: (oldName: string, newName: string) => Promise<boolean>;
   openComponentMenu: (e: ReactMouseEvent, componentName: string) => void;
   componentMenu: ComponentMenuState | null;
   closeComponentMenu: () => void;
@@ -87,7 +87,7 @@ export type UseComponentManagement = {
   /** "+ Add Page": a view named from the slug, plus its route wrapper. Throws on failure. */
   handleAddView: (slug: string) => Promise<void>;
   /** Rename a view by its route slug (the Pages list's spelling). */
-  handleRenameView: (viewName: string, newSlug: string) => Promise<void>;
+  handleRenameView: (viewName: string, newSlug: string) => Promise<boolean>;
   /** The page a "Convert to view" confirm dialog is open for. */
   convertingPage: string | null;
   setConvertingPage: Dispatch<SetStateAction<string | null>>;
@@ -339,10 +339,10 @@ export const useComponentManagement = ({
   const handleRenameComponent = async (
     oldName: string,
     newName: string
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     if (oldName === newName) {
       setComponentEdit(null);
-      return;
+      return true;
     }
     setRenamingComponent(true);
     setComponentEditError(null);
@@ -450,6 +450,7 @@ export const useComponentManagement = ({
       useCanvasStore.getState().renameComponentReferences(oldName, newName);
 
       setComponentEdit(null);
+      return true;
     } catch (err) {
       disarmTargetSwapSuppression();
       const message = errorMessage(err);
@@ -457,6 +458,7 @@ export const useComponentManagement = ({
       useAppLogStore
         .getState()
         .log('warn', `Rename component "${oldName}" → "${newName}" failed: ${message}`);
+      return false;
     } finally {
       setRenamingComponent(false);
     }
@@ -489,12 +491,14 @@ export const useComponentManagement = ({
   const handleRenameView = async (
     viewName: string,
     newSlug: string
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     const newName = viewNameForPage(newSlug);
-    await handleRenameComponent(viewName, newName);
+    // A failed rename leaves the route alone: it still names the old view.
+    if (!(await handleRenameComponent(viewName, newName))) return false;
     // After the view moved, not before: the route should point at a
     // folder that exists by the time anything reads it.
     await renameRouteFor?.(viewName, newName);
+    return true;
   };
 
   const requestConvertPageToView = (pageName: string): void => {

@@ -164,6 +164,7 @@ export const parseProjectConfig = (raw) => {
         ? [...DEFAULT_BREAKPOINTS]
         : parseBreakpoints(obj['breakpoints']);
     const componentCanvas = parseComponentCanvas(obj['componentCanvas']);
+    const pageLayout = parsePageLayout(obj['pageLayout']);
     // Prefer the explicit per-breakpoint map; otherwise migrate a legacy
     // `canvasOverflowHidden: true` into a desktop-keyed entry so existing
     // projects don't lose the setting.
@@ -194,9 +195,51 @@ export const parseProjectConfig = (raw) => {
         ...(scampMigrationDismissed ? { scampMigrationDismissed: true } : {}),
         ...(snapshotAutoSave === false ? { snapshotAutoSave: false } : {}),
         ...(componentCanvas ? { componentCanvas } : {}),
+        ...(pageLayout ? { pageLayout } : {}),
         ...(isValidColor(cardBackground) ? { cardBackground } : {}),
         ...(state ? { state } : {}),
     };
+};
+/**
+ * Read `pageLayout`, keeping what's well-formed: a slug or group name
+ * appears once (first wins), and anything else is dropped rather than
+ * failing the whole config.
+ */
+export const parsePageLayout = (raw) => {
+    if (!Array.isArray(raw))
+        return undefined;
+    const seen = new Set();
+    const groups = new Set();
+    /** The slug, the first time it's seen; otherwise null. */
+    const claim = (slug) => {
+        if (typeof slug !== 'string' || slug.length === 0 || seen.has(slug))
+            return null;
+        seen.add(slug);
+        return slug;
+    };
+    const out = [];
+    for (const entry of raw) {
+        if (!entry || typeof entry !== 'object')
+            continue;
+        const e = entry;
+        const group = e['group'];
+        if ('page' in e) {
+            const page = claim(e['page']);
+            if (page !== null)
+                out.push({ page });
+        }
+        else if (typeof group === 'string' && group.trim().length > 0 && !groups.has(group)) {
+            groups.add(group);
+            const pages = [];
+            for (const slug of Array.isArray(e['pages']) ? e['pages'] : []) {
+                const page = claim(slug);
+                if (page !== null)
+                    pages.push(page);
+            }
+            out.push({ group, pages });
+        }
+    }
+    return out;
 };
 /** Serialize a `ProjectConfig` to its on-disk JSON form. */
 export const serializeProjectConfig = (config) => {

@@ -24,6 +24,16 @@ release time.
 
 ### Unreleased
 
+**Added**
+
+- **Group pages in the Pages list.** Click **+ New group**, then drag
+  pages into it, or right-click a page and select **Move to** a group.
+  Drag pages and groups into any order, and collapse a group to keep a
+  big project scannable. Groups change only the list: a page's files,
+  route, and code are the same wherever it sits. The groups are saved in
+  `scamp.config.json`, and collapsed groups are remembered on your
+  computer.
+
 **Changed**
 
 - **Scamp keeps saving while an agent is open in its terminal.** Scamp

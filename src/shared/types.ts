@@ -339,6 +339,13 @@ export type ProjectConfig = {
    */
   componentCanvas?: Record<string, ComponentCanvasSize>;
   /**
+   * The Pages list's order and groups, top level first. Absent until the
+   * user groups or reorders: the list is then Home first, then by slug.
+   * Purely organizational — no page file, route, or output depends on it.
+   * see docs/plans/page-groups-plan.md
+   */
+  pageLayout?: PageLayoutEntry[];
+  /**
    * Background color of this project's CARD on the Start Screen — distinct
    * from `artboardBackground` (the canvas backdrop). Lets users tint a
    * card to track status at a glance. Absent = the default card background.
@@ -361,6 +368,9 @@ export const DEFAULT_BREAKPOINTS: Breakpoint[] = [
   { id: 'tablet', label: 'Tablet', width: 768 },
   { id: 'mobile', label: 'Mobile', width: 390 },
 ];
+
+/** One top-level row of the Pages list: a page by slug, or a named group of pages. */
+export type PageLayoutEntry = { page: string } | { group: string; pages: string[] };
 
 export const DEFAULT_PROJECT_CONFIG: ProjectConfig = {
   artboardBackground: '#0f0f0f',

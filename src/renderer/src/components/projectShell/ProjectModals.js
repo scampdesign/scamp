@@ -11,11 +11,11 @@ import { ElementContextMenu } from '../ElementContextMenu';
  * detach). Purely presentational — state + handlers come from the page /
  * component / instance-flow hooks via props.
  */
-export const ProjectModals = ({ components, instanceFlows, pageMenu, buildMenuItems, closePageMenu, deletingPageName, deletePageError, handleDeletePage, setDeletingPageName, setDeletePageError, componentMenu, closeComponentMenu, setComponentEdit, setComponentEditError, requestDeleteComponent, deletingComponent, componentDeleteBusy, handleConfirmDeleteComponent, setDeletingComponent, convertingPage, setConvertingPage, convertPageBusy, convertPageError, handleConfirmConvertPage, startRenameView, }) => {
+export const ProjectModals = ({ components, instanceFlows, pageMenu, buildMenuItems, moveItemsFor, closePageMenu, deletingPageName, deletePageError, handleDeletePage, setDeletingPageName, setDeletePageError, componentMenu, closeComponentMenu, setComponentEdit, setComponentEditError, requestDeleteComponent, deletingComponent, componentDeleteBusy, handleConfirmDeleteComponent, setDeletingComponent, convertingPage, setConvertingPage, convertPageBusy, convertPageError, handleConfirmConvertPage, startRenameView, }) => {
     // Local binding so the `!== null` guard narrows it for the dialog's
     // onConfirm closure (a property access wouldn't narrow).
     const convertElementId = instanceFlows.convertElementId;
-    return (_jsxs(_Fragment, { children: [pageMenu && (_jsx(PageContextMenu, { x: pageMenu.x, y: pageMenu.y, items: buildMenuItems(pageMenu.pageName), onClose: closePageMenu })), componentMenu && (_jsx(PageContextMenu, { x: componentMenu.x, y: componentMenu.y, items: [
+    return (_jsxs(_Fragment, { children: [pageMenu && (_jsx(PageContextMenu, { x: pageMenu.x, y: pageMenu.y, items: [...buildMenuItems(pageMenu.pageName), ...moveItemsFor(pageMenu.pageName)], onClose: closePageMenu })), componentMenu && (_jsx(PageContextMenu, { x: componentMenu.x, y: componentMenu.y, items: [
                     {
                         label: 'Rename…',
                         onSelect: () => {
@@ -32,6 +32,7 @@ export const ProjectModals = ({ components, instanceFlows, pageMenu, buildMenuIt
                         destructive: true,
                         onSelect: () => requestDeleteComponent(componentMenu.componentName),
                     },
+                    ...(componentMenu.kind === 'view' ? moveItemsFor(viewSlugFor(componentMenu.componentName)) : []),
                 ], onClose: closeComponentMenu })), _jsx(ElementContextMenu, {}), deletingPageName && (_jsx(ConfirmDialog, { title: `Delete page "${deletingPageName}"?`, message: `This will remove ${deletingPageName}.tsx and ${deletingPageName}.module.css from your project folder. This cannot be undone.`, confirmLabel: "Delete", cancelLabel: "Cancel", variant: "destructive", error: deletePageError, onConfirm: () => void handleDeletePage(deletingPageName), onCancel: () => {
                     setDeletingPageName(null);
                     setDeletePageError(null);

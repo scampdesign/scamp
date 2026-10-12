@@ -13,7 +13,7 @@ type Props = {
     setComponentEdit: Dispatch<SetStateAction<ComponentEdit>>;
     setComponentEditError: Dispatch<SetStateAction<string | null>>;
     handleAddComponent: (name: string, kind: ComponentKind) => Promise<void>;
-    handleRenameComponent: (oldName: string, newName: string) => Promise<void>;
+    handleRenameComponent: (oldName: string, newName: string) => Promise<boolean>;
     openComponent: (name: string, fromPage: string | null) => void;
     openComponentMenu: (e: ReactMouseEvent, componentName: string) => void;
 };

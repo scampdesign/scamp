@@ -1,6 +1,7 @@
 import type {
   Breakpoint,
   ComponentCanvasSize,
+  PageLayoutEntry,
   ProjectConfig,
 } from './types';
 import {
@@ -206,6 +207,7 @@ export const parseProjectConfig = (raw: string | null): ProjectConfig => {
       ? [...DEFAULT_BREAKPOINTS]
       : parseBreakpoints(obj['breakpoints']);
   const componentCanvas = parseComponentCanvas(obj['componentCanvas']);
+  const pageLayout = parsePageLayout(obj['pageLayout']);
   // Prefer the explicit per-breakpoint map; otherwise migrate a legacy
   // `canvasOverflowHidden: true` into a desktop-keyed entry so existing
   // projects don't lose the setting.
@@ -239,9 +241,46 @@ export const parseProjectConfig = (raw: string | null): ProjectConfig => {
     ...(scampMigrationDismissed ? { scampMigrationDismissed: true } : {}),
     ...(snapshotAutoSave === false ? { snapshotAutoSave: false } : {}),
     ...(componentCanvas ? { componentCanvas } : {}),
+    ...(pageLayout ? { pageLayout } : {}),
     ...(isValidColor(cardBackground) ? { cardBackground } : {}),
     ...(state ? { state } : {}),
   };
+};
+
+/**
+ * Read `pageLayout`, keeping what's well-formed: a slug or group name
+ * appears once (first wins), and anything else is dropped rather than
+ * failing the whole config.
+ */
+export const parsePageLayout = (raw: unknown): PageLayoutEntry[] | undefined => {
+  if (!Array.isArray(raw)) return undefined;
+  const seen = new Set<string>();
+  const groups = new Set<string>();
+  /** The slug, the first time it's seen; otherwise null. */
+  const claim = (slug: unknown): string | null => {
+    if (typeof slug !== 'string' || slug.length === 0 || seen.has(slug)) return null;
+    seen.add(slug);
+    return slug;
+  };
+  const out: PageLayoutEntry[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const e = entry as Record<string, unknown>;
+    const group = e['group'];
+    if ('page' in e) {
+      const page = claim(e['page']);
+      if (page !== null) out.push({ page });
+    } else if (typeof group === 'string' && group.trim().length > 0 && !groups.has(group)) {
+      groups.add(group);
+      const pages: string[] = [];
+      for (const slug of Array.isArray(e['pages']) ? e['pages'] : []) {
+        const page = claim(slug);
+        if (page !== null) pages.push(page);
+      }
+      out.push({ group, pages });
+    }
+  }
+  return out;
 };
 
 /** Serialize a `ProjectConfig` to its on-disk JSON form. */

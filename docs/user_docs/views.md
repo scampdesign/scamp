@@ -58,6 +58,37 @@ In a Next.js or Scamp framework project, this creates the view
 `views/AboutUs/` and, in Next.js, the wrapper page at `app/about-us/`.
 Legacy projects keep creating plain pages.
 
+## Group pages in the list
+
+Groups keep a long **Pages** list tidy. They change only the list: a
+page's files, route, and generated code stay the same wherever it sits.
+
+To create a group:
+
+1. At the bottom of the **Pages** list, click **+ New group**.
+2. Type a name, such as `Marketing`, and press Enter.
+
+To put a page in a group, drag it onto the group's name. You can also
+right-click the page and select **Move to Marketing**. To take it back
+out, drag it next to a page outside the group, or select **Move to top
+level**.
+
+Drag pages and groups to put them in any order, Home included. Click a
+group's name to collapse or expand it. A dot on a collapsed group means
+the page you have open is inside it.
+
+Right-click a group's name for more:
+
+- **Add page here** creates a page inside the group.
+- **Rename group…** changes its name.
+- **Delete group** removes the group and keeps its pages, which move to
+  the top of the list where the group was.
+
+Scamp saves the groups and their order in `scamp.config.json`, so they
+travel with the project. Whether a group is collapsed is saved on your
+computer only. A page that Scamp hasn't placed yet, such as one an agent
+added, appears at the end of the list.
+
 ## Convert a page to a view
 
 1. In the **Pages** list, right-click a page and select **Convert to

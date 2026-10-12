@@ -47,12 +47,13 @@ export const usePageManagement = ({ project, onProjectChange, activePageName, se
             try {
                 await onCreatePageAsView(name);
                 resetPageEdit();
+                return true;
             }
             catch (e) {
                 setPageEditError(errorMessage(e));
                 setPageEditBusy(false);
+                return false;
             }
-            return;
         }
         try {
             const newPage = await window.scamp.createPage({
@@ -71,10 +72,12 @@ export const usePageManagement = ({ project, onProjectChange, activePageName, se
             }));
             setActivePageName(newPage.name);
             resetPageEdit();
+            return true;
         }
         catch (e) {
             setPageEditError(errorMessage(e));
             setPageEditBusy(false);
+            return false;
         }
     };
     const handleDuplicatePage = async (sourcePageName, newName) => {
@@ -92,10 +95,12 @@ export const usePageManagement = ({ project, onProjectChange, activePageName, se
             });
             setActivePageName(newPage.name);
             resetPageEdit();
+            return true;
         }
         catch (e) {
             setPageEditError(errorMessage(e));
             setPageEditBusy(false);
+            return false;
         }
     };
     const handleRenamePage = async (oldName, newName) => {
@@ -132,10 +137,12 @@ export const usePageManagement = ({ project, onProjectChange, activePageName, se
                 pageName: newName,
             }, useCanvasStore.getState().elements);
             resetPageEdit();
+            return true;
         }
         catch (e) {
             setPageEditError(errorMessage(e));
             setPageEditBusy(false);
+            return false;
         }
     };
     const handleDeletePage = async (name) => {

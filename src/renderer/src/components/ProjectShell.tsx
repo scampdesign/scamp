@@ -22,6 +22,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import type { PreviewOpenArgs, ProjectData } from '@shared/types';
 import { viewSlugFor } from '@shared/templates';
 import { componentKindOf } from '@shared/types';
+import { movePageToGroup, moveTargets, reconcileLayout } from '@lib/pageLayout';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useIsSignedIn } from '@store/authSlice';
 import { PropertiesPanel } from './PropertiesPanel';
@@ -106,7 +107,7 @@ export const ProjectShell = ({
   // Per-project config (scamp.config.json) + its canvas-store breakpoint
   // mirror, owned by the hook. Defaults render immediately so the canvas
   // doesn't flash a wrong background while the first read is in flight.
-  const { projectConfig, handleProjectConfigChange } = useProjectConfig(
+  const { projectConfig, handleProjectConfigChange, handlePageLayoutChange } = useProjectConfig(
     project.path
   );
   const [showProjectSettings, setShowProjectSettings] = useState(false);
@@ -514,6 +515,9 @@ export const ProjectShell = ({
           {sidebarSection === 'pages' && (
             <>
           <PageSidebar
+            projectPath={project.path}
+            pageLayout={projectConfig.pageLayout}
+            onPageLayoutChange={handlePageLayoutChange}
             pages={project.pages}
             views={project.components.filter((c) => componentKindOf(c) === 'view')}
             existingPageNames={existingPageNames}
@@ -533,8 +537,9 @@ export const ProjectShell = ({
             openView={(name) => openComponent(name, null, 'view')}
             openViewMenu={openComponentMenu}
             handleRenameView={async (name, slug) => {
-              await handleRenameView(name, slug);
+              const ok = await handleRenameView(name, slug);
               resetPageEdit();
+              return ok;
             }}
             persistActiveSource={persistActiveSource}
             setActiveComponentState={setActiveComponentState}
@@ -713,6 +718,17 @@ export const ProjectShell = ({
         instanceFlows={instanceFlows}
         pageMenu={pageMenu}
         buildMenuItems={buildMenuItems}
+        moveItemsFor={(slug) => {
+          const slugs = [
+            ...project.pages.map((p) => p.name),
+            ...project.components.filter((c) => componentKindOf(c) === 'view').map((c) => viewSlugFor(c.name)),
+          ];
+          const layout = reconcileLayout(slugs, projectConfig.pageLayout);
+          return moveTargets(layout, slug).map(({ label, group }) => ({
+            label,
+            onSelect: () => handlePageLayoutChange(() => movePageToGroup(layout, slug, group)),
+          }));
+        }}
         closePageMenu={closePageMenu}
         deletingPageName={deletingPageName}
         deletePageError={deletePageError}

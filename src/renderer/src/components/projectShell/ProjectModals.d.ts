@@ -8,6 +8,8 @@ type Props = {
     instanceFlows: UseInstanceFlows;
     pageMenu: PageMenuState | null;
     buildMenuItems: (pageName: string) => PageMenuItem[];
+    /** "Move to <group>" entries for a page or view, by its slug. */
+    moveItemsFor: (slug: string) => PageMenuItem[];
     closePageMenu: () => void;
     deletingPageName: string | null;
     deletePageError: string | null;
@@ -38,5 +40,5 @@ type Props = {
  * detach). Purely presentational — state + handlers come from the page /
  * component / instance-flow hooks via props.
  */
-export declare const ProjectModals: ({ components, instanceFlows, pageMenu, buildMenuItems, closePageMenu, deletingPageName, deletePageError, handleDeletePage, setDeletingPageName, setDeletePageError, componentMenu, closeComponentMenu, setComponentEdit, setComponentEditError, requestDeleteComponent, deletingComponent, componentDeleteBusy, handleConfirmDeleteComponent, setDeletingComponent, convertingPage, setConvertingPage, convertPageBusy, convertPageError, handleConfirmConvertPage, startRenameView, }: Props) => JSX.Element;
+export declare const ProjectModals: ({ components, instanceFlows, pageMenu, buildMenuItems, moveItemsFor, closePageMenu, deletingPageName, deletePageError, handleDeletePage, setDeletingPageName, setDeletePageError, componentMenu, closeComponentMenu, setComponentEdit, setComponentEditError, requestDeleteComponent, deletingComponent, componentDeleteBusy, handleConfirmDeleteComponent, setDeletingComponent, convertingPage, setConvertingPage, convertPageBusy, convertPageError, handleConfirmConvertPage, startRenameView, }: Props) => JSX.Element;
 export {};
