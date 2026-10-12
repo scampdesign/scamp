@@ -43,6 +43,11 @@ export declare const insertPageAfter: (layout: ReadonlyArray<PageLayoutEntry>, s
  * Slugs not in the layout are ignored; with none left, nothing changes.
  */
 export declare const groupPages: (layout: ReadonlyArray<PageLayoutEntry>, slugs: ReadonlyArray<string>, name: string) => PageLayoutEntry[];
+/**
+ * The pages from `from` to `to`, inclusive, in `order` — either way round.
+ * An end that isn't in `order` gives just `to`, or nothing if neither is.
+ */
+export declare const pagesBetween: (order: ReadonlyArray<string>, from: string, to: string) => string[];
 export declare const addGroup: (layout: ReadonlyArray<PageLayoutEntry>, name: string) => PageLayoutEntry[];
 export declare const renameGroup: (layout: ReadonlyArray<PageLayoutEntry>, from: string, to: string) => PageLayoutEntry[];
 /** Deleting a group keeps its pages: they move to the top level where it was. */

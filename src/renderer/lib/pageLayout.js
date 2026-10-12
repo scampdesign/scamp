@@ -104,6 +104,19 @@ export const groupPages = (layout, slugs, name) => {
     }
     return out;
 };
+/**
+ * The pages from `from` to `to`, inclusive, in `order` — either way round.
+ * An end that isn't in `order` gives just `to`, or nothing if neither is.
+ */
+export const pagesBetween = (order, from, to) => {
+    const a = order.indexOf(from);
+    const b = order.indexOf(to);
+    if (b === -1)
+        return [];
+    if (a === -1)
+        return [to];
+    return order.slice(Math.min(a, b), Math.max(a, b) + 1);
+};
 export const addGroup = (layout, name) => [
     ...layout,
     { group: name, pages: [] },

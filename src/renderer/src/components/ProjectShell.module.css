@@ -427,6 +427,8 @@ font-size: 12px;
 
 .pageList {
   list-style: none;
+  /* Shift+click picks pages; without this it also selected their text. */
+  user-select: none;
   margin: 0;
   padding: 0;
   display: flex;

@@ -10,6 +10,7 @@ import {
   moveRow,
   moveTargets,
   nextGroupName,
+  pagesBetween,
   reconcileLayout,
   removeGroup,
   removePage,
@@ -217,5 +218,20 @@ describe('groupPages', () => {
     expect(groupPages(LAYOUT, ['nope', 'blog'], 'One')).toContainEqual({ group: 'One', pages: ['blog'] });
     expect(groupPages(LAYOUT, ['nope'], 'None')).toEqual(LAYOUT);
     expect(groupPages(LAYOUT, [], 'None')).toEqual(LAYOUT);
+  });
+});
+
+describe('pagesBetween', () => {
+  const order = ['home', 'about', 'pricing', 'blog', 'login'];
+
+  it('gives the run between two pages, inclusive, in either direction', () => {
+    expect(pagesBetween(order, 'about', 'blog')).toEqual(['about', 'pricing', 'blog']);
+    expect(pagesBetween(order, 'blog', 'about')).toEqual(['about', 'pricing', 'blog']);
+    expect(pagesBetween(order, 'home', 'home')).toEqual(['home']);
+  });
+
+  it('falls back to the clicked page when the anchor is gone, and to nothing when neither is there', () => {
+    expect(pagesBetween(order, 'deleted', 'blog')).toEqual(['blog']);
+    expect(pagesBetween(order, 'about', 'hidden')).toEqual([]);
   });
 });

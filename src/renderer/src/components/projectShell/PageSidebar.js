@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, } from 'react';
 import { viewNameForPage, viewSlugFor } from '@shared/templates';
-import { addGroup, groupNameError, groupPages, insertPageAfter, movePageToGroup, moveRow, nextGroupName, reconcileLayout, removeGroup, renameGroup, renamePage, } from '@lib/pageLayout';
+import { addGroup, groupNameError, groupPages, insertPageAfter, movePageToGroup, moveRow, nextGroupName, pagesBetween, reconcileLayout, removeGroup, renameGroup, renamePage, } from '@lib/pageLayout';
 import { flushPendingPageWrite } from '../../syncBridge';
 import { PageContextMenu } from '../PageContextMenu';
 import { PageNameInput } from '../PageNameInput';
@@ -56,6 +56,8 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
     /** Pages picked with Cmd/Ctrl+click, to group together. */
     const [selected, setSelected] = useState(() => new Set());
     const [selectionMenu, setSelectionMenu] = useState(null);
+    /** Where a Shift+click range starts: the last page clicked or Cmd+clicked. */
+    const [anchor, setAnchor] = useState(null);
     const activeSlug = (() => {
         for (const row of rows.values()) {
             if (row.kind === 'view' ? activeComponent?.name === row.view.name : activeComponent === null && activePageName === row.page.name) {
@@ -64,6 +66,30 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
         }
         return null;
     })();
+    /** Pages in the order the list shows them; a collapsed group's are hidden. */
+    const visibleOrder = layout.flatMap((e) => ('page' in e ? [e.page] : collapsed.has(e.group) ? [] : e.pages));
+    /**
+     * Picking with a modifier. Shift+click picks the run from the anchor (or
+     * the open page) to here; Cmd/Ctrl+click adds or removes one page. Returns
+     * false for a plain click, which opens the page as before.
+     */
+    const handlePick = (e, slug) => {
+        if (e.shiftKey) {
+            setSelected(new Set(pagesBetween(visibleOrder, anchor ?? activeSlug ?? slug, slug)));
+        }
+        else if (e.metaKey || e.ctrlKey) {
+            toggleSelected(slug);
+            setAnchor(slug);
+        }
+        else {
+            setSelected(new Set());
+            setAnchor(slug);
+            return false;
+        }
+        // Focused, so Cmd+G lands on the list's handler.
+        e.currentTarget.focus();
+        return true;
+    };
     /** Cmd/Ctrl+click: add or remove a page. The first one also picks up the open page. */
     const toggleSelected = (slug) => {
         setSelected((prev) => {
@@ -191,13 +217,8 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
             }
             const isActive = activeComponent !== null && activeComponent.name === view.name;
             return (_jsx("li", { children: _jsx("button", { className: `${styles.pageButton} ${isActive ? styles.pageActive : ''} ${selected.has(row.slug) ? styles.pageSelected : ''} ${dropping}`, "aria-pressed": selected.has(row.slug), onClick: (e) => {
-                        if (e.metaKey || e.ctrlKey) {
-                            toggleSelected(row.slug);
-                            // Focused, so Cmd+G lands on the list's handler.
-                            e.currentTarget.focus();
+                        if (handlePick(e, row.slug))
                             return;
-                        }
-                        setSelected(new Set());
                         if (isEditingPage || isActive)
                             return;
                         openView(view.name);
@@ -235,13 +256,8 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
                     activePageName === page.name
                     ? styles.pageActive
                     : ''} ${selected.has(page.name) ? styles.pageSelected : ''} ${dropping}`, "aria-pressed": selected.has(page.name), onClick: (e) => {
-                    if (e.metaKey || e.ctrlKey) {
-                        toggleSelected(page.name);
-                        // Focused, so Cmd+G lands on the list's handler.
-                        e.currentTarget.focus();
+                    if (handlePick(e, page.name))
                         return;
-                    }
-                    setSelected(new Set());
                     if (isEditingPage)
                         return;
                     // Clicking the same page that's already

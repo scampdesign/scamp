@@ -173,3 +173,26 @@ test('right-clicking a picked page offers to group the selection', async ({ wind
   await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Group', pages: ['about', 'pricing'] });
   await expect(pageSidebarItem(window, 'about')).toHaveAttribute('aria-pressed', 'false');
 });
+
+test('Shift+click picks the run from the last clicked page, and Cmd+G groups it', async ({ window, project }) => {
+  await expect(pageRoot(window)).toBeVisible();
+  await openPagesSection(window);
+  // A plain click opens a page and sets where a Shift+click run starts.
+  await pageSidebarItem(window, 'about').click();
+  await expect(window.getByTitle('Select page root')).toHaveText('about');
+  await pageSidebarItem(window, 'home').click({ modifiers: ['Shift'] });
+  for (const slug of ['home', 'about']) {
+    await expect(pageSidebarItem(window, slug)).toHaveAttribute('aria-pressed', 'true');
+  }
+  await expect(pageSidebarItem(window, 'pricing')).toHaveAttribute('aria-pressed', 'false');
+  // Shift+click picks; it doesn't open.
+  await expect(window.getByTitle('Select page root')).toHaveText('about');
+
+  // A second Shift+click replaces the run, from the same start.
+  await pageSidebarItem(window, 'pricing').click({ modifiers: ['Shift'] });
+  await expect(pageSidebarItem(window, 'home')).toHaveAttribute('aria-pressed', 'false');
+
+  await window.keyboard.press('ControlOrMeta+g');
+  await window.getByLabel('Group name').press('Enter');
+  await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Group', pages: ['about', 'pricing'] });
+});

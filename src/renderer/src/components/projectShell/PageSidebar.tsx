@@ -16,6 +16,7 @@ import {
   movePageToGroup,
   moveRow,
   nextGroupName,
+  pagesBetween,
   reconcileLayout,
   removeGroup,
   renameGroup,
@@ -152,6 +153,8 @@ export const PageSidebar = ({
   /** Pages picked with Cmd/Ctrl+click, to group together. */
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
+  /** Where a Shift+click range starts: the last page clicked or Cmd+clicked. */
+  const [anchor, setAnchor] = useState<string | null>(null);
 
   const activeSlug = (() => {
     for (const row of rows.values()) {
@@ -161,6 +164,30 @@ export const PageSidebar = ({
     }
     return null;
   })();
+
+  /** Pages in the order the list shows them; a collapsed group's are hidden. */
+  const visibleOrder = layout.flatMap((e) => ('page' in e ? [e.page] : collapsed.has(e.group) ? [] : e.pages));
+
+  /**
+   * Picking with a modifier. Shift+click picks the run from the anchor (or
+   * the open page) to here; Cmd/Ctrl+click adds or removes one page. Returns
+   * false for a plain click, which opens the page as before.
+   */
+  const handlePick = (e: ReactMouseEvent<HTMLButtonElement>, slug: string): boolean => {
+    if (e.shiftKey) {
+      setSelected(new Set(pagesBetween(visibleOrder, anchor ?? activeSlug ?? slug, slug)));
+    } else if (e.metaKey || e.ctrlKey) {
+      toggleSelected(slug);
+      setAnchor(slug);
+    } else {
+      setSelected(new Set());
+      setAnchor(slug);
+      return false;
+    }
+    // Focused, so Cmd+G lands on the list's handler.
+    e.currentTarget.focus();
+    return true;
+  };
 
   /** Cmd/Ctrl+click: add or remove a page. The first one also picks up the open page. */
   const toggleSelected = (slug: string): void => {
@@ -327,13 +354,7 @@ export const PageSidebar = ({
             } ${dropping}`}
             aria-pressed={selected.has(row.slug)}
             onClick={(e) => {
-              if (e.metaKey || e.ctrlKey) {
-                toggleSelected(row.slug);
-                // Focused, so Cmd+G lands on the list's handler.
-                e.currentTarget.focus();
-                return;
-              }
-              setSelected(new Set());
+              if (handlePick(e, row.slug)) return;
               if (isEditingPage || isActive) return;
               openView(view.name);
             }}
@@ -415,13 +436,7 @@ export const PageSidebar = ({
           } ${selected.has(page.name) ? styles.pageSelected : ''} ${dropping}`}
           aria-pressed={selected.has(page.name)}
           onClick={(e) => {
-            if (e.metaKey || e.ctrlKey) {
-              toggleSelected(page.name);
-              // Focused, so Cmd+G lands on the list's handler.
-              e.currentTarget.focus();
-              return;
-            }
-            setSelected(new Set());
+            if (handlePick(e, page.name)) return;
             if (isEditingPage) return;
             // Clicking the same page that's already
             // active is a no-op for state but we
