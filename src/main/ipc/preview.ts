@@ -12,6 +12,7 @@ import {
   restartDevServer,
   stopDevServer,
 } from '../devServer/devServerManager';
+import { assertInsideActiveProject } from './pathContainment';
 
 type PreviewWindowApi = {
   open: (args: PreviewOpenArgs) => Promise<{ id: number }>;
@@ -32,6 +33,8 @@ export const registerPreviewIpc = (windowApi: PreviewWindowApi): void => {
     // renderer will subscribe to status changes via the IPC channel
     // PreviewStatusChanged; we kick the dev server in parallel so
     // the install / start work begins as soon as possible.
+    // Runs `npm install` and a dev server in this folder.
+    assertInsideActiveProject(args.projectPath);
     const win = await windowApi.open(args);
     void ensureDevServer(args.projectPath);
     return { windowId: win.id };
@@ -58,6 +61,7 @@ export const registerPreviewIpc = (windowApi: PreviewWindowApi): void => {
   });
 
   ipcMain.handle(IPC.PreviewRestart, async (_e, args: PreviewRestartArgs) => {
+    assertInsideActiveProject(args.projectPath);
     await restartDevServer(args.projectPath);
   });
 

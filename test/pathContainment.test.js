@@ -8,7 +8,7 @@ import { resolve } from 'path';
 vi.mock('../src/main/watcher', () => ({ getWatchedPath: () => null }));
 // Dynamic import (matching the other main-side tests) so this main module
 // isn't pulled into the web tsconfig's static file list.
-const { resolveInsideProject } = await import('../src/main/ipc/pathContainment');
+const { resolveInsideProject, allowProjectOpen, assertOpenableFolder } = await import('../src/main/ipc/pathContainment');
 // Tests target `resolveInsideProject`, the pure core (it takes the root
 // explicitly). `assertInsideActiveProject` just sources the root from the
 // watcher and delegates here. Paths are absolute so `path.resolve` is
@@ -42,5 +42,15 @@ describe('resolveInsideProject', () => {
     });
     it('rejects the exact prefix sibling without a separator', () => {
         expect(() => resolveInsideProject(`${ROOT}-evil`, ROOT)).toThrow(/outside the active project/);
+    });
+});
+describe('assertOpenableFolder', () => {
+    it('refuses a folder main never handed out', () => {
+        expect(() => assertOpenableFolder('/home/someone')).toThrow('Choose the project folder');
+    });
+    it('accepts a folder once allowed, however the path is spelled', () => {
+        allowProjectOpen(`${ROOT}-open`);
+        expect(() => assertOpenableFolder(`${ROOT}-open/`)).not.toThrow();
+        expect(() => assertOpenableFolder(`${ROOT}-open/../scamp-project-open`)).not.toThrow();
     });
 });

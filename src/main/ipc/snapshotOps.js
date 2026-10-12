@@ -15,7 +15,12 @@ export const AGENT_EDIT_COLLAPSE_MS = 5000;
 const scampDir = (projectPath) => join(projectPath, '.scamp');
 const snapshotsRoot = (projectPath) => join(scampDir(projectPath), 'snapshots');
 const indexPath = (projectPath) => join(scampDir(projectPath), 'snapshots.json');
-const snapshotDirFor = (projectPath, id) => join(snapshotsRoot(projectPath), id);
+// The id names a folder and arrives from the renderer: no separators, no `..`.
+const snapshotDirFor = (projectPath, id) => {
+    if (!/^[\w-]+$/.test(id))
+        throw new Error(`Invalid snapshot id "${id}".`);
+    return join(snapshotsRoot(projectPath), id);
+};
 // ---- Pure helpers (unit-tested directly) ----
 /** A fresh, collision-resistant snapshot id (also the on-disk folder name). */
 export const snapshotIdFor = () => `snap_${randomUUID().replace(/-/g, '').slice(0, 12)}`;

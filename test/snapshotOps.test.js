@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
-import { AGENT_EDIT_COLLAPSE_MS, createSnapshot, deleteSnapshot, enumerateProjectFiles, formatTriggerLabel, listSnapshots, pruneToLimit, restoreSnapshot, shouldCollapseAgentEdit, snapshotIdFor, SNAPSHOT_LIMIT, } from '../src/main/ipc/snapshotOps';
+import { AGENT_EDIT_COLLAPSE_MS, createSnapshot, deleteSnapshot, enumerateProjectFiles, formatTriggerLabel, listSnapshots, pruneToLimit, readSnapshotPage, restoreSnapshot, shouldCollapseAgentEdit, snapshotIdFor, SNAPSHOT_LIMIT, } from '../src/main/ipc/snapshotOps';
 // --- temp project helpers ---------------------------------------------------
 const tmpRoots = [];
 const makeNextjsProject = async () => {
@@ -245,6 +245,18 @@ describe('deleteSnapshot', () => {
         expect(res.ok).toBe(true);
         expect(await listSnapshots(root)).toEqual([]);
         await expect(fs.access(path.join(root, '.scamp', 'snapshots', snap.id))).rejects.toThrow();
+    });
+    it('refuses an id that climbs out of the snapshots folder, and deletes nothing', async () => {
+        const root = await makeNextjsProject();
+        const res = await deleteSnapshot(root, '../..');
+        expect(res.ok).toBe(false);
+        await expect(fs.access(path.join(root, 'app', 'page.tsx'))).resolves.toBeUndefined();
+    });
+});
+describe('readSnapshotPage', () => {
+    it('refuses an id that climbs out of the snapshots folder', async () => {
+        const root = await makeNextjsProject();
+        await expect(readSnapshotPage(root, '../..', path.join(root, 'app', 'page.tsx'), path.join(root, 'app', 'page.module.css'))).rejects.toThrow('Invalid snapshot id');
     });
 });
 // --- restore ----------------------------------------------------------------

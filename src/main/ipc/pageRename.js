@@ -177,6 +177,9 @@ export const renamePageFiles = async (args, format, onSuppress) => {
     if (!PAGE_NAME_RE.test(args.newPageName)) {
         throw new Error(`Invalid page name "${args.newPageName}". Use alphanumeric and hyphens only.`);
     }
+    if (!PAGE_NAME_RE.test(args.oldPageName)) {
+        throw new Error(`Invalid page name "${args.oldPageName}".`);
+    }
     if (args.oldPageName === args.newPageName) {
         throw new Error('New name is the same as the old one.');
     }

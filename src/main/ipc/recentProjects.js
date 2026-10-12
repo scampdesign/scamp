@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 import { IPC } from '@shared/ipcChannels';
 import { parseRecentStore, upsertRecent, setRecentFormat, removeRecentByPath, } from './recentProjectsOps';
+import { allowProjectOpen } from './pathContainment';
 import { attachCardMeta, mergeProjectsForDisplay } from './projectListOps';
 import { hasProjectThumbnail } from './projectThumbnailOps';
 import { readConfig } from './projectConfigOps';
@@ -78,6 +79,11 @@ const listStartScreenProjects = async () => {
     });
 };
 export const registerRecentProjectsIpc = () => {
-    ipcMain.handle(IPC.ProjectsList, () => listStartScreenProjects());
+    ipcMain.handle(IPC.ProjectsList, async () => {
+        const projects = await listStartScreenProjects();
+        for (const p of projects)
+            allowProjectOpen(p.path);
+        return projects;
+    });
     ipcMain.handle(IPC.RecentProjectsRemove, (_e, args) => removeRecentProject(args.path));
 };

@@ -26,8 +26,11 @@ const snapshotsRoot = (projectPath: string): string =>
   join(scampDir(projectPath), 'snapshots');
 const indexPath = (projectPath: string): string =>
   join(scampDir(projectPath), 'snapshots.json');
-const snapshotDirFor = (projectPath: string, id: string): string =>
-  join(snapshotsRoot(projectPath), id);
+// The id names a folder and arrives from the renderer: no separators, no `..`.
+const snapshotDirFor = (projectPath: string, id: string): string => {
+  if (!/^[\w-]+$/.test(id)) throw new Error(`Invalid snapshot id "${id}".`);
+  return join(snapshotsRoot(projectPath), id);
+};
 
 // ---- Pure helpers (unit-tested directly) ----
 

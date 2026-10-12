@@ -182,6 +182,9 @@ export const duplicatePage = async (
     throw new Error(`A page named "home" already exists.`);
   }
 
+  if (!PAGE_NAME_RE.test(args.sourcePageName)) {
+    throw new Error(`Invalid page name "${args.sourcePageName}".`);
+  }
   const source = pagePathsFor(args.projectPath, args.sourcePageName, format);
   const dest = pagePathsFor(args.projectPath, args.newPageName, format);
 

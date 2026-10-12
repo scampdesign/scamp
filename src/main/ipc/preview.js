@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 import { IPC } from '@shared/ipcChannels';
 import { ensureDevServer, getDevServerStatus, restartDevServer, stopDevServer, } from '../devServer/devServerManager';
+import { assertInsideActiveProject } from './pathContainment';
 /**
  * Register the IPC handlers preview mode needs. Idempotent — safe
  * to call once at app startup.
@@ -14,6 +15,8 @@ export const registerPreviewIpc = (windowApi) => {
         // renderer will subscribe to status changes via the IPC channel
         // PreviewStatusChanged; we kick the dev server in parallel so
         // the install / start work begins as soon as possible.
+        // Runs `npm install` and a dev server in this folder.
+        assertInsideActiveProject(args.projectPath);
         const win = await windowApi.open(args);
         void ensureDevServer(args.projectPath);
         return { windowId: win.id };
@@ -36,6 +39,7 @@ export const registerPreviewIpc = (windowApi) => {
         await stopDevServer(args.projectPath);
     });
     ipcMain.handle(IPC.PreviewRestart, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
         await restartDevServer(args.projectPath);
     });
     ipcMain.handle(IPC.PreviewGetStatus, (_e, args) => {

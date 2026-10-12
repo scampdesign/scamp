@@ -13,6 +13,7 @@ import {
   setRecentFormat,
   removeRecentByPath,
 } from './recentProjectsOps';
+import { allowProjectOpen } from './pathContainment';
 import { attachCardMeta, mergeProjectsForDisplay } from './projectListOps';
 import { hasProjectThumbnail } from './projectThumbnailOps';
 import { readConfig } from './projectConfigOps';
@@ -113,7 +114,11 @@ const listStartScreenProjects = async (): Promise<StartScreenProject[]> => {
 };
 
 export const registerRecentProjectsIpc = (): void => {
-  ipcMain.handle(IPC.ProjectsList, () => listStartScreenProjects());
+  ipcMain.handle(IPC.ProjectsList, async () => {
+    const projects = await listStartScreenProjects();
+    for (const p of projects) allowProjectOpen(p.path);
+    return projects;
+  });
   ipcMain.handle(IPC.RecentProjectsRemove, (_e, args: { path: string }) =>
     removeRecentProject(args.path)
   );

@@ -25,6 +25,7 @@ import { setActiveImportProject } from '../importSourceStore';
 import { ensureProjectConfig } from './projectConfig';
 import { detectProjectFormat } from './projectFormat';
 import { setCachedProjectFormat } from './projectFormatCache';
+import { allowProjectOpen, assertInsideActiveProject, assertOpenableFolder } from './pathContainment';
 import {
   ensureThemeDefaultsIfNeeded,
   ensureTsConfigIfNeeded,
@@ -71,7 +72,10 @@ const chooseFolder = async (): Promise<ChooseFolderResult> => {
     return { canceled: true, path: null };
   }
   const chosen = result.filePaths[0] ?? null;
-  if (chosen !== null) lastProjectDir = dirname(chosen);
+  if (chosen !== null) {
+    lastProjectDir = dirname(chosen);
+    allowProjectOpen(chosen);
+  }
   return { canceled: false, path: chosen };
 };
 
@@ -165,6 +169,7 @@ const createProject = async (args: CreateProjectArgs): Promise<ProjectData> => {
 };
 
 const openProject = async (args: OpenProjectArgs): Promise<ProjectData> => {
+  assertOpenableFolder(args.folderPath);
   const project = await readProject(args.folderPath);
   // Session-open snapshot: capture the project's pre-open on-disk state
   // (whatever changed externally between sessions) BEFORE the canvas
@@ -254,6 +259,12 @@ export const registerProjectIpc = (): void => {
   ipcMain.handle(IPC.ProjectChooseFolder, () => chooseFolder());
   ipcMain.handle(IPC.ProjectCreate, (_e, args: CreateProjectArgs) => createProject(args));
   ipcMain.handle(IPC.ProjectOpen, (_e, args: OpenProjectArgs) => openProject(args));
-  ipcMain.handle(IPC.ProjectRead, (_e, args: OpenProjectArgs) => readProject(args.folderPath));
-  ipcMain.handle(IPC.ProjectMigrate, (_e, args: ProjectMigrateArgs) => migrateProject(args));
+  ipcMain.handle(IPC.ProjectRead, (_e, args: OpenProjectArgs) => {
+    assertInsideActiveProject(args.folderPath);
+    return readProject(args.folderPath);
+  });
+  ipcMain.handle(IPC.ProjectMigrate, (_e, args: ProjectMigrateArgs) => {
+    assertInsideActiveProject(args.projectPath);
+    return migrateProject(args);
+  });
 };

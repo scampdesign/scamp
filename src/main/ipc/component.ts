@@ -9,6 +9,7 @@ import type {
   ComponentWriteThumbnailArgs,
 } from '@shared/types';
 import { cancelPendingWrite, registerPendingWrite } from '../watcher';
+import { assertInsideActiveProject } from './pathContainment';
 import { getProjectFormat } from './projectFormatCache';
 import {
   componentPathsFor,
@@ -30,6 +31,7 @@ import {
  */
 export const registerComponentIpc = (): void => {
   ipcMain.handle(IPC.ComponentCreate, async (_e, args: ComponentCreateArgs) => {
+    assertInsideActiveProject(args.projectPath);
     const format = await getProjectFormat(args.projectPath);
     // Suppress the chokidar `add` broadcast for both files: the
     // renderer's `loadComponent` already has the content via this
@@ -56,24 +58,26 @@ export const registerComponentIpc = (): void => {
     }
   });
   ipcMain.handle(IPC.ComponentDelete, async (_e, args: ComponentDeleteArgs) => {
+    assertInsideActiveProject(args.projectPath);
     const format = await getProjectFormat(args.projectPath);
     return deleteComponent(args, format);
   });
   ipcMain.handle(IPC.ComponentRead, async (_e, args: ComponentReadArgs) => {
+    assertInsideActiveProject(args.projectPath);
     const format = await getProjectFormat(args.projectPath);
     return readComponent(args, format);
   });
   ipcMain.handle(
     IPC.ComponentWriteThumbnail,
     async (_e, args: ComponentWriteThumbnailArgs) => {
-      const format = await getProjectFormat(args.projectPath);
+    const format = await getProjectFormat(args.projectPath);
       return writeComponentThumbnail(args, format);
     }
   );
   ipcMain.handle(
     IPC.ComponentReadThumbnail,
     async (_e, args: ComponentReadThumbnailArgs) => {
-      const format = await getProjectFormat(args.projectPath);
+    const format = await getProjectFormat(args.projectPath);
       return readComponentThumbnail(args, format);
     }
   );

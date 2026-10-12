@@ -179,7 +179,8 @@ export const listRoutes = async (projectPath) => {
 };
 /** A route file's path inside the project, refusing anything outside `routes/`. */
 const routeFilePath = (projectPath, file) => {
-    if (!ROUTE_EXTENSION.test(file) || file.split('/').some((p) => p === '..' || p === '' || p === '.')) {
+    // Backslash and `:` too: on Windows `..\..\x.js` or `C:x.js` would escape.
+    if (!ROUTE_EXTENSION.test(file) || file.includes('\\') || file.split('/').some((p) => p === '..' || p === '' || p === '.' || p.includes(':'))) {
         throw new Error(`"${file}" is not a route file.`);
     }
     return join(projectPath, 'routes', ...file.split('/'));

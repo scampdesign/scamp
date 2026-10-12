@@ -72,6 +72,9 @@ describe('writes', () => {
         expect((await listRoutes(dir)).map((r) => r.path)).toContain('/about');
         await expect(writeRouteFile(dir, 'index.tsx', '')).rejects.toThrow('already exists');
         await expect(writeRouteFile(dir, '../package.json', '')).rejects.toThrow('not a route file');
+        // Separators Windows reads that `/` splitting misses.
+        await expect(writeRouteFile(dir, '..\\..\\x.js', '')).rejects.toThrow('not a route file');
+        await expect(writeRouteFile(dir, 'C:x.js', '')).rejects.toThrow('not a route file');
         await expect(readDevVarsKeys(dir)).resolves.toEqual({ exists: false, keys: [] });
         await fs.writeFile(path.join(dir, '.dev.vars'), '# local\nDATABASE_URL=file:./dev.db\nexport TOKEN=abc\nBROKEN\n', 'utf-8');
         await expect(readDevVarsKeys(dir)).resolves.toEqual({ exists: true, keys: ['DATABASE_URL', 'TOKEN'] });

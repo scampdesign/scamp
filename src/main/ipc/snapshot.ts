@@ -15,6 +15,7 @@ import type {
 } from '@shared/types';
 
 import { designMdPathFor } from './designMdOps';
+import { assertInsideActiveProject } from './pathContainment';
 import { getProjectFormat } from './projectFormatCache';
 import { themePathFor } from './themeOps';
 import { notifyPagesChanged, registerPendingWrite } from '../watcher';
@@ -81,6 +82,7 @@ export const registerSnapshotIpc = (): void => {
   ipcMain.handle(
     IPC.SnapshotCreate,
     async (_e, args: SnapshotCreateArgs): Promise<SnapshotCreateResult> => {
+      assertInsideActiveProject(args.projectPath);
       const format = await getProjectFormat(args.projectPath);
       const snapshot = await createSnapshot(
         args.projectPath,
@@ -95,31 +97,34 @@ export const registerSnapshotIpc = (): void => {
   ipcMain.handle(
     IPC.SnapshotList,
     async (_e, args: SnapshotListArgs): Promise<SnapshotListResult> => {
+      assertInsideActiveProject(args.projectPath);
       return { snapshots: await listSnapshots(args.projectPath) };
     }
   );
 
   ipcMain.handle(
     IPC.SnapshotRestore,
-    async (_e, args: SnapshotRestoreArgs): Promise<SnapshotRestoreResult> =>
-      restoreSnapshotAndReload(args.projectPath, args.snapshotId)
+    async (_e, args: SnapshotRestoreArgs): Promise<SnapshotRestoreResult> => {
+      assertInsideActiveProject(args.projectPath);
+      return restoreSnapshotAndReload(args.projectPath, args.snapshotId);
+    }
   );
 
   ipcMain.handle(
     IPC.SnapshotDelete,
     async (_e, args: SnapshotDeleteArgs): Promise<SnapshotDeleteResult> => {
+      assertInsideActiveProject(args.projectPath);
       return deleteSnapshot(args.projectPath, args.snapshotId);
     }
   );
 
   ipcMain.handle(
     IPC.SnapshotReadPage,
-    async (_e, args: SnapshotReadPageArgs): Promise<SnapshotReadPageResult> =>
-      readSnapshotPage(
-        args.projectPath,
-        args.snapshotId,
-        args.tsxPath,
-        args.cssPath
-      )
+    async (_e, args: SnapshotReadPageArgs): Promise<SnapshotReadPageResult> => {
+      assertInsideActiveProject(args.projectPath);
+      assertInsideActiveProject(args.tsxPath);
+      assertInsideActiveProject(args.cssPath);
+      return readSnapshotPage(args.projectPath, args.snapshotId, args.tsxPath, args.cssPath);
+    }
   );
 };

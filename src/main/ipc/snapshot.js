@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { ipcMain } from 'electron';
 import { IPC } from '@shared/ipcChannels';
 import { designMdPathFor } from './designMdOps';
+import { assertInsideActiveProject } from './pathContainment';
 import { getProjectFormat } from './projectFormatCache';
 import { themePathFor } from './themeOps';
 import { notifyPagesChanged, registerPendingWrite } from '../watcher';
@@ -46,16 +47,27 @@ export const restoreSnapshotAndReload = async (projectPath, snapshotId, options 
  */
 export const registerSnapshotIpc = () => {
     ipcMain.handle(IPC.SnapshotCreate, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
         const format = await getProjectFormat(args.projectPath);
         const snapshot = await createSnapshot(args.projectPath, format, args.trigger, args.label);
         return { snapshot };
     });
     ipcMain.handle(IPC.SnapshotList, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
         return { snapshots: await listSnapshots(args.projectPath) };
     });
-    ipcMain.handle(IPC.SnapshotRestore, async (_e, args) => restoreSnapshotAndReload(args.projectPath, args.snapshotId));
+    ipcMain.handle(IPC.SnapshotRestore, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
+        return restoreSnapshotAndReload(args.projectPath, args.snapshotId);
+    });
     ipcMain.handle(IPC.SnapshotDelete, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
         return deleteSnapshot(args.projectPath, args.snapshotId);
     });
-    ipcMain.handle(IPC.SnapshotReadPage, async (_e, args) => readSnapshotPage(args.projectPath, args.snapshotId, args.tsxPath, args.cssPath));
+    ipcMain.handle(IPC.SnapshotReadPage, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
+        assertInsideActiveProject(args.tsxPath);
+        assertInsideActiveProject(args.cssPath);
+        return readSnapshotPage(args.projectPath, args.snapshotId, args.tsxPath, args.cssPath);
+    });
 };

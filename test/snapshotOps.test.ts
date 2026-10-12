@@ -11,6 +11,7 @@ import {
   formatTriggerLabel,
   listSnapshots,
   pruneToLimit,
+  readSnapshotPage,
   restoreSnapshot,
   shouldCollapseAgentEdit,
   snapshotIdFor,
@@ -351,6 +352,22 @@ describe('deleteSnapshot', () => {
     await expect(
       fs.access(path.join(root, '.scamp', 'snapshots', snap!.id))
     ).rejects.toThrow();
+  });
+
+  it('refuses an id that climbs out of the snapshots folder, and deletes nothing', async () => {
+    const root = await makeNextjsProject();
+    const res = await deleteSnapshot(root, '../..');
+    expect(res.ok).toBe(false);
+    await expect(fs.access(path.join(root, 'app', 'page.tsx'))).resolves.toBeUndefined();
+  });
+});
+
+describe('readSnapshotPage', () => {
+  it('refuses an id that climbs out of the snapshots folder', async () => {
+    const root = await makeNextjsProject();
+    await expect(
+      readSnapshotPage(root, '../..', path.join(root, 'app', 'page.tsx'), path.join(root, 'app', 'page.module.css'))
+    ).rejects.toThrow('Invalid snapshot id');
   });
 });
 

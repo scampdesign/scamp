@@ -49,7 +49,7 @@ import { setDevServerLogSink, stopAllDevServers } from './devServer/devServerMan
 import { initWatcher, disposeWatcher, getWatchedPath } from './watcher';
 import { initMcp, stopMcp } from './mcp/lifecycle';
 import { disposeImportSources } from './importSourceStore';
-import { resolveInsideProject } from './ipc/pathContainment';
+import { allowProjectOpen, resolveInsideProject } from './ipc/pathContainment';
 import {
   initSentryIfOptedIn,
   setSentryEnabled,
@@ -123,6 +123,7 @@ if (initialInstall?.created === true) {
 if (app.isPackaged) fixPathFromLoginShell();
 
 const registerTestIpc = (): void => {
+  if (TEST_BOOTSTRAP.autoOpenProjectPath !== null) allowProjectOpen(TEST_BOOTSTRAP.autoOpenProjectPath);
   ipcMain.handle(IPC.TestGetBootstrap, (): TestBootstrap => TEST_BOOTSTRAP);
 };
 
@@ -218,7 +219,10 @@ const createWindow = (): void => {
   });
 
   win.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url);
+    // Web, mail and phone links only: the OS would also launch `file:` or `smb:` targets.
+    if (/^(https?|mailto|tel):/i.test(details.url)) {
+      void shell.openExternal(details.url);
+    }
     return { action: 'deny' };
   });
 

@@ -40,3 +40,17 @@ export const assertInsideActiveProject = (inputPath) => {
     }
     return resolveInsideProject(inputPath, root);
 };
+/**
+ * Folders main itself handed out: the folder picker, the start screen's
+ * list, a test's auto-open. ProjectOpen accepts no other, so a renderer
+ * bug can't move the project root — and every check above — to `~`.
+ */
+const openableFolders = new Set();
+export const allowProjectOpen = (folderPath) => {
+    openableFolders.add(resolve(folderPath));
+};
+export const assertOpenableFolder = (folderPath) => {
+    if (!openableFolders.has(resolve(folderPath))) {
+        throw new Error('Choose the project folder to open it.');
+    }
+};

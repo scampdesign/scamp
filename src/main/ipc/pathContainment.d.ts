@@ -25,3 +25,5 @@ export declare const resolveInsideProject: (inputPath: string, projectRoot: stri
  * is expected to live inside the project.
  */
 export declare const assertInsideActiveProject: (inputPath: string) => string;
+export declare const allowProjectOpen: (folderPath: string) => void;
+export declare const assertOpenableFolder: (folderPath: string) => void;

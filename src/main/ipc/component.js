@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { ipcMain } from 'electron';
 import { IPC } from '@shared/ipcChannels';
 import { cancelPendingWrite, registerPendingWrite } from '../watcher';
+import { assertInsideActiveProject } from './pathContainment';
 import { getProjectFormat } from './projectFormatCache';
 import { componentPathsFor, createComponent, deleteComponent, readComponent, readComponentThumbnail, writeComponentThumbnail, } from './componentOps';
 /**
@@ -15,6 +16,7 @@ import { componentPathsFor, createComponent, deleteComponent, readComponent, rea
  */
 export const registerComponentIpc = () => {
     ipcMain.handle(IPC.ComponentCreate, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
         const format = await getProjectFormat(args.projectPath);
         // Suppress the chokidar `add` broadcast for both files: the
         // renderer's `loadComponent` already has the content via this
@@ -38,10 +40,12 @@ export const registerComponentIpc = () => {
         }
     });
     ipcMain.handle(IPC.ComponentDelete, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
         const format = await getProjectFormat(args.projectPath);
         return deleteComponent(args, format);
     });
     ipcMain.handle(IPC.ComponentRead, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
         const format = await getProjectFormat(args.projectPath);
         return readComponent(args, format);
     });

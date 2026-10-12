@@ -8,6 +8,7 @@ import type {
   ExportHtmlResult,
 } from '@shared/types';
 import { assetsDirFor } from './imageOps';
+import { assertInsideActiveProject } from './pathContainment';
 import { getProjectFormat } from './projectFormatCache';
 import {
   candidateFolderName,
@@ -87,6 +88,7 @@ const resolveTargetDir = async (
 
 const exportHtml = async (args: ExportHtmlArgs): Promise<ExportHtmlResult> => {
   try {
+    assertInsideActiveProject(args.projectPath);
     const parentDir = path.resolve(args.parentDir);
     if (!dialogApprovedDirs.has(parentDir)) {
       throw new Error('Choose an export folder first.');

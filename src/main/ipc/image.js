@@ -202,12 +202,16 @@ const resolveGoogleFonts = async (args) => {
     }));
     return out;
 };
+const COPYABLE_IMAGE = /\.(png|jpe?g|jfif|webp|svg|gif|avif|apng|bmp|ico|tiff?|heic|heif)$/i;
 export const registerImageIpc = () => {
     ipcMain.handle(IPC.FileCopyImage, async (_e, args) => {
         // The copy destination is derived from `projectPath`; keep it inside
         // the active project. `sourcePath` is a user-chosen file (native
-        // dialog) and may legitimately live anywhere, so it isn't contained.
+        // dialog or a drop) and may live anywhere, so only images are copied.
         assertInsideActiveProject(args.projectPath);
+        if (!COPYABLE_IMAGE.test(args.sourcePath)) {
+            throw new Error(`"${args.sourcePath}" is not an image.`);
+        }
         const format = await getProjectFormat(args.projectPath);
         const result = await copyImage(args, format);
         // Suppress the watcher event for our own asset write so importing an

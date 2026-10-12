@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { IPC } from '@shared/ipcChannels';
 import { assetsDirFor } from './imageOps';
+import { assertInsideActiveProject } from './pathContainment';
 import { getProjectFormat } from './projectFormatCache';
 import { candidateFolderName, classifyTarget, copyAssets, exportFolderName, MAX_FOLDER_ATTEMPTS, writeExportFiles, writeMarker, } from './htmlExportOps';
 /**
@@ -64,6 +65,7 @@ const resolveTargetDir = async (parentDir, projectName) => {
 };
 const exportHtml = async (args) => {
     try {
+        assertInsideActiveProject(args.projectPath);
         const parentDir = path.resolve(args.parentDir);
         if (!dialogApprovedDirs.has(parentDir)) {
             throw new Error('Choose an export folder first.');
