@@ -145,6 +145,11 @@ const persist = (projectPath: string, conversation: Conversation): void => {
 const openConversations = async (): Promise<Conversation[]> =>
   project === null ? [] : Promise.all(project.conversations.values());
 
+/** Stop every running turn: Stop, closing or switching project, and quit. */
+export const cancelAgentTurns = async (): Promise<void> => {
+  for (const conversation of await openConversations()) conversation.agent.cancel();
+};
+
 const busyConversation = async (): Promise<Conversation | null> =>
   (await openConversations()).find((c) => c.agent.isBusy()) ?? null;
 
@@ -249,8 +254,10 @@ const conversationFor = (
   target: WebContents
 ): Promise<Conversation> => {
   if (project === null || project.projectPath !== projectPath) {
-    // Another project: its conversations stop, and stay saved on disk.
-    void openConversations().then((all) => all.forEach((c) => c.agent.reset()));
+    // Another project: its turns stop, and its conversations stay saved on
+    // disk. `cancel`, not `reset` — reset empties the model history, which
+    // the stopped turn then saved next to the full transcript.
+    void cancelAgentTurns();
     project = { projectPath, target, conversations: new Map(), scripted: null };
   }
   project.target = target;
@@ -320,9 +327,7 @@ export const registerAgentIpc = (): void => {
     };
   });
 
-  ipcMain.handle(IPC.AgentCancel, async (): Promise<void> => {
-    for (const conversation of await openConversations()) conversation.agent.cancel();
-  });
+  ipcMain.handle(IPC.AgentCancel, (): Promise<void> => cancelAgentTurns());
 
   ipcMain.handle(IPC.AgentReset, async (e, args: AgentConversationArgs): Promise<void> => {
     const key = asConversationKey(args?.conversation);

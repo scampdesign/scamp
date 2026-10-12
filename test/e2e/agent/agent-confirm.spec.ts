@@ -1,4 +1,4 @@
-import { writeFileSync } from 'fs';
+import { promises as fs, writeFileSync } from 'fs';
 import os from 'os';
 import path from 'path';
 
@@ -70,4 +70,42 @@ test('Apply changes deletes it', async ({ window }) => {
   await expect(window.getByTestId('agent-reply')).toHaveAttribute('data-status', 'done');
   await expect(canvasElement(window, 'card_a1b2')).toHaveCount(0);
   await expect(window.getByTestId('agent-tool')).toHaveText('Deleted card_a1b2');
+});
+
+test('closing the project stops a waiting turn and saves what the model knows', async ({ window, project }) => {
+  // Audit items 11-12 in docs/plans/audit-2026-10-12.md: a turn used to
+  // outlive its project, and a project switch wiped its model history.
+  await askToDelete(window);
+  await window.getByRole('button', { name: '← Projects' }).click();
+
+  const file = path.join(project.dir, '.scamp', 'agent-history', 'page-home.json');
+  await expect
+    .poll(() => fs.readFile(file, 'utf-8').then((t) => t, () => ''), { timeout: 5_000 })
+    .not.toBe('');
+  const saved = JSON.parse(await fs.readFile(file, 'utf-8')) as { model: Array<{ role: string }> };
+  expect(saved.model.length).toBeGreaterThan(0);
+  // Stopped, not approved: the card is still in the file.
+  expect(await fs.readFile(path.join(project.dir, 'home.module.css'), 'utf-8')).toContain('.card_a1b2');
+});
+
+test('opening another project’s conversation keeps what the model knew here', async ({ window, project }) => {
+  // Audit item 11: main stopped the old project's turns with a reset,
+  // which emptied the model history the stopped turn then saved. Asked
+  // directly, because leaving through the UI now stops the turn first.
+  await askToDelete(window);
+  await window.evaluate(
+    (other) =>
+      (window as unknown as { scamp: { agentLoad: (args: unknown) => Promise<unknown> } }).scamp.agentLoad({
+        projectPath: other,
+        conversation: { kind: 'page', name: 'home' },
+      }),
+    path.join(os.tmpdir(), `scamp-e2e-other-project-${process.pid}`)
+  );
+
+  const file = path.join(project.dir, '.scamp', 'agent-history', 'page-home.json');
+  await expect
+    .poll(() => fs.readFile(file, 'utf-8').then((t) => t, () => ''), { timeout: 5_000 })
+    .not.toBe('');
+  const saved = JSON.parse(await fs.readFile(file, 'utf-8')) as { model: Array<{ role: string }> };
+  expect(saved.model.length).toBeGreaterThan(0);
 });

@@ -275,6 +275,9 @@ export const App = (): JSX.Element => {
         projectPath: closingProjectPath,
         trigger: 'session_close',
       });
+      // An agent turn would keep spending the key, and its edits would land
+      // on whatever opens next.
+      void window.scamp.agentCancel();
       // Close the preview window and stop its dev server
       // before tearing down the project — preview shouldn't
       // outlive the project that's editing it.

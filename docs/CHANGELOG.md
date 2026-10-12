@@ -43,6 +43,11 @@ release time.
 - **A save that fails no longer costs you the edit.** The next save
   writes it too; it used to quietly undo it. **Retry** after a conflict
   merges instead of staying on **Saving…**.
+- **Closing or switching project stops the Scamp Agent.** A reply in
+  progress used to keep running, spending your key, and its edits could
+  land in the project you opened next. Opening another project also
+  erased what the agent remembered of the conversation, though the chat
+  still showed it.
 - **Leaving a page while you preview a snapshot keeps the live page.**
   Switching page or closing the project during a preview used to write
   the snapshot's version over your current one.

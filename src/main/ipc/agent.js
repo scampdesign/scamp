@@ -84,6 +84,11 @@ const persist = (projectPath, conversation) => {
 };
 /** All of the open project's conversations that have been opened. */
 const openConversations = async () => project === null ? [] : Promise.all(project.conversations.values());
+/** Stop every running turn: Stop, closing or switching project, and quit. */
+export const cancelAgentTurns = async () => {
+    for (const conversation of await openConversations())
+        conversation.agent.cancel();
+};
 const busyConversation = async () => (await openConversations()).find((c) => c.agent.isBusy()) ?? null;
 const createConversation = async (projectPath, key, holder) => {
     const stored = await loadConversation(projectPath, key).catch(() => null);
@@ -184,8 +189,10 @@ const refreshProjectSoon = () => {
 /** The conversation for a page, view or component — read from disk the first time. */
 const conversationFor = (projectPath, key, target) => {
     if (project === null || project.projectPath !== projectPath) {
-        // Another project: its conversations stop, and stay saved on disk.
-        void openConversations().then((all) => all.forEach((c) => c.agent.reset()));
+        // Another project: its turns stop, and its conversations stay saved on
+        // disk. `cancel`, not `reset` — reset empties the model history, which
+        // the stopped turn then saved next to the full transcript.
+        void cancelAgentTurns();
         project = { projectPath, target, conversations: new Map(), scripted: null };
     }
     project.target = target;
@@ -251,10 +258,7 @@ export const registerAgentIpc = () => {
             canUndo: conversation.snapshotId !== null,
         };
     });
-    ipcMain.handle(IPC.AgentCancel, async () => {
-        for (const conversation of await openConversations())
-            conversation.agent.cancel();
-    });
+    ipcMain.handle(IPC.AgentCancel, () => cancelAgentTurns());
     ipcMain.handle(IPC.AgentReset, async (e, args) => {
         const key = asConversationKey(args?.conversation);
         if (key === null)

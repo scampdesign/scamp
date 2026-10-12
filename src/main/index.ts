@@ -29,7 +29,7 @@ import { registerDesignMdIpc } from './ipc/designMd';
 import { registerImageIpc } from './ipc/image';
 import { registerClipboardIpc } from './ipc/clipboard';
 import { registerExportIpc } from './ipc/export';
-import { registerAgentIpc } from './ipc/agent';
+import { cancelAgentTurns, registerAgentIpc } from './ipc/agent';
 import { disposeAuth, registerAuthIpc } from './ipc/auth';
 import { registerHtmlExportIpc } from './ipc/htmlExport';
 import { registerUpdaterIpc } from './ipc/updater';
@@ -451,6 +451,7 @@ const snapshotOnShutdown = async (): Promise<void> => {
 };
 
 const performShutdownCleanup = async (): Promise<void> => {
+  await cancelAgentTurns();
   await snapshotOnShutdown();
   disposeAuth();
   await stopMcp();
