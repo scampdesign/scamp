@@ -97,6 +97,8 @@ const validateMessage = (value: unknown): JsonRpcMessage | null => {
  * one-line `.map` is cheaper than a client hitting an unexplained failure,
  * and Phase 0 showed clients can be newer than the spec we coded against.
  */
+export const MAX_BATCH = 50;
+
 export const parsePayload = (raw: string): ParsedPayload => {
   let value: unknown;
   try {
@@ -110,6 +112,14 @@ export const parsePayload = (raw: string): ParsedPayload => {
       return {
         kind: 'error',
         response: failure(null, RPC.InvalidRequest, 'Invalid Request: empty batch'),
+      };
+    }
+    // Calls run one at a time and each can wait seconds on the canvas, so
+    // an unbounded batch could tie up the main process for hours.
+    if (value.length > MAX_BATCH) {
+      return {
+        kind: 'error',
+        response: failure(null, RPC.InvalidRequest, `Invalid Request: a batch holds at most ${MAX_BATCH} messages`),
       };
     }
     const messages: JsonRpcMessage[] = [];

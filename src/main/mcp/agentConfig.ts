@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs';
-import { dirname, join } from 'path';
+import { dirname, join, sep } from 'path';
 
 /**
  * Registers the running MCP server in each installed agent's own config, so
@@ -215,6 +215,24 @@ export const ensureGitignoreEntries = async (
 };
 
 /**
+ * Whether `path` — or the nearest part of it that exists — resolves inside
+ * `root` once symlinks are followed. A project from somewhere else could
+ * link `.cursor` to `~/.cursor`, and writing through it would put the
+ * token in a config outside the project.
+ */
+const staysInside = async (root: string, path: string): Promise<boolean> => {
+  const realRoot = await fs.realpath(root);
+  for (let probe = path; ; probe = dirname(probe)) {
+    try {
+      const real = await fs.realpath(probe);
+      return real === realRoot || real.startsWith(realRoot + sep);
+    } catch {
+      if (dirname(probe) === probe) return false;
+    }
+  }
+};
+
+/**
  * Write our entry into every installed agent's config.
  *
  * Best-effort per target: one unreadable or unparseable config must not stop
@@ -232,6 +250,10 @@ export const writeAgentConfigs = async (args: {
     if (!(await isAgentInstalled(target, args.homeDir))) continue;
 
     const absolute = join(args.projectPath, target.configPath);
+    if (!(await staysInside(args.projectPath, absolute))) {
+      report.skipped.push({ path: target.configPath, reason: 'it leads outside the project through a symlink' });
+      continue;
+    }
     let existing: string | null = null;
     try {
       existing = await fs.readFile(absolute, 'utf-8');

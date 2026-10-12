@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs';
+import { request } from 'http';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -122,6 +123,27 @@ describe('MCP HTTP server', () => {
             expect(body.result.content[0].type).toBe('text');
             expect(body.result.content[0].text).toContain('scamp_get_selected_element');
             expect(body.result.isError).toBeUndefined();
+        });
+        it('decodes a body whose character is split across two writes', async () => {
+            // Each chunk used to be decoded on its own, so a character cut in
+            // half arrived as U+FFFD.
+            const body = Buffer.from(JSON.stringify({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'scamp_café', arguments: {} } }));
+            const cut = body.indexOf(Buffer.from('é')) + 1;
+            const text = await new Promise((resolve, reject) => {
+                const req = request(server.url, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json', 'x-scamp-token': TOKEN, 'content-length': body.length },
+                }, (res) => {
+                    const chunks = [];
+                    res.on('data', (c) => chunks.push(c));
+                    res.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+                });
+                req.on('error', reject);
+                req.write(body.subarray(0, cut));
+                setTimeout(() => req.end(body.subarray(cut)), 50);
+            });
+            expect(text).toContain('scamp_café');
+            expect(text).not.toContain('\uFFFD');
         });
         it('reports an unknown tool as isError with HTTP 200', async () => {
             // A protocol-level failure here would tell the model nothing useful.

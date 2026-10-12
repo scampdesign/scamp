@@ -63,6 +63,8 @@ release time.
   were opened, so anything you'd changed on those pages since was lost.
   Scamp now reads them fresh, and stops rather than overwrite a page
   that changes while it works.
+- **Agents connected over MCP get their requests intact.** A tool call
+  with accented or other non-ASCII text could arrive garbled.
 - **The Scamp Agent recovers when your key can't be read.** It used to
   stay busy until you restarted Scamp; now it asks you to connect your
   key again.

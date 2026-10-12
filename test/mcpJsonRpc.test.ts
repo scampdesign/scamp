@@ -89,6 +89,15 @@ describe('parsePayload — malformed input', () => {
       response: { error: { code: RPC.InvalidRequest } },
     });
   });
+
+  it('rejects a batch over the limit, which would tie up the main process', () => {
+    const call = { jsonrpc: '2.0', id: 1, method: 'tools/list' };
+    expect(parsePayload(JSON.stringify(Array.from({ length: 51 }, () => call)))).toMatchObject({
+      kind: 'error',
+      response: { error: { code: RPC.InvalidRequest } },
+    });
+    expect(parsePayload(JSON.stringify(Array.from({ length: 50 }, () => call)))).toMatchObject({ kind: 'batch' });
+  });
 });
 
 describe('parsePayload — batches', () => {

@@ -65,4 +65,5 @@ export type ParsedPayload = {
  * one-line `.map` is cheaper than a client hitting an unexplained failure,
  * and Phase 0 showed clients can be newer than the spec we coded against.
  */
+export declare const MAX_BATCH = 50;
 export declare const parsePayload: (raw: string) => ParsedPayload;

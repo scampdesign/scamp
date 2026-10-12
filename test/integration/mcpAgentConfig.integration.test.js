@@ -190,6 +190,21 @@ describe('writeAgentConfigs', () => {
         expect(await exists('.gemini')).toBe(false);
         expect(await exists('.kiro')).toBe(false);
     });
+    it('writes nothing through a symlink that leads outside the project', async () => {
+        // A cloned project could link .cursor to the user's own ~/.cursor.
+        await fs.mkdir(join(home, '.cursor'), { recursive: true });
+        const outside = await fs.mkdtemp(join(tmpdir(), 'scamp-outside-'));
+        try {
+            await fs.symlink(outside, join(project, '.cursor'));
+            const report = await run();
+            expect(report.written).not.toContain('.cursor/mcp.json');
+            expect(report.skipped.map((s) => s.path)).toContain('.cursor/mcp.json');
+            expect(await fs.readdir(outside)).toEqual([]);
+        }
+        finally {
+            await fs.rm(outside, { recursive: true, force: true });
+        }
+    });
     it('writes a detected agent config, creating its directory', async () => {
         await fs.mkdir(join(home, '.cursor'), { recursive: true });
         const report = await run();

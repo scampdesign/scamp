@@ -337,11 +337,12 @@ app.whenReady().then(() => {
     // any page it loads read the open project's files by guessing
     // paths. The app's own windows send no Origin (`file://`) or the
     // dev server's; a third-party page sends its own and gets no
-    // header, so its fetch fails exactly as it did before.
+    // header, so its fetch fails exactly as it did before. Not `'null'`
+    // either: a sandboxed frame in an imported page sends that, and the
+    // app's own requests carry no Origin at all.
     const origin = request.headers.get('origin');
     const ours =
       origin === null ||
-      origin === 'null' ||
       origin.startsWith('file://') ||
       origin === process.env['ELECTRON_RENDERER_URL'];
     if (!ours) return response;

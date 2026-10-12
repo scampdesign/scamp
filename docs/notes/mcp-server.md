@@ -86,6 +86,9 @@ Rules the merge follows, all tested:
   Otherwise every project acquires `.cursor/`, `.gemini/`, `.kiro/` for tools
   the user doesn't have. Claude Code is the exception — one file, no
   directory, primary target.
+- **Never through a symlink out of the project.** A cloned project could
+  link `.cursor` to `~/.cursor`; the target path, symlinks followed, must
+  resolve inside the project or the agent is skipped with a reason.
 - **Everything written is gitignored.** This cuts against convention
   (`.mcp.json` is normally committed, to share MCP config with a team) because
   ours holds a machine-local URL and a token.
@@ -153,6 +156,10 @@ components and caused the word collision — is now "Page conventions".
 - The `.js` shims emit **extensionless imports**. electron-vite resolves them;
   bare Node does not — bundle with esbuild first if you want to run one
   directly (useful for testing against a real client).
+- A request body is decoded **once, after the last chunk**: a chunk can end
+  mid-character, and decoding each alone produced U+FFFD.
+- A JSON-RPC batch holds at most **50** messages (`MAX_BATCH`). They run one
+  at a time and each can wait seconds on the canvas.
 - `stopMcp` rejects in-flight queries **before** closing the socket, so a
   waiting agent gets a reason rather than a timeout.
 - `markMcpStopped` rewrites `running: false` rather than deleting

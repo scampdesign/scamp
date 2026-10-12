@@ -78,7 +78,9 @@ const tokenOf = (req: IncomingMessage): string | null => {
 
 const readBody = (req: IncomingMessage): Promise<string | null> =>
   new Promise((resolve) => {
-    let raw = '';
+    // Decoded once at the end: a chunk can end mid-character, and decoding
+    // each on its own turned that character into U+FFFD.
+    const chunks: Buffer[] = [];
     let bytes = 0;
     let aborted = false;
     req.on('data', (chunk: Buffer) => {
@@ -89,10 +91,10 @@ const readBody = (req: IncomingMessage): Promise<string | null> =>
         resolve(null);
         return;
       }
-      raw += chunk.toString('utf-8');
+      chunks.push(chunk);
     });
     req.on('end', () => {
-      if (!aborted) resolve(raw);
+      if (!aborted) resolve(Buffer.concat(chunks).toString('utf-8'));
     });
     req.on('error', () => {
       if (!aborted) {
