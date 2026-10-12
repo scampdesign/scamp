@@ -400,13 +400,11 @@ export const restoreSnapshot = async (
     if (!existing.some((s) => s.id === snapshotId)) {
       return { ok: false, error: 'Snapshot not found.' };
     }
-    await createSnapshot(
-      projectPath,
-      format,
-      'before_restore',
-      undefined,
-      opts.nowMs
-    );
+    // No safety copy, no restore: it would overwrite work with no way back.
+    const safety = await createSnapshot(projectPath, format, 'before_restore', undefined, opts.nowMs);
+    if (safety === null) {
+      return { ok: false, error: "Couldn't save the current state first, so nothing was restored." };
+    }
 
     const dir = snapshotDirFor(projectPath, snapshotId);
     const files = await walkFiles(dir);

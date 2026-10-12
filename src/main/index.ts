@@ -8,7 +8,7 @@ import {
   type TitleBarColors,
 } from '@shared/titleBarColors';
 import { registerProjectIpc } from './ipc/project';
-import { registerFileIpc } from './ipc/file';
+import { registerFileIpc, settleFileWrites } from './ipc/file';
 import { registerPageIpc } from './ipc/page';
 import { registerComponentIpc } from './ipc/component';
 import { registerProjectThumbnailIpc } from './ipc/projectThumbnail';
@@ -462,20 +462,46 @@ const performShutdownCleanup = async (): Promise<void> => {
   await Promise.all([disposeAllTerminals(), stopAllDevServers()]);
 };
 
-// Note: when `app.quit()` (or Cmd+Q) initiates shutdown, Electron does
-// NOT emit `window-all-closed` — it goes straight to before-quit →
-// will-quit → quit. That's why the cleanup lives here: it's the only
-// hook that runs reliably during a programmatic quit (e.g. Playwright
-// teardown calling `electronApp.close()`).
+// Note: when `app.quit()` (or Cmd+Q) initiates shutdown, Electron goes
+// straight to before-quit → will-quit → quit without closing windows
+// first. That's why the cleanup lives here: it's the only hook that runs
+// reliably during a programmatic quit (e.g. Playwright teardown calling
+// `electronApp.close()`). It closes the windows itself, before cleanup.
 let quitInitiated = false;
+
+/**
+ * Close every window and wait for them to go. Each renderer flushes its
+ * debounced write on `beforeunload`; that write has to reach main while
+ * the project is still open, or the containment check refuses it.
+ */
+const closeAllWindows = (timeoutMs: number): Promise<void> =>
+  Promise.race([
+    Promise.all(
+      BrowserWindow.getAllWindows().map(
+        (win) =>
+          new Promise<void>((resolve) => {
+            if (win.isDestroyed()) return resolve();
+            win.once('closed', () => resolve());
+            win.close();
+          })
+      )
+    ).then(() => undefined),
+    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+
 app.on('before-quit', (event) => {
   if (quitInitiated) return;
   event.preventDefault();
   quitInitiated = true;
-  void performShutdownCleanup().finally(() => app.quit());
+  void closeAllWindows(3000)
+    .then(settleFileWrites)
+    .then(performShutdownCleanup)
+    .finally(() => app.quit());
 });
 
 app.on('window-all-closed', () => {
+  // Closed by our own before-quit, which does the cleanup itself.
+  if (quitInitiated) return;
   // Fires only when the user closes the last window directly (not via
   // app.quit()). On non-darwin we route through quit so the awaited
   // cleanup in before-quit runs. On darwin the app stays alive — kick

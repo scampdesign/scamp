@@ -404,6 +404,22 @@ describe('restoreSnapshot', () => {
     expect(captured).toBe('BROKEN by agent');
   });
 
+  it('refuses to restore, and touches nothing, when the safety snapshot fails', async () => {
+    const root = await makeNextjsProject();
+    const snap = await createSnapshot(root, 'nextjs', 'manual', 'good state', now);
+    await fs.writeFile(path.join(root, 'app', 'page.tsx'), 'current work');
+    // An unreadable file makes copying the current state fail.
+    const unreadable = path.join(root, 'components', 'Button', 'Button.tsx');
+    await fs.chmod(unreadable, 0o000);
+    try {
+      const res = await restoreSnapshot(root, 'nextjs', snap!.id, { nowMs: now + 60000 });
+      expect(res.ok).toBe(false);
+      expect(await fs.readFile(path.join(root, 'app', 'page.tsx'), 'utf-8')).toBe('current work');
+    } finally {
+      await fs.chmod(unreadable, 0o644);
+    }
+  });
+
   it('fails cleanly for an unknown snapshot id', async () => {
     const root = await makeNextjsProject();
     const res = await restoreSnapshot(root, 'nextjs', 'snap_nope');

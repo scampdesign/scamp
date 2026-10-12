@@ -7,6 +7,19 @@ import { cancelPendingWrite, registerPendingWrite } from '../watcher';
 import { checkWriteConflict } from './fileConflict';
 import { atomicWrite } from './fileOps';
 import { assertInsideActiveProject } from './pathContainment';
+const inFlight = new Set();
+const tracked = (write) => {
+    inFlight.add(write);
+    const done = () => {
+        inFlight.delete(write);
+    };
+    write.then(done, done);
+    return write;
+};
+/** Resolves once every page write main has started is on disk (or failed). Quit waits on it. */
+export const settleFileWrites = async () => {
+    await Promise.allSettled([...inFlight]);
+};
 const handleWrite = async (args) => {
     assertInsideActiveProject(args.tsxPath);
     assertInsideActiveProject(args.cssPath);
@@ -56,6 +69,6 @@ const handlePatch = async (args) => {
     return { writeId };
 };
 export const registerFileIpc = () => {
-    ipcMain.handle(IPC.FileWrite, (_e, args) => handleWrite(args));
-    ipcMain.handle(IPC.FilePatch, (_e, args) => handlePatch(args));
+    ipcMain.handle(IPC.FileWrite, (_e, args) => tracked(handleWrite(args)));
+    ipcMain.handle(IPC.FilePatch, (_e, args) => tracked(handlePatch(args)));
 };
