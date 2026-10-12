@@ -70,10 +70,16 @@ export {
  * OLD paths before the swap, so the debounced timer can't fire against
  * files that have just been deleted.
  */
-let pendingFlush: (() => void) | null = null;
+let pendingFlush: ((evenIfPaused: boolean) => void) | null = null;
 
-export const flushPendingPageWrite = (): void => {
-  pendingFlush?.();
+/**
+ * Write the active target's pending edits now. Writes even while sync is
+ * paused, because the callers are about to move the canvas off the target
+ * and the edit would otherwise exist only in memory. Pass
+ * `{ respectPause: true }` for a flush that isn't leaving anything.
+ */
+export const flushPendingPageWrite = (options: { respectPause?: boolean } = {}): void => {
+  pendingFlush?.(options.respectPause !== true);
 };
 
 /**
@@ -146,9 +152,9 @@ export const initSyncBridge = (): (() => void) => {
   ctx.scheduleQuietResume = makeScheduleQuietResume(ctx);
 
   // Module-scoped action handles for the free-function exports.
-  pendingFlush = (): void => {
+  pendingFlush = (evenIfPaused: boolean): void => {
     ctx.cancelWriteTimer();
-    ctx.flushDebouncedWrite();
+    ctx.flushDebouncedWrite(evenIfPaused);
   };
   resumeFromPauseImpl = makeResumeFromPause(ctx);
   saveDivergedCanvasImpl = makeSaveDivergedCanvas(ctx);

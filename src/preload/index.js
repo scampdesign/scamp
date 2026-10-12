@@ -254,11 +254,6 @@ const api = {
         ipcRenderer.on(IPC.TerminalExit, listener);
         return () => ipcRenderer.removeListener(IPC.TerminalExit, listener);
     },
-    onTerminalForegroundProcess: (handler) => {
-        const listener = (_e, payload) => handler(payload);
-        ipcRenderer.on(IPC.TerminalForegroundProcess, listener);
-        return () => ipcRenderer.removeListener(IPC.TerminalForegroundProcess, listener);
-    },
     // Auto-update. The renderer subscribes to status events to drive the
     // update banner; `installUpdateNow` triggers quit-and-install.
     installUpdateNow: () => ipcRenderer.invoke(IPC.UpdaterInstallNow),

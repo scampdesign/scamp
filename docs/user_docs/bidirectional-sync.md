@@ -39,31 +39,33 @@ detail.
 | **↑ Saving…** | A write is in flight. |
 | **● Unsaved** | You just edited, and the debounce hasn't fired yet, or another write is queued behind a save. |
 | **⚠ Save failed** | The last write failed. The popover shows the message and a **Retry** button. |
-| **⏸ Paused** | Scamp has paused saving, because an external editor is touching project files, an agent is running in the integrated terminal, or you paused manually. The popover explains which one. |
+| **⏸ Paused** | Scamp has paused saving, because an external editor is writing project files or you paused manually. The popover explains which one. |
 | **⚠ Diverged** | The pause cleared, but the canvas has edits that don't match disk. The popover offers **Save canvas** (write your edits, overwriting disk) or **Discard canvas** (reload from disk, losing your in-memory changes). |
 | **↺ Reloaded** | A canvas-driven save hit a write conflict, and Scamp adopted disk instead. Your in-flight edit was dropped. |
 
 ### Pause manually
 
 The save indicator's popover always includes a **Pause sync** or
-**Resume sync** toggle. Pausing locks Scamp into the Paused state until
-you resume. This is useful when you want to make a large external edit
-and don't want Scamp's auto-detection to fight you.
+**Resume sync** toggle. Pausing holds your canvas edits until you
+resume, which is useful while you make a large external edit.
+
+Your edits don't stay held forever. When you resume, Scamp writes them.
+When you switch to another page or component, Scamp writes the one
+you're leaving, even while paused, so the edits aren't lost.
 
 ## Agent coexistence
 
-Scamp watches its integrated terminal for non-shell foreground processes
-such as `claude`, `aider`, and `cursor`. When one runs in any open
-terminal tab, Scamp does the following:
+Scamp keeps saving while an agent is open, in its integrated terminal or
+anywhere else. An agent sitting at its prompt doesn't pause anything.
 
-1. Pauses saving automatically. The indicator shows **Paused** with the
-   reason "agent in the terminal".
-2. Buffers your canvas edits in memory. Nothing writes to disk until the
-   agent settles.
-3. Resumes when the foreground process exits.
+Two things keep Scamp from overwriting an agent's work:
 
-This prevents the classic agent-versus-canvas race where Scamp
-overwrites the agent's in-progress file edits.
+- Scamp pauses while project files are actually changing (see the quiet
+  window).
+- Every save checks that the file still holds what Scamp last wrote. If
+  an agent changed it in the meantime, Scamp merges the two edits. If
+  they touched the same lines, Scamp keeps the agent's version and the
+  indicator shows **Reloaded**.
 
 ### The quiet window
 
@@ -74,13 +76,6 @@ they iterate; the window keeps Scamp from racing those bursts.
 
 If you make a canvas edit during the quiet window, Scamp queues it and
 flushes it when the window expires.
-
-### Manual override
-
-If Scamp's auto-detection is wrong—for example, you're running a build
-command in the terminal that Scamp misidentifies as an agent—click the
-indicator and select **Resume sync**. Saving comes back on for the rest
-of the project session.
 
 ### Diverged: choose which version wins
 
@@ -119,8 +114,7 @@ guidance already loaded.
 ## Work with AI agents
 
 1. Open Scamp and your AI agent side by side, or run the agent in
-   Scamp's [terminal](terminal.md), where auto-pause protects your
-   edits.
+   Scamp's [terminal](terminal.md).
 2. Design the layout in Scamp. The agent reads the generated files.
 3. Ask the agent to add styles, logic, or refine the CSS. Scamp reloads
    automatically.

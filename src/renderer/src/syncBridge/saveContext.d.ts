@@ -24,8 +24,8 @@ export type SaveContext = {
     lastSerializedTsx: string | null;
     lastSerializedCss: string | null;
     /**
-     * Set when a canvas edit lands while the quiet window is open (its
-     * `writeIfDirty` gets deferred). `reconcileAfterQuiet` consults this
+     * Set when a canvas edit lands while the quiet window is open, or when
+     * a pause defers a write (`writeIfDirty`). `reconcileAfterQuiet` consults this
      * to decide whether to flush the pending canvas change after the
      * window expires, or to leave disk alone. Cleared on chokidar event
      * (start of quiet window) and after `reconcileAfterQuiet` runs.
@@ -35,8 +35,8 @@ export type SaveContext = {
     readonly quietWindow: QuietWindow;
     cancelWriteTimer: () => void;
     onWriteConflict: (target: EditTarget, conflict: WriteConflict, silent?: boolean, intent?: WriteIntent) => void;
-    writeIfDirty: (elements: Record<string, ScampElement>, rootElementId: string, target: EditTarget, customMediaBlocks: ReadonlyArray<string>, pageKeyframesBlocks: ReadonlyArray<KeyframesBlock>, silent?: boolean) => void;
-    flushDebouncedWrite: () => void;
+    writeIfDirty: (elements: Record<string, ScampElement>, rootElementId: string, target: EditTarget, customMediaBlocks: ReadonlyArray<string>, pageKeyframesBlocks: ReadonlyArray<KeyframesBlock>, silent?: boolean, evenIfPaused?: boolean) => void;
+    flushDebouncedWrite: (evenIfPaused?: boolean) => void;
     reconcileAfterQuiet: () => void;
     scheduleQuietResume: () => void;
 };

@@ -34,4 +34,4 @@ export declare const makeOnWriteConflict: (ctx: SaveContext) => (target: EditTar
  * propagates through to `onWriteConflict` so a conflict adopts disk
  * without flashing the "Reloaded" indicator.
  */
-export declare const makeWriteIfDirty: (ctx: SaveContext) => (elements: Record<string, ScampElement>, rootElementId: string, target: EditTarget, customMediaBlocks: ReadonlyArray<string>, pageKeyframesBlocks: ReadonlyArray<KeyframesBlock>, silent?: boolean) => void;
+export declare const makeWriteIfDirty: (ctx: SaveContext) => (elements: Record<string, ScampElement>, rootElementId: string, target: EditTarget, customMediaBlocks: ReadonlyArray<string>, pageKeyframesBlocks: ReadonlyArray<KeyframesBlock>, silent?: boolean, evenIfPaused?: boolean) => void;

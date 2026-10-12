@@ -1,6 +1,6 @@
 ---
 slug: agent-coexistence
-summary: How Scamp's sync engine stays out of an external editor's way (Claude Code, Cursor Agent, vim, IDEs). Covers the seven save-status states, the two pause signals, and what's exempt.
+summary: How Scamp's sync engine stays out of an external editor's way (Claude Code, Cursor Agent, vim, IDEs). Covers the seven save-status states, the pause signals, and what's exempt.
 related:
   - components-sync
   - save-status-machine
@@ -42,7 +42,13 @@ Tracked in `src/renderer/src/lib/quietWindow.ts`. Set on every chokidar event fo
 
 The two signals overlap but cover different timing: the tracker is sub-millisecond protection against the synchronous race; the quiet window is multi-second protection against intentional bursts.
 
-Phase 4 (terminal-busy heuristic) is planned but not yet shipped. It will add a third signal — `agent-terminal` — fired when Scamp's integrated terminal has a non-shell foreground process. Until then, agents running in Scamp's terminal only get protection via the chokidar signals above (which is sufficient — every file write triggers them).
+A third, the user's own **Pause sync**, defers writes the same way until they resume.
+
+There is deliberately no "agent in the terminal" signal. One shipped (polling the pty's foreground process) and was removed on 2026-10-12: an idle Claude Code at its prompt counts as a foreground process, so sync stayed off for as long as the agent was open, and edits made then lived only in memory until the agent's next write reloaded over them. The two signals above plus the compare-and-swap below already keep Scamp from overwriting an agent.
+
+### Edits never stay only in memory
+
+A paused write sets `canvasChangedDuringQuiet`, so the reconcile when the pause ends flushes it instead of reporting **Saved**. And leaving a target (`flushPendingPageWrite()`, which every page / component switch calls) writes even while paused, through the compare-and-swap and merge; only the auto-snapshot and project close pass `{ respectPause: true }`. A refused merge for a target already left skips the canvas reload but still writes the merge.
 
 ## When the compare-and-swap refuses
 
@@ -94,8 +100,7 @@ This is the dedicated "you did something but it didn't land" signal. The pill go
 
 ## Per-OS notes
 
-- **Linux + macOS**: full coverage (Phases 1-3 shipped, Phase 4 detection planned).
-- **Windows**: Phase 4's `node-pty` foreground-process introspection is platform-specific. ConPTY has limited APIs; the terminal-busy heuristic will be deferred or implemented differently. Phases 1-3 work identically.
+The pause signals are all file-system or user driven, so they behave the same on Linux, macOS, and Windows.
 
 ## How to test locally
 

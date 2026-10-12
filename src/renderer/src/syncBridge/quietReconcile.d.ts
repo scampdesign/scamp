@@ -1,7 +1,7 @@
 import type { SaveContext } from './saveContext';
 export declare const makeCancelWriteTimer: (ctx: SaveContext) => () => void;
 /** Flush a queued debounced write against the CURRENT store state. */
-export declare const makeFlushDebouncedWrite: (ctx: SaveContext) => () => void;
+export declare const makeFlushDebouncedWrite: (ctx: SaveContext) => (evenIfPaused?: boolean) => void;
 /**
  * After the quiet window expires, decide whether the canvas matches disk
  * (resume cleanly → `saved`) or diverges (user picks Save / Discard

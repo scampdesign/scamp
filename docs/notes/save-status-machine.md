@@ -37,7 +37,7 @@ Primary files:
 | `unsaved` | an edit landed, debounce pending |
 | `saving` | write IPC in flight (`attempt` retained for retry) |
 | `error` | write failed; persists until a later write succeeds |
-| `paused` | writes deferred — `reason: 'external-edit' \| 'agent-terminal' \| 'manual'` |
+| `paused` | writes deferred — `reason: 'external-edit' \| 'manual'` |
 | `diverged` | quiet window expired and disk no longer matches our baseline |
 | `reloaded-from-disk` | a conflict was detected; canvas was reloaded to the on-disk version |
 

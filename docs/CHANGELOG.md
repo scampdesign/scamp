@@ -22,6 +22,25 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Changed**
+
+- **Scamp keeps saving while an agent is open in its terminal.** Scamp
+  used to pause saving whenever any program ran in the integrated
+  terminal, including Claude Code sitting idle at its prompt, so edits
+  you made then weren't saved and the agent's next write replaced them.
+  Scamp now pauses only while files are actually changing, or when you
+  click **Pause sync**. It still never overwrites an agent's edit: each
+  save checks the file first and merges with whatever changed.
+
+**Fixed**
+
+- **Edits made while sync is paused are saved.** Resuming writes them,
+  where the indicator used to say **Saved** without writing. Switching
+  to another page or component writes the one you leave, even while
+  paused.
+
 ### 0.9.0 (2026-10-12)
 
 **Added**

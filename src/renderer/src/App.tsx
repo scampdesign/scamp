@@ -13,7 +13,6 @@ import { useFontsStore } from '@store/fontsSlice';
 import { useAgentStore } from '@store/agentSlice';
 import { endAgentTurnHistory } from './syncBridge/agentToolResponder';
 import { useAuthStore } from '@store/authSlice';
-import { useTerminalActivityStore } from '@store/terminalActivitySlice';
 import type { ProjectData } from '@shared/types';
 
 type View = 'start' | 'project' | 'settings';
@@ -114,25 +113,6 @@ export const App = (): JSX.Element => {
       }),
     []
   );
-
-  // Phase 4.2: keep the terminal-activity slice in sync with main's
-  // pty foreground-process events. The sync bridge subscribes to
-  // this slice and pauses canvas writes when an agent is detected
-  // running in any of Scamp's integrated terminals.
-  useEffect(() => {
-    const offForeground = window.scamp.onTerminalForegroundProcess(
-      ({ id, processName }) => {
-        useTerminalActivityStore.getState().setForeground(id, processName);
-      }
-    );
-    const offExit = window.scamp.onTerminalExit(({ id }) => {
-      useTerminalActivityStore.getState().removeTerminal(id);
-    });
-    return () => {
-      offForeground();
-      offExit();
-    };
-  }, []);
 
   // When the file watcher reports that a page-file appeared or
   // disappeared on disk (agent created a page, user dropped a
@@ -286,7 +266,7 @@ export const App = (): JSX.Element => {
       // Session-close snapshot: flush any pending debounced write
       // so the snapshot includes the latest canvas state, then take
       // it. Fire-and-forget — main reads the project from disk.
-      flushPendingPageWrite();
+      flushPendingPageWrite({ respectPause: true });
       // Take the thumbnail before the canvas goes: the capture
       // detaches its own copy synchronously, so it survives the
       // unmount on the next line.

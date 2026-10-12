@@ -5,11 +5,7 @@
 import { generateCode } from '@lib/generateCode';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useSaveStatusStore } from '@store/saveStatusSlice';
-import {
-  selectAnyAgentActive,
-  selectPauseReason,
-  useTerminalActivityStore,
-} from '@store/terminalActivitySlice';
+import { selectSyncPaused, useTerminalActivityStore } from '@store/terminalActivitySlice';
 
 import { importNameForTarget, toEditTarget } from './editTarget';
 import type { SaveContext } from './saveContext';
@@ -22,18 +18,22 @@ export const makeCancelWriteTimer = (ctx: SaveContext) => (): void => {
 };
 
 /** Flush a queued debounced write against the CURRENT store state. */
-export const makeFlushDebouncedWrite = (ctx: SaveContext) => (): void => {
-  const state = useCanvasStore.getState();
-  const target = toEditTarget(state.activePage, state.activeComponent);
-  if (!target) return;
-  ctx.writeIfDirty(
-    state.elements,
-    state.rootElementId,
-    target,
-    state.pageCustomMediaBlocks,
-    state.pageKeyframesBlocks
-  );
-};
+export const makeFlushDebouncedWrite =
+  (ctx: SaveContext) =>
+  (evenIfPaused: boolean = false): void => {
+    const state = useCanvasStore.getState();
+    const target = toEditTarget(state.activePage, state.activeComponent);
+    if (!target) return;
+    ctx.writeIfDirty(
+      state.elements,
+      state.rootElementId,
+      target,
+      state.pageCustomMediaBlocks,
+      state.pageKeyframesBlocks,
+      false,
+      evenIfPaused
+    );
+  };
 
 /**
  * After the quiet window expires, decide whether the canvas matches disk
@@ -46,15 +46,10 @@ export const makeReconcileAfterQuiet = (ctx: SaveContext) => (): void => {
   // (resumeFromPause clears the quiet window and we land here; but
   // the agent flag is checked separately and the user's explicit
   // override should win even mid-burst).
-  {
-    const activity = useTerminalActivityStore.getState();
-    if (selectAnyAgentActive(activity)) {
-      // Refresh the indicator's reason — quiet may have expired
-      // but an agent (auto or manual) is still keeping us paused.
-      const reason = selectPauseReason(activity) ?? 'agent-terminal';
-      useSaveStatusStore.getState().markPaused(reason);
-      return;
-    }
+  if (selectSyncPaused(useTerminalActivityStore.getState())) {
+    // Quiet may have expired, but the user's pause still holds.
+    useSaveStatusStore.getState().markPaused('manual');
+    return;
   }
   const state = useCanvasStore.getState();
   const target = toEditTarget(state.activePage, state.activeComponent);

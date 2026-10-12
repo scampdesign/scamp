@@ -11,7 +11,7 @@
  *   - error          — write failed. Popover shows the message and
  *                      Retry; also offers Pause sync.
  *   - paused         — sync engine intentionally suspended. Popover
- *                      explains why (manual / agent-terminal /
+ *                      explains why (manual /
  *                      external-edit) and offers Resume.
  *   - diverged       — pause cleared; canvas + disk don't match;
  *                      user picks Save canvas or Discard canvas.

@@ -3,11 +3,9 @@ import { useTerminalActivityStore } from '@store/terminalActivitySlice';
 import type { SaveContext } from './saveContext';
 type TerminalActivityState = ReturnType<typeof useTerminalActivityStore.getState>;
 /**
- * Phase 4.3 — react when an agent appears or finishes in any integrated
- * terminal. idle → busy: cancel the debounce + pause proactively so the
- * next canvas write can't race the agent's first write. busy → idle: if
- * the quiet window is also clear, reconcile now; otherwise leave the
- * quiet-resume timer to do it when its window expires.
+ * React when the user pauses or resumes sync. Pause: cancel the debounce
+ * so nothing lands mid-pause. Resume: if the quiet window is also clear,
+ * reconcile now; otherwise the quiet-resume timer does it when it expires.
  */
 export declare const makeAgentSubscriptionHandler: (ctx: SaveContext) => (s: TerminalActivityState) => void;
 /**

@@ -39,7 +39,7 @@ export const useSnapshotAutoSave = (
       const nowMs = Date.now();
       if (nowMs - lastAutoMs < AUTO_SAVE_INTERVAL_MS) return;
       lastAutoMs = nowMs;
-      flushPendingPageWrite();
+      flushPendingPageWrite({ respectPause: true });
       void useSnapshotsStore.getState().takeSnapshot(projectPath, 'auto_save');
     });
     return unsub;

@@ -1,6 +1,14 @@
 export { savePatch, retryLastSave } from './syncBridge/writeDispatch';
 export { armTargetSwapSuppression, disarmTargetSwapSuppression, } from './syncBridge/targetSwapSuppression';
-export declare const flushPendingPageWrite: () => void;
+/**
+ * Write the active target's pending edits now. Writes even while sync is
+ * paused, because the callers are about to move the canvas off the target
+ * and the edit would otherwise exist only in memory. Pass
+ * `{ respectPause: true }` for a flush that isn't leaving anything.
+ */
+export declare const flushPendingPageWrite: (options?: {
+    respectPause?: boolean;
+}) => void;
 /** Save-status indicator's `Resume now` button. */
 export declare const resumeFromPause: () => void;
 /**

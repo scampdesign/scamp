@@ -139,7 +139,6 @@ export declare const IPC: {
     readonly TerminalKill: "terminal:kill";
     readonly TerminalData: "terminal:data";
     readonly TerminalExit: "terminal:exit";
-    readonly TerminalForegroundProcess: "terminal:foregroundProcess";
     readonly SnapshotCreate: "snapshot:create";
     readonly SnapshotList: "snapshot:list";
     readonly SnapshotRestore: "snapshot:restore";

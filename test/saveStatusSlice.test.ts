@@ -154,7 +154,7 @@ describe('saveStatusSlice', () => {
 
     it('transitions unsaved → paused', () => {
       store().markUnsaved();
-      store().markPaused('agent-terminal');
+      store().markPaused('manual');
       expect(store().state.kind).toBe('paused');
     });
 
@@ -187,10 +187,10 @@ describe('saveStatusSlice', () => {
       store().markPaused('external-edit');
       expect(store().state).toBe(before);
 
-      store().markPaused('agent-terminal');
+      store().markPaused('manual');
       expect(store().state).toEqual({
         kind: 'paused',
-        reason: 'agent-terminal',
+        reason: 'manual',
       });
     });
 
@@ -204,7 +204,7 @@ describe('saveStatusSlice', () => {
       // Reason flips don't reset the timestamp — the diverged
       // popover needs to keep filtering history from the original
       // pause moment, not whichever sub-signal is most recent.
-      store().markPaused('agent-terminal');
+      store().markPaused('manual');
       expect(store().pauseStartedAt).toBe(started);
     });
   });

@@ -6,11 +6,7 @@
 import { generateCode } from '@lib/generateCode';
 import { useCanvasStore, type CanvasState } from '@store/canvasSlice';
 import { useSaveStatusStore } from '@store/saveStatusSlice';
-import {
-  selectAnyAgentActive,
-  selectPauseReason,
-  useTerminalActivityStore,
-} from '@store/terminalActivitySlice';
+import { selectSyncPaused, useTerminalActivityStore } from '@store/terminalActivitySlice';
 
 import {
   WRITE_DEBOUNCE_MS,
@@ -25,29 +21,21 @@ type TerminalActivityState = ReturnType<
 >;
 
 /**
- * Phase 4.3 — react when an agent appears or finishes in any integrated
- * terminal. idle → busy: cancel the debounce + pause proactively so the
- * next canvas write can't race the agent's first write. busy → idle: if
- * the quiet window is also clear, reconcile now; otherwise leave the
- * quiet-resume timer to do it when its window expires.
+ * React when the user pauses or resumes sync. Pause: cancel the debounce
+ * so nothing lands mid-pause. Resume: if the quiet window is also clear,
+ * reconcile now; otherwise the quiet-resume timer does it when it expires.
  */
 export const makeAgentSubscriptionHandler = (ctx: SaveContext) => {
-  let prevAgentActive = selectAnyAgentActive(
-    useTerminalActivityStore.getState()
-  );
+  let prevPaused = selectSyncPaused(useTerminalActivityStore.getState());
   return (s: TerminalActivityState): void => {
-    const nextAgentActive = selectAnyAgentActive(s);
-    if (nextAgentActive === prevAgentActive) return;
-    prevAgentActive = nextAgentActive;
-    if (nextAgentActive) {
+    const nextPaused = selectSyncPaused(s);
+    if (nextPaused === prevPaused) return;
+    prevPaused = nextPaused;
+    if (nextPaused) {
       ctx.cancelWriteTimer();
-      const reason = selectPauseReason(s) ?? 'agent-terminal';
-      useSaveStatusStore.getState().markPaused(reason);
+      useSaveStatusStore.getState().markPaused('manual');
       return;
     }
-    // Agent just went idle. If the chokidar quiet window is also
-    // closed, reconcile now. If not, leave the existing quiet-resume
-    // timer to do the reconcile when its window expires.
     if (!ctx.quietWindow.isQuiet()) {
       ctx.reconcileAfterQuiet();
     }

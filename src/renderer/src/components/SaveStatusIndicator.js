@@ -23,7 +23,7 @@ const MAX_DIFF_ENTRIES = 5;
  *   - error          — write failed. Popover shows the message and
  *                      Retry; also offers Pause sync.
  *   - paused         — sync engine intentionally suspended. Popover
- *                      explains why (manual / agent-terminal /
+ *                      explains why (manual /
  *                      external-edit) and offers Resume.
  *   - diverged       — pause cleared; canvas + disk don't match;
  *                      user picks Save canvas or Discard canvas.
@@ -127,13 +127,7 @@ const pillVariantFor = (state) => {
  * Manual Pause / Resume control — present in EVERY popover variant.
  * This is the merged-in `SyncPauseToggle` UI: rather than a separate
  * toolbar button, the user opens the save-indicator dropdown and the
- * toggle lives there.
- *
- * The button reads the *current* sync intent and offers the opposite
- * action. `'auto'` ↔ `'paused'` is the normal flip; from `'resumed'`
- * (the user previously overrode an auto-pause) the next click goes to
- * `'paused'` so the user can still engage a hard pause without first
- * cycling through `'auto'`.
+ * toggle lives there. Resume also ends a pause an external edit opened.
  */
 const ManualToggle = ({ onAction }) => {
     const intent = useTerminalActivityStore((s) => s.userIntent);
@@ -145,22 +139,14 @@ const ManualToggle = ({ onAction }) => {
     const showResume = intent === 'paused' || state.kind === 'paused';
     const label = showResume ? 'Resume sync' : 'Pause sync';
     const handleClick = () => {
-        if (showResume) {
-            if (intent === 'paused') {
-                setUserIntent('auto');
-            }
-            else {
-                // Paused due to auto-detection (agent terminal / external
-                // edit). User has acknowledged it and is overriding. Set
-                // 'resumed' so the bridge sub stays out of paused even if
-                // the agent is still detected, then explicitly resume any
-                // chokidar-quiet pause.
-                setUserIntent('resumed');
-                resumeFromPause();
-            }
+        if (!showResume) {
+            setUserIntent('paused');
+        }
+        else if (intent === 'paused') {
+            setUserIntent('auto');
         }
         else {
-            setUserIntent('paused');
+            resumeFromPause();
         }
         onAction();
     };
@@ -207,10 +193,8 @@ const renderPopover = (state, close) => {
 const popoverBodyCopyFor = (state) => {
     if (state.kind === 'paused') {
         const message = state.reason === 'manual'
-            ? "Sync is paused — you've paused saving manually."
-            : state.reason === 'agent-terminal'
-                ? 'Sync paused — an agent is running in the terminal. Canvas edits will queue until it stops writing, or you resume manually.'
-                : 'Sync paused — an external editor is writing to project files. Canvas edits will queue until activity settles.';
+            ? "Sync is paused — you've paused saving manually. Edits save when you leave the page or resume."
+            : 'Sync paused — an external editor is writing to project files. Canvas edits will queue until activity settles.';
         return _jsx("p", { className: styles.popoverBody, children: message });
     }
     if (state.kind === 'reloaded-from-disk') {

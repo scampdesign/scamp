@@ -1210,23 +1210,6 @@ export type TerminalExitPayload = {
     exitCode: number;
 };
 /**
- * Foreground-process status for a pty. Emitted by the main-side
- * poller whenever the pty's foreground command changes.
- *
- *   - `processName: null` — pty is at a shell prompt (idle). The
- *     foreground process is the shell itself.
- *   - `processName: 'claude' | 'aider' | …` — a non-shell command
- *     is currently in the foreground; an agent is presumed running.
- *
- * The renderer's `terminalActivitySlice` maintains a per-terminal
- * map and a derived `anyAgentActive` selector. The sync bridge
- * subscribes to that selector and pauses when any pty is busy.
- */
-export type TerminalForegroundProcessPayload = {
-    id: string;
-    processName: string | null;
-};
-/**
  * Returned by `test:getBootstrap`. Off in normal usage; only populated
  * when the app is launched with `SCAMP_E2E=1`. The renderer uses this
  * to skip the Start Screen and auto-open a test project.

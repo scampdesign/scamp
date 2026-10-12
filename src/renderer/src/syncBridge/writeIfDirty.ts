@@ -12,11 +12,7 @@ import { useSaveStatusStore } from '@store/saveStatusSlice';
 import { useAppLogStore } from '@store/appLogSlice';
 import { errorMessage } from '@shared/errorMessage';
 import type { KeyframesBlock, ScampElement } from '@lib/element';
-import {
-  selectAnyAgentActive,
-  selectPauseReason,
-  useTerminalActivityStore,
-} from '@store/terminalActivitySlice';
+import { selectSyncPaused, useTerminalActivityStore } from '@store/terminalActivitySlice';
 
 import { externalEditTracker } from '../lib/externalEditTracker';
 import { captureAndPersistComponentThumbnail } from '../lib/componentThumbnail';
@@ -56,27 +52,16 @@ export const makeOnWriteConflict =
     intent?: WriteIntent
   ): void => {
     const store = useCanvasStore.getState();
-    // The write was kicked off against `target`, but the user may
-    // have navigated away in the meantime. Reloading the store's
-    // elements / pageSource for a stale target would clobber the
-    // canvas with the wrong page's content (visible as "Page B's
-    // breadcrumb with Page A's design"). Bail out without touching
-    // the store — the abandoned target's disk state will reconcile
-    // on the next visit via the initial-load path.
+    // The write was kicked off against `target`, but the user may have
+    // navigated away since — a page left mid-pause writes on the way out.
+    // The merge and its write still run (they only touch that target's
+    // files), but the store belongs to another page now: touching its
+    // elements / pageSource / cache would show page B with A's design.
     const currentTarget = toEditTarget(store.activePage, store.activeComponent);
-    if (
+    const stale =
       !currentTarget ||
       currentTarget.tsxPath !== target.tsxPath ||
-      currentTarget.cssPath !== target.cssPath
-    ) {
-      useAppLogStore
-        .getState()
-        .log(
-          'warn',
-          `Write conflict on ${target.name} arrived after navigation; skipping canvas reload.`
-        );
-      return;
-    }
+      currentTarget.cssPath !== target.cssPath;
     if (intent !== undefined) {
       const merged = mergeWrite({
         baseTsx: intent.baseTsx,
@@ -89,16 +74,18 @@ export const makeOnWriteConflict =
         isComponent: target.kind === 'component',
       });
       if (merged) {
-        ctx.lastSerializedTsx = merged.tsx;
-        ctx.lastSerializedCss = merged.css;
-        store.setPageSource({ tsx: merged.tsx, css: merged.css });
-        store.reloadElements(
-          merged.parsed.elements,
-          { tsx: merged.tsx, css: merged.css },
-          merged.parsed.customMediaBlocks,
-          merged.parsed.keyframesBlocks,
-          merged.parsed.cssDuplicates
-        );
+        if (!stale) {
+          ctx.lastSerializedTsx = merged.tsx;
+          ctx.lastSerializedCss = merged.css;
+          store.setPageSource({ tsx: merged.tsx, css: merged.css });
+          store.reloadElements(
+            merged.parsed.elements,
+            { tsx: merged.tsx, css: merged.css },
+            merged.parsed.customMediaBlocks,
+            merged.parsed.keyframesBlocks,
+            merged.parsed.cssDuplicates
+          );
+        }
         dispatchPageWrite(
           {
             kind: 'write',
@@ -121,6 +108,12 @@ export const makeOnWriteConflict =
         }
         return;
       }
+    }
+    if (stale) {
+      const message = `${target.name} changed outside Scamp after you left it, in the same places you edited; your edits to it weren't saved.`;
+      useAppLogStore.getState().log('warn', message);
+      useSaveStatusStore.getState().showToast(message);
+      return;
     }
     ctx.lastSerializedTsx = conflict.actualTsxContent;
     ctx.lastSerializedCss = conflict.actualCssContent;
@@ -201,7 +194,8 @@ export const makeWriteIfDirty =
     target: EditTarget,
     customMediaBlocks: ReadonlyArray<string>,
     pageKeyframesBlocks: ReadonlyArray<KeyframesBlock>,
-    silent: boolean = false
+    silent: boolean = false,
+    evenIfPaused: boolean = false
   ): void => {
     // Phase 1.1: bail when chokidar is mid-event for this target.
     // `lastSerialized` is stale until the chokidar handler finishes
@@ -218,23 +212,27 @@ export const makeWriteIfDirty =
     // we're inside the quiet window (an external edit landed in the
     // last QUIET_WINDOW_MS), defer the write. Agents typically write
     // the same file 2-5 times back-to-back; the window absorbs the
-    // burst so we don't race the in-between writes.
-    if (ctx.quietWindow.isQuiet()) {
-      useSaveStatusStore.getState().markPaused('external-edit');
-      // Don't toast here — the toast was already shown when the
-      // window opened or when a write was aborted at the start of
-      // the burst. Subsequent aborts inside the same window are silent.
-      return;
-    }
-    // Phase 4.3: pause when an agent is running. Either auto-detected
-    // (a non-shell foreground process in any integrated terminal) OR
-    // user-engaged (manual pause toggle). The reason carries through
-    // so the indicator popover shows the right copy.
-    {
-      const activity = useTerminalActivityStore.getState();
-      if (selectAnyAgentActive(activity)) {
-        const reason = selectPauseReason(activity) ?? 'agent-terminal';
-        useSaveStatusStore.getState().markPaused(reason);
+    // burst so we don't race the in-between writes. The user's own
+    // pause defers it the same way.
+    //
+    // Leaving the target writes anyway (`evenIfPaused`): the edit would
+    // otherwise exist only in memory, and the conflict check + merge
+    // keep it from overwriting an agent's write.
+    // see docs/notes/agent-coexistence.md
+    if (!evenIfPaused) {
+      if (ctx.quietWindow.isQuiet()) {
+        useSaveStatusStore.getState().markPaused('external-edit');
+        // Remembered so the reconcile after the window flushes it.
+        ctx.canvasChangedDuringQuiet = true;
+        // Don't toast here — the toast was already shown when the
+        // window opened or when a write was aborted at the start of
+        // the burst. Subsequent aborts inside the same window are silent.
+        return;
+      }
+      if (selectSyncPaused(useTerminalActivityStore.getState())) {
+        useSaveStatusStore.getState().markPaused('manual');
+        // Without this, resuming found nothing flagged and said "Saved".
+        ctx.canvasChangedDuringQuiet = true;
         return;
       }
     }

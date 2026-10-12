@@ -49,12 +49,11 @@ export type SaveState = {
     /**
      * Which signal is keeping the bridge paused:
      *   - `external-edit` — chokidar saw a project file change.
-     *   - `agent-terminal` — auto-detected agent in an integrated terminal.
-     *   - `manual` — user clicked the "Pause sync" toolbar button.
-     * The indicator's popover differentiates the three so the user
+     *   - `manual` — user clicked "Pause sync".
+     * The indicator's popover differentiates the two so the user
      * knows what to do (wait for the agent / click resume / etc.).
      */
-    reason: 'external-edit' | 'agent-terminal' | 'manual';
+    reason: 'external-edit' | 'manual';
 } | {
     /**
      * Sync engine is back online but the canvas's in-memory state
@@ -138,7 +137,7 @@ type SaveStatusState = {
      * `saved` / `unsaved` (we don't stomp `saving` / `error` /
      * existing `paused`).
      */
-    markPaused: (reason: 'external-edit' | 'agent-terminal' | 'manual') => void;
+    markPaused: (reason: 'external-edit' | 'manual') => void;
     /**
      * Pause cleared. If the canvas's in-memory state differs from disk,
      * transition to `diverged` (carrying the attempt for a `Save canvas`
