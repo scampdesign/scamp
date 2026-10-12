@@ -13,21 +13,11 @@ import { DEFAULT_BREAKPOINTS, type Breakpoint } from '@shared/types';
 import { createToolInvoker } from '../../main/mcp/tools';
 import type { ToolResult } from '../../main/mcp/protocol';
 import {
-  addElement,
-  deleteElement,
+  AGENT_EDITS,
   editFeedback,
   mergeThemeTokens,
-  moveElement,
   planExtraction,
-  renameList,
-  setShow,
-  setAttributes,
-  setStyles,
-  setTag,
-  setText,
-  wrapElements,
   type AgentEditContext,
-  type AgentEditResult,
 } from './agentEdits';
 import { answerSnapshotTool, type SnapshotInput, type SnapshotTree } from './canvasSnapshot';
 import { replaceSubtreeWithInstancePure } from './componentInstance';
@@ -60,21 +50,6 @@ export type HeadlessOptions = {
 };
 
 type AgentAnswer = ToolResult & { summary?: string };
-
-type Edit = (ctx: AgentEditContext, args: Record<string, unknown>) => AgentEditResult;
-
-const EDITS: Readonly<Record<string, Edit>> = {
-  scamp_set_styles: (ctx, a) => setStyles(ctx, { ...a, element: a['element'] }),
-  scamp_add_element: (ctx, a) => addElement(ctx, { ...a, parent: a['parent'] }),
-  scamp_set_text: (ctx, a) => setText(ctx, { element: a['element'], text: a['text'] }),
-  scamp_set_tag: (ctx, a) => setTag(ctx, { element: a['element'], tag: a['tag'] }),
-  scamp_set_attributes: (ctx, a) => setAttributes(ctx, { element: a['element'], attributes: a['attributes'] }),
-  scamp_move_element: (ctx, a) => moveElement(ctx, { ...a, element: a['element'], parent: a['parent'] }),
-  scamp_wrap_elements: (ctx, a) => wrapElements(ctx, { ...a, elements: a['elements'] }),
-  scamp_delete_element: (ctx, a) => deleteElement(ctx, { element: a['element'] }),
-  scamp_set_show: (ctx, a) => setShow(ctx, { element: a['element'], flag: a['flag'], shown: a['shown'] }),
-  scamp_rename_list: (ctx, a) => renameList(ctx, { list: a['list'], to: a['to'], row: a['row'], fields: a['fields'] }),
-};
 
 const text = (value: string, isError = false): AgentAnswer => ({
   content: [{ type: 'text', text: value }],
@@ -180,13 +155,13 @@ export const createHeadlessCanvas = (
     if (name === 'scamp_set_theme_tokens') return setThemeTokens(args);
     // One view is loaded here; the app edits any (see agentOffCanvas).
     const asked = typeof args['view'] === 'string' ? args['view'].trim() : '';
-    const edits = EDITS[name] !== undefined || name === 'scamp_extract_component' || name === 'scamp_use_component';
+    const edits = AGENT_EDITS[name] !== undefined || name === 'scamp_extract_component' || name === 'scamp_use_component';
     if (edits && asked.length > 0 && asked !== view) {
       return text(`Only ${view} is loaded here.`, true);
     }
     if (name === 'scamp_use_component') return text('No other components are loaded here.', true);
     if (name === 'scamp_extract_component') return extract(args);
-    const edit = EDITS[name];
+    const edit = AGENT_EDITS[name];
     if (edit === undefined) return read(name, args);
     const result = edit(context(), args);
     if (!result.ok) return text(result.error, true);

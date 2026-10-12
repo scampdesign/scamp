@@ -54,7 +54,6 @@
     "postcss": "^8.5.9",
     "react-colorful": "^5.7.0",
     "sharp": "^0.35.3",
-    "zundo": "^2.3.0",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

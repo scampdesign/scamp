@@ -676,3 +676,15 @@ export const renameList = (ctx, args) => {
         notes: [],
     };
 };
+export const AGENT_EDITS = {
+    scamp_set_styles: (ctx, a) => setStyles(ctx, { ...a, element: a['element'] }),
+    scamp_add_element: (ctx, a) => addElement(ctx, { ...a, parent: a['parent'] }),
+    scamp_set_text: (ctx, a) => setText(ctx, { element: a['element'], text: a['text'] }),
+    scamp_set_tag: (ctx, a) => setTag(ctx, { element: a['element'], tag: a['tag'] }),
+    scamp_set_attributes: (ctx, a) => setAttributes(ctx, { element: a['element'], attributes: a['attributes'] }),
+    scamp_move_element: (ctx, a) => moveElement(ctx, { ...a, element: a['element'], parent: a['parent'] }),
+    scamp_wrap_elements: (ctx, a) => wrapElements(ctx, { ...a, elements: a['elements'] }),
+    scamp_delete_element: (ctx, a) => deleteElement(ctx, { element: a['element'] }),
+    scamp_set_show: (ctx, a) => setShow(ctx, { element: a['element'], flag: a['flag'], shown: a['shown'] }),
+    scamp_rename_list: (ctx, a) => renameList(ctx, { list: a['list'], to: a['to'], row: a['row'], fields: a['fields'] }),
+};

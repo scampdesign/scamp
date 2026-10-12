@@ -2,10 +2,9 @@
 import { create } from 'zustand';
 let nextToastId = 1;
 /**
- * The save-status state machine lives in its own store so zundo's
- * temporal wrapper on `canvasSlice` doesn't capture these transitions
- * as undo steps, and so feature work can subscribe to save lifecycle
- * events without re-rendering on unrelated canvas changes.
+ * The save-status state machine lives in its own store so undo history
+ * never captures these transitions, and so feature work can subscribe to
+ * save lifecycle events without re-rendering on unrelated canvas changes.
  */
 export const useSaveStatusStore = create((set) => ({
     state: { kind: 'saved' },

@@ -151,4 +151,7 @@ export declare const renameList: (ctx: AgentEditContext, args: {
     row?: unknown;
     fields?: unknown;
 }) => AgentEditResult;
+/** The element edits, by tool name: one table for the canvas and the headless agent. */
+type Edit = (ctx: AgentEditContext, args: Record<string, unknown>) => AgentEditResult;
+export declare const AGENT_EDITS: Readonly<Record<string, Edit>>;
 export {};

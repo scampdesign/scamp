@@ -1,3 +1,14 @@
+/**
+ * Makes the Scamp Agent's edits. Main asks, this answers — once per
+ * request, always, since main is waiting on a timeout.
+ *
+ * An edit goes through `@lib/agentEdits` (Scamp's own generate → parse
+ * round trip). On the open view it lands in the store like any panel
+ * edit, so the normal save path writes it, and a turn's edits are one
+ * history transaction: one Cmd+Z undoes everything the agent did for one
+ * message. Any other view is edited in its files (`agentOffCanvas`).
+ * see docs/plans/builtin-agent-plan.md, docs/notes/agent-whole-project.md
+ */
 export type AgentEditAnswer = {
     ok: boolean;
     text: string;

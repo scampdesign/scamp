@@ -1,20 +1,10 @@
 import {
-  addElement,
-  deleteElement,
+  AGENT_EDITS,
   editFeedback,
   mergeThemeTokens,
   planExtraction,
   planInstanceSwap,
-  renameList,
-  setShow,
-  moveElement,
-  setAttributes,
-  setStyles,
-  setTag,
-  setText,
-  wrapElements,
   type AgentEditContext,
-  type AgentEditResult,
 } from '@lib/agentEdits';
 import { treeNameFor } from '@lib/canvasSnapshot';
 import { generateComponentFromSubtree } from '@lib/extractComponent';
@@ -45,21 +35,6 @@ import {
  * message. Any other view is edited in its files (`agentOffCanvas`).
  * see docs/plans/builtin-agent-plan.md, docs/notes/agent-whole-project.md
  */
-
-type Edit = (ctx: AgentEditContext, args: Record<string, unknown>) => AgentEditResult;
-
-const EDITS: Readonly<Record<string, Edit>> = {
-  scamp_set_styles: (ctx, a) => setStyles(ctx, { ...a, element: a['element'] }),
-  scamp_add_element: (ctx, a) => addElement(ctx, { ...a, parent: a['parent'] }),
-  scamp_set_text: (ctx, a) => setText(ctx, { element: a['element'], text: a['text'] }),
-  scamp_set_tag: (ctx, a) => setTag(ctx, { element: a['element'], tag: a['tag'] }),
-  scamp_set_attributes: (ctx, a) => setAttributes(ctx, { element: a['element'], attributes: a['attributes'] }),
-  scamp_move_element: (ctx, a) => moveElement(ctx, { ...a, element: a['element'], parent: a['parent'] }),
-  scamp_wrap_elements: (ctx, a) => wrapElements(ctx, { ...a, elements: a['elements'] }),
-  scamp_delete_element: (ctx, a) => deleteElement(ctx, { element: a['element'] }),
-  scamp_set_show: (ctx, a) => setShow(ctx, { element: a['element'], flag: a['flag'], shown: a['shown'] }),
-  scamp_rename_list: (ctx, a) => renameList(ctx, { list: a['list'], to: a['to'], row: a['row'], fields: a['fields'] }),
-};
 
 export type AgentEditAnswer = {
   ok: boolean;
@@ -263,7 +238,7 @@ export const executeAgentEdit = async (
   if (tool === 'scamp_find_overflow') return measureFor(state.projectPath, input, turnId);
   // The theme is the project's, whichever view is open.
   if (tool === 'scamp_set_theme_tokens') return setThemeTokens(state.projectPath, input);
-  const edit = EDITS[tool];
+  const edit = AGENT_EDITS[tool];
   if (edit === undefined && tool !== 'scamp_extract_component' && tool !== 'scamp_use_component') {
     return { ok: false, text: `Unknown edit: ${tool}` };
   }

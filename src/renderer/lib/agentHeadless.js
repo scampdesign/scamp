@@ -9,7 +9,7 @@
 // see docs/plans/builtin-agent-plan.md
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
 import { createToolInvoker } from '../../main/mcp/tools';
-import { addElement, deleteElement, editFeedback, mergeThemeTokens, moveElement, planExtraction, renameList, setShow, setAttributes, setStyles, setTag, setText, wrapElements, } from './agentEdits';
+import { AGENT_EDITS, editFeedback, mergeThemeTokens, planExtraction, } from './agentEdits';
 import { answerSnapshotTool } from './canvasSnapshot';
 import { replaceSubtreeWithInstancePure } from './componentInstance';
 import { generateElementId } from './element/tree';
@@ -17,18 +17,6 @@ import { generateComponentFromSubtree } from './extractComponent';
 import { classNameFor } from './generateCode';
 import { parseCode } from './parseCode';
 import { parseThemeFile, serializeThemeFile } from './parseTheme';
-const EDITS = {
-    scamp_set_styles: (ctx, a) => setStyles(ctx, { ...a, element: a['element'] }),
-    scamp_add_element: (ctx, a) => addElement(ctx, { ...a, parent: a['parent'] }),
-    scamp_set_text: (ctx, a) => setText(ctx, { element: a['element'], text: a['text'] }),
-    scamp_set_tag: (ctx, a) => setTag(ctx, { element: a['element'], tag: a['tag'] }),
-    scamp_set_attributes: (ctx, a) => setAttributes(ctx, { element: a['element'], attributes: a['attributes'] }),
-    scamp_move_element: (ctx, a) => moveElement(ctx, { ...a, element: a['element'], parent: a['parent'] }),
-    scamp_wrap_elements: (ctx, a) => wrapElements(ctx, { ...a, elements: a['elements'] }),
-    scamp_delete_element: (ctx, a) => deleteElement(ctx, { element: a['element'] }),
-    scamp_set_show: (ctx, a) => setShow(ctx, { element: a['element'], flag: a['flag'], shown: a['shown'] }),
-    scamp_rename_list: (ctx, a) => renameList(ctx, { list: a['list'], to: a['to'], row: a['row'], fields: a['fields'] }),
-};
 const text = (value, isError = false) => ({
     content: [{ type: 'text', text: value }],
     ...(isError ? { isError: true } : {}),
@@ -121,7 +109,7 @@ export const createHeadlessCanvas = (initial, options) => {
             return setThemeTokens(args);
         // One view is loaded here; the app edits any (see agentOffCanvas).
         const asked = typeof args['view'] === 'string' ? args['view'].trim() : '';
-        const edits = EDITS[name] !== undefined || name === 'scamp_extract_component' || name === 'scamp_use_component';
+        const edits = AGENT_EDITS[name] !== undefined || name === 'scamp_extract_component' || name === 'scamp_use_component';
         if (edits && asked.length > 0 && asked !== view) {
             return text(`Only ${view} is loaded here.`, true);
         }
@@ -129,7 +117,7 @@ export const createHeadlessCanvas = (initial, options) => {
             return text('No other components are loaded here.', true);
         if (name === 'scamp_extract_component')
             return extract(args);
-        const edit = EDITS[name];
+        const edit = AGENT_EDITS[name];
         if (edit === undefined)
             return read(name, args);
         const result = edit(context(), args);

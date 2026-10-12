@@ -159,10 +159,9 @@ type SaveStatusState = {
     dismissToast: (id: number) => void;
 };
 /**
- * The save-status state machine lives in its own store so zundo's
- * temporal wrapper on `canvasSlice` doesn't capture these transitions
- * as undo steps, and so feature work can subscribe to save lifecycle
- * events without re-rendering on unrelated canvas changes.
+ * The save-status state machine lives in its own store so undo history
+ * never captures these transitions, and so feature work can subscribe to
+ * save lifecycle events without re-rendering on unrelated canvas changes.
  */
 export declare const useSaveStatusStore: import("zustand").UseBoundStore<import("zustand").StoreApi<SaveStatusState>>;
 export {};
