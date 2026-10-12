@@ -459,6 +459,12 @@ font-size: 14px;
   color: var(--text-inverse);
 }
 
+/* Picked with Cmd/Ctrl+click, to group. */
+.pageSelected {
+  background: var(--accent-muted);
+  color: var(--text-primary);
+}
+
 .addPageButton {
   margin-top: 6px;
   width: 100%;

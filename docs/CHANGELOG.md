@@ -28,6 +28,8 @@ release time.
 
 - **Group pages in the Pages list.** Click **+ New group**, then drag
   pages into it, or right-click a page and select **Move to** a group.
+  To group several at once, Cmd+click (Ctrl+click) them and press
+  **Cmd+G**, or right-click and select **Group**.
   Drag pages and groups into any order, and collapse a group to keep a
   big project scannable. Groups change only the list: a page's files,
   route, and code are the same wherever it sits. The groups are saved in

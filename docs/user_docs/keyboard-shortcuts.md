@@ -18,7 +18,7 @@ A complete reference of the keyboard shortcuts in Scamp.
 |---|---|
 | **Cmd+D** | Duplicate the selected element |
 | **Delete** or **Backspace** | Delete the selected element |
-| **Cmd+G** | Group the selected elements |
+| **Cmd+G** | Group the selected elements; in the **Pages** list, group the pages picked with Cmd+click |
 | **Cmd+Shift+G** | Ungroup the selected group |
 | **Cmd+C** | Copy the selection |
 | **Cmd+X** | Cut the selection (one undo step) |

@@ -37,6 +37,12 @@ export declare const moveTargets: (layout: ReadonlyArray<PageLayoutEntry>, slug:
 export declare const movePageToGroup: (layout: ReadonlyArray<PageLayoutEntry>, slug: string, group: string | null) => PageLayoutEntry[];
 /** Insert `slug` right after `after`, in the same group; at the end if `after` isn't there. */
 export declare const insertPageAfter: (layout: ReadonlyArray<PageLayoutEntry>, slug: string, after: string) => PageLayoutEntry[];
+/**
+ * Make a group of these pages, in list order, where the first of them was:
+ * in its place at the top level, or right after the group it came from.
+ * Slugs not in the layout are ignored; with none left, nothing changes.
+ */
+export declare const groupPages: (layout: ReadonlyArray<PageLayoutEntry>, slugs: ReadonlyArray<string>, name: string) => PageLayoutEntry[];
 export declare const addGroup: (layout: ReadonlyArray<PageLayoutEntry>, name: string) => PageLayoutEntry[];
 export declare const renameGroup: (layout: ReadonlyArray<PageLayoutEntry>, from: string, to: string) => PageLayoutEntry[];
 /** Deleting a group keeps its pages: they move to the top level where it was. */

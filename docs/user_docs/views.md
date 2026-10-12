@@ -68,6 +68,12 @@ To create a group:
 1. At the bottom of the **Pages** list, click **+ New group**.
 2. Type a name, such as `Marketing`, and press Enter.
 
+To group several pages at once, hold Cmd (macOS) or Ctrl (Windows and
+Linux) and click each page; clicking this way picks a page without
+opening it, and the page you have open is picked too. Then press
+**Cmd+G** or **Ctrl+G**, or right-click one of the picked pages and
+select **Group 2 pages**. Press Escape to clear the picks.
+
 To put a page in a group, drag it onto the group's name. You can also
 right-click the page and select **Move to Marketing**. To take it back
 out, drag it next to a page outside the group, or select **Move to top

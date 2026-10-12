@@ -4,6 +4,7 @@ import {
   addGroup,
   groupNameError,
   groupOf,
+  groupPages,
   insertPageAfter,
   movePageToGroup,
   moveRow,
@@ -190,5 +191,31 @@ describe('moveTargets', () => {
   it('offers only groups for a top-level page, and nothing with no groups', () => {
     expect(moveTargets(LAYOUT, 'blog').map((t) => t.group)).toEqual(['Marketing', 'Account']);
     expect(moveTargets([{ page: 'home' }], 'home')).toEqual([]);
+  });
+});
+
+describe('groupPages', () => {
+  it('groups top-level pages in list order, where the first of them was', () => {
+    expect(groupPages(LAYOUT, ['blog', 'home'], 'Main')).toEqual([
+      { group: 'Main', pages: ['home', 'blog'] },
+      { group: 'Marketing', pages: ['about', 'pricing'] },
+      { group: 'Account', pages: ['login'] },
+    ]);
+  });
+
+  it('takes pages out of their groups, and puts the new group after the first one’s group', () => {
+    expect(groupPages(LAYOUT, ['login', 'pricing'], 'Mixed')).toEqual([
+      { page: 'home' },
+      { group: 'Marketing', pages: ['about'] },
+      { group: 'Mixed', pages: ['pricing', 'login'] },
+      { page: 'blog' },
+      { group: 'Account', pages: [] },
+    ]);
+  });
+
+  it('ignores pages that aren’t in the list, and does nothing if none are', () => {
+    expect(groupPages(LAYOUT, ['nope', 'blog'], 'One')).toContainEqual({ group: 'One', pages: ['blog'] });
+    expect(groupPages(LAYOUT, ['nope'], 'None')).toEqual(LAYOUT);
+    expect(groupPages(LAYOUT, [], 'None')).toEqual(LAYOUT);
   });
 });

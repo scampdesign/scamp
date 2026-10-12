@@ -4,6 +4,8 @@ import type { Page } from '@playwright/test';
 
 import { test, expect } from '../fixtures/app';
 import { clickContextMenuItem, openPageContextMenu, openPagesSection } from '../fixtures/components';
+import { waitForSaved } from '../fixtures/assertions';
+import { drawAndSelectRect } from '../fixtures/panel';
 import { pageRoot, pageSidebarItem, pagesList } from '../fixtures/selectors';
 
 /**
@@ -129,4 +131,45 @@ test('the group menu adds a page into it, renames it, and deletes it without del
   await expect(groupHeader(window, 'Guides')).toHaveCount(0);
   await expect(pageSidebarItem(window, 'guide')).toBeVisible();
   await expect.poll(() => storedLayout(project.dir)).toContainEqual({ page: 'guide' });
+});
+
+test('Cmd+click picks pages and Cmd+G groups them, leaving the canvas’s Cmd+G alone', async ({ window, project }) => {
+  await expect(pageRoot(window)).toBeVisible();
+  // A selected element on the canvas: the canvas's Cmd+G would wrap it.
+  await drawAndSelectRect(window, { x: 80, y: 80 }, { x: 180, y: 160 });
+  await waitForSaved(window);
+  const canvasBefore = await project.readPage('home');
+
+  await openPagesSection(window);
+  await pageSidebarItem(window, 'about').click({ modifiers: ['ControlOrMeta'] });
+  await pageSidebarItem(window, 'pricing').click({ modifiers: ['ControlOrMeta'] });
+  await expect(pageSidebarItem(window, 'pricing')).toHaveAttribute('aria-pressed', 'true');
+  // Cmd+click picks; it doesn't open.
+  await expect(window.getByTitle('Select page root')).toHaveText('home');
+
+  await window.keyboard.press('ControlOrMeta+g');
+  const name = window.getByLabel('Group name');
+  await name.fill('Marketing');
+  await name.press('Enter');
+  // Home was open when picking started, so it's picked too.
+  await expect
+    .poll(() => storedLayout(project.dir))
+    .toContainEqual({ group: 'Marketing', pages: ['home', 'about', 'pricing'] });
+
+  await window.waitForTimeout(300);
+  expect(await project.readPage('home')).toEqual(canvasBefore);
+});
+
+test('right-clicking a picked page offers to group the selection', async ({ window, project }) => {
+  await expect(pageRoot(window)).toBeVisible();
+  await openPagesSection(window);
+  await pageSidebarItem(window, 'about').click({ modifiers: ['ControlOrMeta'] });
+  await pageSidebarItem(window, 'home').click({ modifiers: ['ControlOrMeta'] }); // un-pick the open page
+  await pageSidebarItem(window, 'pricing').click({ modifiers: ['ControlOrMeta'] });
+
+  await pageSidebarItem(window, 'pricing').click({ button: 'right' });
+  await clickContextMenuItem(window, 'Group 2 pages');
+  await window.getByLabel('Group name').press('Enter');
+  await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Group', pages: ['about', 'pricing'] });
+  await expect(pageSidebarItem(window, 'about')).toHaveAttribute('aria-pressed', 'false');
 });

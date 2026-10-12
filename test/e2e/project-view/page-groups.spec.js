@@ -2,6 +2,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { test, expect } from '../fixtures/app';
 import { clickContextMenuItem, openPageContextMenu, openPagesSection } from '../fixtures/components';
+import { waitForSaved } from '../fixtures/assertions';
+import { drawAndSelectRect } from '../fixtures/panel';
 import { pageRoot, pageSidebarItem, pagesList } from '../fixtures/selectors';
 /**
  * Groups in the Pages list: a layer over the list only. Pages keep their
@@ -76,4 +78,61 @@ test('a renamed page stays in its group, and a dragged page can leave it', async
     await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Marketing', pages: [] });
     const layout = (await storedLayout(project.dir));
     expect(layout[0]).toEqual({ page: 'company' });
+});
+test('the group menu adds a page into it, renames it, and deletes it without deleting pages', async ({ window, project, }) => {
+    await expect(pageRoot(window)).toBeVisible();
+    await makeGroup(window, 'Docs');
+    await groupHeader(window, 'Docs').click({ button: 'right' });
+    await clickContextMenuItem(window, 'Add page here');
+    const input = window.getByPlaceholder('page-name');
+    await input.fill('guide');
+    await input.press('Enter');
+    await expect(pageSidebarItem(window, 'guide')).toBeVisible();
+    await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Docs', pages: ['guide'] });
+    await groupHeader(window, 'Docs').click({ button: 'right' });
+    await clickContextMenuItem(window, 'Rename group');
+    const name = window.getByLabel('Group name');
+    await name.fill('Guides');
+    await name.press('Enter');
+    await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Guides', pages: ['guide'] });
+    await groupHeader(window, 'Guides').click({ button: 'right' });
+    await clickContextMenuItem(window, 'Delete group');
+    await expect(groupHeader(window, 'Guides')).toHaveCount(0);
+    await expect(pageSidebarItem(window, 'guide')).toBeVisible();
+    await expect.poll(() => storedLayout(project.dir)).toContainEqual({ page: 'guide' });
+});
+test('Cmd+click picks pages and Cmd+G groups them, leaving the canvas’s Cmd+G alone', async ({ window, project }) => {
+    await expect(pageRoot(window)).toBeVisible();
+    // A selected element on the canvas: the canvas's Cmd+G would wrap it.
+    await drawAndSelectRect(window, { x: 80, y: 80 }, { x: 180, y: 160 });
+    await waitForSaved(window);
+    const canvasBefore = await project.readPage('home');
+    await openPagesSection(window);
+    await pageSidebarItem(window, 'about').click({ modifiers: ['ControlOrMeta'] });
+    await pageSidebarItem(window, 'pricing').click({ modifiers: ['ControlOrMeta'] });
+    await expect(pageSidebarItem(window, 'pricing')).toHaveAttribute('aria-pressed', 'true');
+    // Cmd+click picks; it doesn't open.
+    await expect(window.getByTitle('Select page root')).toHaveText('home');
+    await window.keyboard.press('ControlOrMeta+g');
+    const name = window.getByLabel('Group name');
+    await name.fill('Marketing');
+    await name.press('Enter');
+    // Home was open when picking started, so it's picked too.
+    await expect
+        .poll(() => storedLayout(project.dir))
+        .toContainEqual({ group: 'Marketing', pages: ['home', 'about', 'pricing'] });
+    await window.waitForTimeout(300);
+    expect(await project.readPage('home')).toEqual(canvasBefore);
+});
+test('right-clicking a picked page offers to group the selection', async ({ window, project }) => {
+    await expect(pageRoot(window)).toBeVisible();
+    await openPagesSection(window);
+    await pageSidebarItem(window, 'about').click({ modifiers: ['ControlOrMeta'] });
+    await pageSidebarItem(window, 'home').click({ modifiers: ['ControlOrMeta'] }); // un-pick the open page
+    await pageSidebarItem(window, 'pricing').click({ modifiers: ['ControlOrMeta'] });
+    await pageSidebarItem(window, 'pricing').click({ button: 'right' });
+    await clickContextMenuItem(window, 'Group 2 pages');
+    await window.getByLabel('Group name').press('Enter');
+    await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Group', pages: ['about', 'pricing'] });
+    await expect(pageSidebarItem(window, 'about')).toHaveAttribute('aria-pressed', 'false');
 });

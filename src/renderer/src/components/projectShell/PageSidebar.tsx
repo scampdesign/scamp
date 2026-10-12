@@ -11,6 +11,7 @@ import { viewNameForPage, viewSlugFor } from '@shared/templates';
 import {
   addGroup,
   groupNameError,
+  groupPages,
   insertPageAfter,
   movePageToGroup,
   moveRow,
@@ -148,6 +149,48 @@ export const PageSidebar = ({
   const [renamingGroup, setRenamingGroup] = useState<string | null>(null);
   /** The group "Add page here" was chosen from, while its name field is open. */
   const [addToGroup, setAddToGroup] = useState<string | null>(null);
+  /** Pages picked with Cmd/Ctrl+click, to group together. */
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
+
+  const activeSlug = (() => {
+    for (const row of rows.values()) {
+      if (row.kind === 'view' ? activeComponent?.name === row.view.name : activeComponent === null && activePageName === row.page.name) {
+        return row.slug;
+      }
+    }
+    return null;
+  })();
+
+  /** Cmd/Ctrl+click: add or remove a page. The first one also picks up the open page. */
+  const toggleSelected = (slug: string): void => {
+    setSelected((prev) => {
+      const next = new Set(prev.size === 0 && activeSlug !== null ? [activeSlug] : prev);
+      if (next.has(slug) && prev.size > 0) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  };
+
+  const groupSelection = (): void => {
+    const slugs = [...selected].filter((slug) => rows.has(slug));
+    setSelected(new Set());
+    if (slugs.length === 0) return;
+    const name = nextGroupName(layout);
+    arrange((shown) => groupPages(shown, slugs, name));
+    setRenamingGroup(name);
+  };
+
+  /** Right-click inside a multi-page selection acts on the selection. */
+  const handleRowContextMenu = (e: ReactMouseEvent, slug: string, open: (e: ReactMouseEvent) => void): void => {
+    if (selected.has(slug) && selected.size > 1) {
+      e.preventDefault();
+      setSelectionMenu({ x: e.clientX, y: e.clientY });
+      return;
+    }
+    setSelected(new Set());
+    open(e);
+  };
 
   /** Apply an arrangement to the whole list as shown, so it's stored complete. */
   const arrange = (change: (shown: PageLayoutEntry[]) => PageLayoutEntry[]): void => {
@@ -279,12 +322,22 @@ export const PageSidebar = ({
       return (
         <li key={`view:${view.name}`}>
           <button
-            className={`${styles.pageButton} ${isActive ? styles.pageActive : ''} ${dropping}`}
-            onClick={() => {
+            className={`${styles.pageButton} ${isActive ? styles.pageActive : ''} ${
+              selected.has(row.slug) ? styles.pageSelected : ''
+            } ${dropping}`}
+            aria-pressed={selected.has(row.slug)}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey) {
+                toggleSelected(row.slug);
+                // Focused, so Cmd+G lands on the list's handler.
+                e.currentTarget.focus();
+                return;
+              }
+              setSelected(new Set());
               if (isEditingPage || isActive) return;
               openView(view.name);
             }}
-            onContextMenu={(e) => openViewMenu(e, view.name)}
+            onContextMenu={(e) => handleRowContextMenu(e, row.slug, (ev) => openViewMenu(ev, view.name))}
             type="button"
             data-page-slug={row.slug}
             {...drag}
@@ -359,8 +412,16 @@ export const PageSidebar = ({
             activePageName === page.name
               ? styles.pageActive
               : ''
-          } ${dropping}`}
-          onClick={() => {
+          } ${selected.has(page.name) ? styles.pageSelected : ''} ${dropping}`}
+          aria-pressed={selected.has(page.name)}
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey) {
+              toggleSelected(page.name);
+              // Focused, so Cmd+G lands on the list's handler.
+              e.currentTarget.focus();
+              return;
+            }
+            setSelected(new Set());
             if (isEditingPage) return;
             // Clicking the same page that's already
             // active is a no-op for state but we
@@ -386,7 +447,7 @@ export const PageSidebar = ({
             }
             setActivePageName(page.name);
           }}
-          onContextMenu={(e) => openPageMenu(e, page.name)}
+          onContextMenu={(e) => handleRowContextMenu(e, page.name, (ev) => openPageMenu(ev, page.name))}
           type="button"
           data-page-slug={page.name}
           {...drag}
@@ -415,7 +476,22 @@ export const PageSidebar = ({
   return (
     <div className={styles.sidebarSection}>
       <h2 className={styles.sidebarTitle}>Pages</h2>
-      <ul className={styles.pageList}>
+      <ul
+        className={styles.pageList}
+        onKeyDown={(e) => {
+          // Only with pages picked: otherwise Cmd+G stays the canvas's
+          // "group elements", and Escape the canvas's own.
+          if (selected.size === 0) return;
+          if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'g') {
+            e.preventDefault();
+            e.stopPropagation();
+            groupSelection();
+          } else if (e.key === 'Escape') {
+            e.stopPropagation();
+            setSelected(new Set());
+          }
+        }}
+      >
         {layout.map((entry) => {
           if ('page' in entry) {
             const row = rows.get(entry.page);
@@ -471,6 +547,14 @@ export const PageSidebar = ({
         })}
         {pageEdit === 'new' && addToGroup === null && newPageInput}
       </ul>
+      {selectionMenu !== null && (
+        <PageContextMenu
+          x={selectionMenu.x}
+          y={selectionMenu.y}
+          items={[{ label: `Group ${selected.size} pages`, onSelect: groupSelection }]}
+          onClose={() => setSelectionMenu(null)}
+        />
+      )}
       {groupMenu !== null && (
         <PageContextMenu
           x={groupMenu.x}

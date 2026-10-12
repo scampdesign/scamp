@@ -108,6 +108,41 @@ export const insertPageAfter = (
 ): PageLayoutEntry[] =>
   moveRow([...removePage(layout, slug), { page: slug }], { kind: 'page', slug }, { kind: 'page', slug: after }, 'after');
 
+/**
+ * Make a group of these pages, in list order, where the first of them was:
+ * in its place at the top level, or right after the group it came from.
+ * Slugs not in the layout are ignored; with none left, nothing changes.
+ */
+export const groupPages = (
+  layout: ReadonlyArray<PageLayoutEntry>,
+  slugs: ReadonlyArray<string>,
+  name: string
+): PageLayoutEntry[] => {
+  const wanted = new Set(slugs);
+  const ordered = layout.flatMap((e) => ('page' in e ? [e.page] : e.pages)).filter((s) => wanted.has(s));
+  if (ordered.length === 0) return [...layout];
+  const grouped: PageLayoutEntry = { group: name, pages: ordered };
+  const out: PageLayoutEntry[] = [];
+  let placed = false;
+  for (const entry of layout) {
+    if ('page' in entry) {
+      if (!wanted.has(entry.page)) out.push(entry);
+      else if (!placed) {
+        out.push(grouped);
+        placed = true;
+      }
+      continue;
+    }
+    const rest = entry.pages.filter((p) => !wanted.has(p));
+    out.push({ group: entry.group, pages: rest });
+    if (!placed && rest.length !== entry.pages.length) {
+      out.push(grouped);
+      placed = true;
+    }
+  }
+  return out;
+};
+
 export const addGroup = (layout: ReadonlyArray<PageLayoutEntry>, name: string): PageLayoutEntry[] => [
   ...layout,
   { group: name, pages: [] },
