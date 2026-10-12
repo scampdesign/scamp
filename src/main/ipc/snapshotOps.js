@@ -7,6 +7,7 @@ import { promises as fs } from 'fs';
 import { dirname, join, relative, sep } from 'path';
 import { randomUUID } from 'crypto';
 import { designMdPathFor } from './designMdOps';
+import { atomicWrite, serializeByKey } from './fileOps';
 import { themePathFor } from './themeOps';
 /** Max snapshots kept locally; oldest is pruned when a new one exceeds it. */
 export const SNAPSHOT_LIMIT = 50;
@@ -96,8 +97,17 @@ const readIndex = async (projectPath) => {
 };
 const writeIndex = async (projectPath, snapshots) => {
     await fs.mkdir(scampDir(projectPath), { recursive: true });
-    await fs.writeFile(indexPath(projectPath), JSON.stringify({ snapshots }, null, 2), 'utf-8');
+    // Atomic: a torn index reads back as no snapshots at all.
+    await atomicWrite(indexPath(projectPath), JSON.stringify({ snapshots }, null, 2));
 };
+/**
+ * Read, change, and write the index as one step. Snapshots are taken
+ * concurrently (session open, an agent edit, auto-save), and two that
+ * each read the index then wrote it back dropped one entry.
+ */
+const updateIndex = (projectPath, change) => serializeByKey(indexPath(projectPath), async () => {
+    await writeIndex(projectPath, await change(await readIndex(projectPath)));
+});
 // ---- File enumeration + recursive walk ----
 const exists = async (p) => {
     try {
@@ -264,13 +274,15 @@ export const createSnapshot = async (projectPath, format, trigger, detail, nowMs
             label: formatTriggerLabel(trigger, detail),
             pageCount: countPages(projectPath, files),
         };
-        const { kept, removed } = pruneToLimit([...existing, meta]);
-        for (const r of removed) {
-            await fs
-                .rm(snapshotDirFor(projectPath, r.id), { recursive: true, force: true })
-                .catch(() => undefined);
-        }
-        await writeIndex(projectPath, kept);
+        await updateIndex(projectPath, async (current) => {
+            const { kept, removed } = pruneToLimit([...current, meta]);
+            for (const r of removed) {
+                await fs
+                    .rm(snapshotDirFor(projectPath, r.id), { recursive: true, force: true })
+                    .catch(() => undefined);
+            }
+            return kept;
+        });
         return meta;
     }
     catch (err) {
@@ -301,14 +313,11 @@ export const readSnapshotPage = async (projectPath, snapshotId, tsxPath, cssPath
 };
 export const deleteSnapshot = async (projectPath, snapshotId) => {
     try {
-        const existing = await readIndex(projectPath);
-        await fs
-            .rm(snapshotDirFor(projectPath, snapshotId), {
-            recursive: true,
-            force: true,
-        })
-            .catch(() => undefined);
-        await writeIndex(projectPath, existing.filter((s) => s.id !== snapshotId));
+        const dir = snapshotDirFor(projectPath, snapshotId);
+        await updateIndex(projectPath, async (current) => {
+            await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+            return current.filter((s) => s.id !== snapshotId);
+        });
         return { ok: true };
     }
     catch {

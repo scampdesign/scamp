@@ -62,7 +62,7 @@ let project = null;
 const keyId = (key) => `${key.kind}:${key.name}`;
 /** Forget the restore point: a new conversation, or one just undone. */
 const forgetRestorePoint = (conversation) => {
-    conversation.snapshotTaken = false;
+    conversation.restorePoint = null;
     conversation.snapshotId = null;
     conversation.createdComponents = [];
 };
@@ -98,7 +98,7 @@ const createConversation = async (projectPath, key, holder) => {
         key,
         transcript: stored?.transcript ?? [],
         skill: stored?.skill ?? null,
-        snapshotTaken: false,
+        restorePoint: null,
         snapshotId: null,
         createdComponents: [],
         saving: Promise.resolve(),
@@ -126,11 +126,15 @@ const createConversation = async (projectPath, key, holder) => {
                 // A restore point before the conversation's first edit, taken
                 // while disk still holds the pre-agent design. Best-effort: a
                 // failed snapshot logs and doesn't block the edit.
-                if (!conversation.snapshotTaken) {
-                    conversation.snapshotTaken = true;
-                    const snapshot = await createSnapshot(projectPath, await getProjectFormat(projectPath), 'agent_session');
+                conversation.restorePoint ??= getProjectFormat(projectPath)
+                    .then((format) => createSnapshot(projectPath, format, 'agent_session'))
+                    .then((snapshot) => {
                     conversation.snapshotId = snapshot?.id ?? null;
-                }
+                })
+                    .catch(() => {
+                    conversation.snapshotId = null;
+                });
+                await conversation.restorePoint;
                 try {
                     const answer = await runAgentEdit(name, args, turnId);
                     if (typeof answer.createdComponent === 'string') {

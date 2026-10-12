@@ -13,3 +13,9 @@
  * containment checks and pending-write bookkeeping around it.
  */
 export declare const atomicWrite: (path: string, content: string) => Promise<void>;
+/**
+ * Run `job` once every earlier job with the same `key` has settled, so two
+ * read-modify-writes of one file (or one index) can't interleave and drop
+ * each other's change. Keys are usually absolute paths.
+ */
+export declare const serializeByKey: <T>(key: string, job: () => Promise<T>) => Promise<T>;

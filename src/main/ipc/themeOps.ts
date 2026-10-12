@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import type { ProjectFormat } from '@shared/types';
+import { atomicWrite } from './fileOps';
 
 /**
  * Path on disk where a project's `theme.css` lives. Nextjs projects
@@ -41,5 +42,5 @@ export const writeThemeFile = async (
   format: ProjectFormat,
   content: string
 ): Promise<void> => {
-  await fs.writeFile(themePathFor(projectPath, format), content, 'utf-8');
+  await atomicWrite(themePathFor(projectPath, format), content);
 };

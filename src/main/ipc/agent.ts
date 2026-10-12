@@ -95,8 +95,12 @@ type Conversation = {
   transcript: TranscriptEntry[];
   /** The skill this conversation runs under, to restore it after a restart. */
   skill: AgentSkillRequest | null;
-  /** Whether this conversation's pre-edit snapshot has been taken. */
-  snapshotTaken: boolean;
+  /**
+   * The pre-edit snapshot, once started. Every edit awaits it: a reply's
+   * edits run at once, and the second used to write before the first
+   * edit's snapshot had copied the files, so Undo missed it.
+   */
+  restorePoint: Promise<void> | null;
   /** That snapshot, for Undo AI session. Null if it couldn't be taken. */
   snapshotId: string | null;
   /** Components the agent created since — a restore copies files back but never removes new ones. */
@@ -118,7 +122,7 @@ const keyId = (key: AgentConversationKey): string => `${key.kind}:${key.name}`;
 
 /** Forget the restore point: a new conversation, or one just undone. */
 const forgetRestorePoint = (conversation: Conversation): void => {
-  conversation.snapshotTaken = false;
+  conversation.restorePoint = null;
   conversation.snapshotId = null;
   conversation.createdComponents = [];
 };
@@ -165,7 +169,7 @@ const createConversation = async (
     key,
     transcript: stored?.transcript ?? [],
     skill: stored?.skill ?? null,
-    snapshotTaken: false,
+    restorePoint: null,
     snapshotId: null,
     createdComponents: [],
     saving: Promise.resolve(),
@@ -190,11 +194,15 @@ const createConversation = async (
         // A restore point before the conversation's first edit, taken
         // while disk still holds the pre-agent design. Best-effort: a
         // failed snapshot logs and doesn't block the edit.
-        if (!conversation.snapshotTaken) {
-          conversation.snapshotTaken = true;
-          const snapshot = await createSnapshot(projectPath, await getProjectFormat(projectPath), 'agent_session');
-          conversation.snapshotId = snapshot?.id ?? null;
-        }
+        conversation.restorePoint ??= getProjectFormat(projectPath)
+          .then((format) => createSnapshot(projectPath, format, 'agent_session'))
+          .then((snapshot) => {
+            conversation.snapshotId = snapshot?.id ?? null;
+          })
+          .catch(() => {
+            conversation.snapshotId = null;
+          });
+        await conversation.restorePoint;
         try {
           const answer = await runAgentEdit(name, args, turnId);
           if (typeof answer.createdComponent === 'string') {

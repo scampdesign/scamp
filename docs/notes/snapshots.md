@@ -29,6 +29,11 @@ snapshots; **Cmd+Z / Cmd+Shift+Z** in-session undo is a separate system
     components/<Name>/<Name>.*
 ```
 
+- `snapshots.json` is written atomically, and every change to it
+  (`updateIndex`) reads, changes, and writes it as one queued step.
+  Snapshots are taken concurrently (session open, an agent edit,
+  auto-save); two that each read then wrote the index dropped an entry,
+  and a torn write read back as an empty history.
 - `.scamp/` is already in the scaffolded `.gitignore` and already ignored
   by chokidar (`watcher.ts`), so snapshot writes never fire `file:changed`.
 - The snapshot **folder is named by `id`** (`snap_<12 hex>`) — a stable

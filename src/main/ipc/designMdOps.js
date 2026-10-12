@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { atomicWrite } from './fileOps';
 /**
  * DESIGN.md lives in the project ROOT (next to agent.md / CLAUDE.md),
  * regardless of project format — it documents the whole project's design
@@ -20,5 +21,5 @@ export const readDesignMdFile = async (projectPath, format = 'nextjs') => {
 };
 /** Write DESIGN.md, replacing its entire content. */
 export const writeDesignMdFile = async (projectPath, content, format = 'nextjs') => {
-    await fs.writeFile(designMdPathFor(projectPath, format), content, 'utf-8');
+    await atomicWrite(designMdPathFor(projectPath, format), content);
 };

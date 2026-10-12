@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import type { ProjectFormat } from '@shared/types';
+import { atomicWrite } from './fileOps';
 
 /**
  * DESIGN.md lives in the project ROOT (next to agent.md / CLAUDE.md),
@@ -34,5 +35,5 @@ export const writeDesignMdFile = async (
   content: string,
   format: ProjectFormat = 'nextjs'
 ): Promise<void> => {
-  await fs.writeFile(designMdPathFor(projectPath, format), content, 'utf-8');
+  await atomicWrite(designMdPathFor(projectPath, format), content);
 };

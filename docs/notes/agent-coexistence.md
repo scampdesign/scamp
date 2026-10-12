@@ -55,7 +55,9 @@ A paused write sets `canvasChangedDuringQuiet`, so the reconcile when the pause 
 The pause signals above are the common case. Underneath them a canvas
 write still carries `expectedTsxContent` / `expectedCssContent`, and
 main refuses it when disk says something else — the race the signals
-are too coarse to catch.
+are too coarse to catch. Main runs a page write and a CSS-panel patch for
+one stylesheet one after the other (`serializeByKey` in `fileOps.ts`), so
+the check and the write can't be split by the other's write.
 
 That refusal used to cost the user their edit: Scamp adopted the disk
 version, logged "your in-flight edit was dropped", and put the

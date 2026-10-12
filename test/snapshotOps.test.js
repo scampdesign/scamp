@@ -225,6 +225,20 @@ describe('createSnapshot', () => {
     });
 });
 // --- list / delete ----------------------------------------------------------
+describe('concurrent snapshots', () => {
+    it('keeps every entry when snapshots are taken at once', async () => {
+        // Audit item 16: each read the index, copied files, then wrote the
+        // index back — the later write dropped the earlier entry.
+        const root = await makeNextjsProject();
+        const made = await Promise.all([
+            createSnapshot(root, 'nextjs', 'manual', 'one'),
+            createSnapshot(root, 'nextjs', 'manual', 'two'),
+            createSnapshot(root, 'nextjs', 'manual', 'three'),
+        ]);
+        const ids = (await listSnapshots(root)).map((s) => s.id).sort();
+        expect(ids).toEqual(made.map((m) => m.id).sort());
+    });
+});
 describe('listSnapshots', () => {
     it('returns [] for a project with no snapshots', async () => {
         const root = await makeNextjsProject();

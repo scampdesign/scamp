@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { atomicWrite } from './fileOps';
 /**
  * Path on disk where a project's `theme.css` lives. Nextjs projects
  * co-locate it inside `app/` so the root layout can import it and
@@ -27,5 +28,5 @@ export const readThemeFile = async (projectPath, format) => {
 };
 /** Write the project's theme.css, replacing its entire content. */
 export const writeThemeFile = async (projectPath, format, content) => {
-    await fs.writeFile(themePathFor(projectPath, format), content, 'utf-8');
+    await atomicWrite(themePathFor(projectPath, format), content);
 };

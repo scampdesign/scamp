@@ -11,7 +11,7 @@ import type {
 import { patchClassBlock } from '@shared/patchClass';
 import { cancelPendingWrite, registerPendingWrite } from '../watcher';
 import { checkWriteConflict } from './fileConflict';
-import { atomicWrite } from './fileOps';
+import { atomicWrite, serializeByKey } from './fileOps';
 import { assertInsideActiveProject } from './pathContainment';
 
 const inFlight = new Set<Promise<unknown>>();
@@ -85,6 +85,12 @@ const handlePatch = async (args: FilePatchArgs): Promise<FilePatchResult> => {
 };
 
 export const registerFileIpc = (): void => {
-  ipcMain.handle(IPC.FileWrite, (_e, args: FileWriteArgs) => tracked(handleWrite(args)));
-  ipcMain.handle(IPC.FilePatch, (_e, args: FilePatchArgs) => tracked(handlePatch(args)));
+  // Queued per stylesheet: a page write checks then replaces it, a patch
+  // reads then replaces it, and interleaved one dropped the other's edit.
+  ipcMain.handle(IPC.FileWrite, (_e, args: FileWriteArgs) =>
+    tracked(serializeByKey(args.cssPath, () => handleWrite(args)))
+  );
+  ipcMain.handle(IPC.FilePatch, (_e, args: FilePatchArgs) =>
+    tracked(serializeByKey(args.cssPath, () => handlePatch(args)))
+  );
 };

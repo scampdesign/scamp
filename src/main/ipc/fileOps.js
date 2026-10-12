@@ -49,3 +49,20 @@ export const atomicWrite = async (path, content) => {
     await fs.writeFile(tmp, content, 'utf-8');
     await renameWithRetry(tmp, path);
 };
+const queues = new Map();
+/**
+ * Run `job` once every earlier job with the same `key` has settled, so two
+ * read-modify-writes of one file (or one index) can't interleave and drop
+ * each other's change. Keys are usually absolute paths.
+ */
+export const serializeByKey = (key, job) => {
+    const prev = queues.get(key) ?? Promise.resolve();
+    const next = prev.then(job);
+    const tail = next.then(() => undefined, () => undefined);
+    queues.set(key, tail);
+    void tail.then(() => {
+        if (queues.get(key) === tail)
+            queues.delete(key);
+    });
+    return next;
+};

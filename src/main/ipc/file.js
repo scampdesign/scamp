@@ -5,7 +5,7 @@ import { IPC } from '@shared/ipcChannels';
 import { patchClassBlock } from '@shared/patchClass';
 import { cancelPendingWrite, registerPendingWrite } from '../watcher';
 import { checkWriteConflict } from './fileConflict';
-import { atomicWrite } from './fileOps';
+import { atomicWrite, serializeByKey } from './fileOps';
 import { assertInsideActiveProject } from './pathContainment';
 const inFlight = new Set();
 const tracked = (write) => {
@@ -69,6 +69,8 @@ const handlePatch = async (args) => {
     return { writeId };
 };
 export const registerFileIpc = () => {
-    ipcMain.handle(IPC.FileWrite, (_e, args) => tracked(handleWrite(args)));
-    ipcMain.handle(IPC.FilePatch, (_e, args) => tracked(handlePatch(args)));
+    // Queued per stylesheet: a page write checks then replaces it, a patch
+    // reads then replaces it, and interleaved one dropped the other's edit.
+    ipcMain.handle(IPC.FileWrite, (_e, args) => tracked(serializeByKey(args.cssPath, () => handleWrite(args))));
+    ipcMain.handle(IPC.FilePatch, (_e, args) => tracked(serializeByKey(args.cssPath, () => handlePatch(args))));
 };

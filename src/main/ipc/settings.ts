@@ -3,6 +3,7 @@ import { promises as fs, readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { IPC } from '@shared/ipcChannels';
 import type { Settings } from '@shared/types';
+import { atomicWrite } from './fileOps';
 import { DEFAULT_SETTINGS, parseSettingsBlob } from './settingsOps';
 
 /**
@@ -48,7 +49,7 @@ const writeStore = async (settings: Settings): Promise<void> => {
   // before any other code has touched the directory, and fs.writeFile
   // does not create parent dirs.
   await fs.mkdir(dirname(path), { recursive: true });
-  await fs.writeFile(path, JSON.stringify(settings, null, 2), 'utf-8');
+  await atomicWrite(path, JSON.stringify(settings, null, 2));
 };
 
 const getSettings = async (): Promise<Settings> => readStore();

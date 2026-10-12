@@ -48,6 +48,16 @@ release time.
   land in the project you opened next. Opening another project also
   erased what the agent remembered of the conversation, though the chat
   still showed it.
+- **A CSS panel edit and a canvas save no longer overwrite each other.**
+  When both reached the same stylesheet at once, one of them could be
+  lost while both reported saved.
+- **History survives a crash.** The snapshot list is written in one step,
+  so a crash mid-write no longer empties it, and snapshots taken at the
+  same moment are all kept. `theme.css`, `DESIGN.md`, and your settings
+  are written the same way.
+- **Undo AI changes covers the agent's first edits.** When a reply made
+  several edits at once, the first ones could land before Scamp saved
+  the version to go back to.
 - **The Scamp Agent recovers when your key can't be read.** It used to
   stay busy until you restarted Scamp; now it asks you to connect your
   key again.

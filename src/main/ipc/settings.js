@@ -2,6 +2,7 @@ import { app, ipcMain } from 'electron';
 import { promises as fs, readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { IPC } from '@shared/ipcChannels';
+import { atomicWrite } from './fileOps';
 import { DEFAULT_SETTINGS, parseSettingsBlob } from './settingsOps';
 /**
  * Persistent app-level settings stored next to the recent projects list in
@@ -44,7 +45,7 @@ const writeStore = async (settings) => {
     // before any other code has touched the directory, and fs.writeFile
     // does not create parent dirs.
     await fs.mkdir(dirname(path), { recursive: true });
-    await fs.writeFile(path, JSON.stringify(settings, null, 2), 'utf-8');
+    await atomicWrite(path, JSON.stringify(settings, null, 2));
 };
 const getSettings = async () => readStore();
 const setDefaultFolder = async (path) => {
