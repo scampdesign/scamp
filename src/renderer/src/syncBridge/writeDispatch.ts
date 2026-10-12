@@ -8,6 +8,8 @@ import { useSaveStatusStore, type LastWriteAttempt } from "@store/saveStatusSlic
  * `retryLastSave` uses this to re-issue after an error.
  */
 let lastDispatchedAttempt: LastWriteAttempt | null = null;
+/** The handlers the last page write was dispatched with, so a retry keeps them. */
+let lastWriteHandlers: { onConflict?: WriteConflictHandler; onResult?: WriteResultHandler } = {};
 
 
 /**
@@ -29,13 +31,18 @@ type WriteConflictHandler = (conflict: {
   actualCssContent: string;
 }) => void;
 
+/** Whether main wrote the files (`true`) or the IPC call failed (`false`). Not called on a conflict. */
+type WriteResultHandler = (written: boolean) => void;
+
 
 export const dispatchPageWrite = (
   attempt: Extract<LastWriteAttempt, { kind: 'write' }>,
-  onConflict?: WriteConflictHandler
+  onConflict?: WriteConflictHandler,
+  onResult?: WriteResultHandler
 ): void => {
   useSaveStatusStore.getState().markSaving(attempt);
   lastDispatchedAttempt = attempt;
+  lastWriteHandlers = { onConflict, onResult };
 
   const expected = new Set<string>([attempt.tsxPath, attempt.cssPath]);
 
@@ -55,6 +62,7 @@ export const dispatchPageWrite = (
     .then((result) => {
       if (result.ok) {
         registerPendingSave(result.writeId, attempt, expected);
+        onResult?.(true);
         return;
       }
       // Conflict: an external editor wrote between our last sync
@@ -66,6 +74,7 @@ export const dispatchPageWrite = (
     .catch((err: unknown) => {
       const message = errorMessage(err);
       reportError(message, attempt);
+      onResult?.(false);
     });
 };
 
@@ -119,7 +128,7 @@ export const retryLastSave = (): void => {
   const attempt = lastDispatchedAttempt;
   if (!attempt) return;
   if (attempt.kind === 'write') {
-    dispatchPageWrite(attempt);
+    dispatchPageWrite(attempt, lastWriteHandlers.onConflict, lastWriteHandlers.onResult);
   } else {
     void dispatchPatchWrite(attempt);
   }

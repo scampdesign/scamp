@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/app';
 import { drawAndSelectRect } from '../fixtures/panel';
 import { dragInFrame, selectTool } from '../fixtures/canvas';
 import { canvasElementsByPrefix, layersRow, pageRoot, } from '../fixtures/selectors';
-import { waitForSaved } from '../fixtures/assertions';
+import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 /**
  * The History tab shows a unified timeline: PERSISTENT project snapshots
  * (stored under `.scamp/`) interleaved with the active page's in-memory
@@ -135,6 +135,26 @@ test.describe('history panel — snapshots', () => {
             });
         }).toPass({ timeout: 10_000 });
         await waitForSaved(window);
+    });
+    test('leaving the page during a preview leaves the live page on disk', async ({ window, project, }) => {
+        // Regression: the flush that runs on a page switch wrote whatever the
+        // canvas held — the preview — over the live page.
+        // Audit item 10 in docs/plans/audit-2026-10-12.md.
+        await oneRectSnapshotThenTwo(window);
+        const live = (await readPageFiles(project.dir, 'home')).tsx;
+        expect(live.match(/data-scamp-id="rect_/g)).toHaveLength(2);
+        await window.locator('[data-section="history"]').click();
+        await window.getByText('one rect').click();
+        await expect(window.getByTestId('snapshot-preview-banner')).toBeVisible();
+        await window.locator('[data-section="pages"]').click();
+        await window.getByRole('button', { name: /\+ Add Page/ }).click();
+        const nameInput = window.getByPlaceholder('page-name');
+        await nameInput.fill('about');
+        await nameInput.press('Enter');
+        await expect(window.getByTestId('snapshot-preview-banner')).toBeHidden();
+        // Give a wrong write time to land before reading.
+        await window.waitForTimeout(500);
+        expect((await readPageFiles(project.dir, 'home')).tsx).toBe(live);
     });
     test('interleaves in-session undo steps; clicking one jumps the canvas', async ({ window, }) => {
         await expect(pageRoot(window)).toBeVisible();

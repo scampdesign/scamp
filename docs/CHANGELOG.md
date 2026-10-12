@@ -40,6 +40,12 @@ release time.
   where the indicator used to say **Saved** without writing. Switching
   to another page or component writes the one you leave, even while
   paused.
+- **A save that fails no longer costs you the edit.** The next save
+  writes it too; it used to quietly undo it. **Retry** after a conflict
+  merges instead of staying on **Saving…**.
+- **Leaving a page while you preview a snapshot keeps the live page.**
+  Switching page or closing the project during a preview used to write
+  the snapshot's version over your current one.
 
 ### 0.9.0 (2026-10-12)
 

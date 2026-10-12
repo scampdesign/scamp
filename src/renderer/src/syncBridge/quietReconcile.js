@@ -16,6 +16,10 @@ export const makeCancelWriteTimer = (ctx) => () => {
 /** Flush a queued debounced write against the CURRENT store state. */
 export const makeFlushDebouncedWrite = (ctx) => (evenIfPaused = false) => {
     const state = useCanvasStore.getState();
+    // A snapshot preview is on the canvas in memory only; writing it here
+    // (page switch, project close) put the old version over the live page.
+    if (state.snapshotPreview !== null)
+        return;
     const target = toEditTarget(state.activePage, state.activeComponent);
     if (!target)
         return;

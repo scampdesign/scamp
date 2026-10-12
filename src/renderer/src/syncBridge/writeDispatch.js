@@ -7,9 +7,12 @@ import { useSaveStatusStore } from "@store/saveStatusSlice";
  * `retryLastSave` uses this to re-issue after an error.
  */
 let lastDispatchedAttempt = null;
-export const dispatchPageWrite = (attempt, onConflict) => {
+/** The handlers the last page write was dispatched with, so a retry keeps them. */
+let lastWriteHandlers = {};
+export const dispatchPageWrite = (attempt, onConflict, onResult) => {
     useSaveStatusStore.getState().markSaving(attempt);
     lastDispatchedAttempt = attempt;
+    lastWriteHandlers = { onConflict, onResult };
     const expected = new Set([attempt.tsxPath, attempt.cssPath]);
     void window.scamp
         .writeFile({
@@ -27,6 +30,7 @@ export const dispatchPageWrite = (attempt, onConflict) => {
         .then((result) => {
         if (result.ok) {
             registerPendingSave(result.writeId, attempt, expected);
+            onResult?.(true);
             return;
         }
         // Conflict: an external editor wrote between our last sync
@@ -38,6 +42,7 @@ export const dispatchPageWrite = (attempt, onConflict) => {
         .catch((err) => {
         const message = errorMessage(err);
         reportError(message, attempt);
+        onResult?.(false);
     });
 };
 const dispatchPatchWrite = (attempt) => {
@@ -78,7 +83,7 @@ export const retryLastSave = () => {
     if (!attempt)
         return;
     if (attempt.kind === 'write') {
-        dispatchPageWrite(attempt);
+        dispatchPageWrite(attempt, lastWriteHandlers.onConflict, lastWriteHandlers.onResult);
     }
     else {
         void dispatchPatchWrite(attempt);

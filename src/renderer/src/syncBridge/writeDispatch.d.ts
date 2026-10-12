@@ -17,9 +17,11 @@ type WriteConflictHandler = (conflict: {
     actualTsxContent: string;
     actualCssContent: string;
 }) => void;
+/** Whether main wrote the files (`true`) or the IPC call failed (`false`). Not called on a conflict. */
+type WriteResultHandler = (written: boolean) => void;
 export declare const dispatchPageWrite: (attempt: Extract<LastWriteAttempt, {
     kind: "write";
-}>, onConflict?: WriteConflictHandler) => void;
+}>, onConflict?: WriteConflictHandler, onResult?: WriteResultHandler) => void;
 /**
  * Commit a CSS panel patch through the save-status pipeline. The
  * CssPanel previously called `window.scamp.patchFile` directly; routing

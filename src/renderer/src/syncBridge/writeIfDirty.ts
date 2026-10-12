@@ -341,7 +341,24 @@ export const makeWriteIfDirty =
                 oursCss: cssOut.css,
               }
             : undefined
-        )
+        ),
+      // The cache was advanced before the write, so it must follow what
+      // actually reached disk: back to the old content on a failure (or the
+      // next save is refused and its merge undoes this edit), forward again
+      // when a retry succeeds. Only while the cache still holds this
+      // target's content — a later save or a page switch owns it otherwise.
+      (written) => {
+        const current = useCanvasStore.getState();
+        const stillHere = toEditTarget(current.activePage, current.activeComponent)?.cssPath === target.cssPath;
+        if (!stillHere) return;
+        const [fromTsx, fromCss, toTsx, toCss] = written
+          ? [expectedTsx, expectedCss, tsxOut.tsx, cssOut.css]
+          : [tsxOut.tsx, cssOut.css, expectedTsx, expectedCss];
+        if (ctx.lastSerializedTsx === fromTsx && ctx.lastSerializedCss === fromCss) {
+          ctx.lastSerializedTsx = toTsx;
+          ctx.lastSerializedCss = toCss;
+        }
+      }
     );
     // Sidebar thumbnail capture for component saves.
     // see docs/notes/components-thumbnails.md

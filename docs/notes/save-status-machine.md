@@ -60,7 +60,12 @@ Two subtleties:
    source, and (re)starts the debounce timer — `WRITE_DEBOUNCE_MS = 200`.
 2. **Flush.** `flushDebouncedWrite → writeIfDirty` regenerates the final
    code, compares it to the `lastSerializedTsx/Css` baseline, captures
-   that baseline as the `expected*` content, and calls `dispatchPageWrite`.
+   that baseline as the `expected*` content, advances the baseline to the
+   new code, and calls `dispatchPageWrite`. If the IPC call then fails,
+   its result callback moves the baseline back to `expected*` (and a
+   successful **Retry** moves it forward again), so the next save isn't
+   refused and merged against content that never reached disk. Retry
+   re-dispatches with the original conflict handler.
 3. **Dispatch.** `dispatchPageWrite` calls `markSaving(attempt)` and
    invokes the `IPC.FileWrite` (`'file:write'`) handler with the tsx/css
    paths, content, and `expected*` content.

@@ -95,7 +95,10 @@ While `snapshotPreview` is set:
   banner's Exit), and its undo rows + "Save snapshot" are inert.
 - The sync bridge **suppresses all writes** (and the exit transition), so
   preview content — and any edit that slips a guard — can never reach
-  disk. Auto-save is likewise skipped.
+  disk. That covers both the store subscription and
+  `flushDebouncedWrite`, which page switches and project close call
+  directly; the latter once wrote the preview over the live page.
+  Auto-save is likewise skipped.
 - **Exit** (`exitSnapshotPreview`) restores the stash from memory — no disk
   round-trip. **Restore** runs the flow below, then `clearSnapshotPreview`
   drops the stash (the disk re-read already replaced the canvas content).

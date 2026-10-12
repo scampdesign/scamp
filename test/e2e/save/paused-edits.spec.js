@@ -1,5 +1,6 @@
+import { promises as fs } from 'fs';
 import { test, expect } from '../fixtures/app';
-import { readPageFiles, waitForSaved } from '../fixtures/assertions';
+import { waitForSaved } from '../fixtures/assertions';
 import { openPagesSection } from '../fixtures/components';
 import { pageRoot, pageSidebarItem, saveStatus } from '../fixtures/selectors';
 /**
@@ -12,35 +13,40 @@ const toggleSync = async (window) => {
     await saveStatus(window).click();
     await window.getByTestId('manual-sync-toggle').click();
 };
+/** Paint the open page's root; returns that page's stylesheet path and name. */
 const paintRoot = async (window, color) => {
-    const patched = await window.evaluate((c) => {
-        const w = window;
-        if (!w.__scampCanvasStore)
-            return false;
-        const store = w.__scampCanvasStore.getState();
+    const open = await window.evaluate((c) => {
+        const store = window.__scampCanvasStore?.getState();
+        if (!store)
+            return null;
         store.patchElement(store.rootElementId, { backgroundColor: c });
-        return true;
+        const target = store.activeComponent ?? store.activePage;
+        return target ? { cssPath: target.cssPath, name: store.activeComponent?.name ?? '' } : null;
     }, color);
-    expect(patched).toBe(true);
+    if (open === null)
+        throw new Error('No open page to paint');
+    return open;
 };
-test('an edit made while paused is written when you resume', async ({ window, project }) => {
+const fileHas = (path, text) => fs.readFile(path, 'utf-8').then((css) => css.includes(text));
+test('an edit made while paused is written when you resume', async ({ window }) => {
     await expect(pageRoot(window)).toBeVisible();
     await toggleSync(window);
     await expect(saveStatus(window)).toHaveAttribute('data-status', 'paused');
-    await paintRoot(window, '#123456');
+    const { cssPath } = await paintRoot(window, '#123456');
     // Well past the 200ms debounce: still held, still not on disk.
     await window.waitForTimeout(500);
-    expect((await readPageFiles(project.dir, 'home')).css).not.toContain('#123456');
+    expect(await fileHas(cssPath, '#123456')).toBe(false);
     await toggleSync(window);
     await waitForSaved(window);
-    await expect.poll(async () => (await readPageFiles(project.dir, 'home')).css).toContain('#123456');
+    await expect.poll(() => fileHas(cssPath, '#123456')).toBe(true);
 });
-test('an edit made while paused is written when you switch page', async ({ window, project }) => {
+test('an edit made while paused is written when you switch page', async ({ window }) => {
     await expect(pageRoot(window)).toBeVisible();
     await toggleSync(window);
-    await paintRoot(window, '#654321');
+    const { cssPath, name } = await paintRoot(window, '#654321');
     await window.waitForTimeout(500);
+    expect(await fileHas(cssPath, '#654321')).toBe(false);
     await openPagesSection(window);
-    await pageSidebarItem(window, 'about').click();
-    await expect.poll(async () => (await readPageFiles(project.dir, 'home')).css).toContain('#654321');
+    await pageSidebarItem(window, name === 'About' ? 'home' : 'about').click();
+    await expect.poll(() => fileHas(cssPath, '#654321')).toBe(true);
 });
