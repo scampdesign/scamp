@@ -44,6 +44,7 @@ import { migrateLegacyToNextjs, migrateNextjsToScamp } from './projectMigrate';
 import { readFrameworkInfo } from './frameworkVersion';
 import { listRoutes } from './routeOps';
 import { createSnapshot } from './snapshotOps';
+import { settleFileWrites } from './file';
 
 export { detectProjectFormat };
 export { scaffoldLegacyProject, scaffoldNextjsProject };
@@ -259,8 +260,11 @@ export const registerProjectIpc = (): void => {
   ipcMain.handle(IPC.ProjectChooseFolder, () => chooseFolder());
   ipcMain.handle(IPC.ProjectCreate, (_e, args: CreateProjectArgs) => createProject(args));
   ipcMain.handle(IPC.ProjectOpen, (_e, args: OpenProjectArgs) => openProject(args));
-  ipcMain.handle(IPC.ProjectRead, (_e, args: OpenProjectArgs) => {
+  ipcMain.handle(IPC.ProjectRead, async (_e, args: OpenProjectArgs) => {
     assertInsideActiveProject(args.folderPath);
+    // A write the renderer sent just before (a page flush) lands first, so
+    // the read is what's really on disk.
+    await settleFileWrites();
     return readProject(args.folderPath);
   });
   ipcMain.handle(IPC.ProjectMigrate, (_e, args: ProjectMigrateArgs) => {

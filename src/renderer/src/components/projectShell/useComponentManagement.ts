@@ -238,15 +238,38 @@ export const useComponentManagement = ({
     });
   };
 
+  /**
+   * Write a page rewritten from `page`, only if the file still holds
+   * `page`'s content. Something else changing it in between stops the
+   * operation rather than overwrite that change.
+   */
+  const writeIfUnchanged = async (page: PageFile, tsx: string, css: string): Promise<void> => {
+    const result = await window.scamp.writeFile({
+      tsxPath: page.tsxPath,
+      cssPath: page.cssPath,
+      tsxContent: tsx,
+      cssContent: css,
+      expectedTsxContent: page.tsxContent,
+      expectedCssContent: page.cssContent,
+    });
+    if (!result.ok) {
+      throw new Error(`${page.name} changed on disk while it was being updated; it was left as it is.`);
+    }
+  };
+
   const handleConfirmDeleteComponent = async (): Promise<void> => {
     if (!deletingComponent) return;
     const { componentName } = deletingComponent;
     setComponentDeleteBusy(true);
     armTargetSwapSuppression();
     try {
+      // Rewrite pages from disk, not from `project`: that copy is from when
+      // each page was last loaded, and rewriting it dropped edits made since.
+      flushPendingPageWrite();
+      const fresh = await window.scamp.readProject({ folderPath: project.path });
       const breakpoints = useCanvasStore.getState().breakpoints;
       const updatedPages: PageFile[] = [];
-      for (const page of project.pages) {
+      for (const page of fresh.pages) {
         const parsed = parseCode(page.tsxContent, page.cssContent, {
           breakpoints,
         });
@@ -278,12 +301,7 @@ export const useComponentManagement = ({
           cssModuleImportName:
             project.format === 'nextjs' ? 'page' : page.name,
         });
-        await window.scamp.writeFile({
-          tsxPath: page.tsxPath,
-          cssPath: page.cssPath,
-          tsxContent: rewritten.tsx,
-          cssContent: rewritten.css,
-        });
+        await writeIfUnchanged(page, rewritten.tsx, rewritten.css);
         updatedPages.push({
           ...page,
           tsxContent: rewritten.tsx,
@@ -304,7 +322,7 @@ export const useComponentManagement = ({
       onProjectChange?.({
         ...project,
         pages: updatedPages,
-        components: project.components.filter((c) => c.name !== componentName),
+        components: fresh.components.filter((c) => c.name !== componentName),
       });
       setDeletingComponent(null);
     } catch (err) {
@@ -332,9 +350,11 @@ export const useComponentManagement = ({
     try {
       flushPendingPageWrite();
       persistActiveSource();
+      // From disk, not `project` — see the delete handler.
+      const fresh = await window.scamp.readProject({ folderPath: project.path });
       const breakpoints = useCanvasStore.getState().breakpoints;
 
-      const sourceComponent = project.components.find(
+      const sourceComponent = fresh.components.find(
         (c) => c.name === oldName
       );
       if (!sourceComponent) {
@@ -355,8 +375,7 @@ export const useComponentManagement = ({
         tsx: string;
         css: string;
       }> = [];
-      const unchangedPages: PageFile[] = [];
-      for (const page of project.pages) {
+      for (const page of fresh.pages) {
         const result = rewritePageForComponentRename(
           page.tsxContent,
           page.cssContent,
@@ -372,8 +391,6 @@ export const useComponentManagement = ({
             tsx: result.tsx,
             css: result.css,
           });
-        } else {
-          unchangedPages.push(page);
         }
       }
 
@@ -388,12 +405,7 @@ export const useComponentManagement = ({
       });
 
       for (const entry of rewrittenPages) {
-        await window.scamp.writeFile({
-          tsxPath: entry.file.tsxPath,
-          cssPath: entry.file.cssPath,
-          tsxContent: entry.tsx,
-          cssContent: entry.css,
-        });
+        await writeIfUnchanged(entry.file, entry.tsx, entry.css);
       }
 
       // Old folder removed last so page imports don't dangle.
@@ -403,19 +415,11 @@ export const useComponentManagement = ({
         kind,
       });
 
-      const nextComponents = project.components.map((c) =>
+      const nextComponents = fresh.components.map((c) =>
         c.name === oldName ? newComponentFile : c
       );
-      const nextPages: PageFile[] = [
-        ...unchangedPages,
-        ...rewrittenPages.map((e) => ({
-          ...e.file,
-          tsxContent: e.tsx,
-          cssContent: e.css,
-        })),
-      ];
       // Preserve original page order so the sidebar doesn't reshuffle.
-      const orderedPages = project.pages.map((p) => {
+      const orderedPages = fresh.pages.map((p) => {
         const rewritten = rewrittenPages.find(
           (e) => e.file.name === p.name
         );
@@ -428,7 +432,6 @@ export const useComponentManagement = ({
         }
         return p;
       });
-      void nextPages; // keep types tidy when the ordered variant wins below
       onProjectChange?.({
         ...project,
         components: nextComponents,

@@ -37,11 +37,11 @@ Both call sites are now functional updaters. The convert flow composes correctly
 `handleRenameComponent(oldName, newName)`:
 
 1. `armTargetSwapSuppression()` — the rename will trigger a target swap via `loadComponent`, and the outgoing path is about to disappear.
-2. `flushPendingPageWrite()` + `persistActiveSource()` — capture latest in-memory state so the snapshot we iterate below is fresh.
+2. `flushPendingPageWrite()` + `persistActiveSource()`, then `readProject` — the pages and components come from disk, not `project` (which holds each page as it was when last loaded, so rewriting it dropped edits made since). Main's `ProjectRead` waits for in-flight writes, so the flush is in what it reads.
 3. `rewriteComponentForRename(tsx, css, oldName, newName)` — pure helper. Parses + regenerates with the new `pageName` / `cssModuleImportName` / `[Name]Props` type.
-4. For every page in `project.pages`: `rewritePageForComponentRename(tsx, css, oldName, newName, page.name, project.format)`. Walks `component-instance` elements, updates `componentName` on matches, regenerates. Skip pages that don't reference `oldName` (`changed: false`) so unrelated files stay byte-stable on disk.
+4. For every page read in step 2: `rewritePageForComponentRename(tsx, css, oldName, newName, page.name, project.format)`. Walks `component-instance` elements, updates `componentName` on matches, regenerates. Skip pages that don't reference `oldName` (`changed: false`) so unrelated files stay byte-stable on disk.
 5. `createComponent` with the new name → writes the new files.
-6. `writeFile` for each rewritten page.
+6. `writeFile` for each rewritten page, with the content read in step 2 as the expected content (`writeIfUnchanged`). A page that changed in between is refused, and the rename stops there.
 7. `deleteComponent` (old name) → removes the old folder.
 8. `onProjectChange` (single call) updates `project.components` + `project.pages`.
 9. If the user was inside the renamed component's editor, re-point `activeComponent` to the new path.
@@ -54,7 +54,7 @@ Failure path: `disarmTargetSwapSuppression()` so the flag doesn't leak to an unr
 `handleConfirmDeleteComponent`:
 
 1. `armTargetSwapSuppression()` — same reason as rename.
-2. For each affected page: parse → strip `component-instance` elements matching the deleted name → regenerate → `writeFile`. Unaffected pages skipped.
+2. `flushPendingPageWrite()`, then `readProject`. For each affected page: parse → strip `component-instance` elements matching the deleted name → regenerate → `writeIfUnchanged` (as rename). Unaffected pages skipped.
 3. `deleteComponent` IPC removes the folder. Done last so a partial page-write failure doesn't leave a dangling import against a missing folder.
 4. If the user was editing the deleted component, `setActiveComponentState(null)` to drop them back to whatever page they came from.
 5. `onProjectChange` updates `project.components` (filtered) + `project.pages` (rewritten).

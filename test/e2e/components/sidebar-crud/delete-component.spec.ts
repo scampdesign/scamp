@@ -4,6 +4,7 @@ import {
   confirmDialog,
   openComponentContextMenu,
   openComponentsSection,
+  openPagesSection,
   waitForConfirmDialog,
 } from '../../fixtures/components';
 import {
@@ -12,6 +13,7 @@ import {
   saveStatus,
 } from '../../fixtures/selectors';
 import { waitForSaved } from '../../fixtures/assertions';
+import { drawAndSelectRect } from '../../fixtures/panel';
 
 // A page that already imports + uses a Button instance.
 const HOME_TSX_WITH_BUTTON = `import styles from './page.module.css';
@@ -101,6 +103,26 @@ test.describe('delete: page references the component', () => {
     );
   });
 
+  test('keeps edits made to the page since it opened', async ({ window, project }) => {
+    // Audit item 18: the page was rewritten from the copy read when the
+    // project opened, so a rect drawn since vanished from disk.
+    await expect(pageRoot(window)).toBeVisible();
+    await openPagesSection(window);
+    await drawAndSelectRect(window, { x: 200, y: 200 }, { x: 300, y: 280 });
+    await waitForSaved(window);
+    expect((await project.readPage('home')).tsx).toMatch(/data-scamp-id="rect_/);
+
+    await openComponentsSection(window);
+    await openComponentContextMenu(window, 'Button');
+    await clickContextMenuItem(window, 'Delete component…');
+    await waitForConfirmDialog(window, /Delete component "Button"/);
+    await confirmDialog(window, /Delete component/);
+    await expect(componentSidebarItem(window, 'Button')).toBeHidden();
+
+    const { tsx } = await project.readPage('home');
+    expect(tsx).not.toContain('<Button');
+    expect(tsx).toMatch(/data-scamp-id="rect_/);
+  });
 });
 
 test.describe('delete: no page references the component', () => {

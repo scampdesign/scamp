@@ -58,6 +58,11 @@ release time.
 - **Undo AI changes covers the agent's first edits.** When a reply made
   several edits at once, the first ones could land before Scamp saved
   the version to go back to.
+- **Renaming or deleting a component keeps your recent edits.** The
+  pages that use it were rewritten from the version Scamp read when they
+  were opened, so anything you'd changed on those pages since was lost.
+  Scamp now reads them fresh, and stops rather than overwrite a page
+  that changes while it works.
 - **The Scamp Agent recovers when your key can't be read.** It used to
   stay busy until you restarted Scamp; now it asks you to connect your
   key again.

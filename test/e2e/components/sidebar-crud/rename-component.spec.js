@@ -1,7 +1,8 @@
 import { test, expect } from '../../fixtures/app';
-import { clickContextMenuItem, openComponentContextMenu, openComponentsSection, } from '../../fixtures/components';
+import { clickContextMenuItem, openComponentContextMenu, openComponentsSection, openPagesSection, } from '../../fixtures/components';
 import { componentSidebarItem, pageRoot, saveStatus, } from '../../fixtures/selectors';
 import { waitForSaved } from '../../fixtures/assertions';
+import { drawAndSelectRect } from '../../fixtures/panel';
 const BUTTON_TSX = `import styles from './Button.module.css';
 
 export default function Button() {
@@ -70,6 +71,25 @@ test.describe('components sidebar — rename component', () => {
         expect(homeTsx).toContain('<PrimaryButton');
         expect(homeTsx).not.toContain("from '@/components/Button/Button'");
         expect(homeTsx).not.toContain('<Button');
+    });
+    test('keeps edits made to the page since it opened', async ({ window, project }) => {
+        // Audit item 18: the page was rewritten from the copy read when the
+        // project opened, so a rect drawn since vanished from disk.
+        await expect(pageRoot(window)).toBeVisible();
+        await openPagesSection(window);
+        await drawAndSelectRect(window, { x: 200, y: 200 }, { x: 300, y: 280 });
+        await waitForSaved(window);
+        expect((await project.readPage('home')).tsx).toMatch(/data-scamp-id="rect_/);
+        await openComponentsSection(window);
+        await openComponentContextMenu(window, 'Button');
+        await clickContextMenuItem(window, 'Rename…');
+        const input = window.getByPlaceholder('ComponentName');
+        await input.fill('primary-button');
+        await input.press('Enter');
+        await expect(componentSidebarItem(window, 'PrimaryButton')).toBeVisible();
+        const { tsx } = await project.readPage('home');
+        expect(tsx).toContain('<PrimaryButton');
+        expect(tsx).toMatch(/data-scamp-id="rect_/);
     });
     test('no "Save failed" surfaces during rename (target-swap + pending-write regressions)', async ({ window, project, }) => {
         await expect(pageRoot(window)).toBeVisible();
