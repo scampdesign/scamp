@@ -443,12 +443,13 @@ font-size: 12px;
   gap: 2px;
 }
 
+/* Icons at the canvas toolbar's 18px; a little under its 32px button. */
 .headerIconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;

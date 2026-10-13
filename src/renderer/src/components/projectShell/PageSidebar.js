@@ -305,10 +305,10 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
                                         setAddToGroup(null);
                                         setPageEditError(null);
                                         setPageEdit('new');
-                                    }, children: _jsx(IconPlus, { size: 14 }) }) }), importItems.length > 0 && (_jsx(Tooltip, { label: "Import", children: _jsx("button", { type: "button", className: styles.headerIconButton, "aria-label": "Import", "aria-haspopup": "menu", onClick: (e) => {
+                                    }, children: _jsx(IconPlus, { size: 18 }) }) }), importItems.length > 0 && (_jsx(Tooltip, { label: "Import", children: _jsx("button", { type: "button", className: styles.headerIconButton, "aria-label": "Import", "aria-haspopup": "menu", onClick: (e) => {
                                         const rect = e.currentTarget.getBoundingClientRect();
                                         setImportMenu({ x: rect.left, y: rect.bottom + 4 });
-                                    }, children: _jsx(IconDownload, { size: 14 }) }) }))] })] }), _jsxs("ul", { "data-testid": "pages-list", className: styles.pageList, onKeyDown: (e) => {
+                                    }, children: _jsx(IconDownload, { size: 18 }) }) }))] })] }), _jsxs("ul", { "data-testid": "pages-list", className: styles.pageList, onKeyDown: (e) => {
                     // Only with pages picked: otherwise Cmd+G stays the canvas's
                     // "group elements", and Escape the canvas's own.
                     if (selected.size === 0)

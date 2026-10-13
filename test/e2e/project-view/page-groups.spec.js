@@ -42,9 +42,12 @@ const dragRow = async (window, from, to, at) => {
 };
 test('group pages by drag and by menu, collapse the group, and find it as left after reopening', async ({ window, project, }) => {
     await expect(pageRoot(window)).toBeVisible();
-    const before = { about: await project.readPage('about'), pricing: await project.readPage('pricing') };
     await makeGroup(window, 'Marketing', 'about');
     await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Marketing', pages: ['about'] });
+    // Read after makeGroup: it opens `about`, and opening a page may tidy its
+    // file to Scamp's canonical form. Nothing from here on is allowed to.
+    await waitForSaved(window);
+    const before = { about: await project.readPage('about'), pricing: await project.readPage('pricing') };
     await dragRow(window, '[data-page-slug="pricing"]', '[data-group="Marketing"]', 'inside');
     await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Marketing', pages: ['about', 'pricing'] });
     // The keyboard-reachable way out and back in.

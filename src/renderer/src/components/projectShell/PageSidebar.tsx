@@ -506,7 +506,7 @@ export const PageSidebar = ({
                 setPageEdit('new');
               }}
             >
-              <IconPlus size={14} />
+              <IconPlus size={18} />
             </button>
           </Tooltip>
           {importItems.length > 0 && (
@@ -521,7 +521,7 @@ export const PageSidebar = ({
                   setImportMenu({ x: rect.left, y: rect.bottom + 4 });
                 }}
               >
-                <IconDownload size={14} />
+                <IconDownload size={18} />
               </button>
             </Tooltip>
           )}
