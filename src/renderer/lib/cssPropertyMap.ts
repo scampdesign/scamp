@@ -10,6 +10,7 @@ import {
   parseTransitionShorthand,
   parseFlexShorthand,
   parseTransformList,
+  parseVarTokenOrNull,
 } from './parsers';
 import { isBlendMode } from './blendModes';
 import { parseDisplayKeyword } from './displayKeyword';
@@ -322,9 +323,13 @@ export const cssToScampProperty: Record<string, Mapper> = {
     return { transitions };
   },
   'box-shadow': (v) => {
+    // The whole shadow from a theme token. Each half clears the other, so
+    // a breakpoint override of either replaces the base's.
+    const token = parseVarTokenOrNull(v);
+    if (token !== null) return { boxShadowToken: token, boxShadows: [] };
     const parsed = parseBoxShadowShorthand(v);
     if (parsed === null) return null;
-    return { boxShadows: parsed };
+    return { boxShadows: parsed, boxShadowToken: undefined };
   },
   'mix-blend-mode': (v) => {
     const trimmed = v.trim().toLowerCase();

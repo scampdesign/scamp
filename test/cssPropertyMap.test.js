@@ -290,8 +290,8 @@ describe('cssToScampProperty', () => {
         it('clears the field for none', () => {
             expect(apply('box-shadow', 'none')).toEqual({ boxShadows: [] });
         });
-        it('refuses var()-based shadow values (preserved via customProperties)', () => {
-            expect(apply('box-shadow', 'var(--shadow-md)')).toBeNull();
+        it('reads a whole-value var() as the shadow token', () => {
+            expect(apply('box-shadow', 'var(--shadow-md)')).toEqual({ boxShadowToken: 'var(--shadow-md)', boxShadows: [] });
         });
         it('refuses inherit / initial / unset', () => {
             expect(apply('box-shadow', 'inherit')).toBeNull();

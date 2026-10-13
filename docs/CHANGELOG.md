@@ -26,6 +26,10 @@ release time.
 
 **Added**
 
+- **Shadows that use a theme token show in the panel.** A
+  `box-shadow: var(--shadow-card)` appears in the Shadow section by
+  token name and keeps following the theme. **Detach** turns it into
+  rows you can edit.
 - **Center with an auto margin.** The margin field takes `auto` on a
   side, so `0 auto` centers a fixed-width element. Imported pages that
   center this way now show it in the panel instead of leaving it in the

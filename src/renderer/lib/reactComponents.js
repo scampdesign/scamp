@@ -79,7 +79,7 @@ const styleKey = (el) => {
     return JSON.stringify(out);
 };
 /** Fields that only paint: they change how an element looks, not where anything goes. */
-const PAINT_FIELDS = new Set(['backgroundColor', 'borderColor', 'color', 'opacity', 'fontWeight', 'fill', 'stroke', 'boxShadows']);
+const PAINT_FIELDS = new Set(['backgroundColor', 'borderColor', 'color', 'opacity', 'fontWeight', 'fill', 'stroke', 'boxShadows', 'boxShadowToken']);
 /** Attributes you can see: a different one is a different look, not a different state. */
 const VISIBLE_ATTRIBUTES = new Set(['src', 'srcset', 'alt', 'placeholder', 'value']);
 const PAINT_CSS = new Set([

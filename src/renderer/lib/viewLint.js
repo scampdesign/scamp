@@ -71,6 +71,7 @@ const scannableValues = (el) => {
     push(el.fontFamily);
     push(el.lineHeight);
     push(el.letterSpacing);
+    push(el.boxShadowToken);
     for (const value of Object.values(el.customProperties ?? {}))
         push(value);
     // Spacing fields carry either a number or a `{ kind: 'token', ref }`.

@@ -153,7 +153,13 @@ trip it. Clears the 22 `margin: … auto` notes.
 
 ## 5. A shadow as one token
 
-- [ ] Done
+- [x] Done — `boxShadowToken` beside `boxShadows`: a whole-value
+  `var(--token)` is parsed into it (each clears the other, so overrides
+  replace); written last in the rule, where it sat as raw CSS, in the
+  shadow group so hiding shadows hides it. The Shadow section shows it
+  by name with **Detach** (into layers, from the theme's value) and
+  **Remove**. An undeclared shadow token is still a problem. Tests:
+  `test/shadowToken.test.ts`, `test/e2e/properties-panel/shadow-token.spec.ts`.
 
 The shadows control accepts `box-shadow: var(--token)` as a single
 token value, shown like a color token. Clears 2 notes.

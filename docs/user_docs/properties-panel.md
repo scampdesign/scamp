@@ -142,6 +142,10 @@ See [Themes](themes.md) for the full token model.
   always `rgba(...)`.
 - The remove button (×) drops a single row. Emptying the section drops
   the entire `box-shadow` declaration.
+- A shadow written as a theme token, such as
+  `box-shadow: var(--shadow-card)`, shows as the token's name and
+  follows the theme. Click **Detach** to copy its current value into
+  rows you can edit, or **Remove** to clear it.
 
 ### Filters
 

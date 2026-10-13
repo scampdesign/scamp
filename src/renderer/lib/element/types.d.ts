@@ -601,12 +601,17 @@ export type ScampElement = {
      * Ordered list of box shadows applied to the element. Empty by
      * default. Emitted as a single `box-shadow: a, b, c` declaration
      * when non-empty. Order matters — the first entry is rendered on
-     * top of the rest. Agent-written `box-shadow` values that the
-     * parser can't reduce (e.g. `var(--shadow-lg)` on the whole
-     * declaration, `inherit`, `calc(...)` lengths) are preserved
-     * verbatim in `customProperties` and leave this list empty.
+     * top of the rest. Values the parser can't reduce (`inherit`,
+     * `calc(...)` lengths) are preserved verbatim in `customProperties`
+     * and leave this list empty; a whole-value token is `boxShadowToken`.
      */
     boxShadows: ReadonlyArray<BoxShadowDef>;
+    /**
+     * `box-shadow: var(--shadow-card)` — the whole shadow from a theme
+     * token, kept as the reference so it follows the theme. When set,
+     * `boxShadows` is empty. see docs/plans/checks-cleanup-plan.md
+     */
+    boxShadowToken?: string;
     /**
      * Ordered list of CSS filter functions applied to the element.
      * Empty by default. Emitted as a single space-joined

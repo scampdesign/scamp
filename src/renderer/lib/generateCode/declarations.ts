@@ -465,7 +465,8 @@ export const elementDeclarationLines = (
   }
 
   // Box shadows — single shorthand per element. Empty list omits.
-  if (el.boxShadows.length > 0) {
+  // A token shadow is written last, below, where it sat as raw CSS.
+  if (el.boxShadows.length > 0 && el.boxShadowToken === undefined) {
     emit('shadow', `box-shadow: ${formatBoxShadowShorthand(el.boxShadows)};`);
   }
 
@@ -608,6 +609,10 @@ export const elementDeclarationLines = (
   // there, and an imported page centers its content that way.
   if (hasAutoSide(el.margin)) {
     lines.push(`margin: ${formatSpaceShorthand(el.margin)};`);
+  }
+  // And a shadow that's a theme token (`box-shadow: var(--shadow-card)`).
+  if (el.boxShadowToken !== undefined) {
+    emit('shadow', `box-shadow: ${el.boxShadowToken};`);
   }
   const emittedProps = collectEmittedPropNames(lines);
   for (const [key, value] of Object.entries(el.customProperties)) {
@@ -870,7 +875,9 @@ export const breakpointOverrideLines = (
   // Box shadows — empty list at a breakpoint or state scope emits
   // `box-shadow: none` so the cascade explicitly clears the inherited
   // shadow rather than silently leaving it in place.
-  if (has('boxShadows') && override.boxShadows !== undefined) {
+  if (has('boxShadowToken') && override.boxShadowToken !== undefined) {
+    emit('shadow', `box-shadow: ${override.boxShadowToken};`);
+  } else if (has('boxShadows') && override.boxShadows !== undefined) {
     if (override.boxShadows.length === 0) {
       emit('shadow', 'box-shadow: none;');
     } else {

@@ -46,6 +46,7 @@ export const FIELD_LABELS: Record<string, string> = {
   lineHeight: 'line-height',
   letterSpacing: 'letter-spacing',
   boxShadows: 'box-shadow',
+  boxShadowToken: 'box-shadow',
   mixBlendMode: 'mix-blend-mode',
   backgroundBlendMode: 'background-blend-mode',
   filters: 'filter',

@@ -58,7 +58,7 @@ export const GROUP_FIELDS: Record<
 > = {
   background: ['backgroundColor'],
   border: ['borderColor', 'borderStyle', 'borderWidth', 'borderRadius'],
-  shadow: ['boxShadows'],
+  shadow: ['boxShadows', 'boxShadowToken'],
   typography: [
     'fontFamily',
     'fontSize',

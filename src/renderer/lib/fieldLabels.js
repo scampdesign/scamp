@@ -46,6 +46,7 @@ export const FIELD_LABELS = {
     lineHeight: 'line-height',
     letterSpacing: 'letter-spacing',
     boxShadows: 'box-shadow',
+    boxShadowToken: 'box-shadow',
     mixBlendMode: 'mix-blend-mode',
     backgroundBlendMode: 'background-blend-mode',
     filters: 'filter',

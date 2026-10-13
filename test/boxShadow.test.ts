@@ -187,14 +187,21 @@ describe('box-shadow: parser', () => {
     expect(elements['a1b2']?.boxShadows).toEqual([SHADOW_A, SHADOW_B]);
   });
 
-  it('preserves an unparseable box-shadow in customProperties', () => {
+  it('reads a whole-value token as boxShadowToken, not layers', () => {
     const tsx = `<div data-scamp-id="root" className={styles.root}><div data-scamp-id="a1b2" className={styles.rect_a1b2} /></div>`;
     const css = `.rect_a1b2 { box-shadow: var(--shadow-md); }`;
     const { elements } = parseCode(tsx, css);
     expect(elements['a1b2']?.boxShadows).toEqual([]);
-    expect(elements['a1b2']?.customProperties).toEqual({
-      'box-shadow': 'var(--shadow-md)',
-    });
+    expect(elements['a1b2']?.boxShadowToken).toBe('var(--shadow-md)');
+    expect(elements['a1b2']?.customProperties).toEqual({});
+  });
+
+  it('preserves an unparseable box-shadow in customProperties', () => {
+    const tsx = `<div data-scamp-id="root" className={styles.root}><div data-scamp-id="a1b2" className={styles.rect_a1b2} /></div>`;
+    const css = `.rect_a1b2 { box-shadow: inherit; }`;
+    const { elements } = parseCode(tsx, css);
+    expect(elements['a1b2']?.boxShadows).toEqual([]);
+    expect(elements['a1b2']?.customProperties).toEqual({ 'box-shadow': 'inherit' });
   });
 });
 

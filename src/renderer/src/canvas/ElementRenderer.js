@@ -40,6 +40,7 @@ const isScaffoldRoot = (root) => {
         root.borderRadius.every((v) => v === 0) &&
         root.padding.every((v) => v === 0) &&
         root.boxShadows.length === 0 &&
+        root.boxShadowToken === undefined &&
         root.opacity === DEFAULT_ROOT_STYLES.opacity &&
         root.minHeight === DEFAULT_ROOT_STYLES.minHeight);
 };

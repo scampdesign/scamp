@@ -37,3 +37,23 @@
   line-height: 1;
   color: var(--text-secondary);
 }
+
+/* A shadow linked to a theme token, shown by name. */
+.linkedToken {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+
+.linkedName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+}

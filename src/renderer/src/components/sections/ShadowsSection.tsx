@@ -49,7 +49,7 @@ export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
   const groupToggle = useGroupToggle(
     elementId,
     'shadow',
-    (element?.boxShadows.length ?? 0) > 0
+    (element?.boxShadows.length ?? 0) > 0 || element?.boxShadowToken !== undefined
   );
   const shadowField = useListField<BoxShadowDef>(
     () => element?.boxShadows ?? [],
@@ -75,7 +75,17 @@ export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
     if (!token) return;
     const parsed = parseBoxShadowShorthand(token.value);
     if (parsed === null) return;
-    patchElement(elementId, { boxShadows: parsed });
+    patchElement(elementId, { boxShadows: parsed, boxShadowToken: undefined });
+  };
+
+  // A shadow linked to a theme token: shown as the token, which follows
+  // the theme. Detach copies its current value into editable layers.
+  const linked = element.boxShadowToken;
+  const linkedName = linked === undefined ? null : (/var\(\s*(--[\w-]+)/.exec(linked)?.[1] ?? linked);
+  const handleDetach = (): void => {
+    const value = colorContext.themeTokens.find((t) => t.name === linkedName)?.value;
+    const parsed = value === undefined ? null : parseBoxShadowShorthand(value);
+    patchElement(elementId, { boxShadows: parsed ?? [], boxShadowToken: undefined });
   };
 
   // The shadow preset picker sits in the section header, left of the
@@ -99,14 +109,33 @@ export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
     <Section
       title="Shadow"
       collapsible
-      defaultOpen={shadows.length > 0}
+      defaultOpen={shadows.length > 0 || linked !== undefined}
       elementId={elementId}
       groupToggle={groupToggle}
       groupAccessory={shadowPreset}
-      fields={['boxShadows']}
+      fields={['boxShadows', 'boxShadowToken']}
       cssProperties={['box-shadow']}
     >
-      {shadows.length === 0 && <SectionEmptyState testId="shadows-empty" />}
+      {linked !== undefined && (
+        <Row label="">
+          <div className={styles.linkedToken} data-testid="shadow-token">
+            <span className={styles.linkedName} title={linked}>
+              {linkedName}
+            </span>
+            <Tooltip label="Detach — copy the token's shadow into layers you can edit">
+              <Button variant="ghost" onClick={handleDetach}>
+                Detach
+              </Button>
+            </Tooltip>
+            <Tooltip label="Remove the shadow">
+              <Button variant="ghost" onClick={() => patchElement(elementId, { boxShadowToken: undefined })}>
+                Remove
+              </Button>
+            </Tooltip>
+          </div>
+        </Row>
+      )}
+      {linked === undefined && shadows.length === 0 && <SectionEmptyState testId="shadows-empty" />}
       {shadows.map((shadow, idx) => (
         <ShadowRow
           key={idx}
@@ -118,14 +147,16 @@ export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
           colorContext={colorContext}
         />
       ))}
-      <Row label="">
-        <Button
-          variant="addRow"
-          onClick={() => shadowField.add({ ...DEFAULT_NEW_SHADOW })}
-        >
-          + Add shadow
-        </Button>
-      </Row>
+      {linked === undefined && (
+        <Row label="">
+          <Button
+            variant="addRow"
+            onClick={() => shadowField.add({ ...DEFAULT_NEW_SHADOW })}
+          >
+            + Add shadow
+          </Button>
+        </Row>
+      )}
     </Section>
   );
 };

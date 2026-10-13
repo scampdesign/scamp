@@ -28,7 +28,7 @@ export const isPropertyGroup = (s) => ALL_PROPERTY_GROUPS.includes(s);
 export const GROUP_FIELDS = {
     background: ['backgroundColor'],
     border: ['borderColor', 'borderStyle', 'borderWidth', 'borderRadius'],
-    shadow: ['boxShadows'],
+    shadow: ['boxShadows', 'boxShadowToken'],
     typography: [
         'fontFamily',
         'fontSize',
