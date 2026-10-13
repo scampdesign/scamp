@@ -185,12 +185,27 @@ describe('lintView — binding-not-parsed', () => {
     expect(found[0]?.message).toContain('href={route(item)}');
   });
 
+  it('leaves a constant expression alone: tabIndex={-1} is a number, not a binding', () => {
+    const elements = view(
+      rect('a1b2', { attributes: { tabIndex: '{-1}', 'aria-hidden': '{true}', role: '{"note"}', width: '{1.5}' } })
+    );
+    expect(kinds(elements)).toEqual([]);
+    expect(kinds(view(rect('a1b2', { attributes: { tabIndex: '{index}' } })))).toEqual(['binding-not-parsed']);
+  });
+
   it('leaves a real binding and a plain literal alone', () => {
     const elements = view(
       rect('a1b2', { tag: 'a', attributes: { href: '/about', target: '_blank' }, bind: { href: 'url' } }),
       { samples: { url: '/about' } }
     );
     expect(kinds(elements)).toEqual([]);
+  });
+});
+
+describe('lintView — a vendor-prefixed value', () => {
+  it('is a note, not a problem: text-align: -webkit-center renders, the panel can’t hold it', () => {
+    const found = lint(view(rect('a1b2', { customProperties: { 'text-align': '-webkit-center' } })));
+    expect(found.map((f) => `${f.severity}:${f.kind}`)).toEqual(['note:not-panel-editable']);
   });
 });
 

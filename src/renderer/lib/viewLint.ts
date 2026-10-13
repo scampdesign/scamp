@@ -105,6 +105,9 @@ const TYPED_SHORTHAND_FOR: Record<string, string> = {
 
 const TOKEN_REF = /var\(\s*(--[A-Za-z0-9_-]+)/g;
 
+/** A JSX expression that's a constant: a number, boolean, null, or quoted string. */
+const JSX_CONSTANT = /^(?:-?\d+(?:\.\d+)?|true|false|null|undefined|'[^'\\]*'|"[^"\\]*")$/;
+
 /** Every `var(--token)` a string mentions, in order, without duplicates. */
 const tokenRefs = (value: string): string[] => {
   const out: string[] = [];
@@ -256,6 +259,9 @@ export const lintView = (input: LintInput): ViewFinding[] => {
     // show it and the props type doesn't declare it.
     for (const [attr, value] of Object.entries(el.attributes ?? {})) {
       if (!value.startsWith('{') || !value.endsWith('}')) continue;
+      // A constant isn't a binding: `tabIndex={-1}` is how JSX writes a
+      // number, and it was reported as one Scamp couldn't read.
+      if (JSX_CONSTANT.test(value.slice(1, -1).trim())) continue;
       findings.push({
         ...at,
         kind: 'binding-not-parsed',

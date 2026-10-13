@@ -1,6 +1,6 @@
 # Checks that mean something
 
-Status: in progress, 2026-10-13. Check a box when the item is merged.
+Status: done, 2026-10-13. Every item below is checked off.
 
 Running `scamp_check_project` on an imported project returned 423
 findings, and an agent asked to fix them refused, rightly: every one of
@@ -166,7 +166,12 @@ token value, shown like a color token. Clears 2 notes.
 
 ## 6. Leave correct values alone
 
-- [ ] Done
+- [x] Done — `tabIndex={-1}` was a problem, from the binding rule, which
+  read any `{…}` attribute as a binding it couldn't parse; a constant
+  (number, boolean, `null`, quoted string) is now skipped.
+  `text-align: -webkit-center` was already a note after item 1, which is
+  accurate (the panel can't hold it), so no allow-list was added. Tests:
+  two new cases in `test/viewLint.test.ts`.
 
 `tabIndex={-1}` and `text-align: -webkit-center` are right as written.
 If either still shows after 1, add it to an allow-list in `viewLint.ts`

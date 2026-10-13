@@ -75,6 +75,9 @@ release time.
 - **Setting Block at a breakpoint no longer hides the element.** It
   wrote `display: none` instead of `display: block`.
 
+- **`tabIndex={-1}` is no longer reported as a broken binding.** Checks
+  read any `{…}` attribute as a binding Scamp couldn't parse; a constant
+  number, boolean, or string is now left alone.
 - **Checks no longer report valid CSS as problems.** Values the panel
   has no control for, such as `display: inline-flex`, are listed under
   **Edit in CSS** and left out of the count, and agents are told to
