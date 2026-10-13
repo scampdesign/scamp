@@ -62,7 +62,8 @@ export const SpacingSection = ({ elementId, hideMargin = false }: Props): JSX.El
               />
             }
             label="Margin"
-            title="Margin (top right bottom left)"
+            title="Margin (top right bottom left) — a side can be auto: 0 auto centers"
+            allowAuto
             value={element.margin}
             onChange={(next) => patchElement(elementId, { margin: next })}
             tokens={spacingTokens}

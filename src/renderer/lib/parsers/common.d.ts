@@ -33,3 +33,5 @@ export declare const parseVarTokenOrNull: (raw: string) => string | null;
  * else returns `null` so the caller can refuse the whole shorthand.
  */
 export declare const parseSpaceValueOrNull: (raw: string) => SpaceValue | null;
+/** A margin side: anything a space value is, or `auto`. */
+export declare const parseMarginValueOrNull: (raw: string) => SpaceValue | null;

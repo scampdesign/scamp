@@ -5,6 +5,7 @@ import { SpaceTokenButton } from './SpaceTokenButton';
 import {
   formatSpaceShorthand,
   formatSpaceValue,
+  AUTO_SPACE_VALUE,
   isTokenSpaceValue,
   spaceTupleEquals,
   spaceValueEquals,
@@ -32,6 +33,8 @@ type Props = {
   tokens?: ReadonlyArray<ThemeToken>;
   /** Opens the Theme tokens panel from the empty-state row. */
   onOpenTheme?: () => void;
+  /** Accept `auto` on a side — margins only. */
+  allowAuto?: boolean;
 };
 
 /**
@@ -58,9 +61,10 @@ const tokenize = (raw: string): string[] => {
 
 const VAR_RE = /^var\(\s*--[A-Za-z_][\w-]*(?:\s*,[^)]*)?\)$/;
 
-const parseToken = (raw: string, min: number): SpaceValue | null => {
+const parseToken = (raw: string, min: number, allowAuto: boolean): SpaceValue | null => {
   const trimmed = raw.trim();
   if (trimmed.length === 0) return null;
+  if (allowAuto && trimmed.toLowerCase() === 'auto') return AUTO_SPACE_VALUE;
   if (VAR_RE.test(trimmed)) {
     return { kind: 'token', ref: trimmed };
   }
@@ -80,14 +84,15 @@ const parseToken = (raw: string, min: number): SpaceValue | null => {
  */
 const parseShorthand = (
   raw: string,
-  min: number
+  min: number,
+  allowAuto = false
 ): SpaceTuple | null => {
   const tokens = tokenize(raw.trim());
   if (tokens.length === 0 || tokens.length > 4) return null;
 
   const values: SpaceValue[] = [];
   for (const t of tokens) {
-    const v = parseToken(t, min);
+    const v = parseToken(t, min, allowAuto);
     if (v === null) return null;
     values.push(v);
   }
@@ -132,16 +137,17 @@ export const FourSideInput = ({
   title,
   tokens,
   onOpenTheme,
+  allowAuto = false,
 }: Props): JSX.Element => {
   const handleCommit = (draft: string): void => {
-    const parsed = parseShorthand(draft, min);
+    const parsed = parseShorthand(draft, min, allowAuto);
     if (!parsed) return;
     if (!spaceTupleEquals(parsed, value)) onChange(parsed);
   };
 
   const handleArrow = (draft: string, direction: 1 | -1, shift: boolean): void => {
     const delta = (shift ? 10 : 1) * direction;
-    const base = parseShorthand(draft, min) ?? value;
+    const base = parseShorthand(draft, min, allowAuto) ?? value;
     const next: SpaceTuple = [
       bumpSide(base[0], delta, min),
       bumpSide(base[1], delta, min),

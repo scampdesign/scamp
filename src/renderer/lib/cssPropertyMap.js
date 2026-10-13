@@ -209,7 +209,7 @@ export const cssToScampProperty = {
         return { padding: parsed };
     },
     margin: (v) => {
-        const parsed = parsePaddingShorthandOrNull(v);
+        const parsed = parsePaddingShorthandOrNull(v, true);
         if (parsed === null)
             return null;
         return { margin: parsed };

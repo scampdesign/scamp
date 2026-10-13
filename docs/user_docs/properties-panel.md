@@ -90,6 +90,8 @@ section with the same choices.
 - Shorthand input is supported: type `10` for uniform, `10 20` for
   vertical and horizontal, or `10 20 30 40` for top, right, bottom, and
   left.
+- A margin side can be `auto`. Type `0 auto` to center a fixed-width
+  element horizontally in its parent. Padding can't be `auto`.
 - The right edge of each input has a token icon. See
   [Spacing tokens](#spacing-tokens).
 

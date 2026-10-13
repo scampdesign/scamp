@@ -1,3 +1,5 @@
+/** The `auto` value, for a margin side. */
+export const AUTO_SPACE_VALUE = { kind: 'auto' };
 /**
  * Build a token-form `SpaceValue`. Pass the full `var(--name)` source
  * — we keep the wrapper because that's what gets emitted into CSS and
@@ -24,11 +26,11 @@ export const isZeroSpaceValue = (v) => typeof v === 'number' && v === 0;
  * parens).
  */
 export const spaceValueEquals = (a, b) => {
-    if (typeof a === 'number' && typeof b === 'number')
+    if (typeof a === 'number' || typeof b === 'number')
         return a === b;
-    if (typeof a !== 'number' && typeof b !== 'number')
-        return a.ref === b.ref;
-    return false;
+    if (a.kind === 'auto' || b.kind === 'auto')
+        return a.kind === b.kind;
+    return a.ref === b.ref;
 };
 /** Tuple equality — element-wise structural compare. */
 export const spaceTupleEquals = (a, b) => spaceValueEquals(a[0], b[0]) &&
@@ -39,7 +41,7 @@ export const spaceTupleEquals = (a, b) => spaceValueEquals(a[0], b[0]) &&
  * Format a single value as the CSS source string. Numbers become
  * `Npx`; tokens emit their stored `ref` verbatim.
  */
-export const formatSpaceValue = (v) => typeof v === 'number' ? `${v}px` : v.ref;
+export const formatSpaceValue = (v) => typeof v === 'number' ? `${v}px` : v.kind === 'auto' ? 'auto' : v.ref;
 /**
  * Format a 4-tuple as a CSS shorthand declaration value, collapsing
  * when adjacent sides match (1 / 2 / 3 / 4-value form). Mirrors how
@@ -80,7 +82,7 @@ export const formatSpaceShorthand = (t) => {
  */
 export const spaceValueNumberOrZero = (v) => typeof v === 'number' ? v : 0;
 /** True iff the value is a token-form `SpaceValue`. */
-export const isTokenSpaceValue = (v) => typeof v !== 'number';
+export const isTokenSpaceValue = (v) => typeof v !== 'number' && v.kind === 'token';
 /** A tuple of plain zeros — used as the "no spacing" baseline. */
 export const ZERO_SPACE_TUPLE = [0, 0, 0, 0];
 /** True iff every side of the tuple is plain-px zero. */
@@ -88,3 +90,5 @@ export const isZeroSpaceTuple = (t) => isZeroSpaceValue(t[0]) &&
     isZeroSpaceValue(t[1]) &&
     isZeroSpaceValue(t[2]) &&
     isZeroSpaceValue(t[3]);
+/** True iff any side is `auto` — a margin only. */
+export const hasAutoSide = (t) => t.some((side) => typeof side !== 'number' && side.kind === 'auto');

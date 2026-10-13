@@ -1,7 +1,7 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { PrefixSuffixInput } from './PrefixSuffixInput';
 import { SpaceTokenButton } from './SpaceTokenButton';
-import { formatSpaceShorthand, formatSpaceValue, isTokenSpaceValue, spaceTupleEquals, spaceValueEquals, tokenSpaceValue, } from '@lib/spaceValue';
+import { formatSpaceShorthand, formatSpaceValue, AUTO_SPACE_VALUE, isTokenSpaceValue, spaceTupleEquals, spaceValueEquals, tokenSpaceValue, } from '@lib/spaceValue';
 /**
  * Tokenise a shorthand string, respecting parens so values like
  * `var(--a, 16px) 8` split into two tokens rather than four.
@@ -28,10 +28,12 @@ const tokenize = (raw) => {
     return tokens;
 };
 const VAR_RE = /^var\(\s*--[A-Za-z_][\w-]*(?:\s*,[^)]*)?\)$/;
-const parseToken = (raw, min) => {
+const parseToken = (raw, min, allowAuto) => {
     const trimmed = raw.trim();
     if (trimmed.length === 0)
         return null;
+    if (allowAuto && trimmed.toLowerCase() === 'auto')
+        return AUTO_SPACE_VALUE;
     if (VAR_RE.test(trimmed)) {
         return { kind: 'token', ref: trimmed };
     }
@@ -49,13 +51,13 @@ const parseToken = (raw, min) => {
  * allowed (`16 var(--space-md)`). Returns `null` for any unparseable
  * input so callers can revert on blur.
  */
-const parseShorthand = (raw, min) => {
+const parseShorthand = (raw, min, allowAuto = false) => {
     const tokens = tokenize(raw.trim());
     if (tokens.length === 0 || tokens.length > 4)
         return null;
     const values = [];
     for (const t of tokens) {
-        const v = parseToken(t, min);
+        const v = parseToken(t, min, allowAuto);
         if (v === null)
             return null;
         values.push(v);
@@ -90,9 +92,9 @@ const bumpSide = (v, delta, min) => {
  *
  * Invalid input reverts on blur via the PrefixSuffixInput value sync.
  */
-export const FourSideInput = ({ value, onChange, min = 0, prefix, label, title, tokens, onOpenTheme, }) => {
+export const FourSideInput = ({ value, onChange, min = 0, prefix, label, title, tokens, onOpenTheme, allowAuto = false, }) => {
     const handleCommit = (draft) => {
-        const parsed = parseShorthand(draft, min);
+        const parsed = parseShorthand(draft, min, allowAuto);
         if (!parsed)
             return;
         if (!spaceTupleEquals(parsed, value))
@@ -100,7 +102,7 @@ export const FourSideInput = ({ value, onChange, min = 0, prefix, label, title, 
     };
     const handleArrow = (draft, direction, shift) => {
         const delta = (shift ? 10 : 1) * direction;
-        const base = parseShorthand(draft, min) ?? value;
+        const base = parseShorthand(draft, min, allowAuto) ?? value;
         const next = [
             bumpSide(base[0], delta, min),
             bumpSide(base[1], delta, min),

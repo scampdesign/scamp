@@ -239,7 +239,7 @@ export const cssToScampProperty: Record<string, Mapper> = {
     return { padding: parsed };
   },
   margin: (v) => {
-    const parsed = parsePaddingShorthandOrNull(v);
+    const parsed = parsePaddingShorthandOrNull(v, true);
     if (parsed === null) return null;
     return { margin: parsed };
   },

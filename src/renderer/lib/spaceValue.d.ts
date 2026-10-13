@@ -25,7 +25,13 @@
 export type SpaceValue = number | {
     readonly kind: 'token';
     readonly ref: string;
+}
+/** Margins only — `margin: 0 auto` centers. Padding can't be auto. */
+ | {
+    readonly kind: 'auto';
 };
+/** The `auto` value, for a margin side. */
+export declare const AUTO_SPACE_VALUE: SpaceValue;
 /**
  * Per-side tuple — same shape regardless of which CSS property it
  * lives in. Sides for padding/margin/border-width are
@@ -98,3 +104,5 @@ export declare const isTokenSpaceValue: (v: SpaceValue) => v is {
 export declare const ZERO_SPACE_TUPLE: SpaceTuple;
 /** True iff every side of the tuple is plain-px zero. */
 export declare const isZeroSpaceTuple: (t: SpaceTuple) => boolean;
+/** True iff any side is `auto` — a margin only. */
+export declare const hasAutoSide: (t: SpaceTuple) => boolean;

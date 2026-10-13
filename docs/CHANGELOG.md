@@ -26,6 +26,10 @@ release time.
 
 **Added**
 
+- **Center with an auto margin.** The margin field takes `auto` on a
+  side, so `0 auto` centers a fixed-width element. Imported pages that
+  center this way now show it in the panel instead of leaving it in the
+  CSS.
 - **Set how an element sits among its neighbors.** A new **Display**
   choice in the Layout section—and a **Display** section for text and
   inputs—sets Block, Inline, Inline block, Contents, or List item, and

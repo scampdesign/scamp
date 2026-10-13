@@ -1,6 +1,6 @@
 // parsers/padding.ts — split out of parsers.ts (4.3).
 import { type SpaceTuple, type SpaceValue } from "../spaceValue";
-import { parsePx, parseSpaceValueOrNull } from "./common";
+import { parseMarginValueOrNull, parsePx, parseSpaceValueOrNull } from "./common";
 import { tokenizeBorder } from "./internal";
 
 /**
@@ -45,14 +45,16 @@ export const parsePaddingShorthand = (
  * fallback's internal comma-space.
  */
 export const parsePaddingShorthandOrNull = (
-  raw: string
+  raw: string,
+  /** Margins take `auto` on a side (`0 auto` centers); padding can't. */
+  allowAuto = false
 ): SpaceTuple | null => {
   if (typeof raw !== 'string') return null;
   const tokens = tokenizeBorder(raw.trim());
   if (tokens.length === 0) return null;
   const v: SpaceValue[] = [];
   for (const tok of tokens) {
-    const s = parseSpaceValueOrNull(tok);
+    const s = allowAuto ? parseMarginValueOrNull(tok) : parseSpaceValueOrNull(tok);
     if (s === null) return null;
     v.push(s);
   }

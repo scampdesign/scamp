@@ -137,7 +137,15 @@ change — `inline-flex` is a flex container.
 
 ## 4. `auto` in margins
 
-- [ ] Done
+- [x] Done — `{ kind: 'auto' }` is a `SpaceValue`, parsed for the
+  `margin` shorthand only (`parseMarginValueOrNull`); the margin field
+  accepts it (`allowAuto`), padding doesn't. Written last in the rule,
+  where it sat as raw CSS, and kept on the root, which writes no other
+  margin. Two limits: `0 auto` comes back as `0px auto` (the model holds
+  numbers), and `margin-left: auto` longhands stay raw CSS — typing one
+  would turn it into a full `margin` shorthand. Tests:
+  `test/marginAuto.test.ts`, the margin case in
+  `test/e2e/properties-panel/display.spec.ts`.
 
 `SpaceValue` gains `{ kind: 'auto' }` for margins only (padding can't be
 auto). Spacing fields accept and show `auto`; generate and parse round

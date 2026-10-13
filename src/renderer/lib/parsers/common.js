@@ -1,5 +1,5 @@
 // parsers/common.ts — split out of parsers.ts (4.3).
-import { tokenSpaceValue } from "../spaceValue";
+import { AUTO_SPACE_VALUE, tokenSpaceValue } from "../spaceValue";
 /**
  * Split a CSS value-list on top-level commas, respecting parens. Used
  * to break a `transition` shorthand like
@@ -128,3 +128,5 @@ export const parseSpaceValueOrNull = (raw) => {
         return tokenSpaceValue(ref);
     return null;
 };
+/** A margin side: anything a space value is, or `auto`. */
+export const parseMarginValueOrNull = (raw) => raw.trim() === 'auto' ? AUTO_SPACE_VALUE : parseSpaceValueOrNull(raw);

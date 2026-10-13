@@ -1,5 +1,5 @@
 // parsers/common.ts — split out of parsers.ts (4.3).
-import { tokenSpaceValue, type SpaceValue } from "../spaceValue";
+import { AUTO_SPACE_VALUE, tokenSpaceValue, type SpaceValue } from "../spaceValue";
 
 
 /**
@@ -127,4 +127,8 @@ export const parseSpaceValueOrNull = (raw: string): SpaceValue | null => {
   if (ref !== null) return tokenSpaceValue(ref);
   return null;
 };
+
+/** A margin side: anything a space value is, or `auto`. */
+export const parseMarginValueOrNull = (raw: string): SpaceValue | null =>
+  raw.trim() === 'auto' ? AUTO_SPACE_VALUE : parseSpaceValueOrNull(raw);
 

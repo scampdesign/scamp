@@ -1,4 +1,4 @@
-import { parsePx, parseSpaceValueOrNull } from "./common";
+import { parseMarginValueOrNull, parsePx, parseSpaceValueOrNull } from "./common";
 import { tokenizeBorder } from "./internal";
 /**
  * Parse a CSS `padding` shorthand into [top, right, bottom, left] in px.
@@ -37,7 +37,9 @@ export const parsePaddingShorthand = (raw) => {
  * `var(--a, 16px) var(--b)` parse correctly without splitting the
  * fallback's internal comma-space.
  */
-export const parsePaddingShorthandOrNull = (raw) => {
+export const parsePaddingShorthandOrNull = (raw, 
+/** Margins take `auto` on a side (`0 auto` centers); padding can't. */
+allowAuto = false) => {
     if (typeof raw !== 'string')
         return null;
     const tokens = tokenizeBorder(raw.trim());
@@ -45,7 +47,7 @@ export const parsePaddingShorthandOrNull = (raw) => {
         return null;
     const v = [];
     for (const tok of tokens) {
-        const s = parseSpaceValueOrNull(tok);
+        const s = allowAuto ? parseMarginValueOrNull(tok) : parseSpaceValueOrNull(tok);
         if (s === null)
             return null;
         v.push(s);

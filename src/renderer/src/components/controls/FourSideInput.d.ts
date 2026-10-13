@@ -19,6 +19,8 @@ type Props = {
     tokens?: ReadonlyArray<ThemeToken>;
     /** Opens the Theme tokens panel from the empty-state row. */
     onOpenTheme?: () => void;
+    /** Accept `auto` on a side — margins only. */
+    allowAuto?: boolean;
 };
 /**
  * A single text input for editing a [top, right, bottom, left] tuple using
@@ -28,5 +30,5 @@ type Props = {
  *
  * Invalid input reverts on blur via the PrefixSuffixInput value sync.
  */
-export declare const FourSideInput: ({ value, onChange, min, prefix, label, title, tokens, onOpenTheme, }: Props) => JSX.Element;
+export declare const FourSideInput: ({ value, onChange, min, prefix, label, title, tokens, onOpenTheme, allowAuto, }: Props) => JSX.Element;
 export {};

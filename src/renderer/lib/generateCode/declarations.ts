@@ -6,7 +6,7 @@ import { DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from "../defaults";
 import { ROOT_ELEMENT_ID, type BreakpointOverride, type PropertyGroup, type ScampElement } from "../element";
 import { formatAnimationShorthand, formatBoxShadowShorthand, formatFilterList, formatTransformList, formatTransitionShorthand } from "../parsers";
 import { CUSTOM_PROP_TO_GROUP } from "../propertyGroups";
-import { formatSpaceShorthand, formatSpaceValue, isZeroSpaceTuple, spaceValueEquals } from "../spaceValue";
+import { formatSpaceShorthand, formatSpaceValue, hasAutoSide, isZeroSpaceTuple, spaceValueEquals } from "../spaceValue";
 import { getTagDefaultPadding, paddingEquals } from "../tagDefaults";
 import { isColumnDirection, selfAlignForParent } from "../flexAxis";
 import { tagFor } from "./internal";
@@ -393,7 +393,7 @@ export const elementDeclarationLines = (
   // Skip emission when every side is plain-px zero. Token-form sides
   // always emit even when they happen to be `var(--space-0)` — the
   // user wrote that intentionally and we must round-trip it.
-  if (!isRoot && !isZeroSpaceTuple(el.margin)) {
+  if (!isRoot && !isZeroSpaceTuple(el.margin) && !hasAutoSide(el.margin)) {
     lines.push(`margin: ${formatSpaceShorthand(el.margin)};`);
   }
 
@@ -602,6 +602,12 @@ export const elementDeclarationLines = (
   // contract fixture included. see docs/plans/checks-cleanup-plan.md
   if (el.displayOuter !== undefined && el.visibilityMode !== 'none') {
     lines.push(`display: ${displayKeyword(el.display, el.displayOuter)};`);
+  }
+  // The same for a margin with an `auto` side (`margin: 0 auto`) — on
+  // the root too, which writes no other margin: as raw CSS it was kept
+  // there, and an imported page centers its content that way.
+  if (hasAutoSide(el.margin)) {
+    lines.push(`margin: ${formatSpaceShorthand(el.margin)};`);
   }
   const emittedProps = collectEmittedPropNames(lines);
   for (const [key, value] of Object.entries(el.customProperties)) {

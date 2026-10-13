@@ -15,4 +15,6 @@ export declare const parsePaddingShorthand: (raw: string) => [number, number, nu
  * `var(--a, 16px) var(--b)` parse correctly without splitting the
  * fallback's internal comma-space.
  */
-export declare const parsePaddingShorthandOrNull: (raw: string) => SpaceTuple | null;
+export declare const parsePaddingShorthandOrNull: (raw: string, 
+/** Margins take `auto` on a side (`0 auto` centers); padding can't. */
+allowAuto?: boolean) => SpaceTuple | null;

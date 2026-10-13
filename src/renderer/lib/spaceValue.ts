@@ -22,7 +22,14 @@
  * agent wrote `padding: var(--space-md)` produce token forms; the
  * generator emits them verbatim on the next save.
  */
-export type SpaceValue = number | { readonly kind: 'token'; readonly ref: string };
+export type SpaceValue =
+  | number
+  | { readonly kind: 'token'; readonly ref: string }
+  /** Margins only — `margin: 0 auto` centers. Padding can't be auto. */
+  | { readonly kind: 'auto' };
+
+/** The `auto` value, for a margin side. */
+export const AUTO_SPACE_VALUE: SpaceValue = { kind: 'auto' };
 
 /**
  * Per-side tuple — same shape regardless of which CSS property it
@@ -62,9 +69,9 @@ export const isZeroSpaceValue = (v: SpaceValue): boolean =>
  * parens).
  */
 export const spaceValueEquals = (a: SpaceValue, b: SpaceValue): boolean => {
-  if (typeof a === 'number' && typeof b === 'number') return a === b;
-  if (typeof a !== 'number' && typeof b !== 'number') return a.ref === b.ref;
-  return false;
+  if (typeof a === 'number' || typeof b === 'number') return a === b;
+  if (a.kind === 'auto' || b.kind === 'auto') return a.kind === b.kind;
+  return a.ref === b.ref;
 };
 
 /** Tuple equality — element-wise structural compare. */
@@ -82,7 +89,7 @@ export const spaceTupleEquals = (
  * `Npx`; tokens emit their stored `ref` verbatim.
  */
 export const formatSpaceValue = (v: SpaceValue): string =>
-  typeof v === 'number' ? `${v}px` : v.ref;
+  typeof v === 'number' ? `${v}px` : v.kind === 'auto' ? 'auto' : v.ref;
 
 /**
  * Format a 4-tuple as a CSS shorthand declaration value, collapsing
@@ -132,7 +139,7 @@ export const spaceValueNumberOrZero = (v: SpaceValue): number =>
 export const isTokenSpaceValue = (
   v: SpaceValue
 ): v is { kind: 'token'; ref: string } =>
-  typeof v !== 'number';
+  typeof v !== 'number' && v.kind === 'token';
 
 /** A tuple of plain zeros — used as the "no spacing" baseline. */
 export const ZERO_SPACE_TUPLE: SpaceTuple = [0, 0, 0, 0];
@@ -143,3 +150,7 @@ export const isZeroSpaceTuple = (t: SpaceTuple): boolean =>
   isZeroSpaceValue(t[1]) &&
   isZeroSpaceValue(t[2]) &&
   isZeroSpaceValue(t[3]);
+
+/** True iff any side is `auto` — a margin only. */
+export const hasAutoSide = (t: SpaceTuple): boolean =>
+  t.some((side) => typeof side !== 'number' && side.kind === 'auto');
