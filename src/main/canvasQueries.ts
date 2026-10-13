@@ -130,4 +130,6 @@ export const canvasToolInvoker = (projectPath: string): ToolInvoker =>
     // The renderer builds the view's export and main lays it out; no turn,
     // so an omitted `view` is the one open on the canvas.
     findOverflow: (args) => runAgentEdit('scamp_find_overflow', args, ''),
+    // Every page, view, and component, read fresh: more than a 2s read.
+    checks: (tool, args) => runAgentEdit(tool, args, ''),
   });

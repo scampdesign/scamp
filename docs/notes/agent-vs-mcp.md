@@ -32,7 +32,8 @@ Keep this note current when a tool is added to either side.
 | `scamp_list_pages` | Every page and view, with its files | ✅ | ✅ |
 | `scamp_list_components` | Every component, with its files | ✅ | ✅ |
 | `scamp_get_view_props` | A view or component's props type and sample data | ✅ | ✅ |
-| `scamp_check_view` | What a view lost on the way in: opaque bindings, unreadable values, undeclared tokens | ✅ | ✅ |
+| `scamp_check_view` | What a page, view, or component lost on the way in: opaque bindings, unreadable values, undeclared tokens | ✅ | ✅ |
+| `scamp_check_project` | The same check on every page, view, and component at once | ✅ | ✅ |
 | `scamp_list_routes` | Routes and API handlers under `routes/` | ✅ | ✅ |
 | `scamp_list_import_sources` | Imported pages whose originals Scamp kept | ✅ | ✅ |
 | `scamp_get_import_source` | An imported page's original HTML or CSS | ✅ | ✅ |

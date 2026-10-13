@@ -1454,10 +1454,12 @@ written on selection, the tools read the canvas at the moment you ask.
   sample data; call before writing the route or page that renders it.
   Check its \`warnings\`: a non-empty list means the view lost something
   on the way in and the props may not be the whole story
-- \`scamp_check_view\` — what a view LOST on parse: bindings kept as
-  opaque text, declarations that render but leave the panel blank,
-  undeclared tokens. Call it after writing or editing a view; an empty
-  \`findings\` list means it arrived intact
+- \`scamp_check_view\` — what a page, view, or component LOST on parse:
+  bindings kept as opaque text, declarations that render but leave the
+  panel blank, undeclared tokens. Call it after writing or editing one;
+  an empty \`findings\` list means it arrived intact
+- \`scamp_check_project\` — the same check on every page, view, and
+  component at once. Call it after a change across several files
 - \`scamp_get_conventions\` — these rules, scoped to this project's
   format. No argument for the summary and the section list, then
   \`section\` for the one you need

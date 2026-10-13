@@ -37,7 +37,7 @@ export const SERVER_INSTRUCTIONS = [
     'When the user asks for components, a kit, or a library, create component folders; call scamp_get_component_scaffold for the exact starter files.',
     'A page whose design lives under `views/<Name>/` (kind `view` in scamp_list_pages) is edited there; its `app/<slug>/page.tsx` is a one-line wrapper Scamp regenerates — never edit the wrapper.',
     'Before writing the route or page that renders a view, call scamp_get_view_props for its exact props type and sample data — compute values in the route, bind them in the view. In a Scamp-framework project, scamp_list_routes shows every route file and API handler under routes/.',
-    'Do not run a build or install packages to verify your work: Scamp renders files as you save them. After writing or editing a view, call scamp_check_view — a file can parse perfectly and still arrive degraded, and scamp_get_element_tree reports structure only, so it looks correct in every one of those cases.',
+    'Do not run a build or install packages to verify your work: Scamp renders files as you save them. After writing or editing a view, call scamp_check_view — a file can parse perfectly and still arrive degraded, and scamp_get_element_tree reports structure only, so it looks correct in every one of those cases. After a change across several files, call scamp_check_project to check every page, view, and component at once.',
     'Full rules, including the component file format, are in agent.md at the project root.',
 ].join(' ');
 export const textResult = (text) => ({

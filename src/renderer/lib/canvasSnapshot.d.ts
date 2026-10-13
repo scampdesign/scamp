@@ -3,6 +3,7 @@ import { type ContextTarget } from './contextModel';
 import type { SampleValue, ScampElement } from './element';
 import type { PatchEntry } from './patchLog';
 import { type ViewFinding } from './viewLint';
+import { type ProjectCheck } from './projectCheck';
 import { type GuidanceSection } from '@shared/templates';
 import { type ViewPropKind } from './viewProps';
 /**
@@ -243,6 +244,12 @@ export declare const listComponents: (input: SnapshotInput) => FileListItem[];
  * see docs/notes/view-lint.md
  */
 export declare const getViewCheck: (input: SnapshotInput, name: string) => ViewCheckResult;
+/**
+ * Every view and component in the snapshot. The app answers this from
+ * disk, plain pages included (syncBridge/agentChecks.ts); this is the
+ * headless runner's answer, which has only the trees it was given.
+ */
+export declare const getProjectCheck: (input: SnapshotInput) => ProjectCheck;
 /**
  * The project's own guidance, sliced. Answers from the same templates
  * that write `agent.md`, so an agent that asks and one that reads the

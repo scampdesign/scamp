@@ -80,7 +80,7 @@ export const ChecksSection = () => {
             list.push(finding);
     }
     const kinds = KIND_ORDER.filter((kind) => byKind.has(kind));
-    return (_jsx("div", { "data-testid": "checks-section", children: _jsx(Section, { title: "Checks", collapsible: true, defaultOpen: true, count: findings.length, children: _jsx("ul", { className: styles.list, children: kinds.map((kind) => {
+    return (_jsx("div", { "data-testid": "checks-section", children: _jsx(Section, { title: "Checks", collapsible: true, defaultOpen: false, count: findings.length, children: _jsx("ul", { className: styles.list, children: kinds.map((kind) => {
                     const list = byKind.get(kind) ?? [];
                     return (_jsxs("li", { className: styles.group, children: [_jsxs("p", { className: styles.kind, children: [KIND_LABEL[kind], _jsx("span", { className: styles.count, children: list.length })] }), list[0]?.hint !== undefined && (_jsx("p", { className: styles.hint, children: list[0].hint })), _jsx("ul", { className: styles.items, children: list.slice(0, MAX_PER_KIND).map((finding, index) => (_jsx("li", { children: _jsxs("button", { type: "button", className: styles.item, disabled: finding.elementId === null, onClick: () => {
                                             if (finding.elementId !== null)

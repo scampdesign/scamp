@@ -88,9 +88,9 @@ export const ChecksSection = (): JSX.Element | null => {
 
   return (
     <div data-testid="checks-section">
-      {/* Open by default: a collapsed warning is a warning nobody
-          reads, and this exists because nothing was saying anything. */}
-      <Section title="Checks" collapsible defaultOpen count={findings.length}>
+      {/* Closed by default: the header's count says when there's
+          something to look at. */}
+      <Section title="Checks" collapsible defaultOpen={false} count={findings.length}>
         <ul className={styles.list}>
           {kinds.map((kind) => {
             const list = byKind.get(kind) ?? [];

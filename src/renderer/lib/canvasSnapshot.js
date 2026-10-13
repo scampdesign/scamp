@@ -3,6 +3,7 @@ import { buildContextModel, } from './contextModel';
 import { isGridTable, tableCaptionRule, tableSubgridRule } from './tableGrid';
 import { tableStyleRules } from './tableStyle';
 import { lintView } from './viewLint';
+import { checkProject } from './projectCheck';
 import { findGuidanceSection, guidanceFor, guidanceSectionTitles, guidanceSummary, } from '@shared/templates';
 import { classNameFor, tagFor } from './generateCode';
 import { collectViewProps, propsTypeSource, viewEventNames, } from './viewProps';
@@ -251,6 +252,17 @@ export const getViewCheck = (input, name) => {
     };
 };
 /**
+ * Every view and component in the snapshot. The app answers this from
+ * disk, plain pages included (syncBridge/agentChecks.ts); this is the
+ * headless runner's answer, which has only the trees it was given.
+ */
+export const getProjectCheck = (input) => checkProject(Object.keys(input.trees ?? {}).flatMap((name) => {
+    const found = treeNamed(input, name);
+    return found === null
+        ? []
+        : [{ name: found.name, kind: found.tree.kind, elements: found.tree.elements, rootId: found.tree.rootId }];
+}), input.themeTokens.map((token) => token.name));
+/**
  * The project's own guidance, sliced. Answers from the same templates
  * that write `agent.md`, so an agent that asks and one that reads the
  * file get the same rules. see docs/notes/agent-md-layouts.md
@@ -325,6 +337,8 @@ export const answerSnapshotTool = (tool, args, input) => {
             return getViewProps(input, String(args['name'] ?? ''));
         case 'scamp_check_view':
             return getViewCheck(input, String(args['name'] ?? ''));
+        case 'scamp_check_project':
+            return getProjectCheck(input);
         case 'scamp_get_conventions':
             return getConventions(input, String(args['section'] ?? ''));
         case 'scamp_get_recent_edits':

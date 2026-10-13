@@ -71,6 +71,8 @@ claude mcp reset-project-choices
 | `scamp_list_components` | Every [component](components.md) and its files |
 | `scamp_get_component_scaffold` | The exact starter files for a new [component](components.md), so the agent creates real components instead of a page of examples |
 | `scamp_get_view_props` | The exact props type and sample data of a view or component, so the code that renders it passes the right shape |
+| `scamp_check_view` | What a page, view, or component lost on the way into Scamp, the same problems the **Checks** section lists |
+| `scamp_check_project` | The same check on every page, view, and component in the project at once |
 | `scamp_list_routes` | Every route and API handler under `routes/` in a Scamp framework project, with its URL and render mode |
 | `scamp_get_recent_edits` | What you've changed on the canvas since the agent last looked, as the lines each save rewrote |
 | `scamp_get_theme_tokens` | Your [design tokens](design-tokens.md), so the agent uses a token instead of a raw hex value |

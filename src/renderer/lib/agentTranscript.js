@@ -10,6 +10,7 @@ const TOOL_LABELS = {
     scamp_list_components: 'Listed the components',
     scamp_get_view_props: 'Read the view’s props',
     scamp_check_view: 'Checked the view',
+    scamp_check_project: 'Checked the project',
     scamp_list_routes: 'Listed the routes',
     scamp_list_import_sources: 'Listed imported pages',
     scamp_get_import_source: 'Read the imported original',

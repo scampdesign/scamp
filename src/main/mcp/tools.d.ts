@@ -12,6 +12,14 @@ export declare const TOOL_NAMES: ReadonlyArray<string>;
 export type ToolInvokerOptions = {
     /** Answers scamp_list_routes from disk; the routes aren't canvas state. */
     listRoutes?: () => Promise<unknown>;
+    /**
+     * scamp_check_view / scamp_check_project, read fresh from disk by the
+     * renderer. Absent (the headless runner), they answer from the snapshot.
+     */
+    checks?: (tool: string, args: Record<string, unknown>) => Promise<{
+        ok: boolean;
+        text: string;
+    }>;
     /** Imported pages' originals; they live in temp, not on the canvas. */
     listImportSources?: () => Promise<unknown>;
     readImportSource?: (view: string, part: 'css' | 'html') => Promise<{

@@ -51,6 +51,11 @@ test.describe('a view with an undeclared token', () => {
         // Nothing selected: the panel is showing the view, not an element.
         const checks = panelSection(window, 'Checks');
         await expect(checks).toBeVisible();
+        // Closed, with the count on its header saying there's something to see.
+        const toggle = checks.locator('button[aria-expanded]').first();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        await expect(toggle).toHaveAttribute('aria-label', /^Checks, \d+$/);
+        await toggle.click();
         await expect(checks).toContainText('Tokens this project never declares');
         await expect(checks).toContainText('--nowhere-declared');
     });
@@ -60,6 +65,7 @@ test.describe('a view with an undeclared token', () => {
         await expect(pageRoot(window)).toBeVisible();
         // The hint and the finding row both name the token; the row is the
         // one that is a button.
+        await panelSection(window, 'Checks').locator('button[aria-expanded]').first().click();
         await panelSection(window, 'Checks')
             .getByRole('button', { name: /--nowhere-declared/ })
             .first()

@@ -162,8 +162,10 @@ missing.
 ## Find problems in a view
 
 When a view has something wrong with it, a **Checks** section appears at
-the top of the properties panel while the view's root is selected. It
-lists problems such as these, grouped by kind, worst first:
+the bottom of the properties panel while the view's root is selected.
+It's closed, with the number of problems beside its title; click
+**Checks** to open it. It lists problems such as these, grouped by kind,
+worst first:
 
 - A color or size that uses a theme token `theme.css` doesn't declare, so
   it renders as nothing

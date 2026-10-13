@@ -26,6 +26,11 @@ release time.
 
 **Added**
 
+- **Agents can check the whole project in one call.** The new MCP tool
+  `scamp_check_project` runs the **Checks** on every page, view, and
+  component and lists what's wrong in each. `scamp_check_view` now
+  checks plain pages too, and both read your files as they are now
+  rather than a copy from when the project opened.
 - **Group pages in the Pages list.** Cmd+click (Ctrl+click) pages or
   Shift+click a run of them, then press **Cmd+G**, or right-click and
   select **Group**. Drag pages into a group, or right-click a page and

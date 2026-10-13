@@ -65,7 +65,7 @@ describe('imported originals', () => {
     });
 });
 describe('TOOL_DESCRIPTORS', () => {
-    it('exposes the canvas tools plus the scaffold, view props, routes, imported originals, React source, and overflow', () => {
+    it('exposes the canvas tools plus the scaffold, view props, checks, routes, imported originals, React source, and overflow', () => {
         expect(TOOL_NAMES).toEqual([
             'scamp_get_active_page',
             'scamp_get_selected_element',
@@ -77,6 +77,7 @@ describe('TOOL_DESCRIPTORS', () => {
             'scamp_get_component_scaffold',
             'scamp_get_view_props',
             'scamp_check_view',
+            'scamp_check_project',
             'scamp_list_routes',
             'scamp_list_import_sources',
             'scamp_get_import_source',
@@ -350,5 +351,37 @@ describe('scamp_find_overflow', () => {
         const thrown = createToolInvoker(never, { findOverflow: async () => Promise.reject(new Error('timed out')) });
         expect((await thrown('scamp_find_overflow', {})).content[0]?.text).toBe('scamp_find_overflow failed: timed out');
         expect(await createToolInvoker(never, {})('scamp_find_overflow', {})).toMatchObject({ isError: true });
+    });
+});
+describe('the check tools', () => {
+    const never = () => Promise.reject(new Error('should not ask the canvas'));
+    it('go to the fresh-from-disk check when the host has one', async () => {
+        const calls = [];
+        const invoke = createToolInvoker(never, {
+            checks: async (tool, args) => {
+                calls.push([tool, args]);
+                return { ok: true, text: '{"checked":3,"withFindings":[],"unreadable":[]}' };
+            },
+        });
+        expect((await invoke('scamp_check_project', {})).content[0]?.text).toContain('"checked":3');
+        await invoke('scamp_check_view', { name: 'about' });
+        expect(calls).toEqual([
+            ['scamp_check_project', {}],
+            ['scamp_check_view', { name: 'about' }],
+        ]);
+    });
+    it('fall back to the snapshot without one, and still insist on a name for a single check', async () => {
+        const asked = [];
+        const invoke = createToolInvoker(async (tool) => {
+            asked.push(tool);
+            return { checked: 0, withFindings: [], unreadable: [] };
+        });
+        await invoke('scamp_check_project', {});
+        expect(asked).toEqual(['scamp_check_project']);
+        expect(await invoke('scamp_check_view', {})).toMatchObject({ isError: true });
+    });
+    it('report a failed check as an error', async () => {
+        const thrown = createToolInvoker(never, { checks: async () => Promise.reject(new Error('timed out')) });
+        expect((await thrown('scamp_check_project', {})).content[0]?.text).toBe('scamp_check_project failed: timed out');
     });
 });

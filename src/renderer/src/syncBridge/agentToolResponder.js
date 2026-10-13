@@ -7,6 +7,7 @@ import { parseThemeFile, serializeThemeFile } from '@lib/parseTheme';
 import { currentConversationKey, sameConversation, useAgentStore } from '@store/agentSlice';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useHistoryStore } from '@store/historySlice';
+import { answerCheck } from './agentChecks';
 import { findOverflow } from './agentOverflow';
 import { editOffCanvas, extractOffCanvas, forgetOffCanvasDraft, forgetOffCanvasDrafts, swapInOffCanvas, } from './agentOffCanvas';
 /** The turn whose history transaction is open, and what it touched. */
@@ -169,6 +170,9 @@ export const executeAgentEdit = async (tool, input, turnId) => {
     const state = useCanvasStore.getState();
     if (!state.projectPath)
         return { ok: false, text: 'No project is open in Scamp.' };
+    // Reads, so before the preview guard: checking is fine while previewing.
+    if (tool === 'scamp_check_view' || tool === 'scamp_check_project')
+        return answerCheck(state.projectPath, tool, input);
     if (state.snapshotPreview !== null) {
         return { ok: false, text: 'Scamp is showing a snapshot preview, which is read-only. Ask the user to exit it.' };
     }

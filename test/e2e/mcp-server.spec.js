@@ -315,3 +315,33 @@ test.describe('MCP server, live', () => {
         await expect(pill).toHaveAttribute('data-agent', 'connected', { timeout: 10_000 });
     });
 });
+test.describe('checks across the project', () => {
+    // A plain page that isn't open, using a token theme.css never declares.
+    const PRICING_TSX = `import styles from './page.module.css';
+
+export default function Pricing() {
+  return (
+    <div data-scamp-id="root" className={styles.root}>
+      <div data-scamp-id="a1b2" className={styles.card_a1b2}></div>
+    </div>
+  );
+}
+`;
+    const PRICING_CSS = `.root {\n  width: 100%;\n}\n\n.card_a1b2 {\n  color: var(--nowhere-declared);\n}\n`;
+    test.use({
+        projectOptions: { format: 'nextjs', extraPages: ['pricing'], pageContent: { pricing: { tsx: PRICING_TSX, css: PRICING_CSS } } },
+    });
+    test('scamp_check_project and scamp_check_view see a plain page that isn’t open', async ({ window, project }) => {
+        await expect(pageRoot(window)).toBeVisible();
+        const config = await readConfig(project.dir);
+        const all = JSON.parse(await callTool(config, 'scamp_check_project'));
+        expect(all.checked).toBeGreaterThanOrEqual(2);
+        expect(all.withFindings.map((r) => `${r.kind}:${r.name}`)).toEqual(['page:pricing']);
+        expect(all.withFindings[0]?.findings[0]?.kind).toBe('undeclared-token');
+        const one = JSON.parse(await callTool(config, 'scamp_check_view', { name: 'pricing' }));
+        expect(one.kind).toBe('page');
+        expect(one.findings[0]?.message).toContain('--nowhere-declared');
+        // The open page is checked as the canvas shows it.
+        expect(JSON.parse(await callTool(config, 'scamp_check_view', { name: 'home' })).findings).toEqual([]);
+    });
+});

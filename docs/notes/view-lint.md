@@ -79,7 +79,8 @@ positive that made the point; the rule skips `BOOLEAN_ATTRIBUTES`.
 
 ## Two ways in
 
-`scamp_check_view` is the whole report. `scamp_get_view_props` also
+`scamp_check_view` is the whole report for one page, view, or
+component, and `scamp_check_project` runs it on all of them. `scamp_get_view_props` also
 carries a `warnings` field holding the same findings, because that is
 the call an agent makes before writing a route — and the props type can
 read as complete and correct while a binding behind it is already gone,
@@ -116,3 +117,18 @@ at `scamp_check_view` for verifying work rather than at
 `scamp_get_element_tree`. Those two strings are the whole of the
 feature as far as an agent is concerned; `test/mcpTools.test.ts` asserts
 them like behaviour.
+
+## Every page, not only the open one
+
+`scamp_check_view` and `scamp_check_project` are answered by
+`syncBridge/agentChecks.ts`, over the agent-edit channel (15s, not the
+2s read): it reads the project from disk when asked, parses every page,
+view, and component, and swaps in the live canvas for the open one, so
+unsaved edits count. Reading fresh is the point — the `componentTrees`
+cache only rebuilds on a project re-read, which an outside edit to a
+closed view doesn't always cause (macOS reports it as a change), and it
+never held plain pages. `lib/projectCheck.ts` is the pure part: run
+`lintView` over the targets, keep the ones with findings, and resolve a
+name (exact, a view's route slug, then case-insensitive). The headless
+runner has no disk, so it answers from its snapshot trees
+(`getProjectCheck` in `canvasSnapshot.ts`).

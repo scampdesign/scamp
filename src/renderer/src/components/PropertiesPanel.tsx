@@ -79,9 +79,6 @@ export const PropertiesPanel = ({
         data-panel-mode="empty"
       >
         <div className={styles.emptyBody}>
-          {/* Before Routes: what is WRONG with the open view outranks
-              what it is wired to. see ChecksSection.tsx */}
-          <ChecksSection />
           {routesSection}
           {isComponentEditing && (
             <div data-testid="view-data-section">
@@ -94,6 +91,9 @@ export const PropertiesPanel = ({
           <Section title="Keyboard Shortcuts" collapsible defaultOpen={false}>
             <ShortcutsTable />
           </Section>
+          {/* Last and closed, with its count on the header to say when
+              there's something to look at. see ChecksSection.tsx */}
+          <ChecksSection />
         </div>
       </aside>
     );
