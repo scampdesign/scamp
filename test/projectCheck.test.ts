@@ -32,18 +32,30 @@ describe('checkProject', () => {
       TOKENS
     );
     expect(result.checked).toBe(3);
+    expect(result.problems).toBe(2);
     expect(result.withFindings.map((r) => `${r.kind}:${r.name}`)).toEqual(['page:about', 'component:Card']);
     expect(result.withFindings[0]?.findings[0]?.kind).toBe('undeclared-token');
     expect(result.withFindings[0]?.findings[0]?.message).toContain('var(--missing)');
   });
 
+  it('keeps notes apart from problems: a page with only notes is intact', () => {
+    // `inline-flex` renders fine; the panel just has no control for it.
+    const parsed = parseCode(TSX, '.root {\n  width: 100%;\n}\n\n.card_a1b2 {\n  display: inline-flex;\n}\n');
+    const result = checkProject([{ name: 'chips', kind: 'page', elements: parsed.elements, rootId: parsed.rootId }], TOKENS);
+    expect(result.problems).toBe(0);
+    expect(result.notes).toBe(1);
+    expect(result.withFindings).toEqual([]);
+    expect(result.withNotesOnly[0]?.notes[0]?.kind).toBe('not-panel-editable');
+    expect(result.aboutNotes).toContain('Leave them');
+  });
+
   it('reports a clean project as clean, and passes through files that didn’t parse', () => {
     const result = checkProject([target('home', 'page', 'var(--ink)')], TOKENS, ['views/Broken/Broken.tsx']);
-    expect(result).toEqual({ checked: 1, withFindings: [], unreadable: ['views/Broken/Broken.tsx'] });
+    expect(result).toMatchObject({ checked: 1, problems: 0, notes: 0, withFindings: [], withNotesOnly: [], unreadable: ['views/Broken/Broken.tsx'] });
   });
 
   it('checks nothing in an empty project', () => {
-    expect(checkProject([], TOKENS)).toEqual({ checked: 0, withFindings: [], unreadable: [] });
+    expect(checkProject([], TOKENS)).toMatchObject({ checked: 0, problems: 0, withFindings: [], unreadable: [] });
   });
 });
 

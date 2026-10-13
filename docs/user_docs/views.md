@@ -176,6 +176,12 @@ worst first:
 Click a finding to select the element it's about. The section isn't shown
 when the view has no problems.
 
+Under **Edit in CSS**, the section also lists values that render
+correctly but that the panel has no control for, such as
+`display: inline-flex`. They aren't problems and aren't counted. Leave
+them, or change them in the CSS panel; rewriting one to make the note go
+away changes the layout.
+
 Problems like these most often come from an import or from an agent
 editing the files. The [Scamp Agent](scamp-agent.md) sees the same
 checks after each change it makes, and fixes what it caused.

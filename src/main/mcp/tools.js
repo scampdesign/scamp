@@ -104,7 +104,7 @@ export const TOOL_DESCRIPTORS = [
     },
     {
         name: 'scamp_check_view',
-        description: 'What a page, view, or component LOST on the way into Scamp: bindings kept as opaque text, declarations that render but leave the panel controls blank, tokens theme.css does not declare, loose text that is not an editable element, sample rows that disagree, and tables built against the grain — an element in the wrong place in a table, a cell with its own width, a rowSpan, or a divider or padding repeated on every row or cell that belongs on the table once. Call this after writing or editing a view — a file can parse perfectly and still arrive degraded, and scamp_get_element_tree reports structure, so it looks correct in every one of those cases. An empty `findings` list means it arrived intact. Reads the files as they are now, so it works for any of them, open or not. Takes a view or component name, a view\u2019s route slug, or a plain page\u2019s name; scamp_check_project checks them all at once.',
+        description: 'What a page, view, or component LOST on the way into Scamp: bindings kept as opaque text, declarations that render but leave the panel controls blank, tokens theme.css does not declare, loose text that is not an editable element, sample rows that disagree, and tables built against the grain — an element in the wrong place in a table, a cell with its own width, a rowSpan, or a divider or padding repeated on every row or cell that belongs on the table once. Call this after writing or editing a view — a file can parse perfectly and still arrive degraded, and scamp_get_element_tree reports structure, so it looks correct in every one of those cases. `findings` are problems; an empty list means it arrived intact. `notes` are valid CSS the panel has no control for — they render correctly, so leave them: rewriting a value to clear a note changes the layout. Reads the files as they are now, so it works for any of them, open or not. Takes a view or component name, a view\u2019s route slug, or a plain page\u2019s name; scamp_check_project checks them all at once.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -119,7 +119,7 @@ export const TOOL_DESCRIPTORS = [
     },
     {
         name: 'scamp_check_project',
-        description: 'Run scamp_check_view on every page, view, and component in the project at once. Returns how many were checked, the ones with findings (pages first, then views, then components) with each finding, and any file that failed to parse. Use it after a change that touched several files, after an import, or before handing work back, instead of checking each one by name. An empty `withFindings` list means the whole project is intact.',
+        description: 'Run scamp_check_view on every page, view, and component in the project at once. Returns how many were checked, the counts of problems and notes, the ones with problems (pages first, then views, then components) with each finding, the ones with only notes, and any file that failed to parse. Notes are valid CSS the panel has no control for — leave them. Use it after a change that touched several files, after an import, or before handing work back, instead of checking each one by name. An empty `withFindings` list means the whole project is intact, whatever the notes say.',
         inputSchema: {
             type: 'object',
             properties: {},

@@ -3,7 +3,7 @@ import { buildContextModel, } from './contextModel';
 import { isGridTable, tableCaptionRule, tableSubgridRule } from './tableGrid';
 import { tableStyleRules } from './tableStyle';
 import { lintView } from './viewLint';
-import { checkProject } from './projectCheck';
+import { checkProject, checkTarget } from './projectCheck';
 import { findGuidanceSection, guidanceFor, guidanceSectionTitles, guidanceSummary, } from '@shared/templates';
 import { classNameFor, tagFor } from './generateCode';
 import { collectViewProps, propsTypeSource, viewEventNames, } from './viewProps';
@@ -202,11 +202,13 @@ export const getViewProps = (input, name) => {
             ...(p.defaultValue !== undefined ? { default: p.defaultValue } : {}),
         })),
         events: viewEventNames(props),
+        // Problems only: a note is valid CSS, not something the view lost.
         warnings: lintView({
             elements: tree.elements,
             rootId: tree.rootId,
             themeTokens: input.themeTokens.map((token) => token.name),
-        }),
+            componentRootTags: rootTagsFrom(input),
+        }).filter((f) => f.severity === 'problem'),
         samples,
     };
 };
@@ -241,16 +243,11 @@ export const getViewCheck = (input, name) => {
     if (found === null)
         return null;
     const { name: match, tree } = found;
-    return {
-        name: match,
-        kind: tree.kind,
-        findings: lintView({
-            elements: tree.elements,
-            rootId: tree.rootId,
-            themeTokens: input.themeTokens.map((token) => token.name),
-        }),
-    };
+    const { findings, notes } = checkTarget({ name: match, kind: tree.kind, elements: tree.elements, rootId: tree.rootId }, input.themeTokens.map((token) => token.name), rootTagsFrom(input));
+    return { name: match, kind: tree.kind, findings, notes };
 };
+/** Each component's root tag, so an instance is checked as what it renders. */
+const rootTagsFrom = (input) => Object.fromEntries(Object.entries(input.trees ?? {}).map(([name, tree]) => [name, tree.elements[tree.rootId]?.tag]));
 /**
  * Every view and component in the snapshot. The app answers this from
  * disk, plain pages included (syncBridge/agentChecks.ts); this is the

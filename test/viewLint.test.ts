@@ -105,6 +105,14 @@ describe('lintView — not-panel-editable', () => {
     expect(found[0]?.message).toContain('`filter: grayscale(100%) contrast(1.1)`');
   });
 
+  it('is a note, not a problem: the value renders, the panel just can’t hold it', () => {
+    const elements = view(
+      rect('a1b2', { customProperties: { filter: 'grayscale(100%) contrast(1.1)' }, color: 'var(--color-ghost)' })
+    );
+    const bySeverity = Object.fromEntries(lint(elements).map((f) => [f.kind, f.severity]));
+    expect(bySeverity).toEqual({ 'not-panel-editable': 'note', 'undeclared-token': 'problem' });
+  });
+
   it('says nothing when the same property parsed into its typed field', () => {
     const elements = view(rect('a1b2', { filters: [{ kind: 'grayscale', value: 100 }] }));
     expect(kinds(elements)).toEqual([]);
@@ -355,6 +363,20 @@ describe('tables', () => {
       row('r1', `${td('c1')}<div data-scamp-id="d1" className={styles.rect_d1} />`)
     );
     expect(tableKinds(tsx, GRID)).toEqual(['table-structure']);
+  });
+
+  it('checks a component instance as the tag its component renders', () => {
+    // A <Row> whose component's root is a <tr> is a row in the exported
+    // page; read as a <div> it was a false alarm on every row.
+    const tsx = `import Row from '@/components/Row/Row';\n${tableTsx(
+      `<Row data-scamp-instance-id="inst_r1" /><Row data-scamp-instance-id="inst_r2" />`
+    )}`;
+    const structure = (tags?: Record<string, string>): number =>
+      lintView({ elements: parseCode(tsx, GRID).elements, rootId: ROOT_ELEMENT_ID, themeTokens: [], componentRootTags: tags })
+        .filter((f) => f.kind === 'table-structure').length;
+    expect(structure({ Row: 'tr' })).toBe(0);
+    expect(structure({ Row: 'div' })).toBe(2);
+    expect(structure()).toBe(2);
   });
 
   it('reports a row written straight inside the table, not a section', () => {

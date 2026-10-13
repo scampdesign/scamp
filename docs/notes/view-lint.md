@@ -132,3 +132,23 @@ never held plain pages. `lib/projectCheck.ts` is the pure part: run
 name (exact, a view's route slug, then case-insensitive). The headless
 runner has no disk, so it answers from its snapshot trees
 (`getProjectCheck` in `canvasSnapshot.ts`).
+
+## Problems and notes
+
+Every finding carries a `severity` (`severityOf` in `viewLint.ts`). A
+`problem` breaks the page, its export, or what can be reached. A `note`
+— `not-panel-editable` and `side-not-typed` — renders correctly; the
+panel has no control that holds the value. On an imported project the
+notes outnumbered the problems twenty to one (333 `display: inline` /
+`inline-flex` alone), and an agent told to fix the findings rightly
+refused: clearing a note means rewriting valid CSS, which moves the
+layout. So the counts (`scamp_check_project`'s `problems`, the Checks
+section's badge) are problems only, notes are listed apart with a line
+saying to leave them, the agent's post-edit feedback leaves them out,
+and `scamp_get_view_props` `warnings` is problems only. The real fix for
+a note is a control that can hold the value.
+see docs/plans/checks-cleanup-plan.md
+
+An instance is checked as the tag its component renders
+(`componentRootTags`): a `<Row>` whose root is a `<tr>` inside a
+`<tbody>` was reported as a misplaced `<div>` on every row.

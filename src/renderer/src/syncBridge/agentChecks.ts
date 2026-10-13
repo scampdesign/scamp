@@ -1,5 +1,5 @@
 import { parseCode } from '@lib/parseCode';
-import { checkProject, checkTarget, findCheckTarget, type CheckTarget } from '@lib/projectCheck';
+import { ABOUT_NOTES, checkProject, checkTarget, findCheckTarget, rootTagsOf, type CheckTarget } from '@lib/projectCheck';
 import { componentKindOf } from '@shared/types';
 import { useCanvasStore } from '@store/canvasSlice';
 
@@ -65,11 +65,10 @@ export const answerCheck = async (
 
   if (tool === 'scamp_check_project') {
     const result = checkProject(targets, tokens, unreadable);
-    const findings = result.withFindings.reduce((sum, r) => sum + r.findings.length, 0);
     return {
       ok: true,
       text: JSON.stringify(result, null, 2),
-      summary: `Checked ${result.checked}: ${findings} finding${findings === 1 ? '' : 's'} in ${result.withFindings.length}`,
+      summary: `Checked ${result.checked}: ${result.problems} problem${result.problems === 1 ? '' : 's'} in ${result.withFindings.length}`,
     };
   }
 
@@ -81,5 +80,6 @@ export const answerCheck = async (
       text: `No page, view, or component named "${name}" exists. Call scamp_list_pages or scamp_list_components for the names.`,
     };
   }
-  return { ok: true, text: JSON.stringify(checkTarget(found, tokens), null, 2) };
+  const checked = checkTarget(found, tokens, rootTagsOf(targets));
+  return { ok: true, text: JSON.stringify({ ...checked, ...(checked.notes.length > 0 ? { aboutNotes: ABOUT_NOTES } : {}) }, null, 2) };
 };

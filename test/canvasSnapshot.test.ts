@@ -723,7 +723,8 @@ describe('getViewCheck', () => {
   });
 
   it('checks a view that is not open from its stored tree', () => {
-    expect(getViewCheck(input(pageTarget), 'Lobby')?.findings.length).toBeGreaterThan(0);
+    const check = getViewCheck(input(pageTarget), 'Lobby');
+    expect((check?.findings.length ?? 0) + (check?.notes.length ?? 0)).toBeGreaterThan(0);
   });
 
   it('returns null for a name that is not a view or component', () => {

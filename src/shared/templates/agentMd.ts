@@ -1457,7 +1457,9 @@ written on selection, the tools read the canvas at the moment you ask.
 - \`scamp_check_view\` — what a page, view, or component LOST on parse:
   bindings kept as opaque text, declarations that render but leave the
   panel blank, undeclared tokens. Call it after writing or editing one;
-  an empty \`findings\` list means it arrived intact
+  an empty \`findings\` list means it arrived intact. \`notes\` are
+  valid CSS the panel has no control for: leave them, since rewriting
+  the value changes the layout
 - \`scamp_check_project\` — the same check on every page, view, and
   component at once. Call it after a change across several files
 - \`scamp_get_conventions\` — these rules, scoped to this project's

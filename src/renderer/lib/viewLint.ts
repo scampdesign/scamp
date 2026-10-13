@@ -29,8 +29,22 @@ export type ViewFindingKind =
   | 'table-repeated-style'
   | 'table-rowspan';
 
+/**
+ * A `problem` breaks the page, its export, or what can be reached. A
+ * `note` renders correctly — the panel just has no control that holds
+ * the value, so it's edited in the CSS panel. Notes are not to be
+ * "fixed": rewriting the value changes the layout.
+ * see docs/plans/checks-cleanup-plan.md
+ */
+export type FindingSeverity = 'problem' | 'note';
+
+const NOTE_KINDS: ReadonlySet<ViewFindingKind> = new Set(['not-panel-editable', 'side-not-typed']);
+
+export const severityOf = (kind: ViewFindingKind): FindingSeverity => (NOTE_KINDS.has(kind) ? 'note' : 'problem');
+
 export type ViewFinding = {
   kind: ViewFindingKind;
+  severity: FindingSeverity;
   /** The element it sits on; null for a whole-view finding. */
   elementId: string | null;
   /** The element's CSS class, which is how an agent addresses it in the file. */
@@ -46,6 +60,11 @@ export type LintInput = {
   rootId: string;
   /** Every custom property `theme.css` declares, `--name` included. */
   themeTokens: ReadonlyArray<string>;
+  /**
+   * Each component's root tag, by name. An instance is checked as the tag
+   * it renders: a <tr> component inside a <tbody> is a row.
+   */
+  componentRootTags?: Readonly<Record<string, string | undefined>>;
 };
 
 /**
@@ -182,7 +201,12 @@ const isTableRow = (el: ScampElement): boolean => el.tag === 'tr';
 export const lintView = (input: LintInput): ViewFinding[] => {
   const { elements, rootId, themeTokens } = input;
   const declared = new Set(themeTokens);
-  const findings: ViewFinding[] = [];
+  const findings: Array<Omit<ViewFinding, 'severity'>> = [];
+  /** The tag an element puts on the page; an instance's is its component's root. */
+  const tagOf = (el: ScampElement | undefined): string | undefined =>
+    el?.type === 'component-instance' && el.componentName !== undefined
+      ? (input.componentRootTags?.[el.componentName] ?? el.tag)
+      : el?.tag;
   const root = elements[rootId];
   const samples = root?.samples ?? {};
 
@@ -325,16 +349,18 @@ export const lintView = (input: LintInput): ViewFinding[] => {
     // canvas — built without that parser — shows it where it was.
     // see docs/plans/tables-plan.md
     const parent = el.parentId === null ? undefined : elements[el.parentId];
-    const allowed = parent?.tag === undefined ? undefined : TABLE_CHILDREN[parent.tag];
-    if (allowed !== undefined && !allowed.has(el.tag ?? '')) {
+    const parentTag = tagOf(parent);
+    const ownTag = tagOf(el);
+    const allowed = parentTag === undefined ? undefined : TABLE_CHILDREN[parentTag];
+    if (allowed !== undefined && !allowed.has(ownTag ?? '')) {
       findings.push({
         ...at,
         kind: 'table-structure',
-        message: `A <${el.tag ?? 'div'}> directly inside <${parent?.tag ?? ''}> isn't a valid table part, so the exported page moves it.`,
+        message: `A <${ownTag ?? 'div'}> directly inside <${parentTag ?? ''}> isn't a valid table part, so the exported page moves it.`,
         hint:
-          parent?.tag === 'tr'
+          parentTag === 'tr'
             ? 'Put it inside a <td> or <th>.'
-            : parent?.tag === 'table'
+            : parentTag === 'table'
               ? 'Put rows in a <thead>, <tbody>, or <tfoot>, and anything else inside a cell or a <caption>.'
               : 'Only <tr> rows go here; put anything else inside a cell.',
       });
@@ -414,5 +440,5 @@ export const lintView = (input: LintInput): ViewFinding[] => {
     }
   }
 
-  return findings;
+  return findings.map((f) => ({ ...f, severity: severityOf(f.kind) }));
 };

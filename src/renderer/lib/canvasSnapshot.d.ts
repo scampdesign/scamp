@@ -86,8 +86,10 @@ export type ConventionsResult = {
 export type ViewCheckResult = {
     name: string;
     kind: 'component' | 'view';
-    /** Findings in document order; empty when the view arrived intact. */
+    /** Problems in document order; empty when the view arrived intact. */
     findings: ViewFinding[];
+    /** Valid CSS the panel can't show in a control — leave it. */
+    notes: ViewFinding[];
 } | null;
 export type ActiveTargetResult = {
     kind: 'page' | 'component' | 'view';

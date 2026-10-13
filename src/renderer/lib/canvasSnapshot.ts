@@ -11,7 +11,7 @@ import type { PatchEntry } from './patchLog';
 import { isGridTable, tableCaptionRule, tableSubgridRule } from './tableGrid';
 import { tableStyleRules } from './tableStyle';
 import { lintView, type ViewFinding } from './viewLint';
-import { checkProject, type ProjectCheck } from './projectCheck';
+import { checkProject, checkTarget, type ProjectCheck } from './projectCheck';
 import {
   findGuidanceSection,
   guidanceFor,
@@ -112,8 +112,10 @@ export type ConventionsResult = {
 export type ViewCheckResult = {
   name: string;
   kind: 'component' | 'view';
-  /** Findings in document order; empty when the view arrived intact. */
+  /** Problems in document order; empty when the view arrived intact. */
   findings: ViewFinding[];
+  /** Valid CSS the panel can't show in a control — leave it. */
+  notes: ViewFinding[];
 } | null;
 
 export type ActiveTargetResult = {
@@ -403,11 +405,13 @@ export const getViewProps = (
       ...(p.defaultValue !== undefined ? { default: p.defaultValue } : {}),
     })),
     events: viewEventNames(props),
+    // Problems only: a note is valid CSS, not something the view lost.
     warnings: lintView({
       elements: tree.elements,
       rootId: tree.rootId,
       themeTokens: input.themeTokens.map((token) => token.name),
-    }),
+      componentRootTags: rootTagsFrom(input),
+    }).filter((f) => f.severity === 'problem'),
     samples,
   };
 };
@@ -444,16 +448,17 @@ export const getViewCheck = (input: SnapshotInput, name: string): ViewCheckResul
   const found = treeNamed(input, name);
   if (found === null) return null;
   const { name: match, tree } = found;
-  return {
-    name: match,
-    kind: tree.kind,
-    findings: lintView({
-      elements: tree.elements,
-      rootId: tree.rootId,
-      themeTokens: input.themeTokens.map((token) => token.name),
-    }),
-  };
+  const { findings, notes } = checkTarget(
+    { name: match, kind: tree.kind, elements: tree.elements, rootId: tree.rootId },
+    input.themeTokens.map((token) => token.name),
+    rootTagsFrom(input)
+  );
+  return { name: match, kind: tree.kind, findings, notes };
 };
+
+/** Each component's root tag, so an instance is checked as what it renders. */
+const rootTagsFrom = (input: SnapshotInput): Record<string, string | undefined> =>
+  Object.fromEntries(Object.entries(input.trees ?? {}).map(([name, tree]) => [name, tree.elements[tree.rootId]?.tag]));
 
 /**
  * Every view and component in the snapshot. The app answers this from

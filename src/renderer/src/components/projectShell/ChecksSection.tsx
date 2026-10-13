@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { ROOT_ELEMENT_ID } from '@lib/element';
-import { lintView, type ViewFinding } from '@lib/viewLint';
+import { lintView, severityOf, type ViewFinding } from '@lib/viewLint';
 import { useCanvasStore } from '@store/canvasSlice';
 
 import { Section } from '../sections/Section';
@@ -30,14 +30,15 @@ const KIND_ORDER: ReadonlyArray<ViewFinding['kind']> = [
   'undeclared-token',
   'binding-not-parsed',
   'missing-sample',
-  'not-panel-editable',
-  'side-not-typed',
   'raw-text-fragment',
   'repeat-rows-differ',
   'table-structure',
   'table-rowspan',
   'table-cell-width',
   'table-repeated-style',
+  // Notes, after every problem. see docs/plans/checks-cleanup-plan.md
+  'not-panel-editable',
+  'side-not-typed',
 ];
 
 /** A heading for a run of findings of one kind. */
@@ -46,8 +47,8 @@ const KIND_LABEL: Readonly<Record<ViewFinding['kind'], string>> = {
   'undeclared-token': 'Tokens this project never declares',
   'binding-not-parsed': 'Bindings Scamp could not read',
   'missing-sample': 'Bound values with no sample',
-  'not-panel-editable': 'Values the panel cannot edit',
-  'side-not-typed': 'One-sided values the panel cannot edit',
+  'not-panel-editable': 'Values only the CSS panel can edit',
+  'side-not-typed': 'One-sided values only the CSS panel can edit',
   'raw-text-fragment': 'Text outside a text element',
   'repeat-rows-differ': 'Repeat rows that are not alike',
   'table-structure': 'Elements in the wrong place in a table',
@@ -62,6 +63,7 @@ const MAX_PER_KIND = 6;
 export const ChecksSection = (): JSX.Element | null => {
   const elements = useCanvasStore((s) => s.elements);
   const themeTokens = useCanvasStore((s) => s.themeTokens);
+  const componentTrees = useCanvasStore((s) => s.componentTrees);
   const selectElement = useCanvasStore((s) => s.selectElement);
 
   // Memoised on the identity of what it reads: a lint over a few
@@ -69,12 +71,16 @@ export const ChecksSection = (): JSX.Element | null => {
   const findings = useMemo(() => {
     const names = themeTokens.map((token) => token.name);
     try {
-      return lintView({ elements, rootId: ROOT_ELEMENT_ID, themeTokens: names });
+      const componentRootTags = Object.fromEntries(
+        Object.entries(componentTrees).map(([name, tree]) => [name, tree.elements[tree.rootId]?.tag])
+      );
+      return lintView({ elements, rootId: ROOT_ELEMENT_ID, themeTokens: names, componentRootTags });
     } catch {
       // A findings panel must never be the thing that breaks the panel.
       return [];
     }
-  }, [elements, themeTokens]);
+  }, [elements, themeTokens, componentTrees]);
+  const problems = findings.filter((f) => f.severity === 'problem').length;
 
   if (findings.length === 0) return null;
 
@@ -85,17 +91,26 @@ export const ChecksSection = (): JSX.Element | null => {
     else list.push(finding);
   }
   const kinds = KIND_ORDER.filter((kind) => byKind.has(kind));
+  const firstNoteKind = kinds.find((kind) => severityOf(kind) === 'note');
 
   return (
     <div data-testid="checks-section">
-      {/* Closed by default: the header's count says when there's
-          something to look at. */}
-      <Section title="Checks" collapsible defaultOpen={false} count={findings.length}>
+      {/* Closed by default: the header's count — problems only — says
+          when there's something to look at. */}
+      <Section title="Checks" collapsible defaultOpen={false} count={problems > 0 ? problems : undefined}>
         <ul className={styles.list}>
           {kinds.map((kind) => {
             const list = byKind.get(kind) ?? [];
             return (
               <li key={kind} className={styles.group}>
+                {kind === firstNoteKind && (
+                  <div className={styles.notesHeading} data-testid="checks-notes">
+                    <p className={styles.notesTitle}>Edit in CSS</p>
+                    <p className={styles.hint}>
+                      These render correctly. The panel has no control for the value, so change it in the CSS panel if you need to.
+                    </p>
+                  </div>
+                )}
                 <p className={styles.kind}>
                   {KIND_LABEL[kind]}
                   <span className={styles.count}>{list.length}</span>

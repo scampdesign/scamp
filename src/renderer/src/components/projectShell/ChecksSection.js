@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useMemo } from 'react';
 import { ROOT_ELEMENT_ID } from '@lib/element';
-import { lintView } from '@lib/viewLint';
+import { lintView, severityOf } from '@lib/viewLint';
 import { useCanvasStore } from '@store/canvasSlice';
 import { Section } from '../sections/Section';
 import styles from './ChecksSection.module.css';
@@ -27,14 +27,15 @@ const KIND_ORDER = [
     'undeclared-token',
     'binding-not-parsed',
     'missing-sample',
-    'not-panel-editable',
-    'side-not-typed',
     'raw-text-fragment',
     'repeat-rows-differ',
     'table-structure',
     'table-rowspan',
     'table-cell-width',
     'table-repeated-style',
+    // Notes, after every problem. see docs/plans/checks-cleanup-plan.md
+    'not-panel-editable',
+    'side-not-typed',
 ];
 /** A heading for a run of findings of one kind. */
 const KIND_LABEL = {
@@ -42,8 +43,8 @@ const KIND_LABEL = {
     'undeclared-token': 'Tokens this project never declares',
     'binding-not-parsed': 'Bindings Scamp could not read',
     'missing-sample': 'Bound values with no sample',
-    'not-panel-editable': 'Values the panel cannot edit',
-    'side-not-typed': 'One-sided values the panel cannot edit',
+    'not-panel-editable': 'Values only the CSS panel can edit',
+    'side-not-typed': 'One-sided values only the CSS panel can edit',
     'raw-text-fragment': 'Text outside a text element',
     'repeat-rows-differ': 'Repeat rows that are not alike',
     'table-structure': 'Elements in the wrong place in a table',
@@ -56,19 +57,22 @@ const MAX_PER_KIND = 6;
 export const ChecksSection = () => {
     const elements = useCanvasStore((s) => s.elements);
     const themeTokens = useCanvasStore((s) => s.themeTokens);
+    const componentTrees = useCanvasStore((s) => s.componentTrees);
     const selectElement = useCanvasStore((s) => s.selectElement);
     // Memoised on the identity of what it reads: a lint over a few
     // thousand elements on every keystroke would be felt.
     const findings = useMemo(() => {
         const names = themeTokens.map((token) => token.name);
         try {
-            return lintView({ elements, rootId: ROOT_ELEMENT_ID, themeTokens: names });
+            const componentRootTags = Object.fromEntries(Object.entries(componentTrees).map(([name, tree]) => [name, tree.elements[tree.rootId]?.tag]));
+            return lintView({ elements, rootId: ROOT_ELEMENT_ID, themeTokens: names, componentRootTags });
         }
         catch {
             // A findings panel must never be the thing that breaks the panel.
             return [];
         }
-    }, [elements, themeTokens]);
+    }, [elements, themeTokens, componentTrees]);
+    const problems = findings.filter((f) => f.severity === 'problem').length;
     if (findings.length === 0)
         return null;
     const byKind = new Map();
@@ -80,9 +84,10 @@ export const ChecksSection = () => {
             list.push(finding);
     }
     const kinds = KIND_ORDER.filter((kind) => byKind.has(kind));
-    return (_jsx("div", { "data-testid": "checks-section", children: _jsx(Section, { title: "Checks", collapsible: true, defaultOpen: false, count: findings.length, children: _jsx("ul", { className: styles.list, children: kinds.map((kind) => {
+    const firstNoteKind = kinds.find((kind) => severityOf(kind) === 'note');
+    return (_jsx("div", { "data-testid": "checks-section", children: _jsx(Section, { title: "Checks", collapsible: true, defaultOpen: false, count: problems > 0 ? problems : undefined, children: _jsx("ul", { className: styles.list, children: kinds.map((kind) => {
                     const list = byKind.get(kind) ?? [];
-                    return (_jsxs("li", { className: styles.group, children: [_jsxs("p", { className: styles.kind, children: [KIND_LABEL[kind], _jsx("span", { className: styles.count, children: list.length })] }), list[0]?.hint !== undefined && (_jsx("p", { className: styles.hint, children: list[0].hint })), _jsx("ul", { className: styles.items, children: list.slice(0, MAX_PER_KIND).map((finding, index) => (_jsx("li", { children: _jsxs("button", { type: "button", className: styles.item, disabled: finding.elementId === null, onClick: () => {
+                    return (_jsxs("li", { className: styles.group, children: [kind === firstNoteKind && (_jsxs("div", { className: styles.notesHeading, "data-testid": "checks-notes", children: [_jsx("p", { className: styles.notesTitle, children: "Edit in CSS" }), _jsx("p", { className: styles.hint, children: "These render correctly. The panel has no control for the value, so change it in the CSS panel if you need to." })] })), _jsxs("p", { className: styles.kind, children: [KIND_LABEL[kind], _jsx("span", { className: styles.count, children: list.length })] }), list[0]?.hint !== undefined && (_jsx("p", { className: styles.hint, children: list[0].hint })), _jsx("ul", { className: styles.items, children: list.slice(0, MAX_PER_KIND).map((finding, index) => (_jsx("li", { children: _jsxs("button", { type: "button", className: styles.item, disabled: finding.elementId === null, onClick: () => {
                                             if (finding.elementId !== null)
                                                 selectElement(finding.elementId);
                                         }, title: finding.message, children: [_jsx("span", { className: styles.where, children: finding.className ?? 'this view' }), _jsx("span", { className: styles.what, children: finding.message })] }) }, `${finding.elementId ?? 'view'}-${index}`))) }), list.length > MAX_PER_KIND && (_jsxs("p", { className: styles.more, children: ["and ", list.length - MAX_PER_KIND, " more"] }))] }, kind));

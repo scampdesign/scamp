@@ -5,6 +5,8 @@ import { classNameFor } from './generateCode/internal';
 import { formatSpaceShorthand, isZeroSpaceTuple, spaceTupleEquals } from './spaceValue';
 import { columnOwnsWidth, isGridTable } from './tableGrid';
 import { BOOLEAN_ATTRIBUTES, isRowPath } from './viewProps';
+const NOTE_KINDS = new Set(['not-panel-editable', 'side-not-typed']);
+export const severityOf = (kind) => (NOTE_KINDS.has(kind) ? 'note' : 'problem');
 /**
  * Longhands whose shorthand Scamp types. Writing the side renders
  * correctly and drops out of the panel, which reads as Scamp losing the
@@ -133,6 +135,10 @@ export const lintView = (input) => {
     const { elements, rootId, themeTokens } = input;
     const declared = new Set(themeTokens);
     const findings = [];
+    /** The tag an element puts on the page; an instance's is its component's root. */
+    const tagOf = (el) => el?.type === 'component-instance' && el.componentName !== undefined
+        ? (input.componentRootTags?.[el.componentName] ?? el.tag)
+        : el?.tag;
     const root = elements[rootId];
     const samples = root?.samples ?? {};
     // Document order, so findings read down the file rather than in
@@ -274,15 +280,17 @@ export const lintView = (input) => {
         // canvas — built without that parser — shows it where it was.
         // see docs/plans/tables-plan.md
         const parent = el.parentId === null ? undefined : elements[el.parentId];
-        const allowed = parent?.tag === undefined ? undefined : TABLE_CHILDREN[parent.tag];
-        if (allowed !== undefined && !allowed.has(el.tag ?? '')) {
+        const parentTag = tagOf(parent);
+        const ownTag = tagOf(el);
+        const allowed = parentTag === undefined ? undefined : TABLE_CHILDREN[parentTag];
+        if (allowed !== undefined && !allowed.has(ownTag ?? '')) {
             findings.push({
                 ...at,
                 kind: 'table-structure',
-                message: `A <${el.tag ?? 'div'}> directly inside <${parent?.tag ?? ''}> isn't a valid table part, so the exported page moves it.`,
-                hint: parent?.tag === 'tr'
+                message: `A <${ownTag ?? 'div'}> directly inside <${parentTag ?? ''}> isn't a valid table part, so the exported page moves it.`,
+                hint: parentTag === 'tr'
                     ? 'Put it inside a <td> or <th>.'
-                    : parent?.tag === 'table'
+                    : parentTag === 'table'
                         ? 'Put rows in a <thead>, <tbody>, or <tfoot>, and anything else inside a cell or a <caption>.'
                         : 'Only <tr> rows go here; put anything else inside a cell.',
             });
@@ -353,5 +361,5 @@ export const lintView = (input) => {
             }
         }
     }
-    return findings;
+    return findings.map((f) => ({ ...f, severity: severityOf(f.kind) }));
 };

@@ -84,6 +84,7 @@ test.describe('MCP server, live', () => {
         const list = await rpc(config, 'tools/list');
         const tools = list['result'].tools;
         expect(tools.map((t) => t.name).sort()).toEqual([
+            'scamp_check_project',
             'scamp_check_view',
             'scamp_find_overflow',
             'scamp_get_active_page',

@@ -12,20 +12,31 @@ export type CheckTarget = {
     elements: Record<string, ScampElement>;
     rootId: string;
 };
+/** `findings` are problems; `notes` are valid CSS the panel can't show in a control. */
 export type TargetCheck = {
     name: string;
     kind: CheckTargetKind;
     findings: ViewFinding[];
+    notes: ViewFinding[];
 };
 export type ProjectCheck = {
     /** How many pages, views, and components were checked. */
     checked: number;
-    /** Only the ones with something wrong, pages first, then views, then components. */
+    problems: number;
+    notes: number;
+    /** Ones with problems (their notes too), pages first, then views, then components. */
     withFindings: TargetCheck[];
+    /** Ones with only notes. */
+    withNotesOnly: TargetCheck[];
     /** Files that didn't parse, so couldn't be checked. */
     unreadable: string[];
+    /** What notes are, said where an agent reads them. */
+    aboutNotes: string;
 };
-export declare const checkTarget: (target: CheckTarget, themeTokens: ReadonlyArray<string>) => TargetCheck;
+export declare const ABOUT_NOTES = "Notes are valid CSS that renders correctly; the panel just has no control for the value, so it is edited in the CSS panel. Leave them as they are: rewriting the value to clear a note changes the layout.";
+/** Each component's and view's root tag, so an instance is checked as the tag it renders. */
+export declare const rootTagsOf: (targets: ReadonlyArray<CheckTarget>) => Record<string, string | undefined>;
+export declare const checkTarget: (target: CheckTarget, themeTokens: ReadonlyArray<string>, componentRootTags?: Readonly<Record<string, string | undefined>>) => TargetCheck;
 export declare const checkProject: (targets: ReadonlyArray<CheckTarget>, themeTokens: ReadonlyArray<string>, unreadable?: ReadonlyArray<string>) => ProjectCheck;
 /**
  * The target a tool's `name` means: an exact name first, then a view's

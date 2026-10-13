@@ -58,6 +58,12 @@ release time.
 
 **Fixed**
 
+- **Checks no longer report valid CSS as problems.** Values the panel
+  has no control for, such as `display: inline-flex`, are listed under
+  **Edit in CSS** and left out of the count, and agents are told to
+  leave them rather than rewrite them. A component that renders a table
+  row is no longer flagged as being in the wrong place in a table.
+
 - **Edits made while sync is paused are saved.** Resuming writes them,
   where the indicator used to say **Saved** without writing. Switching
   to another page or component writes the one you leave, even while

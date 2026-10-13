@@ -532,8 +532,10 @@ export const planInstanceSwap = (ctx, args, components, editing) => {
  */
 export const editFeedback = (result, rootId, themeTokenNames) => {
     const touched = new Set(result.touched);
+    // Problems only: a note is valid CSS the panel can't show, and telling
+    // the model about it reads as a request to rewrite the value.
     const findings = lintView({ elements: result.elements, rootId, themeTokens: themeTokenNames })
-        .filter((f) => f.elementId !== null && touched.has(f.elementId))
+        .filter((f) => f.severity === 'problem' && f.elementId !== null && touched.has(f.elementId))
         .map((f) => `Check: ${f.className ?? ''} — ${f.message}${f.hint !== undefined ? ` ${f.hint}` : ''}`);
     const ids = result.touched
         .map((id) => result.elements[id])
