@@ -7,7 +7,7 @@ type Args = {
     /** Adds a "Convert to view…" item to the page menu when given. */
     onConvertPageToView?: (pageName: string) => void;
     /**
-     * When given, "+ Add Page" creates a view (a page's design under
+     * When given, "Add page" creates a view (a page's design under
      * views/<Name>/ plus its route wrapper) instead of a legacy app/ page.
      * Resolves once the view is open.
      */

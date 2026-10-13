@@ -117,10 +117,6 @@ export const pagesBetween = (order, from, to) => {
         return [to];
     return order.slice(Math.min(a, b), Math.max(a, b) + 1);
 };
-export const addGroup = (layout, name) => [
-    ...layout,
-    { group: name, pages: [] },
-];
 export const renameGroup = (layout, from, to) => layout.map((entry) => ('group' in entry && entry.group === from ? { group: to, pages: entry.pages } : entry));
 /** Deleting a group keeps its pages: they move to the top level where it was. */
 export const removeGroup = (layout, name) => layout.flatMap((entry) => 'group' in entry && entry.group === name ? entry.pages.map((page) => ({ page })) : [entry]);

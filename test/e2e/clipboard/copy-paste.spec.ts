@@ -56,7 +56,7 @@ async function selectPageRoot(window: Win): Promise<void> {
  * that way, intermittently and on different lines each run.
  */
 async function addPage(window: Win, name: string): Promise<void> {
-  await window.getByRole('button', { name: /\+ Add Page/ }).click();
+  await window.getByRole('button', { name: 'Add page', exact: true }).click();
   const nameInput = window.getByPlaceholder('page-name');
   await nameInput.fill(name);
   await nameInput.press('Enter');

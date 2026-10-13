@@ -48,7 +48,6 @@ export declare const groupPages: (layout: ReadonlyArray<PageLayoutEntry>, slugs:
  * An end that isn't in `order` gives just `to`, or nothing if neither is.
  */
 export declare const pagesBetween: (order: ReadonlyArray<string>, from: string, to: string) => string[];
-export declare const addGroup: (layout: ReadonlyArray<PageLayoutEntry>, name: string) => PageLayoutEntry[];
 export declare const renameGroup: (layout: ReadonlyArray<PageLayoutEntry>, from: string, to: string) => PageLayoutEntry[];
 /** Deleting a group keeps its pages: they move to the top level where it was. */
 export declare const removeGroup: (layout: ReadonlyArray<PageLayoutEntry>, name: string) => PageLayoutEntry[];

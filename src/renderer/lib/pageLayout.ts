@@ -155,11 +155,6 @@ export const pagesBetween = (order: ReadonlyArray<string>, from: string, to: str
   return order.slice(Math.min(a, b), Math.max(a, b) + 1);
 };
 
-export const addGroup = (layout: ReadonlyArray<PageLayoutEntry>, name: string): PageLayoutEntry[] => [
-  ...layout,
-  { group: name, pages: [] },
-];
-
 export const renameGroup = (layout: ReadonlyArray<PageLayoutEntry>, from: string, to: string): PageLayoutEntry[] =>
   layout.map((entry) => ('group' in entry && entry.group === from ? { group: to, pages: entry.pages } : entry));
 

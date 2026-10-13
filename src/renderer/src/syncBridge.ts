@@ -72,6 +72,16 @@ export {
  */
 let pendingFlush: ((evenIfPaused: boolean) => void) | null = null;
 
+/** The open target's files as the save pipeline last wrote or read them. */
+let lastSyncedImpl: (() => { tsx: string | null; css: string | null }) | null = null;
+
+/**
+ * What disk held for the open target when Scamp last wrote or read it —
+ * unlike `pageSource`, which already carries edits still waiting to save.
+ * A project re-read that matches this brings nothing new.
+ */
+export const lastSyncedSource = (): { tsx: string | null; css: string | null } | null => lastSyncedImpl?.() ?? null;
+
 /**
  * Write the active target's pending edits now. Writes even while sync is
  * paused, because the callers are about to move the canvas off the target
@@ -157,6 +167,7 @@ export const initSyncBridge = (): (() => void) => {
     ctx.flushDebouncedWrite(evenIfPaused);
   };
   resumeFromPauseImpl = makeResumeFromPause(ctx);
+  lastSyncedImpl = () => ({ tsx: ctx.lastSerializedTsx, css: ctx.lastSerializedCss });
   saveDivergedCanvasImpl = makeSaveDivergedCanvas(ctx);
   discardDivergedCanvasImpl = makeDiscardDivergedCanvas(ctx);
 
@@ -212,6 +223,7 @@ export const initSyncBridge = (): (() => void) => {
     }
     ctx.quietWindow.clear();
     resumeFromPauseImpl = null;
+    lastSyncedImpl = null;
     saveDivergedCanvasImpl = null;
     discardDivergedCanvasImpl = null;
     window.removeEventListener('beforeunload', handleBeforeUnload);

@@ -425,6 +425,47 @@ font-size: 12px;
   letter-spacing: 0.5px;
 }
 
+/* A section title with icon buttons beside it (Pages: add, import). */
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sidebarHeader .sidebarTitle {
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.headerIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.headerIconButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.headerIconButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .pageList {
   list-style: none;
   /* Shift+click picks pages; without this it also selected their text. */
@@ -485,11 +526,6 @@ font-size: 14px;
   background: var(--bg-hover);
   color: var(--text-primary);
   border-color: var(--border-strong);
-}
-
-.addPageButton:disabled {
-  opacity: 0.5;
-  cursor: default;
 }
 
 /* Page groups — see docs/plans/page-groups-plan.md */

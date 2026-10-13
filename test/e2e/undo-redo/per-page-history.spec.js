@@ -20,7 +20,7 @@ test.describe('history: persists across page switches', () => {
         await waitForSaved(window);
         await expect(canvasElementsByPrefix(window, 'rect_')).toHaveCount(1);
         // Add a second page and switch to it.
-        await window.getByRole('button', { name: /\+ Add Page/ }).click();
+        await window.getByRole('button', { name: 'Add page', exact: true }).click();
         const nameInput = window.getByPlaceholder('page-name');
         await nameInput.fill('about');
         await nameInput.press('Enter');
@@ -39,7 +39,7 @@ test.describe('history: persists across page switches', () => {
         await waitForSaved(window);
         await expect(canvasElementsByPrefix(window, 'rect_')).toHaveCount(1);
         // Create About and switch to it.
-        await window.getByRole('button', { name: /\+ Add Page/ }).click();
+        await window.getByRole('button', { name: 'Add page', exact: true }).click();
         const nameInput = window.getByPlaceholder('page-name');
         await nameInput.fill('about');
         await nameInput.press('Enter');

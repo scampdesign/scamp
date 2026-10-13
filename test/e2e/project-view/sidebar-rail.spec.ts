@@ -17,7 +17,7 @@ test.describe('project view: sidebar icon rail', () => {
       'true'
     );
     await expect(
-      window.getByRole('button', { name: /\+ Add Page/ })
+      window.getByRole('button', { name: 'Add page', exact: true })
     ).toBeVisible();
   });
 
@@ -38,7 +38,7 @@ test.describe('project view: sidebar icon rail', () => {
 
     await window.locator('[data-section="pages"]').click();
     await expect(
-      window.getByRole('button', { name: /\+ Add Page/ })
+      window.getByRole('button', { name: 'Add page', exact: true })
     ).toBeVisible();
   });
 
@@ -91,7 +91,7 @@ test.describe('project view: sidebar icon rail', () => {
       window.getByRole('heading', { name: 'Project Settings' })
     ).toBeHidden();
     await expect(
-      window.getByRole('button', { name: /\+ Add Page/ })
+      window.getByRole('button', { name: 'Add page', exact: true })
     ).toBeVisible();
   });
 });

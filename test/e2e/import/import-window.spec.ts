@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 
 import { test, expect } from '../fixtures/app';
 import { pageRoot } from '../fixtures/selectors';
-import { openPagesSection } from '../fixtures/components';
+import { importFrom, openPagesSection } from '../fixtures/components';
 
 /**
  * Website import, end to end: the button opens a browser, the browser
@@ -35,7 +35,7 @@ test.describe('website import', () => {
 
     // The importer is a second BrowserWindow; catch it as it opens.
     const opened = app.waitForEvent('window');
-    await window.getByRole('button', { name: /Import a page/ }).click();
+    await importFrom(window, 'website');
     const importWindow = await opened;
     await importWindow.waitForLoadState('domcontentloaded');
 
@@ -102,7 +102,7 @@ test.describe('website import', () => {
     await openPagesSection(window);
 
     const opened = app.waitForEvent('window');
-    await window.getByRole('button', { name: /Import a page/ }).click();
+    await importFrom(window, 'website');
     const importWindow = await opened;
     await importWindow.waitForLoadState('domcontentloaded');
     await importWindow.getByLabel('Address').fill(FIXTURE_URL);
@@ -137,7 +137,7 @@ test.describe('website import', () => {
     await openPagesSection(window);
 
     const opened = app.waitForEvent('window');
-    await window.getByRole('button', { name: /Import a page/ }).click();
+    await importFrom(window, 'website');
     const importWindow = await opened;
     await importWindow.waitForLoadState('domcontentloaded');
     await importWindow.getByLabel('Address').fill(FIXTURE_URL);
@@ -175,7 +175,7 @@ test.describe('website import', () => {
     const before = await project.readTheme();
 
     const opened = app.waitForEvent('window');
-    await window.getByRole('button', { name: /Import a page/ }).click();
+    await importFrom(window, 'website');
     const importWindow = await opened;
     await importWindow.waitForLoadState('domcontentloaded');
     await importWindow.getByLabel('Address').fill(FIXTURE_URL);
@@ -213,7 +213,7 @@ test.describe('website import', () => {
     await openPagesSection(window);
 
     const opened = app.waitForEvent('window');
-    await window.getByRole('button', { name: /Import a page/ }).click();
+    await importFrom(window, 'website');
     const importWindow = await opened;
     await importWindow.waitForLoadState('domcontentloaded');
     await importWindow.getByLabel('Address').fill(FIXTURE_URL);
@@ -238,7 +238,7 @@ test.describe('website import', () => {
 
     const importOnce = async (): Promise<void> => {
       const opened = app.waitForEvent('window');
-      await window.getByRole('button', { name: /Import a page/ }).click();
+      await importFrom(window, 'website');
       const w = await opened;
       await w.waitForLoadState('domcontentloaded');
       await w.getByLabel('Address').fill(FIXTURE_URL);

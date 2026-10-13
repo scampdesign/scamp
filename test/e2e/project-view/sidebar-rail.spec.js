@@ -10,7 +10,7 @@ test.describe('project view: sidebar icon rail', () => {
         const rail = window.locator('[data-testid="sidebar-rail"]');
         await expect(rail.locator('button')).toHaveCount(5);
         await expect(window.locator('[data-section="pages"]')).toHaveAttribute('aria-pressed', 'true');
-        await expect(window.getByRole('button', { name: /\+ Add Page/ })).toBeVisible();
+        await expect(window.getByRole('button', { name: 'Add page', exact: true })).toBeVisible();
     });
     test('switches the panel between Pages, Components and History', async ({ window, }) => {
         await expect(pageRoot(window)).toBeVisible();
@@ -19,7 +19,7 @@ test.describe('project view: sidebar icon rail', () => {
         await window.locator('[data-section="history"]').click();
         await expect(window.getByRole('button', { name: 'Save snapshot' })).toBeVisible();
         await window.locator('[data-section="pages"]').click();
-        await expect(window.getByRole('button', { name: /\+ Add Page/ })).toBeVisible();
+        await expect(window.getByRole('button', { name: 'Add page', exact: true })).toBeVisible();
     });
     test('Design System icon toggles the theme editor in the main area', async ({ window, }) => {
         await expect(pageRoot(window)).toBeVisible();
@@ -52,6 +52,6 @@ test.describe('project view: sidebar icon rail', () => {
         // Clicking another section closes Settings and returns to the workspace.
         await window.locator('[data-section="pages"]').click();
         await expect(window.getByRole('heading', { name: 'Project Settings' })).toBeHidden();
-        await expect(window.getByRole('button', { name: /\+ Add Page/ })).toBeVisible();
+        await expect(window.getByRole('button', { name: 'Add page', exact: true })).toBeVisible();
     });
 });

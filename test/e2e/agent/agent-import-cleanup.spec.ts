@@ -4,7 +4,7 @@ import path from 'path';
 import { pathToFileURL } from 'url';
 
 import { test, expect } from '../fixtures/app';
-import { openPagesSection } from '../fixtures/components';
+import { importFrom, openPagesSection } from '../fixtures/components';
 import { pageRoot } from '../fixtures/selectors';
 import type { ElectronApplication, Page } from '@playwright/test';
 
@@ -34,7 +34,7 @@ test.use({ projectOptions: { format: 'scamp' } });
 const importFixture = async (app: ElectronApplication, window: Page): Promise<Page> => {
   await openPagesSection(window);
   const opened = app.waitForEvent('window');
-  await window.getByRole('button', { name: /Import a page/ }).click();
+  await importFrom(window, 'website');
   const importWindow = await opened;
   await importWindow.waitForLoadState('domcontentloaded');
   const urlBar = importWindow.getByLabel('Address');

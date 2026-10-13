@@ -220,7 +220,7 @@ const writeComponent = async (
   );
 };
 
-/** A view plus its route, as `+ Add Page` writes them in a framework project. */
+/** A view plus its route, as `Add page` writes them in a framework project. */
 const writeScampView = async (dir: string, slug: string): Promise<void> => {
   const view = viewNameForPage(slug);
   for (const [relative, content] of Object.entries(viewTemplate(view))) {

@@ -55,7 +55,7 @@ test.use({
  *  collide with breadcrumb / layers panel buttons that share the text. */
 const navigateToPage = async (page, name) => {
     await page
-        .locator('h2:has-text("Pages") + ul')
+        .getByTestId('pages-list')
         .getByRole('button', { name, exact: true })
         .click();
 };

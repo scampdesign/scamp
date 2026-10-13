@@ -34,7 +34,7 @@ export const openComponentsSection = async (page: Page): Promise<void> => {
 export const openPagesSection = async (page: Page): Promise<void> => {
   await page.locator('[data-section="pages"]').click();
   await page
-    .getByRole('button', { name: /\+ Add Page/ })
+    .getByRole('button', { name: 'Add page', exact: true })
     .waitFor({ state: 'visible' });
 };
 
@@ -54,7 +54,7 @@ export const createComponentFromSidebar = async (
 
 /** Right-click a component in the sidebar; open the context menu. */
 /**
- * "+ Add Page" → type the slug → Enter. In a Next.js project this creates
+ * Add page (+) → type the slug → Enter. In a Next.js project this creates
  * a view (views/<Name>/) plus its route wrapper, and opens it.
  */
 export const createPageFromSidebar = async (
@@ -190,4 +190,12 @@ export const confirmDialog = async (
 ): Promise<void> => {
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: label }).click();
+};
+
+/** The Pages header's Import (download) button, then one of its menu items. */
+export const importFrom = async (page: Page, from: 'website' | 'react'): Promise<void> => {
+  await page.locator('button[aria-label="Import"][aria-haspopup="menu"]').click();
+  await page
+    .getByRole('menuitem', { name: from === 'website' ? 'Import from website…' : 'Import from React app…' })
+    .click();
 };

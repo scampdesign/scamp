@@ -24,7 +24,7 @@ type Args = {
   /** Adds a "Convert to view…" item to the page menu when given. */
   onConvertPageToView?: (pageName: string) => void;
   /**
-   * When given, "+ Add Page" creates a view (a page's design under
+   * When given, "Add page" creates a view (a page's design under
    * views/<Name>/ plus its route wrapper) instead of a legacy app/ page.
    * Resolves once the view is open.
    */
@@ -75,7 +75,7 @@ export const usePageManagement = ({
   onConvertPageToView,
   onCreatePageAsView,
 }: Args): UsePageManagement => {
-  // Pages sidebar inline-edit state. `'new'` shows the Add Page input at
+  // Pages sidebar inline-edit state. `'new'` shows the Add page input at
   // the bottom of the list. `{ duplicate: name }` replaces the named row
   // with an input seeded from that page. `null` means no editing in
   // progress and the sidebar behaves normally.

@@ -1,6 +1,15 @@
 export { savePatch, retryLastSave } from './syncBridge/writeDispatch';
 export { armTargetSwapSuppression, disarmTargetSwapSuppression, } from './syncBridge/targetSwapSuppression';
 /**
+ * What disk held for the open target when Scamp last wrote or read it —
+ * unlike `pageSource`, which already carries edits still waiting to save.
+ * A project re-read that matches this brings nothing new.
+ */
+export declare const lastSyncedSource: () => {
+    tsx: string | null;
+    css: string | null;
+} | null;
+/**
  * Write the active target's pending edits now. Writes even while sync is
  * paused, because the callers are about to move the canvas off the target
  * and the edit would otherwise exist only in memory. Pass

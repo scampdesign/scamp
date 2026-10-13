@@ -22,7 +22,7 @@ export declare const openPagesSection: (page: Page) => Promise<void>;
 export declare const createComponentFromSidebar: (page: Page, name: string) => Promise<void>;
 /** Right-click a component in the sidebar; open the context menu. */
 /**
- * "+ Add Page" → type the slug → Enter. In a Next.js project this creates
+ * Add page (+) → type the slug → Enter. In a Next.js project this creates
  * a view (views/<Name>/) plus its route wrapper, and opens it.
  */
 export declare const createPageFromSidebar: (page: Page, slug: string) => Promise<void>;
@@ -43,3 +43,5 @@ export declare const dragComponentToCanvas: (page: Page, componentName: string, 
 export declare const waitForConfirmDialog: (page: Page, titleText: string | RegExp) => Promise<void>;
 /** Click the primary confirm button inside the currently-open ConfirmDialog. */
 export declare const confirmDialog: (page: Page, label: string | RegExp) => Promise<void>;
+/** The Pages header's Import (download) button, then one of its menu items. */
+export declare const importFrom: (page: Page, from: "website" | "react") => Promise<void>;

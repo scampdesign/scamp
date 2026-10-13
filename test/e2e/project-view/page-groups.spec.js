@@ -12,9 +12,12 @@ import { pageRoot, pageSidebarItem, pagesList } from '../fixtures/selectors';
 test.use({ projectOptions: { format: 'nextjs', extraPages: ['about', 'pricing'] } });
 const groupHeader = (window, name) => pagesList(window).locator(`[data-testid="page-group"][data-group="${name}"]`);
 const storedLayout = async (dir) => JSON.parse(await fs.readFile(path.join(dir, 'scamp.config.json'), 'utf-8')).pageLayout;
-const makeGroup = async (window, name) => {
+/** Pick one page (click, then Shift+click it) and group it with Cmd+G. */
+const makeGroup = async (window, name, slug) => {
     await openPagesSection(window);
-    await window.getByRole('button', { name: '+ New group' }).click();
+    await pageSidebarItem(window, slug).click();
+    await pageSidebarItem(window, slug).click({ modifiers: ['Shift'] });
+    await window.keyboard.press('ControlOrMeta+g');
     const input = window.getByLabel('Group name');
     await input.fill(name);
     await input.press('Enter');
@@ -40,10 +43,14 @@ const dragRow = async (window, from, to, at) => {
 test('group pages by drag and by menu, collapse the group, and find it as left after reopening', async ({ window, project, }) => {
     await expect(pageRoot(window)).toBeVisible();
     const before = { about: await project.readPage('about'), pricing: await project.readPage('pricing') };
-    await makeGroup(window, 'Marketing');
-    await dragRow(window, '[data-page-slug="about"]', '[data-group="Marketing"]', 'inside');
+    await makeGroup(window, 'Marketing', 'about');
     await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Marketing', pages: ['about'] });
-    // The keyboard-reachable way in.
+    await dragRow(window, '[data-page-slug="pricing"]', '[data-group="Marketing"]', 'inside');
+    await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Marketing', pages: ['about', 'pricing'] });
+    // The keyboard-reachable way out and back in.
+    await openPageContextMenu(window, 'pricing');
+    await clickContextMenuItem(window, 'Move to top level');
+    await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Marketing', pages: ['about'] });
     await openPageContextMenu(window, 'pricing');
     await clickContextMenuItem(window, 'Move to Marketing');
     await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Marketing', pages: ['about', 'pricing'] });
@@ -63,9 +70,7 @@ test('group pages by drag and by menu, collapse the group, and find it as left a
 });
 test('a renamed page stays in its group, and a dragged page can leave it', async ({ window, project }) => {
     await expect(pageRoot(window)).toBeVisible();
-    await makeGroup(window, 'Marketing');
-    await openPageContextMenu(window, 'about');
-    await clickContextMenuItem(window, 'Move to Marketing');
+    await makeGroup(window, 'Marketing', 'about');
     await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Marketing', pages: ['about'] });
     await openPageContextMenu(window, 'about');
     await clickContextMenuItem(window, 'Rename');
@@ -81,20 +86,20 @@ test('a renamed page stays in its group, and a dragged page can leave it', async
 });
 test('the group menu adds a page into it, renames it, and deletes it without deleting pages', async ({ window, project, }) => {
     await expect(pageRoot(window)).toBeVisible();
-    await makeGroup(window, 'Docs');
+    await makeGroup(window, 'Docs', 'pricing');
     await groupHeader(window, 'Docs').click({ button: 'right' });
     await clickContextMenuItem(window, 'Add page here');
     const input = window.getByPlaceholder('page-name');
     await input.fill('guide');
     await input.press('Enter');
     await expect(pageSidebarItem(window, 'guide')).toBeVisible();
-    await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Docs', pages: ['guide'] });
+    await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Docs', pages: ['pricing', 'guide'] });
     await groupHeader(window, 'Docs').click({ button: 'right' });
     await clickContextMenuItem(window, 'Rename group');
     const name = window.getByLabel('Group name');
     await name.fill('Guides');
     await name.press('Enter');
-    await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Guides', pages: ['guide'] });
+    await expect.poll(() => storedLayout(project.dir)).toContainEqual({ group: 'Guides', pages: ['pricing', 'guide'] });
     await groupHeader(window, 'Guides').click({ button: 'right' });
     await clickContextMenuItem(window, 'Delete group');
     await expect(groupHeader(window, 'Guides')).toHaveCount(0);

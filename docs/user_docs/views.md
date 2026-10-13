@@ -51,7 +51,7 @@ handle to resize it, as in the component editor.
 
 ## Add a view
 
-1. At the bottom of the **Pages** list, click **+ Add Page**.
+1. In the **Pages** header, click **Add page** (**+**).
 2. Type the route slug, such as `about-us`, and press Enter.
 
 In a Next.js or Scamp framework project, this creates the view
@@ -63,21 +63,18 @@ Legacy projects keep creating plain pages.
 Groups keep a long **Pages** list tidy. They change only the list: a
 page's files, route, and generated code stay the same wherever it sits.
 
-To create a group:
+To create a group, pick the pages that go in it, then group them:
 
-1. At the bottom of the **Pages** list, click **+ New group**.
-2. Type a name, such as `Marketing`, and press Enter.
+1. In the **Pages** list, pick the pages:
+   - Hold Cmd (macOS) or Ctrl (Windows and Linux) and click each page.
+     The page you have open is picked too.
+   - Or hold Shift and click a page to pick every page from the last one
+     you clicked to that one. Pages in a collapsed group are skipped.
 
-To group several pages at once, pick them first:
-
-- Hold Cmd (macOS) or Ctrl (Windows and Linux) and click each page. The
-  page you have open is picked too.
-- Or hold Shift and click a page to pick every page from the last one you
-  clicked to that one. Pages in a collapsed group are skipped.
-
-Picking doesn't open a page. Then press **Cmd+G** or **Ctrl+G**, or
-right-click one of the picked pages and select **Group 2 pages**. Press
-Escape to clear the picks.
+   Picking doesn't open a page. Press Escape to clear the picks.
+2. Press **Cmd+G** or **Ctrl+G**. You can also right-click one of the
+   picked pages and select **Group 2 pages**.
+3. Type a name for the group, such as `Marketing`, and press Enter.
 
 To put a page in a group, drag it onto the group's name. You can also
 right-click the page and select **Move to Marketing**. To take it back
@@ -190,7 +187,7 @@ a few differences from a Next.js project:
 
 - Design tokens live in `design/theme.css`, and the design document in
   `design/DESIGN.md`.
-- There are no pages, only views. **+ Add Page** creates a view.
+- There are no pages, only views. **Add page** (**+**) creates a view.
 - `routes/` belongs to you. Scamp never reads, lists, or regenerates
   the files in it, but [snapshots](snapshots.md) include them.
 - Assets go under `public/assets/`, as in Next.js projects.

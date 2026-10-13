@@ -4,7 +4,7 @@ import { validatePageName } from '@shared/pageName';
 import styles from './PageNameInput.module.css';
 /**
  * Inline text input for naming or renaming a page. Used by the
- * "+ Add Page" flow and the "Duplicate" flow. Autofocuses on mount;
+ * "Add page" flow and the "Duplicate" flow. Autofocuses on mount;
  * validates on every keystroke and surfaces the first error under the
  * field. Enter confirms (when valid), Escape cancels, blur cancels.
  */

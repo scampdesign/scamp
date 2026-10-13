@@ -13,7 +13,7 @@ import { flushPendingPageWrite } from '../../syncBridge';
  * page's history bucket and pushes a `rename-page` entry.
  */
 export const usePageManagement = ({ project, onProjectChange, activePageName, setActivePageName, persistActiveSource, onConvertPageToView, onCreatePageAsView, }) => {
-    // Pages sidebar inline-edit state. `'new'` shows the Add Page input at
+    // Pages sidebar inline-edit state. `'new'` shows the Add page input at
     // the bottom of the list. `{ duplicate: name }` replaces the named row
     // with an input seeded from that page. `null` means no editing in
     // progress and the sidebar behaves normally.

@@ -26,7 +26,7 @@ test.describe('routes in a Scamp-framework project', () => {
         await expect(routes.getByTestId('route-index.tsx')).toContainText('/');
         await expect(routes.getByTestId('route-index.tsx').getByRole('button', { name: 'static', exact: true })).toHaveAttribute('aria-pressed', 'true');
         // A new page is a view with no route yet.
-        await window.getByRole('button', { name: '+ Add Page' }).click();
+        await window.getByRole('button', { name: 'Add page', exact: true }).click();
         await window.keyboard.type('about');
         await window.keyboard.press('Enter');
         // Adding a page writes the route that renders it: a page nothing
@@ -50,7 +50,7 @@ test.describe('routes in a Scamp-framework project', () => {
     test('renaming a page takes its route with it', async ({ window, project }) => {
         await expect(pageRoot(window)).toBeVisible();
         const routes = window.getByTestId('routes-section');
-        await window.getByRole('button', { name: '+ Add Page' }).click();
+        await window.getByRole('button', { name: 'Add page', exact: true }).click();
         await window.keyboard.type('about');
         await window.keyboard.press('Enter');
         await expect(routes.getByTestId('route-about.tsx')).toBeVisible({ timeout: 10_000 });

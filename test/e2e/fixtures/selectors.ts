@@ -67,15 +67,15 @@ export const addComponentButton = (page: Page): Locator =>
 
 /** The Pages list: legacy pages and views together, by route slug. */
 export const pagesList = (page: Page): Locator =>
-  page.locator('h2:has-text("Pages") + ul');
+  page.getByTestId('pages-list');
 
 /** Sidebar page button by route slug (a legacy page or a view). */
 export const pageSidebarItem = (page: Page, slug: string): Locator =>
   pagesList(page).getByRole('button', { name: slug, exact: true });
 
-/** "+ Add Page" sidebar button. */
+/** The Pages header's Add page (+) button. */
 export const addPageButton = (page: Page): Locator =>
-  page.getByRole('button', { name: /\+ Add Page/ });
+  page.getByRole('button', { name: 'Add page', exact: true });
 
 /** Currently-open context menu surface (PageContextMenu / ElementContextMenu). */
 export const contextMenu = (page: Page): Locator =>

@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { stubOpenDialog, test, expect } from '../fixtures/app';
-import { openPagesSection } from '../fixtures/components';
+import { importFrom, openPagesSection } from '../fixtures/components';
 import { copyFixtureApp } from '../fixtures/reactApp';
 import { pageRoot } from '../fixtures/selectors';
 
@@ -44,7 +44,7 @@ test('tidies an imported view from the app’s source: reads, plans, applies on 
     // Import the app's pages into this project.
     await openPagesSection(window);
     await stubOpenDialog(app, appDir);
-    await window.getByRole('button', { name: /Import a React app/ }).click();
+    await importFrom(window, 'react');
     const dialog = window.getByTestId('react-import-dialog');
     await dialog.getByRole('button', { name: 'Choose folder…' }).click();
     const opened = app.waitForEvent('window');

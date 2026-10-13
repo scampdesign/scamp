@@ -39,11 +39,11 @@ export const componentSidebarItem = (page, name) => componentsList(page).getByRo
 /** "+ Add Component" sidebar button. Scoped to the components section. */
 export const addComponentButton = (page) => page.getByRole('button', { name: /Add Component/i });
 /** The Pages list: legacy pages and views together, by route slug. */
-export const pagesList = (page) => page.locator('h2:has-text("Pages") + ul');
+export const pagesList = (page) => page.getByTestId('pages-list');
 /** Sidebar page button by route slug (a legacy page or a view). */
 export const pageSidebarItem = (page, slug) => pagesList(page).getByRole('button', { name: slug, exact: true });
-/** "+ Add Page" sidebar button. */
-export const addPageButton = (page) => page.getByRole('button', { name: /\+ Add Page/ });
+/** The Pages header's Add page (+) button. */
+export const addPageButton = (page) => page.getByRole('button', { name: 'Add page', exact: true });
 /** Currently-open context menu surface (PageContextMenu / ElementContextMenu). */
 export const contextMenu = (page) => page.getByRole('menu');
 /**

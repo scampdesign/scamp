@@ -46,6 +46,14 @@ export { armTargetSwapSuppression, disarmTargetSwapSuppression, } from './syncBr
  * files that have just been deleted.
  */
 let pendingFlush = null;
+/** The open target's files as the save pipeline last wrote or read them. */
+let lastSyncedImpl = null;
+/**
+ * What disk held for the open target when Scamp last wrote or read it —
+ * unlike `pageSource`, which already carries edits still waiting to save.
+ * A project re-read that matches this brings nothing new.
+ */
+export const lastSyncedSource = () => lastSyncedImpl?.() ?? null;
 /**
  * Write the active target's pending edits now. Writes even while sync is
  * paused, because the callers are about to move the canvas off the target
@@ -123,6 +131,7 @@ export const initSyncBridge = () => {
         ctx.flushDebouncedWrite(evenIfPaused);
     };
     resumeFromPauseImpl = makeResumeFromPause(ctx);
+    lastSyncedImpl = () => ({ tsx: ctx.lastSerializedTsx, css: ctx.lastSerializedCss });
     saveDivergedCanvasImpl = makeSaveDivergedCanvas(ctx);
     discardDivergedCanvasImpl = makeDiscardDivergedCanvas(ctx);
     const unsubAgent = useTerminalActivityStore.subscribe(makeAgentSubscriptionHandler(ctx));
@@ -168,6 +177,7 @@ export const initSyncBridge = () => {
         }
         ctx.quietWindow.clear();
         resumeFromPauseImpl = null;
+        lastSyncedImpl = null;
         saveDivergedCanvasImpl = null;
         discardDivergedCanvasImpl = null;
         window.removeEventListener('beforeunload', handleBeforeUnload);

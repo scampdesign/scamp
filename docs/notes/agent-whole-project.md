@@ -50,8 +50,14 @@ refresh there. The refresh is for watchers that report it as a change.
 A re-read gives the open file a new object whenever disk differs from
 what was loaded, and that used to re-run the loader, clearing the
 selection and racing a pending save. `useActiveTarget` now skips the
-reload when the incoming content equals `pageSource`, the content the
-canvas last wrote.
+reload when the incoming content equals `pageSource`, or the save
+pipeline's last-synced content (`lastSyncedSource()` — what Scamp last
+wrote or read for the open target). The second matters while an edit is
+still waiting to save: `pageSource` already carries it, so a re-read of
+unchanged disk looked different and reloaded over the edit (a paste just
+after adding a page vanished this way). A file that changed for real —
+another writer, or Scamp rewriting it for a component rename — matches
+neither and still reloads.
 
 ## Undo
 

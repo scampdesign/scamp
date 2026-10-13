@@ -3,7 +3,7 @@ import os from 'os';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { test, expect } from '../fixtures/app';
-import { openPagesSection } from '../fixtures/components';
+import { importFrom, openPagesSection } from '../fixtures/components';
 import { pageRoot } from '../fixtures/selectors';
 /**
  * AI-assisted import, end to end on the scripted provider: import a page,
@@ -24,7 +24,7 @@ test.use({ projectOptions: { format: 'scamp' } });
 const importFixture = async (app, window) => {
     await openPagesSection(window);
     const opened = app.waitForEvent('window');
-    await window.getByRole('button', { name: /Import a page/ }).click();
+    await importFrom(window, 'website');
     const importWindow = await opened;
     await importWindow.waitForLoadState('domcontentloaded');
     const urlBar = importWindow.getByLabel('Address');

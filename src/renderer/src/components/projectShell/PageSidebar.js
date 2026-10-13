@@ -1,8 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, } from 'react';
+import { IconDownload, IconPlus } from '@tabler/icons-react';
 import { viewNameForPage, viewSlugFor } from '@shared/templates';
-import { addGroup, groupNameError, groupPages, insertPageAfter, movePageToGroup, moveRow, nextGroupName, pagesBetween, reconcileLayout, removeGroup, renameGroup, renamePage, } from '@lib/pageLayout';
+import { groupNameError, groupPages, insertPageAfter, movePageToGroup, moveRow, nextGroupName, pagesBetween, reconcileLayout, removeGroup, renameGroup, renamePage, } from '@lib/pageLayout';
 import { flushPendingPageWrite } from '../../syncBridge';
+import { Tooltip } from '../controls/Tooltip';
 import { PageContextMenu } from '../PageContextMenu';
 import { PageNameInput } from '../PageNameInput';
 import { PageGroupHeader } from './PageGroupHeader';
@@ -56,6 +58,7 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
     /** Pages picked with Cmd/Ctrl+click, to group together. */
     const [selected, setSelected] = useState(() => new Set());
     const [selectionMenu, setSelectionMenu] = useState(null);
+    const [importMenu, setImportMenu] = useState(null);
     /** Where a Shift+click range starts: the last page clicked or Cmd+clicked. */
     const [anchor, setAnchor] = useState(null);
     const activeSlug = (() => {
@@ -182,11 +185,6 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
             onDragEnd: () => setDragOver(null),
         };
     };
-    const handleNewGroup = () => {
-        const name = nextGroupName(layout);
-        arrange((shown) => addGroup(shown, name));
-        setRenamingGroup(name);
-    };
     const renderRow = (row) => {
         const ref = { kind: 'page', slug: row.slug };
         const drag = dragFor(ref);
@@ -285,6 +283,10 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
                     setActivePageName(page.name);
                 }, onContextMenu: (e) => handleRowContextMenu(e, page.name, (ev) => openPageMenu(ev, page.name)), type: "button", "data-page-slug": page.name, ...drag, children: page.name }) }, page.name));
     };
+    const importItems = [
+        ...(onImportWebsite ? [{ label: 'Import from website…', onSelect: onImportWebsite }] : []),
+        ...(onImportReact ? [{ label: 'Import from React app…', onSelect: onImportReact }] : []),
+    ];
     const groupMenuItems = (name) => [
         {
             label: 'Add page here',
@@ -299,7 +301,14 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
         { label: 'Rename group…', onSelect: () => setRenamingGroup(name) },
         { label: 'Delete group', onSelect: () => arrange((shown) => removeGroup(shown, name)) },
     ];
-    return (_jsxs("div", { className: styles.sidebarSection, children: [_jsx("h2", { className: styles.sidebarTitle, children: "Pages" }), _jsxs("ul", { className: styles.pageList, onKeyDown: (e) => {
+    return (_jsxs("div", { className: styles.sidebarSection, children: [_jsxs("div", { className: styles.sidebarHeader, children: [_jsx("h2", { className: styles.sidebarTitle, children: "Pages" }), _jsxs("div", { className: styles.headerActions, children: [_jsx(Tooltip, { label: "Add page", children: _jsx("button", { type: "button", className: styles.headerIconButton, "aria-label": "Add page", disabled: isEditingPage || pageEdit === 'new', onClick: () => {
+                                        setAddToGroup(null);
+                                        setPageEditError(null);
+                                        setPageEdit('new');
+                                    }, children: _jsx(IconPlus, { size: 14 }) }) }), importItems.length > 0 && (_jsx(Tooltip, { label: "Import", children: _jsx("button", { type: "button", className: styles.headerIconButton, "aria-label": "Import", "aria-haspopup": "menu", onClick: (e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        setImportMenu({ x: rect.left, y: rect.bottom + 4 });
+                                    }, children: _jsx(IconDownload, { size: 14 }) }) }))] })] }), _jsxs("ul", { "data-testid": "pages-list", className: styles.pageList, onKeyDown: (e) => {
                     // Only with pages picked: otherwise Cmd+G stays the canvas's
                     // "group elements", and Escape the canvas's own.
                     if (selected.size === 0)
@@ -343,10 +352,5 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
                                             const row = rows.get(slug);
                                             return row === undefined ? null : renderRow(row);
                                         }), entry.pages.length === 0 && !(pageEdit === 'new' && addToGroup === name) && (_jsx("li", { className: styles.groupEmpty, children: "Drag pages here" })), pageEdit === 'new' && addToGroup === name && newPageInput] }))] }, `group:${name}`));
-                    }), pageEdit === 'new' && addToGroup === null && newPageInput] }), selectionMenu !== null && (_jsx(PageContextMenu, { x: selectionMenu.x, y: selectionMenu.y, items: [{ label: `Group ${selected.size} pages`, onSelect: groupSelection }], onClose: () => setSelectionMenu(null) })), groupMenu !== null && (_jsx(PageContextMenu, { x: groupMenu.x, y: groupMenu.y, items: groupMenuItems(groupMenu.name), onClose: () => setGroupMenu(null) })), pageEdit !== 'new' && (_jsx("button", { className: styles.addPageButton, onClick: () => {
-                    if (isEditingPage)
-                        return;
-                    setPageEditError(null);
-                    setPageEdit('new');
-                }, type: "button", children: "+ Add Page" })), pageEdit !== 'new' && (_jsx("button", { className: styles.addPageButton, onClick: handleNewGroup, type: "button", disabled: isEditingPage, children: "+ New group" })), pageEdit !== 'new' && onImportWebsite && (_jsx("button", { className: styles.addPageButton, onClick: onImportWebsite, type: "button", title: "Open a browser, navigate to a page, and import it as a view", children: "\u21A7 Import a page\u2026" })), pageEdit !== 'new' && onImportReact && (_jsx("button", { className: styles.addPageButton, onClick: onImportReact, type: "button", title: "Run a React app from its project folder and import its pages as views", children: "\u21A7 Import a React app\u2026" }))] }));
+                    }), pageEdit === 'new' && addToGroup === null && newPageInput] }), selectionMenu !== null && (_jsx(PageContextMenu, { x: selectionMenu.x, y: selectionMenu.y, items: [{ label: `Group ${selected.size} pages`, onSelect: groupSelection }], onClose: () => setSelectionMenu(null) })), groupMenu !== null && (_jsx(PageContextMenu, { x: groupMenu.x, y: groupMenu.y, items: groupMenuItems(groupMenu.name), onClose: () => setGroupMenu(null) })), importMenu !== null && (_jsx(PageContextMenu, { x: importMenu.x, y: importMenu.y, items: importItems, onClose: () => setImportMenu(null) }))] }));
 };

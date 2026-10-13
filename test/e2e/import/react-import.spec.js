@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { stubOpenDialog, test, expect } from '../fixtures/app';
-import { openPagesSection } from '../fixtures/components';
+import { importFrom, openPagesSection } from '../fixtures/components';
 import { copyFixtureApp } from '../fixtures/reactApp';
 import { pageRoot } from '../fixtures/selectors';
 /**
@@ -21,7 +21,7 @@ test('runs a React app, lists its routes, and imports one as a view', async ({ a
         await expect(pageRoot(window)).toBeVisible();
         await openPagesSection(window);
         await stubOpenDialog(app, appDir);
-        await window.getByRole('button', { name: /Import a React app/ }).click();
+        await importFrom(window, 'react');
         const dialog = window.getByTestId('react-import-dialog');
         await dialog.getByRole('button', { name: 'Choose folder…' }).click();
         // Nothing runs until the user has seen the command.
@@ -75,7 +75,7 @@ test('imports several routes into a new project, and removes them in one step', 
             .setDefaultProjectsFolder(dir), projectsDir);
         await openPagesSection(window);
         await stubOpenDialog(app, appDir);
-        await window.getByRole('button', { name: /Import a React app/ }).click();
+        await importFrom(window, 'react');
         const dialog = window.getByTestId('react-import-dialog');
         await dialog.getByRole('button', { name: 'Choose folder…' }).click();
         // A new project is the default once there's somewhere to make one.
@@ -157,7 +157,7 @@ test('says when a folder is not a React app it can import', async ({ app, window
         await expect(pageRoot(window)).toBeVisible();
         await openPagesSection(window);
         await stubOpenDialog(app, notReact);
-        await window.getByRole('button', { name: /Import a React app/ }).click();
+        await importFrom(window, 'react');
         const dialog = window.getByTestId('react-import-dialog');
         await dialog.getByRole('button', { name: 'Choose folder…' }).click();
         await expect(dialog).toContainText('doesn’t depend on React');

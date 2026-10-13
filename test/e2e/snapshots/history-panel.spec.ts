@@ -133,7 +133,7 @@ test.describe('history panel — snapshots', () => {
 
     // Switch to a freshly-created page WITHOUT exiting the preview first.
     await window.locator('[data-section="pages"]').click();
-    await window.getByRole('button', { name: /\+ Add Page/ }).click();
+    await window.getByRole('button', { name: 'Add page', exact: true }).click();
     const nameInput = window.getByPlaceholder('page-name');
     await nameInput.fill('about');
     await nameInput.press('Enter');
@@ -191,7 +191,7 @@ test.describe('history panel — snapshots', () => {
     await expect(window.getByTestId('snapshot-preview-banner')).toBeVisible();
 
     await window.locator('[data-section="pages"]').click();
-    await window.getByRole('button', { name: /\+ Add Page/ }).click();
+    await window.getByRole('button', { name: 'Add page', exact: true }).click();
     const nameInput = window.getByPlaceholder('page-name');
     await nameInput.fill('about');
     await nameInput.press('Enter');

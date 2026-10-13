@@ -36,7 +36,7 @@ export declare const addComponentButton: (page: Page) => Locator;
 export declare const pagesList: (page: Page) => Locator;
 /** Sidebar page button by route slug (a legacy page or a view). */
 export declare const pageSidebarItem: (page: Page, slug: string) => Locator;
-/** "+ Add Page" sidebar button. */
+/** The Pages header's Add page (+) button. */
 export declare const addPageButton: (page: Page) => Locator;
 /** Currently-open context menu surface (PageContextMenu / ElementContextMenu). */
 export declare const contextMenu: (page: Page) => Locator;

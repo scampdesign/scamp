@@ -18,8 +18,8 @@ rights to—not to republish someone else's.
 
 ## Import a page
 
-1. In the **Pages** sidebar, click **↧ Import a page…**. A browser
-   window opens.
+1. In the **Pages** header, click **Import** (the download icon), and
+   then select **Import from website…**. A browser window opens.
 1. In the address bar, type or paste a URL and press **Enter**. You can
    type a bare host, such as `stripe.com`.
 1. Navigate to the page you want. Use the page's own links, or the
@@ -47,7 +47,8 @@ If the design lives in a React app on your computer, Scamp can run the
 app and list its pages for you. It works with apps built on Vite,
 Next.js, or Create React App.
 
-1. In the **Pages** sidebar, click **↧ Import a React app…**.
+1. In the **Pages** header, click **Import** (the download icon), and
+   then select **Import from React app…**.
 1. Click **Choose folder…** and select the app's project folder—the one
    with its `package.json`.
 1. Read the commands Scamp shows you. To show the app's pages, Scamp

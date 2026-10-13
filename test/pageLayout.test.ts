@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
 import {
-  addGroup,
   groupNameError,
   groupOf,
   groupPages,
@@ -150,10 +149,6 @@ describe('page operations', () => {
 });
 
 describe('group operations', () => {
-  it('adds an empty group at the end', () => {
-    expect(addGroup(LAYOUT, 'Docs').at(-1)).toEqual({ group: 'Docs', pages: [] });
-  });
-
   it('renames a group, keeping its pages', () => {
     expect(renameGroup(LAYOUT, 'Marketing', 'Site')[1]).toEqual({ group: 'Site', pages: ['about', 'pricing'] });
   });

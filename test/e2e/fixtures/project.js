@@ -45,7 +45,7 @@ const writeComponent = async (dir, seed) => {
     await fs.writeFile(path.join(componentDir, `${seed.name}.tsx`), seed.tsxContent ?? defaultComponentTsx(seed.name), 'utf-8');
     await fs.writeFile(path.join(componentDir, `${seed.name}.module.css`), seed.cssContent ?? '.root {\n}\n', 'utf-8');
 };
-/** A view plus its route, as `+ Add Page` writes them in a framework project. */
+/** A view plus its route, as `Add page` writes them in a framework project. */
 const writeScampView = async (dir, slug) => {
     const view = viewNameForPage(slug);
     for (const [relative, content] of Object.entries(viewTemplate(view))) {

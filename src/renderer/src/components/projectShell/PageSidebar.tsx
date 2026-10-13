@@ -5,11 +5,11 @@ import {
   type MouseEvent as ReactMouseEvent,
   type SetStateAction,
 } from 'react';
+import { IconDownload, IconPlus } from '@tabler/icons-react';
 
 import type { ComponentFile, PageFile, PageLayoutEntry } from '@shared/types';
 import { viewNameForPage, viewSlugFor } from '@shared/templates';
 import {
-  addGroup,
   groupNameError,
   groupPages,
   insertPageAfter,
@@ -26,6 +26,7 @@ import {
 } from '@lib/pageLayout';
 
 import { flushPendingPageWrite } from '../../syncBridge';
+import { Tooltip } from '../controls/Tooltip';
 import { PageContextMenu, type PageMenuItem } from '../PageContextMenu';
 import { PageNameInput } from '../PageNameInput';
 import { PageGroupHeader } from './PageGroupHeader';
@@ -153,6 +154,7 @@ export const PageSidebar = ({
   /** Pages picked with Cmd/Ctrl+click, to group together. */
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
+  const [importMenu, setImportMenu] = useState<{ x: number; y: number } | null>(null);
   /** Where a Shift+click range starts: the last page clicked or Cmd+clicked. */
   const [anchor, setAnchor] = useState<string | null>(null);
 
@@ -278,12 +280,6 @@ export const PageSidebar = ({
       },
       onDragEnd: (): void => setDragOver(null),
     };
-  };
-
-  const handleNewGroup = (): void => {
-    const name = nextGroupName(layout);
-    arrange((shown) => addGroup(shown, name));
-    setRenamingGroup(name);
   };
 
   const renderRow = (row: Row): JSX.Element => {
@@ -473,6 +469,11 @@ export const PageSidebar = ({
     );
   };
 
+  const importItems: PageMenuItem[] = [
+    ...(onImportWebsite ? [{ label: 'Import from website…', onSelect: onImportWebsite }] : []),
+    ...(onImportReact ? [{ label: 'Import from React app…', onSelect: onImportReact }] : []),
+  ];
+
   const groupMenuItems = (name: string): PageMenuItem[] => [
     {
       label: 'Add page here',
@@ -490,8 +491,44 @@ export const PageSidebar = ({
 
   return (
     <div className={styles.sidebarSection}>
-      <h2 className={styles.sidebarTitle}>Pages</h2>
+      <div className={styles.sidebarHeader}>
+        <h2 className={styles.sidebarTitle}>Pages</h2>
+        <div className={styles.headerActions}>
+          <Tooltip label="Add page">
+            <button
+              type="button"
+              className={styles.headerIconButton}
+              aria-label="Add page"
+              disabled={isEditingPage || pageEdit === 'new'}
+              onClick={() => {
+                setAddToGroup(null);
+                setPageEditError(null);
+                setPageEdit('new');
+              }}
+            >
+              <IconPlus size={14} />
+            </button>
+          </Tooltip>
+          {importItems.length > 0 && (
+            <Tooltip label="Import">
+              <button
+                type="button"
+                className={styles.headerIconButton}
+                aria-label="Import"
+                aria-haspopup="menu"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setImportMenu({ x: rect.left, y: rect.bottom + 4 });
+                }}
+              >
+                <IconDownload size={14} />
+              </button>
+            </Tooltip>
+          )}
+        </div>
+      </div>
       <ul
+        data-testid="pages-list"
         className={styles.pageList}
         onKeyDown={(e) => {
           // Only with pages picked: otherwise Cmd+G stays the canvas's
@@ -578,43 +615,8 @@ export const PageSidebar = ({
           onClose={() => setGroupMenu(null)}
         />
       )}
-      {pageEdit !== 'new' && (
-        <button
-          className={styles.addPageButton}
-          onClick={() => {
-            if (isEditingPage) return;
-            setPageEditError(null);
-            setPageEdit('new');
-          }}
-          type="button"
-        >
-          + Add Page
-        </button>
-      )}
-      {pageEdit !== 'new' && (
-        <button className={styles.addPageButton} onClick={handleNewGroup} type="button" disabled={isEditingPage}>
-          + New group
-        </button>
-      )}
-      {pageEdit !== 'new' && onImportWebsite && (
-        <button
-          className={styles.addPageButton}
-          onClick={onImportWebsite}
-          type="button"
-          title="Open a browser, navigate to a page, and import it as a view"
-        >
-          ↧ Import a page…
-        </button>
-      )}
-      {pageEdit !== 'new' && onImportReact && (
-        <button
-          className={styles.addPageButton}
-          onClick={onImportReact}
-          type="button"
-          title="Run a React app from its project folder and import its pages as views"
-        >
-          ↧ Import a React app…
-        </button>
+      {importMenu !== null && (
+        <PageContextMenu x={importMenu.x} y={importMenu.y} items={importItems} onClose={() => setImportMenu(null)} />
       )}
     </div>
   );

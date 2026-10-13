@@ -13,7 +13,7 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { useAppLogStore } from '@store/appLogSlice';
 import { parseCode } from '@lib/parseCode';
 
-import { flushPendingPageWrite } from '../../syncBridge';
+import { flushPendingPageWrite, lastSyncedSource } from '../../syncBridge';
 import { useLatest } from './useLatest';
 import { useNavigationRequests } from './useNavigationRequests';
 import type { ActiveComponent } from './types';
@@ -99,18 +99,18 @@ export const useActiveTarget = ({
     null
   );
 
-  // A project re-read hands back the open file as disk holds it, which
-  // is what the canvas last saved — reloading that would only clear the
-  // selection and race a pending save. see docs/notes/agent-whole-project.md
+  // A project re-read hands back the open file as disk holds it. If that's
+  // what the canvas shows, or what Scamp last saved or read for it, there's
+  // nothing new — and reloading would throw away edits still waiting to
+  // save (a paste right after a re-read was requested vanished this way).
+  // see docs/notes/agent-whole-project.md
   const alreadyShowing = (tsxPath: string, file: { tsxContent: string; cssContent: string }): boolean => {
     const shown = useCanvasStore.getState();
     const openPath = shown.activeComponent?.tsxPath ?? shown.activePage?.tsxPath;
-    return (
-      openPath === tsxPath &&
-      shown.pageSource !== null &&
-      shown.pageSource.tsx === file.tsxContent &&
-      shown.pageSource.css === file.cssContent
-    );
+    if (openPath !== tsxPath) return false;
+    const same = (source: { tsx: string | null; css: string | null } | null): boolean =>
+      source !== null && source.tsx === file.tsxContent && source.css === file.cssContent;
+    return same(shown.pageSource) || same(lastSyncedSource());
   };
 
   // Which breakpoint is active follows the target. A component opens at
