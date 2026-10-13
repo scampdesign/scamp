@@ -68,6 +68,22 @@ comes from the `viewBox`. See [SVG](elements.md#svg).
 - The gap inputs show a token icon on the right. See
   [Spacing tokens](#spacing-tokens).
 
+**Display** sets how the element sits among its neighbors, separately
+from how it lays out its children:
+
+- **Block**: on its own line. This is the default.
+- **Inline**: in the line of text, like a word. For a flex or grid
+  container, this writes `inline-flex` or `inline-grid`.
+- **Inline block**: in the line of text, but with its own width and
+  height.
+- **Contents**: no box of its own; its children act as if they were in
+  its parent. A Contents element can't be clicked on the canvas, so
+  select it in the [layers panel](layers-panel.md).
+- **List item**: a block with a list bullet.
+
+Text and input elements, which don't show Layout, have a **Display**
+section with the same choices.
+
 ### Spacing
 
 - **P** (padding) and **M** (margin) inputs.

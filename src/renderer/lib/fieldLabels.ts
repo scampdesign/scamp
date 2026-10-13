@@ -24,6 +24,7 @@ export const FIELD_LABELS: Record<string, string> = {
   x: 'left',
   y: 'top',
   display: 'display',
+  displayOuter: 'display',
   flexDirection: 'flex-direction',
   gap: 'gap',
   alignItems: 'align-items',

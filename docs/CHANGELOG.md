@@ -26,6 +26,12 @@ release time.
 
 **Added**
 
+- **Set how an element sits among its neighbors.** A new **Display**
+  choice in the Layout section—and a **Display** section for text and
+  inputs—sets Block, Inline, Inline block, Contents, or List item, and
+  makes a flex or grid container inline. Imported pages use these values
+  everywhere; the panel now shows them instead of leaving them in the
+  CSS, and Checks no longer lists them.
 - **Agents can check the whole project in one call.** The new MCP tool
   `scamp_check_project` runs the **Checks** on every page, view, and
   component and lists what's wrong in each. `scamp_check_view` now
@@ -57,6 +63,9 @@ release time.
   save checks the file first and merges with whatever changed.
 
 **Fixed**
+
+- **Setting Block at a breakpoint no longer hides the element.** It
+  wrote `display: none` instead of `display: block`.
 
 - **Checks no longer report valid CSS as problems.** Values the panel
   has no control for, such as `display: inline-flex`, are listed under

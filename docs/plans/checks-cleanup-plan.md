@@ -59,7 +59,14 @@ row, as the exported page draws it.
 
 ## 3. More display values in the panel (plan)
 
-- [ ] Done
+- [x] Done — as planned, with one change: a keyword with an outer value
+  (`inline`, `inline-flex`, …) is written last in the rule, where it sat
+  as raw CSS, so existing files — and the published contract-0 fixture —
+  round-trip byte for byte; plain `flex` and `grid` keep their place. A
+  **Display** select in Layout, and a **Display** section for text and
+  inputs (which have no Layout). Fixed on the way: a breakpoint set to
+  Block wrote `display: none`. Tests: `test/displayKeyword.test.ts`,
+  `test/e2e/properties-panel/display.spec.ts`.
 
 The model has `display: 'none' | 'flex' | 'grid'` (`'none'` meaning
 block). Every other value stays in `customProperties` as raw CSS: it
@@ -97,9 +104,8 @@ change — `inline-flex` is a flex container.
   Values not in it (`flow-root`, `table-*`, `ruby`, …) still go to
   `customProperties`.
 - **Generate** (`generateCode/declarations.ts`): emit the combined
-  keyword. Same string as today, so files don't change meaning; the
-  declaration may move from the end of the rule to its typed position on
-  the first save, which is a cosmetic diff.
+  keyword — last in the rule when it has an outer value, where raw CSS
+  went, so existing files keep their bytes.
 - **`effectiveDisplay.ts`**: read the typed fields; drop the
   `customProperties['display']` special case.
 - **Panel** (`LayoutSection.tsx`): the layout mode picker stays block /
@@ -126,7 +132,7 @@ change — `inline-flex` is a flex container.
 
 ### Risks
 
-- The first save of an imported page may reorder its `display` line.
+- ~~The first save of an imported page may reorder its `display` line.~~ Avoided: an outer keyword is written where it sat as raw CSS.
 - `contents` on the canvas: no box, no hover outline.
 
 ## 4. `auto` in margins

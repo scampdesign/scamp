@@ -2,18 +2,11 @@ import type { ScampElement } from './element';
 /**
  * The display an element actually lays its children out with.
  *
- * Scamp's typed `display` knows `flex`, `grid`, and a sentinel for
- * "neither". `inline-flex` and `inline-grid` are neither in the typed
- * sense, so they land in `customProperties` verbatim — which renders
- * correctly, but leaves every rule that asks "is this a layout parent?"
- * answering no. Those children then get Scamp's tree-shape default of
- * `position: absolute`, drop out of flow, and the flex box collapses to
- * nothing around them: an icon-and-label link measured 76x0.
- *
- * So the question "does this element lay out its children?" has to read
- * both. The answer is the typed keyword, because that is what the rest
- * of the model is written in; the `inline-` part still reaches the page
- * through `customProperties`.
+ * Mostly the typed `display`: `inline-flex` and `inline-grid` are typed
+ * as flex and grid, with their `inline` half in `displayOuter`, so they
+ * answer as layout parents. (They used to sit in `customProperties`,
+ * where this function had to read them; otherwise their children got
+ * `position: absolute` and an icon-and-label link measured 76x0.)
  *
  * A table tag is the same problem arriving from the other direction. A
  * `<tr>` places its cells and a `<table>` places its rows — natively, or
@@ -23,4 +16,4 @@ import type { ScampElement } from './element';
  * placed by nothing, so the columns reached no cell at all.
  * see docs/plans/tables-plan.md
  */
-export declare const effectiveDisplay: (el: Pick<ScampElement, "display" | "customProperties" | "tag"> | null | undefined) => ScampElement["display"] | undefined;
+export declare const effectiveDisplay: (el: Pick<ScampElement, "display" | "tag"> | null | undefined) => ScampElement["display"] | undefined;

@@ -39,8 +39,8 @@ describe('checkProject', () => {
   });
 
   it('keeps notes apart from problems: a page with only notes is intact', () => {
-    // `inline-flex` renders fine; the panel just has no control for it.
-    const parsed = parseCode(TSX, '.root {\n  width: 100%;\n}\n\n.card_a1b2 {\n  display: inline-flex;\n}\n');
+    // `flow-root` renders fine; the panel just has no control for it.
+    const parsed = parseCode(TSX, '.root {\n  width: 100%;\n}\n\n.card_a1b2 {\n  display: flow-root;\n}\n');
     const result = checkProject([{ name: 'chips', kind: 'page', elements: parsed.elements, rootId: parsed.rootId }], TOKENS);
     expect(result.problems).toBe(0);
     expect(result.notes).toBe(1);

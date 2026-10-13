@@ -1,5 +1,6 @@
 import { parseBorderRadiusShorthandOrNull, parseBorderShorthand, parseBoxShadowShorthand, parseFilterList, parsePaddingShorthandOrNull, parsePxOrNull, parseSizeValue, parseSpaceValueOrNull, parseTransitionShorthand, parseFlexShorthand, parseTransformList, } from './parsers';
 import { isBlendMode } from './blendModes';
+import { parseDisplayKeyword } from './displayKeyword';
 const POSITIONS = new Set([
     'static',
     'relative',
@@ -51,25 +52,11 @@ export const cssToScampProperty = {
         return { borderRadius: parsed };
     },
     display: (v) => {
-        const trimmed = v.trim();
-        if (trimmed === 'flex')
-            return { display: 'flex' };
-        if (trimmed === 'grid')
-            return { display: 'grid' };
-        if (trimmed === 'none')
+        if (v.trim() === 'none')
             return { visibilityMode: 'none' };
-        if (trimmed === 'block')
-            return { display: 'none' };
-        // Other display values (`inline`, `inline-block`, `contents`,
-        // `flow-root`, …) get preserved verbatim via customProperties.
-        //
-        // `inline-block` used to be folded onto the sentinel alongside
-        // `block`, and since the sentinel is also the default the value
-        // was then emitted by nothing: `display: inline-block` written
-        // into a CSS module disappeared on the next save. Both are "not a
-        // flex or grid container", but only `block` is what an element
-        // already does without saying so.
-        return null;
+        // Values the model can't hold (`flow-root`, `table-row`, `ruby`, …)
+        // are kept verbatim via customProperties. see displayKeyword.ts
+        return parseDisplayKeyword(v);
     },
     visibility: (v) => {
         if (v === 'hidden')

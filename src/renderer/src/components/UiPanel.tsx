@@ -3,6 +3,7 @@ import { ROOT_ELEMENT_ID } from '@lib/element';
 import { PositionSection } from './sections/PositionSection';
 import { SizeSection } from './sections/SizeSection';
 import { LayoutSection } from './sections/LayoutSection';
+import { DisplaySection } from './sections/DisplaySection';
 import { SpacingSection } from './sections/SpacingSection';
 import { TableStyleSection } from './sections/TableStyleSection';
 import { BackgroundSection } from './sections/BackgroundSection';
@@ -84,6 +85,7 @@ export const UiPanel = (): JSX.Element => {
       {showPosition && <PositionSection elementId={elementId} />}
       <SizeSection elementId={elementId} />
       {!isText && !isInput && <LayoutSection elementId={elementId} />}
+      {(isText || isInput) && <DisplaySection elementId={elementId} />}
       {element.tag === 'table' && <TableStyleSection elementId={elementId} />}
       <SpacingSection elementId={elementId} hideMargin={isRoot} />
       {/* An icon's own colors and stroke come before the box's background

@@ -56,16 +56,25 @@ describe('cssToScampProperty', () => {
     it('maps display: none to visibilityMode', () => {
       expect(apply('display', 'none')).toEqual({ visibilityMode: 'none' });
     });
-    it('maps `block` to the non-flex / non-grid sentinel', () => {
-      expect(apply('display', 'block')).toEqual({ display: 'none' });
+    it('maps `block` to the non-flex / non-grid sentinel, clearing any outer value', () => {
+      expect(apply('display', 'block')).toEqual({ display: 'none', displayOuter: undefined });
+      // Present-but-undefined, so a breakpoint override of `block` clears
+      // an inline base instead of inheriting it.
+      expect(Object.keys(apply('display', 'block') ?? {})).toContain('displayOuter');
     });
-    it('refuses other display values (preserved via customProperties)', () => {
-      // `inline-block` included. Folding it onto the sentinel lost it
-      // entirely: the sentinel is also the default, so nothing emitted
-      // the value back and it vanished on the next save.
-      expect(apply('display', 'inline-block')).toBeNull();
-      expect(apply('display', 'inline')).toBeNull();
-      expect(apply('display', 'contents')).toBeNull();
+    it('maps the inline and box values onto display + displayOuter', () => {
+      expect(apply('display', 'inline')).toEqual({ display: 'none', displayOuter: 'inline' });
+      expect(apply('display', 'inline-block')).toEqual({ display: 'none', displayOuter: 'inline-block' });
+      expect(apply('display', 'contents')).toEqual({ display: 'none', displayOuter: 'contents' });
+      expect(apply('display', 'list-item')).toEqual({ display: 'none', displayOuter: 'list-item' });
+      expect(apply('display', 'inline-flex')).toEqual({ display: 'flex', displayOuter: 'inline' });
+      expect(apply('display', 'inline-grid')).toEqual({ display: 'grid', displayOuter: 'inline' });
+    });
+    it('refuses values the model can’t hold (preserved via customProperties)', () => {
+      expect(apply('display', 'flow-root')).toBeNull();
+      expect(apply('display', 'table-row')).toBeNull();
+      expect(apply('display', 'inline-table')).toBeNull();
+      expect(apply('display', 'ruby')).toBeNull();
     });
   });
 

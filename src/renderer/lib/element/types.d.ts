@@ -37,6 +37,12 @@ export type PropertyGroup = 'background' | 'border' | 'shadow' | 'typography' | 
  * round-trip.
  */
 export type DisplayMode = 'none' | 'flex' | 'grid';
+/**
+ * How the box sits in its parent, beside `display` (how it lays out its
+ * children). Absent is block. Flex and grid take only `inline`
+ * (`inline-flex`, `inline-grid`). see `displayKeyword.ts`
+ */
+export type DisplayOuter = 'inline' | 'inline-block' | 'contents' | 'list-item';
 export type FlexDirection = 'row' | 'column' | 'row-reverse' | 'column-reverse';
 export type FlexWrap = 'nowrap' | 'wrap' | 'wrap-reverse';
 export type AlignItems = 'flex-start' | 'center' | 'flex-end' | 'stretch' | 'baseline';
@@ -412,6 +418,8 @@ export type ScampElement = {
      */
     position: Position;
     display: DisplayMode;
+    /** Absent is block. see `DisplayOuter` */
+    displayOuter?: DisplayOuter;
     flexDirection: FlexDirection;
     /** Stored as either px (number) or a `var(--token)` reference.
      *  See `spaceValue.ts` for the union shape and helpers. */

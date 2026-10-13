@@ -4,6 +4,7 @@ import { ROOT_ELEMENT_ID } from '@lib/element';
 import { PositionSection } from './sections/PositionSection';
 import { SizeSection } from './sections/SizeSection';
 import { LayoutSection } from './sections/LayoutSection';
+import { DisplaySection } from './sections/DisplaySection';
 import { SpacingSection } from './sections/SpacingSection';
 import { TableStyleSection } from './sections/TableStyleSection';
 import { BackgroundSection } from './sections/BackgroundSection';
@@ -60,5 +61,5 @@ export const UiPanel = () => {
     if (isInstance) {
         return (_jsxs("div", { className: styles.uiPanelBody, children: [_jsx(ElementSection, { elementId: elementId }), _jsx(SizeSection, { elementId: elementId }), _jsx(ExportSection, {})] }));
     }
-    return (_jsxs("div", { className: styles.uiPanelBody, children: [!isRoot && _jsx(ElementSection, { elementId: elementId }), isText && _jsx(TypographySection, { elementId: elementId }), isImage && _jsx(ImageSection, { elementId: elementId }), showPosition && _jsx(PositionSection, { elementId: elementId }), _jsx(SizeSection, { elementId: elementId }), !isText && !isInput && _jsx(LayoutSection, { elementId: elementId }), element.tag === 'table' && _jsx(TableStyleSection, { elementId: elementId }), _jsx(SpacingSection, { elementId: elementId, hideMargin: isRoot }), isSvg && _jsx(SvgSection, { elementId: elementId }), _jsx(BackgroundSection, { elementId: elementId }), _jsx(BorderSection, { elementId: elementId }), _jsx(ShadowsSection, { elementId: elementId }), _jsx(FiltersSection, { elementId: elementId }), _jsx(TransformSection, { elementId: elementId }), _jsx(VisibilitySection, { elementId: elementId }), _jsx(TransitionsSection, { elementId: elementId }), _jsx(AnimationSection, { elementId: elementId }), _jsx(ExportSection, {})] }));
+    return (_jsxs("div", { className: styles.uiPanelBody, children: [!isRoot && _jsx(ElementSection, { elementId: elementId }), isText && _jsx(TypographySection, { elementId: elementId }), isImage && _jsx(ImageSection, { elementId: elementId }), showPosition && _jsx(PositionSection, { elementId: elementId }), _jsx(SizeSection, { elementId: elementId }), !isText && !isInput && _jsx(LayoutSection, { elementId: elementId }), (isText || isInput) && _jsx(DisplaySection, { elementId: elementId }), element.tag === 'table' && _jsx(TableStyleSection, { elementId: elementId }), _jsx(SpacingSection, { elementId: elementId, hideMargin: isRoot }), isSvg && _jsx(SvgSection, { elementId: elementId }), _jsx(BackgroundSection, { elementId: elementId }), _jsx(BorderSection, { elementId: elementId }), _jsx(ShadowsSection, { elementId: elementId }), _jsx(FiltersSection, { elementId: elementId }), _jsx(TransformSection, { elementId: elementId }), _jsx(VisibilitySection, { elementId: elementId }), _jsx(TransitionsSection, { elementId: elementId }), _jsx(AnimationSection, { elementId: elementId }), _jsx(ExportSection, {})] }));
 };

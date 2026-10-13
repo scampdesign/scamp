@@ -1,6 +1,7 @@
 // generateCode/declarations.ts — split out of generateCode.ts (4.5).
 import { effectiveDisplay } from "../effectiveDisplay";
 import { cellSpanPlacement } from "../tableGrid";
+import { displayKeyword } from "../displayKeyword";
 import { DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from "../defaults";
 import { ROOT_ELEMENT_ID } from "../element";
 import { formatAnimationShorthand, formatBoxShadowShorthand, formatFilterList, formatTransformList, formatTransitionShorthand } from "../parsers";
@@ -217,10 +218,12 @@ mustEstablishPositioningContext = false) => {
         lines.push('display: none;');
     }
     else {
-        if (el.display !== BASE.display) {
+        // An `inline` / `inline-flex` / … keyword is written last, below.
+        if (el.displayOuter === undefined && el.display !== BASE.display) {
             lines.push(`display: ${el.display};`);
         }
-        else if (INLINE_BY_DEFAULT.has(el.tag ?? '') &&
+        else if (el.displayOuter === undefined &&
+            INLINE_BY_DEFAULT.has(el.tag ?? '') &&
             el.customProperties['display'] === undefined &&
             // Only where inline-vs-block is observable: in normal flow. A
             // flex or grid item is blockified by its parent, and an
@@ -581,6 +584,13 @@ mustEstablishPositioningContext = false) => {
     // `background-image` → background) route through `emit(group, …)`
     // so they end up in the right comment block when the group is
     // toggled off.
+    // `inline`, `inline-flex`, `contents` and the rest were raw CSS before
+    // they had a field, and raw CSS goes last. Written in that same place,
+    // a file that has one round-trips byte for byte — the published
+    // contract fixture included. see docs/plans/checks-cleanup-plan.md
+    if (el.displayOuter !== undefined && el.visibilityMode !== 'none') {
+        lines.push(`display: ${displayKeyword(el.display, el.displayOuter)};`);
+    }
     const emittedProps = collectEmittedPropNames(lines);
     for (const [key, value] of Object.entries(el.customProperties)) {
         if (emittedProps.has(key))
@@ -717,8 +727,13 @@ parent = null) => {
     if (has('visibilityMode') && override.visibilityMode === 'none') {
         lines.push('display: none;');
     }
-    else if (has('display') && override.display !== undefined) {
-        lines.push(`display: ${override.display};`);
+    else if ((has('display') && override.display !== undefined) || has('displayOuter')) {
+        // One keyword from both halves; an override that sets one inherits
+        // the other from the base. This used to print `display` raw, so a
+        // breakpoint set to Block wrote `display: none` and hid the element.
+        const display = has('display') && override.display !== undefined ? override.display : element.display;
+        const outer = has('displayOuter') ? override.displayOuter : element.displayOuter;
+        lines.push(`display: ${displayKeyword(display, outer)};`);
     }
     if (has('flexDirection') && override.flexDirection) {
         lines.push(`flex-direction: ${override.flexDirection};`);

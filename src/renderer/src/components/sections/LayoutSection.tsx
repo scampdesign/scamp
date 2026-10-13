@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useResolvedElement } from '@store/useResolvedElement';
 import { AlignmentGrid } from '../controls/AlignmentGrid';
+import { DisplaySelect } from '../controls/DisplaySelect';
 import { EnumSelect } from '../controls/EnumSelect';
 import { GapIcon } from '../controls/GapIcon';
 import { GridTemplateEditor } from '../controls/GridTemplateEditor';
@@ -178,16 +179,20 @@ const computeLayoutPatch = (
   if (next === 'block') {
     return { display: 'none' };
   }
+  // Flex and grid take only `inline`; a `contents` or `list-item` box
+  // becomes a plain container.
+  const outer = current.displayOuter === 'inline' ? { displayOuter: 'inline' as const } : { displayOuter: undefined };
   if (next === 'grid') {
     if (wasFlex) {
       return {
         display: 'grid',
+        ...outer,
         columnGap: current.gap,
         rowGap: current.gap,
         gap: 0,
       };
     }
-    return { display: 'grid' };
+    return { display: 'grid', ...outer };
   }
   // Flex row / flex column.
   const reverse = wasFlex && isReverseDirection(current.flexDirection);
@@ -198,13 +203,14 @@ const computeLayoutPatch = (
   if (wasGrid) {
     return {
       display: 'flex',
+      ...outer,
       flexDirection,
       gap: current.columnGap || current.rowGap,
       columnGap: 0,
       rowGap: 0,
     };
   }
-  return { display: 'flex', flexDirection };
+  return { display: 'flex', ...outer, flexDirection };
 };
 
 export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
@@ -287,6 +293,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
       elementId={elementId}
       fields={[
         'display',
+        'displayOuter',
         'flexDirection',
         'flexWrap',
         'alignItems',
@@ -322,6 +329,13 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
             patchElement(elementId, computeLayoutPatch(element, value))
           }
           title="Display mode"
+        />
+      </Row>
+      <Row label="Display">
+        <DisplaySelect
+          display={element.display}
+          outer={element.displayOuter}
+          onChange={(displayOuter) => patchElement(elementId, { displayOuter })}
         />
       </Row>
       {isFlex && (

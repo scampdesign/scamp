@@ -499,7 +499,7 @@ describe('styled spans become elements in the line', () => {
     it('keeps those lifted runs inline, so they still read as one line', () => {
         const { elements } = reduce(node({ children: [run({ kind: 'text', value: 'Stop the ' }, { kind: 'element', node: styledSpan('busywork') })] }));
         const words = Object.values(elements).find((e) => e.text === 'Stop the ');
-        expect(words?.customProperties['display']).toBe('inline');
+        expect(words?.displayOuter).toBe('inline');
     });
     it('places markup between the children it sat between', () => {
         const { elements } = reduce(node({ children: [run({ kind: 'element', node: styledSpan('one') }, { kind: 'markup', source: '<em>and</em>' }, { kind: 'element', node: styledSpan('two') })] }));
@@ -1673,7 +1673,7 @@ describe('against a page captured from a real browser', () => {
         const mark = Object.values(elements).find((e) => e.text === 'thing');
         expect(mark?.backgroundColor).toBe('rgb(217, 232, 255)');
         expect(mark?.color).toBe('rgb(22, 34, 58)');
-        expect(mark?.customProperties['display']).toBe('inline-block');
+        expect(mark?.displayOuter).toBe('inline-block');
         expect(mark?.position).toBe('static');
     });
     it('leaves a span that carries nothing of its own as inline markup', () => {
