@@ -8,7 +8,7 @@ each story below is copied from them unchanged apart from its heading.
 | Story | Kind | Size | From | Plan |
 |---|---|---|---|---|
 | ~~Edit every selected element at once~~ **Done** | Bug | M | v12 #1 | `archive/2026-10-14-multi-select-edit-plan.md` |
-| Narrowing a text element keeps the height I set | Bug | S | v12 #2 | |
+| ~~Narrowing a text element keeps the height I set~~ **Done** | Bug | S | v12 #2 | `archive/2026-10-14-text-resize-height-plan.md` |
 | Drag a component instance on the canvas | Bug | M | v12 #3 | |
 | Drop an image onto the canvas | Bug | S | v12 #4 | |
 | Find per-side padding | Discoverability | S | v12 #5 | |
@@ -69,7 +69,9 @@ one changed element and no hint why.
 The text-runs **Mixed** handling (`styleOfRange`) is a model for the
 display.
 
-### Narrowing a text element keeps the height I set
+### Narrowing a text element keeps the height I set - DONE
+
+Built 2026-10-14; see `docs/archive/2026-10-14-text-resize-height-plan.md`.
 
 As a designer, I want to change a text element's width without its
 height jumping back to a default, so that resizing one dimension doesn't
