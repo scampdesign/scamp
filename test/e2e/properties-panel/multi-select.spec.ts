@@ -8,7 +8,7 @@ import { pageRoot } from '../fixtures/selectors';
 
 /**
  * With several elements selected, a panel change reaches each one it
- * fits, as one undo step. see docs/plans/multi-select-edit-plan.md
+ * fits, as one undo step. see docs/archive/2026-10-14-multi-select-edit-plan.md
  */
 
 const TSX = [
@@ -158,4 +158,16 @@ test('different shadows read Mixed, and adding one replaces them all', async ({ 
   expect(card).toBeDefined();
   expect(card).not.toContain('#00000033');
   expect(block(css, 'tile_c3d4')).toContain(`box-shadow: ${card ?? ''};`);
+});
+
+test('shift-clicking on the canvas selects elements, not the text of the app around them', async ({ window }) => {
+  await expect(pageRoot(window)).toBeVisible();
+  await click(window, 'card_a1b2');
+  // A click on the panel's text leaves the caret there; a shift-click
+  // used to extend a text selection from it across the app.
+  await panelSection(window, 'Background').click({ position: { x: 4, y: 4 } });
+  await click(window, 'tile_c3d4', true);
+  await click(window, 'label_e5f6', true);
+  await expect(window.getByTestId('multi-select-note')).toContainText('3 elements selected');
+  expect(await window.evaluate(() => document.getSelection()?.toString() ?? '')).toBe('');
 });

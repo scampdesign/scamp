@@ -124,6 +124,9 @@ export const CanvasInteractionLayer = ({ frameRef, scale }: Props): JSX.Element 
 
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>): void => {
     if (e.button !== 0) return;
+    // Shift is multi-select here, not the browser's extend-text-selection,
+    // which would otherwise select the app's text from the last caret.
+    if (e.shiftKey) e.preventDefault();
 
     // Resize takes precedence — handles sit on top of everything. Then the
     // active draw tool (rectangle / input / text / image).
