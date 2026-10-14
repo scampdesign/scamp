@@ -3,6 +3,8 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { useHistoryStore } from '@store/historySlice';
 import { clampToParent, MIN_SIZE } from '@lib/bounds';
 import { lockedCornerResize } from '@lib/aspectRatio';
+import { axesForHandle } from '@lib/resizeAxes';
+import { resolveElementAtState } from '@lib/stateCascade';
 import { isResizeHandle } from './canvasHitTest';
 /**
  * Resize state machine. Handles sit on top of everything and take
@@ -30,6 +32,13 @@ export const useResizeInteraction = (geometry, scale) => {
             return true;
         e.preventDefault();
         e.target.setPointerCapture(e.pointerId);
+        // Start from the element as it renders: its values at the active
+        // breakpoint (where the resize writes), and its measured size on any
+        // axis that hugs, fills, or is auto — the stored number there is a
+        // fallback, not what's on screen. see docs/archive/2026-10-14-text-resize-height-plan.md
+        const { activeBreakpointId, breakpoints } = useCanvasStore.getState();
+        const shown = resolveElementAtState(el, activeBreakpointId, breakpoints, null);
+        const measured = geometry.measureElementInFrame(selectedElementId);
         // Open a history transaction so the per-tick `resizeElement`
         // calls during the drag don't each create their own history
         // entry. The wrapping `endHistoryTransaction` in `onEnd` commits
@@ -40,10 +49,10 @@ export const useResizeInteraction = (geometry, scale) => {
             handle,
             pointerStartX: e.clientX,
             pointerStartY: e.clientY,
-            originX: el.x,
-            originY: el.y,
-            originW: el.widthValue,
-            originH: el.heightValue,
+            originX: shown.x,
+            originY: shown.y,
+            originW: shown.widthMode === 'fixed' ? shown.widthValue : measured?.w ?? shown.widthValue,
+            originH: shown.heightMode === 'fixed' ? shown.heightValue : measured?.h ?? shown.heightValue,
         });
         return true;
     };
@@ -75,7 +84,7 @@ export const useResizeInteraction = (geometry, scale) => {
                 ratio,
             });
             const clampedLocked = clampToParent(box.x, box.y, box.w, box.h, parent.w, parent.h);
-            resizeElement(resize.id, Math.round(clampedLocked.x), Math.round(clampedLocked.y), Math.round(clampedLocked.w), Math.round(clampedLocked.h));
+            resizeElement(resize.id, Math.round(clampedLocked.x), Math.round(clampedLocked.y), Math.round(clampedLocked.w), Math.round(clampedLocked.h), { ...axesForHandle(handle), width: true, height: true });
             return true;
         }
         let { originX: nx, originY: ny, originW: nw, originH: nh } = resize;
@@ -94,7 +103,7 @@ export const useResizeInteraction = (geometry, scale) => {
             nh = proposedH;
         }
         const clamped = clampToParent(nx, ny, nw, nh, parent.w, parent.h);
-        resizeElement(resize.id, Math.round(clamped.x), Math.round(clamped.y), Math.round(clamped.w), Math.round(clamped.h));
+        resizeElement(resize.id, Math.round(clamped.x), Math.round(clamped.y), Math.round(clamped.w), Math.round(clamped.h), axesForHandle(resize.handle));
         return true;
     };
     const onEnd = () => {

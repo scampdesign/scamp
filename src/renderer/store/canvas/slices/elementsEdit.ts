@@ -28,6 +28,7 @@ import { PRESETS_BY_NAME, isPresetName } from '@lib/animationPresets';
 import { classNameFor } from '@lib/generateCode';
 import { resolveElementAtState } from '@lib/stateCascade';
 import { DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from '@lib/defaults';
+import { ALL_RESIZE_AXES } from '@lib/resizeAxes';
 import { DEFAULT_BODY_FONT_FAMILY } from '@shared/agentMd';
 import {
   DEFAULT_BREAKPOINTS,
@@ -358,24 +359,23 @@ export const createElementsEditSlice: StateCreator<
     commitElementsToHistory({ kind: 'move', elementIds: [id] });
   },
 
-  resizeElement: (id, x, y, width, height) => {
+  resizeElement: (id, x, y, width, height, axes = ALL_RESIZE_AXES) => {
     set((state) => {
       const el = state.elements[id];
       if (!el) return state;
       // Dragging a handle is an explicit "I want this size" gesture, so
-      // we always switch to fixed mode — otherwise resizing a stretched
-      // or fit-content element would silently store a value that the
-      // generator wouldn't emit. Like moveElement, resize edits land
-      // on the base regardless of the active state.
+      // the axes it moves switch to fixed mode — otherwise resizing a
+      // stretched or fit-content element would silently store a value the
+      // generator wouldn't emit. An axis the handle doesn't move keeps its
+      // mode. Like moveElement, resize edits land on the base regardless
+      // of the active state.
       const next = applyPatchWithAxisRouting(
         el,
         {
-          x,
-          y,
-          widthValue: width,
-          heightValue: height,
-          widthMode: 'fixed',
-          heightMode: 'fixed',
+          ...(axes.x ? { x } : {}),
+          ...(axes.y ? { y } : {}),
+          ...(axes.width ? { widthValue: width, widthMode: 'fixed' as const } : {}),
+          ...(axes.height ? { heightValue: height, heightMode: 'fixed' as const } : {}),
         },
         state.activeBreakpointId,
         null

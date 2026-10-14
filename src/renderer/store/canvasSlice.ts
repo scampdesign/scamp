@@ -71,6 +71,7 @@ import {
   applyPatchWithAxisRouting,
 } from './canvas/patchRouting';
 import { projectColorsFromElements } from '@lib/projectColors';
+import type { ResizeAxes } from '@lib/resizeAxes';
 import { commitElementsToHistory, freshId } from './canvas/history';
 import { createElementsCreateSlice } from './canvas/slices/elementsCreate';
 import { createElementsEditSlice } from './canvas/slices/elementsEdit';
@@ -726,7 +727,8 @@ export type CanvasState = {
    *  fills. Used by the drop flow when nesting into a named slot. */
   setElementSlotName: (id: string, slotName: string | undefined) => void;
   moveElement: (id: string, x: number, y: number) => void;
-  resizeElement: (id: string, x: number, y: number, width: number, height: number) => void;
+  /** Fixes the size on the axes `axes` names (all four by default) and leaves the rest alone. */
+  resizeElement: (id: string, x: number, y: number, width: number, height: number, axes?: ResizeAxes) => void;
   patchElement: (id: string, patch: Partial<ScampElement>) => void;
   /**
    * Replace the element map with one the Scamp Agent computed. The agent's

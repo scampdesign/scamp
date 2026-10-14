@@ -3,6 +3,7 @@ import type { ComponentKind } from '@shared/types';
 import { type Breakpoint, type ProjectFormat, type SvgAssetChangedPayload, type ThemeDef, type ThemeToken } from '@shared/types';
 import type { ParsedTheme, ThemeBlock } from '@lib/parseTheme';
 import type { DesignProse } from '@lib/designMd';
+import type { ResizeAxes } from '@lib/resizeAxes';
 export type Tool = 'select' | 'rectangle' | 'text' | 'image' | 'input';
 export type NewRectInput = {
     parentId: string;
@@ -587,7 +588,8 @@ export type CanvasState = {
      *  fills. Used by the drop flow when nesting into a named slot. */
     setElementSlotName: (id: string, slotName: string | undefined) => void;
     moveElement: (id: string, x: number, y: number) => void;
-    resizeElement: (id: string, x: number, y: number, width: number, height: number) => void;
+    /** Fixes the size on the axes `axes` names (all four by default) and leaves the rest alone. */
+    resizeElement: (id: string, x: number, y: number, width: number, height: number, axes?: ResizeAxes) => void;
     patchElement: (id: string, patch: Partial<ScampElement>) => void;
     /**
      * Replace the element map with one the Scamp Agent computed. The agent's

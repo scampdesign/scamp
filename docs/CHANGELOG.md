@@ -85,6 +85,13 @@ release time.
 
 **Fixed**
 
+- **Dragging a side handle no longer resets the other dimension.**
+  Narrowing a text box from its right edge keeps its height hugging the
+  text, so the text wraps and the box grows. Before, the drag started
+  from a stored fallback size, so the box collapsed and the height jumped
+  to a number you never set. A side handle now changes only its own
+  dimension, and a corner changes both.
+- **Shift-clicking on the canvas no longer selects the app's text.**
 - **Setting Block at a breakpoint no longer hides the element.** It
   wrote `display: none` instead of `display: block`.
 

@@ -4,6 +4,7 @@ import { canonicalizeGroupList } from '@lib/propertyGroups';
 import { PRESETS_BY_NAME, isPresetName } from '@lib/animationPresets';
 import { classNameFor } from '@lib/generateCode';
 import { resolveElementAtState } from '@lib/stateCascade';
+import { ALL_RESIZE_AXES } from '@lib/resizeAxes';
 import { applyPatchWithAxisRouting, } from '../patchRouting';
 import { commitElementsToHistory } from '../history';
 import { useCanvasStore, } from '../../canvasSlice';
@@ -281,23 +282,22 @@ export const createElementsEditSlice = (set) => ({
         // committed on pointerup.
         commitElementsToHistory({ kind: 'move', elementIds: [id] });
     },
-    resizeElement: (id, x, y, width, height) => {
+    resizeElement: (id, x, y, width, height, axes = ALL_RESIZE_AXES) => {
         set((state) => {
             const el = state.elements[id];
             if (!el)
                 return state;
             // Dragging a handle is an explicit "I want this size" gesture, so
-            // we always switch to fixed mode — otherwise resizing a stretched
-            // or fit-content element would silently store a value that the
-            // generator wouldn't emit. Like moveElement, resize edits land
-            // on the base regardless of the active state.
+            // the axes it moves switch to fixed mode — otherwise resizing a
+            // stretched or fit-content element would silently store a value the
+            // generator wouldn't emit. An axis the handle doesn't move keeps its
+            // mode. Like moveElement, resize edits land on the base regardless
+            // of the active state.
             const next = applyPatchWithAxisRouting(el, {
-                x,
-                y,
-                widthValue: width,
-                heightValue: height,
-                widthMode: 'fixed',
-                heightMode: 'fixed',
+                ...(axes.x ? { x } : {}),
+                ...(axes.y ? { y } : {}),
+                ...(axes.width ? { widthValue: width, widthMode: 'fixed' } : {}),
+                ...(axes.height ? { heightValue: height, heightMode: 'fixed' } : {}),
             }, state.activeBreakpointId, null);
             return { elements: { ...state.elements, [id]: next } };
         });

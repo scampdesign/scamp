@@ -394,7 +394,7 @@ export const SizeSection = ({ elementId }: Props): JSX.Element | null => {
                 : 'Width — computed (border-box). Type a number to make it fixed, or change the type on the right.'
             }
             value={widthFieldValue}
-              mixed={isMixed('widthValue') || isMixed('widthMode')}
+            mixed={isMixed('widthValue') || isMixed('widthMode')}
             placeholder={isWidthFixed ? undefined : sizeTypeLabel(widthType)}
             onCommit={(raw) =>
               handleCommitWidth(combineTypedWithType(raw, widthType))
@@ -419,10 +419,12 @@ export const SizeSection = ({ elementId }: Props): JSX.Element | null => {
           title={
             isHeightFixed
               ? 'Height — type a number, or any CSS length (100vh, calc(...)). Set the unit on the right.'
-              : 'Height — computed (border-box). Type a number to make it fixed, or change the type on the right.'
+              : heightType === 'hug'
+                ? 'Height — hugs the content, so it grows as text wraps. Type a number to fix it, or change the type on the right.'
+                : 'Height — computed (border-box). Type a number to make it fixed, or change the type on the right.'
           }
           value={heightFieldValue}
-              mixed={isMixed('heightValue') || isMixed('heightMode')}
+          mixed={isMixed('heightValue') || isMixed('heightMode')}
           placeholder={isHeightFixed ? undefined : sizeTypeLabel(heightType)}
           onCommit={(raw) =>
             handleCommitHeight(combineTypedWithType(raw, heightType))
