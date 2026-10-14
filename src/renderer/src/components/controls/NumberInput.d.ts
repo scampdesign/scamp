@@ -27,10 +27,12 @@ type Props = {
      * to a fixed mode.
      */
     computed?: boolean;
+    /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+    mixed?: boolean;
 };
 /**
  * Numeric input. Thin wrapper over PrefixSuffixInput that handles
  * parsing, clamping, and arrow-key stepping.
  */
-export declare const NumberInput: ({ value, onChange, min, max, placeholder, allowEmpty, prefix, suffix, title, disabled, computed, }: Props) => JSX.Element;
+export declare const NumberInput: ({ value, onChange, min, max, placeholder, allowEmpty, prefix, suffix, title, disabled, computed, mixed, }: Props) => JSX.Element;
 export {};

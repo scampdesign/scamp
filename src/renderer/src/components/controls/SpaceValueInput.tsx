@@ -27,6 +27,8 @@ type Props = {
   tokens?: ReadonlyArray<ThemeToken>;
   /** Opens the Theme tokens panel from the empty-state row. */
   onOpenTheme?: () => void;
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+  mixed?: boolean;
 };
 
 const VAR_RE = /^var\(\s*--[A-Za-z_][\w-]*(?:\s*,[^)]*)?\)$/;
@@ -67,13 +69,14 @@ export const SpaceValueInput = ({
   title,
   tokens,
   onOpenTheme,
+  mixed = false,
 }: Props): JSX.Element => {
   const stringValue = formatSpaceValue(value);
 
   const handleCommit = (draft: string): void => {
     const parsed = parseSingle(draft, min);
     if (parsed === null) return;
-    if (!spaceValueEquals(parsed, value)) onChange(parsed);
+    if (mixed || !spaceValueEquals(parsed, value)) onChange(parsed);
   };
 
   const handleArrow = (
@@ -116,6 +119,7 @@ export const SpaceValueInput = ({
       prefix={prefix}
       {...(label !== undefined ? { dataPrefix: label } : {})}
       placeholder="0"
+      mixed={mixed}
       {...(title !== undefined ? { title } : {})}
       {...(suffix !== undefined ? { suffix } : {})}
     />

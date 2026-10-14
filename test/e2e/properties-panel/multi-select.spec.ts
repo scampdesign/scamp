@@ -38,6 +38,8 @@ const CSS = [
   '  top: 40px;',
   '  width: 120px;',
   '  height: 80px;',
+  '  border: 1px solid #000000;',
+  '  box-shadow: 0px 2px 4px 0px #00000033;',
   '}',
   '',
   '.tile_c3d4 {',
@@ -46,6 +48,7 @@ const CSS = [
   '  top: 40px;',
   '  width: 120px;',
   '  height: 80px;',
+  '  border: 3px solid #000000;',
   '}',
   '',
   '.label_e5f6 {',
@@ -118,4 +121,41 @@ test('at a breakpoint, each selected element gets its own override', async ({ wi
   expect(tablet).toMatch(/\.card_a1b2 \{[^}]*padding: 12px/);
   expect(tablet).toMatch(/\.tile_c3d4 \{[^}]*padding: 12px/);
   expect(block(css, 'card_a1b2')).not.toMatch(/padding/);
+});
+
+test('a field the selection disagrees on reads Mixed, and typing sets them all', async ({ window, project }) => {
+  await expect(pageRoot(window)).toBeVisible();
+  await click(window, 'card_a1b2');
+  await click(window, 'tile_c3d4', true);
+
+  const width = panelInputByPrefix(window, 'Border', 'W');
+  await expect(width).toHaveValue('');
+  await expect(width).toHaveAttribute('placeholder', 'Mixed');
+  // Agreed on: shows the value.
+  await expect(panelInputByPrefix(window, 'Size', 'W')).toHaveValue('120');
+
+  await commitInput(width, '2');
+  await waitForSaved(window);
+  const { css } = await readPageFiles(project.dir, 'home');
+  expect(block(css, 'card_a1b2')).toMatch(/border-width: 2px;/);
+  expect(block(css, 'tile_c3d4')).toMatch(/border-width: 2px;/);
+  await expect(width).toHaveValue('2px');
+});
+
+test('different shadows read Mixed, and adding one replaces them all', async ({ window, project }) => {
+  await expect(pageRoot(window)).toBeVisible();
+  await click(window, 'card_a1b2');
+  await click(window, 'tile_c3d4', true);
+
+  const shadows = panelSection(window, 'Shadow');
+  await shadows.getByRole('button', { name: 'Shadow', exact: true }).click();
+  await expect(shadows.getByTestId('shadows-empty')).toHaveText('Mixed');
+  await shadows.getByRole('button', { name: '+ Add shadow' }).click();
+  await waitForSaved(window);
+
+  const { css } = await readPageFiles(project.dir, 'home');
+  const card = block(css, 'card_a1b2').match(/box-shadow: ([^;]+);/)?.[1];
+  expect(card).toBeDefined();
+  expect(card).not.toContain('#00000033');
+  expect(block(css, 'tile_c3d4')).toContain(`box-shadow: ${card ?? ''};`);
 });

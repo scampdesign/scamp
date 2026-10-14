@@ -1,7 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useMemo, useState } from 'react';
-import { useCanvasStore } from '@store/canvasSlice';
 import { useListField } from '@store/hooks/useListField';
+import { useMixedFields } from '@store/hooks/useMixedFields';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import { Button } from '../controls/Button';
 import { EnumSelect } from '../controls/EnumSelect';
@@ -41,17 +43,19 @@ const displayToMs = (n, unit) => {
 };
 export const TransitionsSection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
-    const patchElement = useCanvasStore((s) => s.patchElement);
+    const { patchElement } = selectionPatchers(SECTION_FITS.box);
+    const { isMixed } = useMixedFields(SECTION_FITS.box);
+    const transitionsMixed = isMixed('transitions');
     // Per-row, per-axis (duration / delay) display unit. The CSS storage
     // is always canonical ms; the unit is just a UI affordance for typing
     // shorter numbers when the user is working in seconds.
     const [unitState, setUnitState] = useState({});
     // Hide the eye when no transitions are defined (or already off).
     const groupToggle = useGroupToggle(elementId, 'transitions', (element?.transitions.length ?? 0) > 0);
-    const transitionsField = useListField(() => element?.transitions ?? [], (next) => patchElement(elementId, { transitions: next }));
+    const transitionsField = useListField(() => (transitionsMixed ? [] : element?.transitions ?? []), (next) => patchElement(elementId, { transitions: next }));
     if (!element)
         return null;
-    const transitions = element.transitions;
+    const transitions = transitionsMixed ? [] : element.transitions;
     const unitFor = (idx) => unitState[idx] ?? { duration: 'ms', delay: 'ms' };
     const setUnit = (idx, axis, unit) => {
         setUnitState((prev) => ({ ...prev, [idx]: { ...unitFor(idx), [axis]: unit } }));
@@ -75,7 +79,7 @@ export const TransitionsSection = ({ elementId }) => {
             delayMs: 0,
         });
     };
-    return (_jsxs(Section, { title: "Transitions", collapsible: true, defaultOpen: transitions.length > 0, elementId: elementId, groupToggle: groupToggle, fields: ['transitions'], cssProperties: ['transition'], children: [transitions.length === 0 && (_jsx(SectionEmptyState, { testId: "transitions-empty" })), transitions.map((t, idx) => (_jsx(TransitionRow, { transition: t, unit: unitFor(idx), onChange: (patch) => transitionsField.update(idx, patch), onUnitChange: (axis, unit) => setUnit(idx, axis, unit), onRemove: () => removeRow(idx) }, idx))), _jsx(Row, { label: "", children: _jsx(Button, { variant: "addRow", onClick: addRow, children: "+ Add transition" }) })] }));
+    return (_jsxs(Section, { title: "Transitions", collapsible: true, defaultOpen: transitions.length > 0, elementId: elementId, groupToggle: groupToggle, fields: ['transitions'], cssProperties: ['transition'], children: [transitions.length === 0 && (_jsx(SectionEmptyState, { testId: "transitions-empty", children: transitionsMixed ? 'Mixed' : undefined })), transitions.map((t, idx) => (_jsx(TransitionRow, { transition: t, unit: unitFor(idx), onChange: (patch) => transitionsField.update(idx, patch), onUnitChange: (axis, unit) => setUnit(idx, axis, unit), onRemove: () => removeRow(idx) }, idx))), _jsx(Row, { label: "", children: _jsx(Button, { variant: "addRow", onClick: addRow, children: "+ Add transition" }) })] }));
 };
 const TransitionRow = ({ transition, unit, onChange, onUnitChange, onRemove, }) => {
     // Detect whether the stored easing is a named keyword or a custom

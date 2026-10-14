@@ -20,3 +20,9 @@ export declare const SECTION_FITS: {
 export declare const fitPatch: (el: ScampElement, patch: Partial<ScampElement>, fits: SectionFit, isLead: boolean) => Partial<ScampElement> | null;
 /** The first selected element a section fits, which it reads its values from. */
 export declare const leadFor: (selectedIds: ReadonlyArray<string>, elements: Readonly<Record<string, ScampElement>>, fits: SectionFit) => string | null;
+/**
+ * The fields the given elements disagree on, read as they render (pass
+ * them resolved at the active breakpoint and state). A custom CSS
+ * property is reported as `custom:<property>`. Empty for fewer than two.
+ */
+export declare const mixedFields: (elements: ReadonlyArray<ScampElement>) => string[];

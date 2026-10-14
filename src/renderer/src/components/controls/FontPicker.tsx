@@ -33,6 +33,8 @@ type Props = {
   onChange: (value: string) => void;
   /** Tooltip shown on hover of the closed trigger. */
   title?: string;
+  /** Several selected elements disagree: the trigger reads **Mixed**. */
+  mixed?: boolean;
 };
 
 const VAR_RE = /^var\(\s*(--[\w-]+)\s*\)$/;
@@ -100,6 +102,7 @@ export const FontPicker = ({
   fontTokens = [],
   onChange,
   title,
+  mixed = false,
 }: Props): JSX.Element => {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -317,22 +320,22 @@ export const FontPicker = ({
       // a preview. Tokens skip this — we show the token name in the
       // default UI font alongside a swatch icon.
       style={
-        triggerLabel && !triggerIsToken
+        !mixed && triggerLabel && !triggerIsToken
           ? { fontFamily: quoteFamilyName(triggerLabel) }
           : undefined
       }
     >
-      {triggerIsToken && (
+      {!mixed && triggerIsToken && (
         <span className={styles.triggerIcon} aria-hidden="true">
           <IconColorSwatch size={14} stroke={1.75} />
         </span>
       )}
       <span
         className={`${styles.triggerLabel} ${
-          triggerLabel ? '' : styles.triggerPlaceholder
+          triggerLabel && !mixed ? '' : styles.triggerPlaceholder
         }`}
       >
-        {triggerLabel ?? 'System font'}
+        {mixed ? 'Mixed' : triggerLabel ?? 'System font'}
       </span>
       <span className={styles.triggerCaret}>▾</span>
     </button>

@@ -18,6 +18,8 @@ type Props = {
     onChange: (value: string) => void;
     /** Tooltip shown on hover of the closed trigger. */
     title?: string;
+    /** Several selected elements disagree: the trigger reads **Mixed**. */
+    mixed?: boolean;
 };
-export declare const FontPicker: ({ value, fonts, fontTokens, onChange, title, }: Props) => JSX.Element;
+export declare const FontPicker: ({ value, fonts, fontTokens, onChange, title, mixed, }: Props) => JSX.Element;
 export {};

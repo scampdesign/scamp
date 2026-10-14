@@ -21,6 +21,8 @@ type Props = {
     placeholder?: string;
     /** Tooltip on the whole row. */
     title?: string;
+    /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+    mixed?: boolean;
 };
-export declare const TokenOrNumberInput: ({ value, tokens, defaultUnit, onChange, onOpenTheme, prefix, placeholder, title, }: Props) => JSX.Element;
+export declare const TokenOrNumberInput: ({ value, tokens, defaultUnit, onChange, onOpenTheme, prefix, placeholder, title, mixed, }: Props) => JSX.Element;
 export {};

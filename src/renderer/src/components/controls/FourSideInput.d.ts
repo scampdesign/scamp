@@ -21,6 +21,8 @@ type Props = {
     onOpenTheme?: () => void;
     /** Accept `auto` on a side — margins only. */
     allowAuto?: boolean;
+    /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+    mixed?: boolean;
 };
 /**
  * A single text input for editing a [top, right, bottom, left] tuple using
@@ -30,5 +32,5 @@ type Props = {
  *
  * Invalid input reverts on blur via the PrefixSuffixInput value sync.
  */
-export declare const FourSideInput: ({ value, onChange, min, prefix, label, title, tokens, onOpenTheme, allowAuto, }: Props) => JSX.Element;
+export declare const FourSideInput: ({ value, onChange, min, prefix, label, title, tokens, onOpenTheme, allowAuto, mixed, }: Props) => JSX.Element;
 export {};

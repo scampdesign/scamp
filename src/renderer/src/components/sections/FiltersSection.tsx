@@ -2,6 +2,9 @@ import { useState } from 'react';
 
 import { useCanvasStore } from '@store/canvasSlice';
 import { useListField } from '@store/hooks/useListField';
+import { useMixedFields } from '@store/hooks/useMixedFields';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import type { FilterDef, FilterKind } from '@lib/element';
 import {
@@ -52,7 +55,10 @@ const KIND_TOOLTIPS: Record<FilterKind, string> = {
 
 export const FiltersSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.box);
+  const { isMixed } = useMixedFields(SECTION_FITS.box);
+  const filtersMixed = isMixed('filters');
+  const backdropMixed = isMixed('backdropFilters');
   // Hide the eye when no filters are defined (or already off).
   const groupToggle = useGroupToggle(
     elementId,
@@ -61,17 +67,17 @@ export const FiltersSection = ({ elementId }: Props): JSX.Element | null => {
       (element?.backdropFilters.length ?? 0) > 0
   );
   const filtersField = useListField<FilterDef>(
-    () => element?.filters ?? [],
+    () => (filtersMixed ? [] : element?.filters ?? []),
     (next) => patchElement(elementId, { filters: next })
   );
   const backdropField = useListField<FilterDef>(
-    () => element?.backdropFilters ?? [],
+    () => (backdropMixed ? [] : element?.backdropFilters ?? []),
     (next) => patchElement(elementId, { backdropFilters: next })
   );
   if (!element) return null;
 
-  const filters: ReadonlyArray<FilterDef> = element.filters;
-  const backdropFilters: ReadonlyArray<FilterDef> = element.backdropFilters;
+  const filters: ReadonlyArray<FilterDef> = filtersMixed ? [] : element.filters;
+  const backdropFilters: ReadonlyArray<FilterDef> = backdropMixed ? [] : element.backdropFilters;
 
   // The backdrop subsection is gated behind a session-local toggle so
   // the common case stays compact. Once the user adds a row the
@@ -98,7 +104,7 @@ export const FiltersSection = ({ elementId }: Props): JSX.Element | null => {
       fields={['filters', 'backdropFilters']}
       cssProperties={['filter', 'backdrop-filter']}
     >
-      {filters.length === 0 && <SectionEmptyState testId="filters-empty" />}
+      {filters.length === 0 && <SectionEmptyState testId="filters-empty">{filtersMixed ? 'Mixed' : undefined}</SectionEmptyState>}
       {filters.map((filter, idx) => (
         <FilterRow
           key={idx}

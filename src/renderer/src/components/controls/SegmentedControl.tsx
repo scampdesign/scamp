@@ -29,6 +29,8 @@ type Props<V extends string> = {
    * per-option tooltips — the group-level tooltip describes the axis,
    * per-option tooltips describe each segment. */
   title?: string;
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+  mixed?: boolean;
 };
 
 export const SegmentedControl = <V extends string>({
@@ -36,11 +38,12 @@ export const SegmentedControl = <V extends string>({
   options,
   onChange,
   title,
+  mixed = false,
 }: Props<V>): JSX.Element => {
   const group = (
     <div className={styles.segmented} role="radiogroup">
       {options.map((opt) => {
-        const active = opt.value === value;
+        const active = !mixed && opt.value === value;
         const accessibleName =
           opt.ariaLabel ??
           opt.tooltip ??

@@ -19,6 +19,8 @@ type Props<V extends string> = {
   onChange: (value: V) => void;
   /** Tooltip shown on hover. */
   title?: string;
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+  mixed?: boolean;
 };
 
 export const EnumSelect = <V extends string>({
@@ -26,13 +28,19 @@ export const EnumSelect = <V extends string>({
   options,
   onChange,
   title,
+  mixed = false,
 }: Props<V>): JSX.Element => {
   const select = (
     <select
       className={styles.select}
-      value={value}
+      value={mixed ? '' : value}
       onChange={(e) => onChange(e.target.value as V)}
     >
+      {mixed && (
+        <option value="" disabled hidden>
+          Mixed
+        </option>
+      )}
       {options.map((opt) => (
         <option key={opt.value} value={opt.value} disabled={opt.disabled}>
           {opt.label}

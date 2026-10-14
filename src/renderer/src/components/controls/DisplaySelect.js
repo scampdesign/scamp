@@ -13,4 +13,4 @@ const CONTAINER_OPTIONS = [
     { value: 'inline', label: 'Inline' },
 ];
 /** The outer half of CSS `display`. see `displayKeyword.ts` */
-export const DisplaySelect = ({ display, outer, onChange }) => (_jsx(EnumSelect, { value: outer ?? 'block', options: display === 'none' ? BLOCK_OPTIONS : CONTAINER_OPTIONS, onChange: (value) => onChange(value === 'block' ? undefined : value), title: "Display \u2014 how the element sits among its neighbors: on its own line (Block), in the line of text (Inline), or with no box of its own (Contents)" }));
+export const DisplaySelect = ({ display, outer, onChange, mixed = false }) => (_jsx(EnumSelect, { mixed: mixed, value: outer ?? 'block', options: display === 'none' ? BLOCK_OPTIONS : CONTAINER_OPTIONS, onChange: (value) => onChange(value === 'block' ? undefined : value), title: "Display \u2014 how the element sits among its neighbors: on its own line (Block), in the line of text (Inline), or with no box of its own (Contents)" }));

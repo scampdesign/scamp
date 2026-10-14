@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useListField } from '@store/hooks/useListField';
+import { useMixedFields } from '@store/hooks/useMixedFields';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import type { TransitionDef } from '@lib/element';
 import { Button } from '../controls/Button';
@@ -57,7 +60,9 @@ const displayToMs = (n: number | undefined, unit: TimeUnit): number => {
 
 export const TransitionsSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.box);
+  const { isMixed } = useMixedFields(SECTION_FITS.box);
+  const transitionsMixed = isMixed('transitions');
   // Per-row, per-axis (duration / delay) display unit. The CSS storage
   // is always canonical ms; the unit is just a UI affordance for typing
   // shorter numbers when the user is working in seconds.
@@ -71,12 +76,12 @@ export const TransitionsSection = ({ elementId }: Props): JSX.Element | null => 
     (element?.transitions.length ?? 0) > 0
   );
   const transitionsField = useListField<TransitionDef>(
-    () => element?.transitions ?? [],
+    () => (transitionsMixed ? [] : element?.transitions ?? []),
     (next) => patchElement(elementId, { transitions: next })
   );
 
   if (!element) return null;
-  const transitions: ReadonlyArray<TransitionDef> = element.transitions;
+  const transitions: ReadonlyArray<TransitionDef> = transitionsMixed ? [] : element.transitions;
 
   const unitFor = (idx: number): { duration: TimeUnit; delay: TimeUnit } =>
     unitState[idx] ?? { duration: 'ms', delay: 'ms' };
@@ -117,7 +122,7 @@ export const TransitionsSection = ({ elementId }: Props): JSX.Element | null => 
       cssProperties={['transition']}
     >
       {transitions.length === 0 && (
-        <SectionEmptyState testId="transitions-empty" />
+        <SectionEmptyState testId="transitions-empty">{transitionsMixed ? 'Mixed' : undefined}</SectionEmptyState>
       )}
       {transitions.map((t, idx) => (
         <TransitionRow

@@ -15,6 +15,8 @@ type Props<V extends string> = {
     onChange: (value: V) => void;
     /** Tooltip shown on hover. */
     title?: string;
+    /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+    mixed?: boolean;
 };
-export declare const EnumSelect: <V extends string>({ value, options, onChange, title, }: Props<V>) => JSX.Element;
+export declare const EnumSelect: <V extends string>({ value, options, onChange, title, mixed, }: Props<V>) => JSX.Element;
 export {};

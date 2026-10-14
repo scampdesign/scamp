@@ -23,11 +23,14 @@ type Props = {
   display: DisplayMode;
   outer: DisplayOuter | undefined;
   onChange: (outer: DisplayOuter | undefined) => void;
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is picked. */
+  mixed?: boolean;
 };
 
 /** The outer half of CSS `display`. see `displayKeyword.ts` */
-export const DisplaySelect = ({ display, outer, onChange }: Props): JSX.Element => (
+export const DisplaySelect = ({ display, outer, onChange, mixed = false }: Props): JSX.Element => (
   <EnumSelect<DisplayChoice>
+    mixed={mixed}
     value={outer ?? 'block'}
     options={display === 'none' ? BLOCK_OPTIONS : CONTAINER_OPTIONS}
     onChange={(value) => onChange(value === 'block' ? undefined : value)}

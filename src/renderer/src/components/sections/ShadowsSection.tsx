@@ -7,6 +7,9 @@ import {
   type ColorPickerContext,
 } from '@store/hooks/useColorPickerContext';
 import { useListField } from '@store/hooks/useListField';
+import { useMixedFields } from '@store/hooks/useMixedFields';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import type { BoxShadowDef } from '@lib/element';
 import { combineShadowColor, splitShadowColor } from '@lib/parsers';
@@ -44,7 +47,10 @@ const INSET_OPTIONS: ReadonlyArray<{ value: InsetMode; label: string }> = [
 
 export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.box);
+  const { isMixed } = useMixedFields(SECTION_FITS.box);
+  // Selected elements with different shadows show none; adding one replaces them all.
+  const shadowsMixed = isMixed('boxShadows') || isMixed('boxShadowToken');
   const colorContext = useColorPickerContext();
   const groupToggle = useGroupToggle(
     elementId,
@@ -52,8 +58,8 @@ export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
     (element?.boxShadows.length ?? 0) > 0 || element?.boxShadowToken !== undefined
   );
   const shadowField = useListField<BoxShadowDef>(
-    () => element?.boxShadows ?? [],
-    (next) => patchElement(elementId, { boxShadows: next })
+    () => (shadowsMixed ? [] : element?.boxShadows ?? []),
+    (next) => patchElement(elementId, shadowsMixed ? { boxShadows: next, boxShadowToken: undefined } : { boxShadows: next })
   );
   const shadowTokens = useMemo(
     () => tokensForField('shadow', colorContext.themeTokens),
@@ -61,7 +67,7 @@ export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
   );
   if (!element) return null;
 
-  const shadows: ReadonlyArray<BoxShadowDef> = element.boxShadows;
+  const shadows: ReadonlyArray<BoxShadowDef> = shadowsMixed ? [] : element.boxShadows;
 
   /**
    * Apply a shadow token as a PRESET: resolve its box-shadow value into
@@ -80,7 +86,7 @@ export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
 
   // A shadow linked to a theme token: shown as the token, which follows
   // the theme. Detach copies its current value into editable layers.
-  const linked = element.boxShadowToken;
+  const linked = shadowsMixed ? undefined : element.boxShadowToken;
   const linkedName = linked === undefined ? null : (/var\(\s*(--[\w-]+)/.exec(linked)?.[1] ?? linked);
   const handleDetach = (): void => {
     const value = colorContext.themeTokens.find((t) => t.name === linkedName)?.value;
@@ -135,7 +141,7 @@ export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
           </div>
         </Row>
       )}
-      {linked === undefined && shadows.length === 0 && <SectionEmptyState testId="shadows-empty" />}
+      {linked === undefined && shadows.length === 0 && <SectionEmptyState testId="shadows-empty">{shadowsMixed ? 'Mixed' : undefined}</SectionEmptyState>}
       {shadows.map((shadow, idx) => (
         <ShadowRow
           key={idx}

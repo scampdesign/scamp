@@ -1,5 +1,6 @@
 import { useCanvasStore } from '@store/canvasSlice';
 import { selectionPatchers } from '@store/selectionPatch';
+import { useMixedFields } from '@store/hooks/useMixedFields';
 import { SECTION_FITS } from '@lib/multiEdit';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
@@ -41,6 +42,7 @@ const BG_POSITION_OPTIONS = [
 export const BackgroundSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
   const { patchElement } = selectionPatchers(SECTION_FITS.box);
+  const { isMixed, isMixedCustom } = useMixedFields(SECTION_FITS.box);
   const { patchCustomProperties } = selectionPatchers(SECTION_FITS.box);
   const { presetColors, themeTokens, onOpenTheme } = useColorPickerContext();
   const projectFormat = useCanvasStore((s) => s.projectFormat);
@@ -121,6 +123,7 @@ export const BackgroundSection = ({ elementId }: Props): JSX.Element | null => {
       <Row label="">
         <ColorInput
           value={element.backgroundColor}
+          mixed={isMixed('backgroundColor')}
           onChange={(value) => patchElement(elementId, { backgroundColor: value })}
           onPreview={previewStyle(elementId, 'backgroundColor', SECTION_FITS.box)}
           historyElementId={elementId}
@@ -151,6 +154,7 @@ export const BackgroundSection = ({ elementId }: Props): JSX.Element | null => {
           <Row label="Size">
             <SegmentedControl
               value={bgSize}
+              mixed={isMixedCustom('background-size')}
               options={BG_SIZE_OPTIONS}
               onChange={(value) => updateBgProp('background-size', value)}
             />
@@ -162,7 +166,7 @@ export const BackgroundSection = ({ elementId }: Props): JSX.Element | null => {
               {BG_POSITION_OPTIONS.map((opt) => (
                 <Tooltip key={opt} label={`Anchor the image to the ${opt}`}>
                   <button
-                    className={`${styles.positionBtn} ${bgPosition === opt ? styles.positionActive : ''}`}
+                    className={`${styles.positionBtn} ${bgPosition === opt && !isMixedCustom('background-position') ? styles.positionActive : ''}`}
                     onClick={() => updateBgProp('background-position', opt)}
                     type="button"
                   />
@@ -173,6 +177,7 @@ export const BackgroundSection = ({ elementId }: Props): JSX.Element | null => {
           <Row label="Repeat">
             <SegmentedControl
               value={bgRepeat}
+              mixed={isMixedCustom('background-repeat')}
               options={BG_REPEAT_OPTIONS}
               onChange={(value) => updateBgProp('background-repeat', value)}
             />
@@ -181,6 +186,7 @@ export const BackgroundSection = ({ elementId }: Props): JSX.Element | null => {
             <Row label="Blend">
               <BlendModeSelect
                 value={element.backgroundBlendMode}
+                mixed={isMixed('backgroundBlendMode')}
                 onChange={(value: BlendMode) =>
                   patchElement(elementId, { backgroundBlendMode: value })
                 }

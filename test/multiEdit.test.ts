@@ -2,10 +2,11 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { DEFAULT_RECT_STYLES } from '@lib/defaults';
 import { ROOT_ELEMENT_ID, type ScampElement } from '@lib/element';
-import { fitPatch, leadFor, SECTION_FITS } from '@lib/multiEdit';
+import { fitPatch, leadFor, mixedFields, SECTION_FITS } from '@lib/multiEdit';
+import { axisGapPatch } from '@lib/flexGap';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useHistoryStore } from '@store/historySlice';
-import { patchSelection, patchSelectionCustomProperties } from '@store/selectionPatch';
+import { forSelection, patchSelection, patchSelectionCustomProperties } from '@store/selectionPatch';
 
 const el = (id: string, overrides: Partial<ScampElement> = {}): ScampElement => ({
   ...DEFAULT_RECT_STYLES,
@@ -73,6 +74,36 @@ describe('leadFor', () => {
     expect(leadFor(['a', 'i'], elements, SECTION_FITS.typography)).toBeNull();
     expect(leadFor(['gone'], elements, SECTION_FITS.box)).toBeNull();
     expect(leadFor([], elements, SECTION_FITS.box)).toBeNull();
+  });
+});
+
+describe('mixedFields', () => {
+  it('lists the fields that differ, and custom CSS as custom:<property>', () => {
+    const a = el('a', { backgroundColor: 'red', padding: [8, 8, 8, 8], customProperties: { cursor: 'pointer' } });
+    const b = el('b', { backgroundColor: 'blue', padding: [8, 8, 8, 8], customProperties: {} });
+    expect(mixedFields([a, b])).toEqual(['backgroundColor', 'custom:cursor']);
+  });
+
+  it('compares arrays and tuples by value', () => {
+    const a = el('a', { borderWidth: [1, 1, 1, 1] });
+    const b = el('b', { borderWidth: [1, 1, 1, 1] });
+    expect(mixedFields([a, b])).toEqual([]);
+    expect(mixedFields([a, el('c', { borderWidth: [2, 1, 1, 1] })])).toEqual(['borderWidth']);
+  });
+
+  it('never reports identity, position, or override maps', () => {
+    const a = el('a', { name: 'one', x: 0, breakpointOverrides: { tablet: { padding: [4, 4, 4, 4] } } });
+    const b = el('b', { name: 'two', x: 40 });
+    expect(mixedFields([a, b])).toEqual([]);
+  });
+
+  it('reports a field only one element sets', () => {
+    expect(mixedFields([el('a', { fontSize: '12px' }), el('b')])).toEqual(['fontSize']);
+  });
+
+  it('is empty for one element or none', () => {
+    expect(mixedFields([el('a')])).toEqual([]);
+    expect(mixedFields([])).toEqual([]);
   });
 });
 
@@ -146,6 +177,32 @@ describe('patchSelection', () => {
     patchSelection(SECTION_FITS.box, 'a1b2', { backgroundColor: '#123456' });
     expect(elements()['a1b2']?.backgroundColor).toBe('#123456');
     expect(elements()['c3d4']?.backgroundColor).toBe(DEFAULT_RECT_STYLES.backgroundColor);
+  });
+
+  it('builds a function patch from each element’s own values', () => {
+    // One `gap` each; setting the column gap splits it, keeping the row gap.
+    useCanvasStore.setState((s) => ({
+      elements: {
+        ...s.elements,
+        a1b2: el('a1b2', { display: 'flex', gap: 10 }),
+        c3d4: el('c3d4', { display: 'flex', gap: 20 }),
+      },
+    }));
+    patchSelection(SECTION_FITS.layout, 'a1b2', (resolved) => axisGapPatch(resolved, 'columnGap', 16));
+    expect(elements()['a1b2']).toMatchObject({ columnGap: 16, rowGap: 10, gap: 0 });
+    // Its own row gap, not the first element's.
+    expect(elements()['c3d4']).toMatchObject({ columnGap: 16, rowGap: 20, gap: 0 });
+  });
+
+  it('runs an action on each fitting selected element as one step', () => {
+    const seen: string[] = [];
+    forSelection(SECTION_FITS.typography, 't1t1', ['fontSize'], (id) => seen.push(id));
+    expect(seen).toEqual(['t1t1']);
+    forSelection(SECTION_FITS.box, 'a1b2', ['toggledOffGroups'], (id) =>
+      useCanvasStore.getState().togglePropertyGroup(id, 'background', false)
+    );
+    expect(elements()['c3d4']?.toggledOffGroups).toEqual(['background']);
+    expect(entries()).toBe(1);
   });
 
   it('writes nothing while a snapshot preview is showing', () => {

@@ -1,6 +1,7 @@
 import { useState, type MouseEvent, type ReactNode } from 'react';
 import { IconChevronDown, IconEye, IconEyeOff } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
+import { forSelection } from '@store/selectionPatch';
 import {
   useBreakpointOverrideFields,
   useStateOverrideFields,
@@ -370,15 +371,14 @@ const useOverrideIndicator = (
 
   const handleContextMenu = (e: MouseEvent<HTMLSpanElement>): void => {
     e.preventDefault();
-    if (axis === 'state' && activeStateName !== null) {
-      resetStateFields(elementId, activeStateName, overriddenInSection);
-    } else if (axis === 'breakpoint') {
-      resetBreakpointFields(
-        elementId,
-        activeBreakpointId,
-        overriddenInSection
-      );
-    }
+    // With several elements selected, reset each one's override.
+    forSelection(() => true, elementId, overriddenInSection, (id) => {
+      if (axis === 'state' && activeStateName !== null) {
+        resetStateFields(id, activeStateName, overriddenInSection);
+      } else if (axis === 'breakpoint') {
+        resetBreakpointFields(id, activeBreakpointId, overriddenInSection);
+      }
+    });
   };
 
   return {

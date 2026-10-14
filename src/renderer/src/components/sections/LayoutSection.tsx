@@ -11,6 +11,7 @@ import {
 import { useMemo } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { selectionPatchers } from '@store/selectionPatch';
+import { useMixedFields } from '@store/hooks/useMixedFields';
 import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 import { AlignmentGrid } from '../controls/AlignmentGrid';
@@ -218,6 +219,7 @@ const computeLayoutPatch = (
 export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
   const { patchElement } = selectionPatchers(SECTION_FITS.layout);
+  const { isMixed } = useMixedFields(SECTION_FITS.layout);
   const elements = useCanvasStore((s) => s.elements);
   const themeTokens = useCanvasStore((s) => s.themeTokens);
   const openThemePanel = useCanvasStore((s) => s.openThemePanel);
@@ -326,9 +328,10 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
       <Row label="">
         <SegmentedControl<LayoutMode>
           value={mode}
+          mixed={isMixed('display') || isMixed('flexDirection')}
           options={LAYOUT_OPTIONS}
           onChange={(value) =>
-            patchElement(elementId, computeLayoutPatch(element, value))
+            patchElement(elementId, (el) => computeLayoutPatch(el, value))
           }
           title="Display mode"
         />
@@ -337,6 +340,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
         <DisplaySelect
           display={element.display}
           outer={element.displayOuter}
+          mixed={isMixed('displayOuter')}
           onChange={(displayOuter) => patchElement(elementId, { displayOuter })}
         />
       </Row>
@@ -361,6 +365,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
             >
               <EnumSelect<AlignItems>
                 value={element.alignItems}
+                mixed={isMixed('alignItems')}
                 options={ALIGN_OPTIONS}
                 onChange={(value) =>
                   patchElement(elementId, { alignItems: value })
@@ -369,6 +374,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
               />
               <EnumSelect<JustifyContent>
                 value={element.justifyContent}
+                mixed={isMixed('justifyContent')}
                 options={JUSTIFY_OPTIONS}
                 onChange={(value) =>
                   patchElement(elementId, { justifyContent: value })
@@ -382,8 +388,9 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
                     label="Row gap"
                     title="Row gap — between wrapped lines (row-gap)"
                     value={axisGaps.rowGap}
+                    mixed={isMixed('rowGap') || isMixed('gap')}
                     onChange={(value) =>
-                      patchElement(elementId, axisGapPatch(element, 'rowGap', value))
+                      patchElement(elementId, (el) => axisGapPatch(el, 'rowGap', value))
                     }
                     min={0}
                     tokens={spacingTokens}
@@ -394,11 +401,9 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
                     label="Column gap"
                     title="Column gap — between children on a line (column-gap)"
                     value={axisGaps.columnGap}
+                    mixed={isMixed('columnGap') || isMixed('gap')}
                     onChange={(value) =>
-                      patchElement(
-                        elementId,
-                        axisGapPatch(element, 'columnGap', value)
-                      )
+                      patchElement(elementId, (el) => axisGapPatch(el, 'columnGap', value))
                     }
                     min={0}
                     tokens={spacingTokens}
@@ -419,6 +424,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
                   label="Gap"
                   title="Gap between flex children"
                   value={element.gap}
+                  mixed={isMixed('gap')}
                   onChange={(value) => patchElement(elementId, { gap: value })}
                   min={0}
                   tokens={spacingTokens}
@@ -430,6 +436,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
           <Row label="">
             <SegmentedControl<FlexWrap>
               value={element.flexWrap}
+              mixed={isMixed('flexWrap')}
               options={WRAP_OPTIONS}
               onChange={(value) => patchElement(elementId, { flexWrap: value })}
               title="Wrap"
@@ -439,6 +446,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
             {wrapping && (
               <EnumSelect<AlignContent>
                 value={element.alignContent}
+                mixed={isMixed('alignContent')}
                 options={ALIGN_CONTENT_OPTIONS}
                 onChange={(value) =>
                   patchElement(elementId, { alignContent: value })
@@ -483,6 +491,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
               label="Column gap"
               title="column-gap"
               value={element.columnGap}
+              mixed={isMixed('columnGap')}
               onChange={(value) =>
                 patchElement(elementId, { columnGap: value })
               }
@@ -495,6 +504,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
               label="Row gap"
               title="row-gap"
               value={element.rowGap}
+              mixed={isMixed('rowGap')}
               onChange={(value) => patchElement(elementId, { rowGap: value })}
               min={0}
               tokens={spacingTokens}
@@ -504,12 +514,14 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
           <Row label="">
             <EnumSelect<AlignItems>
               value={element.alignItems}
+              mixed={isMixed('alignItems')}
               options={ALIGN_OPTIONS}
               onChange={(value) => patchElement(elementId, { alignItems: value })}
               title="Align items"
             />
             <EnumSelect<GridSelfAlign>
               value={element.justifyItems}
+              mixed={isMixed('justifyItems')}
               options={GRID_SELF_OPTIONS}
               onChange={(value) => patchElement(elementId, { justifyItems: value })}
               title="Justify items"

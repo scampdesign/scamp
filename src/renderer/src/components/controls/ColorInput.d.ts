@@ -62,6 +62,8 @@ type Props = {
      * common case and a literal colour is the exception.
      */
     defaultTab?: 'color' | 'tokens';
+    /** Several selected elements disagree: show **Mixed**, and commit whatever is picked or typed. */
+    mixed?: boolean;
 };
-export declare const ColorInput: ({ value, onChange, onPreview, historyElementId, historyPropertyKey, presetColors, tokens, onOpenTheme, disableAlpha, swatchOnly, ariaLabel, defaultTab, }: Props) => JSX.Element;
+export declare const ColorInput: ({ value, onChange, onPreview, historyElementId, historyPropertyKey, presetColors, tokens, onOpenTheme, disableAlpha, swatchOnly, ariaLabel, defaultTab, mixed, }: Props) => JSX.Element;
 export {};

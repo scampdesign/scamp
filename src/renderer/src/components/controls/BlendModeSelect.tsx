@@ -8,6 +8,8 @@ type Props = {
   onChange: (next: BlendMode) => void;
   /** Tooltip shown on hover. */
   title?: string;
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+  mixed?: boolean;
 };
 
 /**
@@ -23,13 +25,19 @@ export const BlendModeSelect = ({
   value,
   onChange,
   title,
+  mixed = false,
 }: Props): JSX.Element => {
   const select = (
     <select
       className={styles.select}
-      value={value}
+      value={mixed ? '' : value}
       onChange={(e) => onChange(e.target.value as BlendMode)}
     >
+      {mixed && (
+        <option value="" disabled hidden>
+          Mixed
+        </option>
+      )}
       <option value="normal">Normal</option>
       {BLEND_MODE_GROUPS.map((group) => (
         <optgroup key={group.name} label={group.name}>

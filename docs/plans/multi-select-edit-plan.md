@@ -1,6 +1,6 @@
 # Edit every selected element at once
 
-Status: **phase 1 built**, 2026-10-14. Phase 2 (Mixed) is not started.
+Status: **built**, 2026-10-14. Both phases.
 
 Story: "Edit every selected element at once", the first bug in
 `docs/backlog-open.md`.
@@ -162,7 +162,7 @@ This fixes the bug as reported. It covers steps 1 to 4, and step 6.
 - The panel says how many elements are selected.
 - Fields show the first element's values, as today.
 
-### Phase 2: Mixed
+### Phase 2: Mixed — **built**
 
 Step 5: fields that disagree read **Mixed**, and the list sections get
 the replace-on-add rule.
@@ -230,17 +230,52 @@ Three changes from the plan:
 Live preview (`controls/livePreview.ts`) styles every selected element
 the section fits.
 
-Not covered yet, for phase 2:
-
-- The override dot's reset and a section's eye toggle act on the first
-  element only.
-- A patch a section computes from the first element writes that
-  element's values for every key in it. For example, the column gap
-  field writes both gaps, so the row gap follows too.
+Both gaps were closed in phase 2, below.
 
 Tests: `test/multiEdit.test.ts` (16 cases) and
 `test/e2e/properties-panel/multi-select.spec.ts` (background plus undo,
 typography reaching only text, and tablet overrides).
+
+## What phase 2 built
+
+- **Finding Mixed fields.** `mixedFields` (`lib/multiEdit.ts`) compares
+  the selected elements a section fits, as they render at the active
+  breakpoint and state. `useMixedFields(fits)` gives a section
+  `isMixed(key)` and `isMixedCustom(property)`.
+- **Controls with a `mixed` prop.** These shared controls take it:
+  - `PrefixSuffixInput`, which also covers `NumberInput`,
+    `SpaceValueInput`, and `FourSideInput`
+  - `TokenOrNumberInput`, `ColorInput`, `FontPicker`, `WeightSelect`
+  - `EnumSelect` (and `DisplaySelect`), `BlendModeSelect`,
+    `SegmentedControl`
+
+  A Mixed field is empty with the placeholder **Mixed**. Leaving it
+  empty keeps each element's value. Typing commits even when the text
+  matches the first element's value. Arrow-key stepping is off on a
+  Mixed field.
+- **Lists.** Shadows, Filters, Transform, and Transitions show in the
+  multi-selection panel. When the lists differ, the section shows
+  **Mixed** with no rows, and adding a row replaces every list with
+  that one. Animation still shows for one element only, because it
+  writes through its own store actions.
+- **Patches built per element.** A section can pass a function instead
+  of a patch, and each selected element gets one built from its own
+  values: axis gaps, the layout-mode switch, and width and height. For
+  width and height, the ratio lock applies to the first element only,
+  and each element uses its own flex parent's shrink rule.
+- **The override reset and the eye toggle** act on every selected
+  element they fit (`forSelection` in `store/selectionPatch.ts`).
+- **No empty undo steps.** A multi-element edit that changes nothing
+  leaves no undo step.
+
+Not done: arrow-key stepping relative to each element ("add 4px to
+each"), and Mixed on the alignment grids, size-type pickers, and grid
+template editor. Those show the first element's value.
+
+Tests: `test/multiEdit.test.ts` (23 cases) and
+`test/e2e/properties-panel/multi-select.spec.ts` (5), which adds a
+Mixed border width set by typing, and Mixed shadows replaced by adding
+one.
 
 ## Not in scope
 

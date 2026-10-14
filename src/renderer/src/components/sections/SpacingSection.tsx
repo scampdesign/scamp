@@ -3,6 +3,7 @@ import { IconBoxMargin, IconBoxPadding } from '@tabler/icons-react';
 import { useMemo } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { selectionPatchers } from '@store/selectionPatch';
+import { useMixedFields } from '@store/hooks/useMixedFields';
 import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 import { tokensForField } from '@lib/tokensForField';
@@ -17,6 +18,7 @@ type Props = {
 export const SpacingSection = ({ elementId, hideMargin = false }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
   const { patchElement } = selectionPatchers(SECTION_FITS.box);
+  const { isMixed } = useMixedFields(SECTION_FITS.box);
   const themeTokens = useCanvasStore((s) => s.themeTokens);
   const openThemePanel = useCanvasStore((s) => s.openThemePanel);
   // Padding / margin offer length tokens with `--space-*` floated first.
@@ -46,6 +48,7 @@ export const SpacingSection = ({ elementId, hideMargin = false }: Props): JSX.El
           label="Padding"
           title="Padding (top right bottom left)"
           value={element.padding}
+          mixed={isMixed('padding')}
           onChange={(next) => patchElement(elementId, { padding: next })}
           min={0}
           tokens={spacingTokens}
@@ -67,6 +70,7 @@ export const SpacingSection = ({ elementId, hideMargin = false }: Props): JSX.El
             title="Margin (top right bottom left) — a side can be auto: 0 auto centers"
             allowAuto
             value={element.margin}
+            mixed={isMixed('margin')}
             onChange={(next) => patchElement(elementId, { margin: next })}
             tokens={spacingTokens}
             {...(openThemePanel ? { onOpenTheme: openThemePanel } : {})}

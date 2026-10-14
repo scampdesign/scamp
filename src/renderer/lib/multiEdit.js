@@ -50,3 +50,39 @@ export const leadFor = (selectedIds, elements, fits) => {
     }
     return null;
 };
+/** Fields that never read as Mixed: identity, tree, and the override maps themselves. */
+const NOT_COMPARED = new Set([
+    ...OWN_FIELDS,
+    'customProperties',
+    'breakpointOverrides',
+    'stateOverrides',
+    'customSelectorBlocks',
+    'x',
+    'y',
+]);
+const same = (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b);
+/**
+ * The fields the given elements disagree on, read as they render (pass
+ * them resolved at the active breakpoint and state). A custom CSS
+ * property is reported as `custom:<property>`. Empty for fewer than two.
+ */
+export const mixedFields = (elements) => {
+    const [first, ...rest] = elements;
+    if (first === undefined || rest.length === 0)
+        return [];
+    const out = new Set();
+    const keys = new Set(elements.flatMap((el) => Object.keys(el)));
+    for (const key of keys) {
+        if (NOT_COMPARED.has(key))
+            continue;
+        const value = (el) => el[key];
+        if (rest.some((el) => !same(value(el), value(first))))
+            out.add(key);
+    }
+    const customKeys = new Set(elements.flatMap((el) => Object.keys(el.customProperties)));
+    for (const prop of customKeys) {
+        if (rest.some((el) => el.customProperties[prop] !== first.customProperties[prop]))
+            out.add(`custom:${prop}`);
+    }
+    return [...out].sort();
+};

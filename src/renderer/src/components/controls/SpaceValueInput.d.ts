@@ -17,6 +17,8 @@ type Props = {
     tokens?: ReadonlyArray<ThemeToken>;
     /** Opens the Theme tokens panel from the empty-state row. */
     onOpenTheme?: () => void;
+    /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+    mixed?: boolean;
 };
 /**
  * Single-value sibling of `FourSideInput`. Used for `gap`,
@@ -28,5 +30,5 @@ type Props = {
  * Mirrors the visual + interaction model of `FourSideInput` so all
  * spacing-typed controls behave consistently.
  */
-export declare const SpaceValueInput: ({ value, onChange, min, prefix, label, title, tokens, onOpenTheme, }: Props) => JSX.Element;
+export declare const SpaceValueInput: ({ value, onChange, min, prefix, label, title, tokens, onOpenTheme, mixed, }: Props) => JSX.Element;
 export {};

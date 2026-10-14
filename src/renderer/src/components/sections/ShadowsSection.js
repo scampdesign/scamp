@@ -1,9 +1,11 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useMemo } from 'react';
 import { IconShadow } from '@tabler/icons-react';
-import { useCanvasStore } from '@store/canvasSlice';
 import { useColorPickerContext, } from '@store/hooks/useColorPickerContext';
 import { useListField } from '@store/hooks/useListField';
+import { useMixedFields } from '@store/hooks/useMixedFields';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import { combineShadowColor, splitShadowColor } from '@lib/parsers';
 import { parseBoxShadowShorthand } from '@lib/parsers/boxShadow';
@@ -31,14 +33,17 @@ const INSET_OPTIONS = [
 ];
 export const ShadowsSection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
-    const patchElement = useCanvasStore((s) => s.patchElement);
+    const { patchElement } = selectionPatchers(SECTION_FITS.box);
+    const { isMixed } = useMixedFields(SECTION_FITS.box);
+    // Selected elements with different shadows show none; adding one replaces them all.
+    const shadowsMixed = isMixed('boxShadows') || isMixed('boxShadowToken');
     const colorContext = useColorPickerContext();
     const groupToggle = useGroupToggle(elementId, 'shadow', (element?.boxShadows.length ?? 0) > 0 || element?.boxShadowToken !== undefined);
-    const shadowField = useListField(() => element?.boxShadows ?? [], (next) => patchElement(elementId, { boxShadows: next }));
+    const shadowField = useListField(() => (shadowsMixed ? [] : element?.boxShadows ?? []), (next) => patchElement(elementId, shadowsMixed ? { boxShadows: next, boxShadowToken: undefined } : { boxShadows: next }));
     const shadowTokens = useMemo(() => tokensForField('shadow', colorContext.themeTokens), [colorContext.themeTokens]);
     if (!element)
         return null;
-    const shadows = element.boxShadows;
+    const shadows = shadowsMixed ? [] : element.boxShadows;
     /**
      * Apply a shadow token as a PRESET: resolve its box-shadow value into
      * structured rows, replacing whatever the element currently has. The
@@ -57,7 +62,7 @@ export const ShadowsSection = ({ elementId }) => {
     };
     // A shadow linked to a theme token: shown as the token, which follows
     // the theme. Detach copies its current value into editable layers.
-    const linked = element.boxShadowToken;
+    const linked = shadowsMixed ? undefined : element.boxShadowToken;
     const linkedName = linked === undefined ? null : (/var\(\s*(--[\w-]+)/.exec(linked)?.[1] ?? linked);
     const handleDetach = () => {
         const value = colorContext.themeTokens.find((t) => t.name === linkedName)?.value;
@@ -73,7 +78,7 @@ export const ShadowsSection = ({ elementId }) => {
             value: t.name,
             label: t.name,
         })), onSelect: applyShadowPreset }));
-    return (_jsxs(Section, { title: "Shadow", collapsible: true, defaultOpen: shadows.length > 0 || linked !== undefined, elementId: elementId, groupToggle: groupToggle, groupAccessory: shadowPreset, fields: ['boxShadows', 'boxShadowToken'], cssProperties: ['box-shadow'], children: [linked !== undefined && (_jsx(Row, { label: "", children: _jsxs("div", { className: styles.linkedToken, "data-testid": "shadow-token", children: [_jsx("span", { className: styles.linkedName, title: linked, children: linkedName }), _jsx(Tooltip, { label: "Detach \u2014 copy the token's shadow into layers you can edit", children: _jsx(Button, { variant: "ghost", onClick: handleDetach, children: "Detach" }) }), _jsx(Tooltip, { label: "Remove the shadow", children: _jsx(Button, { variant: "ghost", onClick: () => patchElement(elementId, { boxShadowToken: undefined }), children: "Remove" }) })] }) })), linked === undefined && shadows.length === 0 && _jsx(SectionEmptyState, { testId: "shadows-empty" }), shadows.map((shadow, idx) => (_jsx(ShadowRow, { index: idx, shadow: shadow, elementId: elementId, onChange: (patch) => shadowField.update(idx, patch), onRemove: () => shadowField.remove(idx), colorContext: colorContext }, idx))), linked === undefined && (_jsx(Row, { label: "", children: _jsx(Button, { variant: "addRow", onClick: () => shadowField.add({ ...DEFAULT_NEW_SHADOW }), children: "+ Add shadow" }) }))] }));
+    return (_jsxs(Section, { title: "Shadow", collapsible: true, defaultOpen: shadows.length > 0 || linked !== undefined, elementId: elementId, groupToggle: groupToggle, groupAccessory: shadowPreset, fields: ['boxShadows', 'boxShadowToken'], cssProperties: ['box-shadow'], children: [linked !== undefined && (_jsx(Row, { label: "", children: _jsxs("div", { className: styles.linkedToken, "data-testid": "shadow-token", children: [_jsx("span", { className: styles.linkedName, title: linked, children: linkedName }), _jsx(Tooltip, { label: "Detach \u2014 copy the token's shadow into layers you can edit", children: _jsx(Button, { variant: "ghost", onClick: handleDetach, children: "Detach" }) }), _jsx(Tooltip, { label: "Remove the shadow", children: _jsx(Button, { variant: "ghost", onClick: () => patchElement(elementId, { boxShadowToken: undefined }), children: "Remove" }) })] }) })), linked === undefined && shadows.length === 0 && _jsx(SectionEmptyState, { testId: "shadows-empty", children: shadowsMixed ? 'Mixed' : undefined }), shadows.map((shadow, idx) => (_jsx(ShadowRow, { index: idx, shadow: shadow, elementId: elementId, onChange: (patch) => shadowField.update(idx, patch), onRemove: () => shadowField.remove(idx), colorContext: colorContext }, idx))), linked === undefined && (_jsx(Row, { label: "", children: _jsx(Button, { variant: "addRow", onClick: () => shadowField.add({ ...DEFAULT_NEW_SHADOW }), children: "+ Add shadow" }) }))] }));
 };
 const ShadowRow = ({ index, shadow, elementId, onChange, onRemove, colorContext, }) => {
     return (_jsxs("div", { className: styles.shadowRow, children: [_jsxs("div", { className: styles.rowHeader, children: [_jsxs("span", { className: styles.rowTitle, children: ["Shadow ", index + 1, shadow.inset && (_jsx(Tooltip, { label: "Inset shadow \u2014 drawn inside the box", children: _jsx("span", { className: styles.insetIcon, "aria-hidden": "true", children: "\u25E7" }) }))] }), _jsx(Tooltip, { label: "Remove shadow", children: _jsx(Button, { variant: "removeRow", onClick: onRemove, ariaLabel: `Remove shadow ${index + 1}`, children: "\u00D7" }) })] }), _jsx(Row, { label: "", children: _jsx(SegmentedControl, { value: shadow.inset ? 'inset' : 'outset', options: INSET_OPTIONS, onChange: (next) => onChange({ inset: next === 'inset' }), title: "Inset shadows are drawn inside the box rather than around it" }) }), _jsxs(Row, { label: "", children: [_jsx(NumberInput, { prefix: "X", title: "X offset", value: shadow.offsetX, onChange: (value) => value !== undefined && onChange({ offsetX: value }) }), _jsx(NumberInput, { prefix: "Y", title: "Y offset", value: shadow.offsetY, onChange: (value) => value !== undefined && onChange({ offsetY: value }) })] }), _jsxs(Row, { label: "", children: [_jsx(NumberInput, { prefix: "B", title: "Blur radius", value: shadow.blur, onChange: (value) => value !== undefined && onChange({ blur: value }), min: 0 }), _jsx(NumberInput, { prefix: "S", title: "Spread radius", value: shadow.spread, onChange: (value) => value !== undefined && onChange({ spread: value }) })] }), _jsx(Row, { label: "", children: _jsx(ShadowColorRow, { color: shadow.color, elementId: elementId, onChange: (color) => onChange({ color }), colorContext: colorContext }) })] }));

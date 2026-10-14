@@ -9,6 +9,7 @@ import {
 
 import { useCanvasStore } from '@store/canvasSlice';
 import { selectionPatchers } from '@store/selectionPatch';
+import { useMixedFields } from '@store/hooks/useMixedFields';
 import { SECTION_FITS } from '@lib/multiEdit';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
@@ -44,6 +45,7 @@ const isFontWeight = (n: number): boolean =>
 export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
   const { patchElement } = selectionPatchers(SECTION_FITS.typography);
+  const { isMixed } = useMixedFields(SECTION_FITS.typography);
   const styleTextRange = useCanvasStore((s) => s.styleTextRange);
   const textSelection = useCanvasStore((s) => s.textSelection);
   /**
@@ -178,6 +180,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
       <Row label="">
         <FontPicker
           value={element.fontFamily ?? ''}
+          mixed={isMixed('fontFamily')}
           fonts={allFonts}
           fontTokens={fontFamilyTokens}
           onChange={(value) =>
@@ -193,6 +196,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
           prefix="Sz"
           title="Font size"
           value={element.fontSize}
+          mixed={isMixed('fontSize')}
           tokens={fontSizeTokens}
           defaultUnit="px"
           onChange={(value) => patchElement(elementId, { fontSize: value })}
@@ -203,6 +207,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
           // The SELECTION's weight when a range is selected, so the
           // control shows what it is about to change. Empty for a
           // mixed range rather than one run's answer.
+          mixed={range === null && isMixed('fontWeight')}
           value={
             rangeStyle?.mixed.includes('fontWeight')
               ? ''
@@ -223,6 +228,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
           // `mixed` deliberately shows nothing rather than one run's
           // answer: red for a red-and-blue selection is a lie the user
           // then acts on.
+          mixed={range === null && isMixed('color')}
           value={
             rangeStyle?.mixed.includes('color')
               ? ''
@@ -241,6 +247,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
         />
         <SegmentedControl<TextAlign>
           value={element.textAlign ?? 'left'}
+          mixed={isMixed('textAlign')}
           options={TEXT_ALIGN_OPTIONS}
           onChange={(value) => patchElement(elementId, { textAlign: value })}
           title="Text align"
@@ -251,6 +258,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
           prefix="LH"
           title="Line height"
           value={element.lineHeight}
+          mixed={isMixed('lineHeight')}
           tokens={lineHeightTokens}
           defaultUnit=""
           onChange={(value) => patchElement(elementId, { lineHeight: value })}
@@ -261,6 +269,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
           prefix="LS"
           title="Letter spacing"
           value={element.letterSpacing}
+          mixed={isMixed('letterSpacing')}
           tokens={letterSpacingTokens}
           defaultUnit="px"
           onChange={(value) => patchElement(elementId, { letterSpacing: value })}

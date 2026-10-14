@@ -79,6 +79,8 @@ type Props = {
    * common case and a literal colour is the exception.
    */
   defaultTab?: 'color' | 'tokens';
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is picked or typed. */
+  mixed?: boolean;
 };
 
 // ---- Color format helpers ------------------------------------------------
@@ -227,8 +229,10 @@ export const ColorInput = ({
   swatchOnly = false,
   ariaLabel,
   defaultTab = 'color',
+  mixed = false,
 }: Props): JSX.Element => {
-  const [draft, setDraft] = useState(value);
+  const shown = mixed ? '' : value;
+  const [draft, setDraft] = useState(shown);
   const [tab, setTab] = useState<PopoverTab>(defaultTab);
 
 
@@ -248,8 +252,8 @@ export const ColorInput = ({
   });
 
   useEffect(() => {
-    setDraft(value);
-  }, [value]);
+    setDraft(shown);
+  }, [shown]);
 
   // ---- Drag state ------------------------------------------------------
   //
@@ -363,8 +367,8 @@ export const ColorInput = ({
 
   const commitDraft = (): void => {
     const expanded = expandHexShorthand(draft);
-    if (expanded.length === 0 || expanded === value) {
-      setDraft(value);
+    if (expanded.length === 0 || (expanded === value && !mixed)) {
+      setDraft(shown);
       return;
     }
     commitColor(expanded);
@@ -429,7 +433,7 @@ export const ColorInput = ({
     : colorTokens;
 
   // Show the token name in the text input when a var() is applied.
-  const displayValue = isVarRef && varName ? varName : draft;
+  const displayValue = !mixed && isVarRef && varName ? varName : draft;
 
   // ---- Project swatches -----------------------------------------------
   //
@@ -633,7 +637,7 @@ export const ColorInput = ({
             className={styles.colorSwatchOnlyButton}
             aria-label={ariaLabel ?? 'Pick color'}
             onClick={popover.toggle}
-            style={{ background: resolved }}
+            style={{ background: mixed ? 'transparent' : resolved }}
           />
         </Tooltip>
         {pickerWrap}
@@ -653,7 +657,7 @@ export const ColorInput = ({
         >
           <span
             className={styles.colorSwatchInner}
-            style={{ background: resolved }}
+            style={{ background: mixed ? 'transparent' : resolved }}
           />
         </button>
       </Tooltip>
@@ -661,6 +665,7 @@ export const ColorInput = ({
         type="text"
         className={styles.colorText}
         value={displayValue}
+        placeholder={mixed ? 'Mixed' : undefined}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commitDraft}
         onKeyDown={(e) => {

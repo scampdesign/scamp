@@ -27,11 +27,13 @@ release time.
 **Added**
 
 - **Edit several elements at once.** With two or more elements
-  selected, a change in Typography, Size, Layout, Display, Spacing,
-  Background, Border, or Visibility applies to every selected element it
-  fits, as one undo step. Before, only the first selected element
+  selected, a change in the properties panel applies to every selected
+  element it fits, as one undo step. Before, only the first selected element
   changed. Typography reaches only text, and a component instance takes
-  only a size.
+  only a size. A field the selected elements disagree on reads
+  **Mixed**; type a value to set it on all of them. Shadows, Filters,
+  Transform, and Transitions show **Mixed** when the lists differ, and
+  adding a row replaces them all.
 - **See and update a project's scampjs version.** Project Settings has a
   **Framework** section that shows the installed `scampjs` version and,
   when npm has a newer release this version of Scamp supports, an

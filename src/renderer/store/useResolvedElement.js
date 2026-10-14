@@ -1,5 +1,7 @@
 import { useCanvasStore } from './canvasSlice';
 import { resolveElementAtState } from '@lib/stateCascade';
+import { SECTION_FITS } from '@lib/multiEdit';
+import { forSelection } from './selectionPatch';
 /**
  * React hook returning the element AS IT WILL RENDER at the active
  * breakpoint and active state — the raw element overlaid with every
@@ -104,7 +106,8 @@ export const useGroupToggle = (elementId, group, hasContent) => {
         return undefined;
     return {
         isOn,
-        onChange: (on) => togglePropertyGroup(elementId, group, on),
+        // A multi-selection toggles the group on each element it fits.
+        onChange: (on) => forSelection(group === 'typography' ? SECTION_FITS.typography : SECTION_FITS.box, elementId, ['toggledOffGroups'], (id) => togglePropertyGroup(id, group, on)),
     };
 };
 const EMPTY_KEYS = [];

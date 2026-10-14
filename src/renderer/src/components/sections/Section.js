@@ -2,6 +2,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from 'react';
 import { IconChevronDown, IconEye, IconEyeOff } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
+import { forSelection } from '@store/selectionPatch';
 import { useBreakpointOverrideFields, useStateOverrideFields, } from '@store/useResolvedElement';
 import { FIELD_LABELS } from '@lib/fieldLabels';
 import { Tooltip } from '../controls/Tooltip';
@@ -139,12 +140,15 @@ const useOverrideIndicator = (elementId, fields) => {
     const label = formatOverrideList(overriddenInSection);
     const handleContextMenu = (e) => {
         e.preventDefault();
-        if (axis === 'state' && activeStateName !== null) {
-            resetStateFields(elementId, activeStateName, overriddenInSection);
-        }
-        else if (axis === 'breakpoint') {
-            resetBreakpointFields(elementId, activeBreakpointId, overriddenInSection);
-        }
+        // With several elements selected, reset each one's override.
+        forSelection(() => true, elementId, overriddenInSection, (id) => {
+            if (axis === 'state' && activeStateName !== null) {
+                resetStateFields(id, activeStateName, overriddenInSection);
+            }
+            else if (axis === 'breakpoint') {
+                resetBreakpointFields(id, activeBreakpointId, overriddenInSection);
+            }
+        });
     };
     return {
         header: 'Style Overrides',

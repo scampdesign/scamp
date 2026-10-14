@@ -1,5 +1,6 @@
 import { useCanvasStore } from '@store/canvasSlice';
 import { selectionPatchers } from '@store/selectionPatch';
+import { useMixedFields } from '@store/hooks/useMixedFields';
 import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 
@@ -17,6 +18,7 @@ type Props = {
 export const DisplaySection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
   const { patchElement } = selectionPatchers(SECTION_FITS.display);
+  const { isMixed } = useMixedFields(SECTION_FITS.display);
   if (!element || element.visibilityMode === 'none') return null;
   return (
     <Section title="Display" elementId={elementId} fields={['display', 'displayOuter']} cssProperties={['display']}>
@@ -24,6 +26,7 @@ export const DisplaySection = ({ elementId }: Props): JSX.Element | null => {
         <DisplaySelect
           display={element.display}
           outer={element.displayOuter}
+          mixed={isMixed('displayOuter')}
           onChange={(displayOuter) => patchElement(elementId, { displayOuter })}
         />
       </Row>

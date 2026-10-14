@@ -1,6 +1,7 @@
 import { IconPercentage } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { selectionPatchers } from '@store/selectionPatch';
+import { useMixedFields } from '@store/hooks/useMixedFields';
 import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 import type { BlendMode } from '@lib/element';
@@ -27,6 +28,7 @@ const toPercent = (opacity: number): number => Math.round(opacity * 100);
 export const VisibilitySection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
   const { patchElement } = selectionPatchers(SECTION_FITS.box);
+  const { isMixed } = useMixedFields(SECTION_FITS.box);
   if (!element) return null;
 
   const currentPercent = toPercent(element.opacity);
@@ -47,6 +49,7 @@ export const VisibilitySection = ({ elementId }: Props): JSX.Element | null => {
       <Row label="Opacity">
         <NumberInput
           value={currentPercent}
+          mixed={isMixed('opacity')}
           onChange={commitPercent}
           min={0}
           max={100}
@@ -57,6 +60,7 @@ export const VisibilitySection = ({ elementId }: Props): JSX.Element | null => {
       <Row label="Display">
         <SegmentedControl<VisibilityMode>
           value={element.visibilityMode}
+          mixed={isMixed('visibilityMode')}
           options={VISIBILITY_OPTIONS}
           onChange={(value) => patchElement(elementId, { visibilityMode: value })}
           title="Visibility"
@@ -65,6 +69,7 @@ export const VisibilitySection = ({ elementId }: Props): JSX.Element | null => {
       <Row label="Blend">
         <BlendModeSelect
           value={element.mixBlendMode}
+          mixed={isMixed('mixBlendMode')}
           onChange={(value: BlendMode) =>
             patchElement(elementId, { mixBlendMode: value })
           }

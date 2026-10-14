@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { IconChevronDown, IconChevronRight, IconLink, IconLinkOff, } from '@tabler/icons-react';
 import { useCanvasStore, selectIsRatioLocked } from '@store/canvasSlice';
 import { selectionPatchers } from '@store/selectionPatch';
+import { useMixedFields } from '@store/hooks/useMixedFields';
 import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 import { EnumSelect } from '../controls/EnumSelect';
@@ -28,6 +29,11 @@ const STEPPABLE_TYPES = new Set([
     'vw',
 ]);
 /** Leading numeric value of a string (e.g. "50%" → 50), or null. */
+/** An element's parent as `shrinkGuardPatch` reads it, when it's a flex container. */
+const flexParentOf = (el) => {
+    const parent = el.parentId === null ? undefined : useCanvasStore.getState().elements[el.parentId];
+    return parent?.display === 'flex' ? { display: 'flex', flexDirection: parent.flexDirection } : undefined;
+};
 const leadingNumber = (s) => {
     const m = s.trim().match(/^-?\d+(?:\.\d+)?/);
     return m ? Number(m[0]) : null;
@@ -125,6 +131,7 @@ const useMeasuredSize = (elementId, widthMode, heightMode) => {
 export const SizeSection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
     const { patchElement } = selectionPatchers(SECTION_FITS.size);
+    const { isMixed } = useMixedFields(SECTION_FITS.size);
     const toggleRatioLock = useCanvasStore((s) => s.toggleRatioLock);
     const clearRatioLock = useCanvasStore((s) => s.clearRatioLock);
     const ratioLocked = useCanvasStore((s) => selectIsRatioLocked(s, elementId));
@@ -224,23 +231,25 @@ export const SizeSection = ({ elementId }) => {
     const flexParent = parentIsFlex
         ? { display: 'flex', flexDirection: parentDirection ?? 'row' }
         : undefined;
-    const handleCommitWidth = (raw) => {
+    // Built per element, so each selected one keeps its own ratio lock
+    // (only this element's) and flex parent.
+    const sizePatch = (axis, raw) => (el) => {
         const mode = parseSizeValue(raw).mode;
-        if (mode !== 'fixed')
+        const isLead = el.id === elementId;
+        return {
+            ...lockedSizePatch(el, axis, raw, isLead ? activeRatio : null),
+            ...shrinkGuardPatch(el, isLead ? flexParent : flexParentOf(el), axis, mode),
+        };
+    };
+    const handleCommitWidth = (raw) => {
+        if (parseSizeValue(raw).mode !== 'fixed')
             clearRatioLock(elementId);
-        patchElement(elementId, {
-            ...lockedSizePatch(element, 'width', raw, activeRatio),
-            ...shrinkGuardPatch(element, flexParent, 'width', mode),
-        });
+        patchElement(elementId, sizePatch('width', raw));
     };
     const handleCommitHeight = (raw) => {
-        const mode = parseSizeValue(raw).mode;
-        if (mode !== 'fixed')
+        if (parseSizeValue(raw).mode !== 'fixed')
             clearRatioLock(elementId);
-        patchElement(elementId, {
-            ...lockedSizePatch(element, 'height', raw, activeRatio),
-            ...shrinkGuardPatch(element, flexParent, 'height', mode),
-        });
+        patchElement(elementId, sizePatch('height', raw));
     };
     // Picking a type from the right-side menu converts the current value to
     // that type (seeded with the axis's current number) and commits it.
@@ -297,16 +306,16 @@ export const SizeSection = ({ elementId }) => {
             'order',
         ], children: [_jsxs(Row, { label: "", children: [cellWidthOwnedByColumn ? (_jsx(PrefixSuffixInput, { prefix: "W", title: "A cell's width comes from its column. Change it in the table's Columns control, so the header and the body move together.", value: "Column", disabled: true, onCommit: () => undefined })) : (_jsx(PrefixSuffixInput, { prefix: "W", title: isWidthFixed
                             ? 'Width — type a number, or any CSS length (100vh, calc(...)). Set the unit on the right.'
-                            : 'Width — computed (border-box). Type a number to make it fixed, or change the type on the right.', value: widthFieldValue, placeholder: isWidthFixed ? undefined : sizeTypeLabel(widthType), onCommit: (raw) => handleCommitWidth(combineTypedWithType(raw, widthType)), ...(STEPPABLE_TYPES.has(widthType)
+                            : 'Width — computed (border-box). Type a number to make it fixed, or change the type on the right.', value: widthFieldValue, mixed: isMixed('widthValue') || isMixed('widthMode'), placeholder: isWidthFixed ? undefined : sizeTypeLabel(widthType), onCommit: (raw) => handleCommitWidth(combineTypedWithType(raw, widthType)), ...(STEPPABLE_TYPES.has(widthType)
                             ? { onArrow: makeArrowHandler(widthType, widthNumber, handleCommitWidth) }
                             : {}), computed: !isWidthFixed, suffix: _jsx(SizeTypeSelect, { value: widthType, orientation: "horizontal", onSelect: handleSelectWidthType, ...(disabledTypes ? { disabledTypes } : {}), ariaLabel: "Width type" }) })), _jsx(PrefixSuffixInput, { prefix: "H", title: isHeightFixed
                             ? 'Height — type a number, or any CSS length (100vh, calc(...)). Set the unit on the right.'
-                            : 'Height — computed (border-box). Type a number to make it fixed, or change the type on the right.', value: heightFieldValue, placeholder: isHeightFixed ? undefined : sizeTypeLabel(heightType), onCommit: (raw) => handleCommitHeight(combineTypedWithType(raw, heightType)), ...(STEPPABLE_TYPES.has(heightType)
+                            : 'Height — computed (border-box). Type a number to make it fixed, or change the type on the right.', value: heightFieldValue, mixed: isMixed('heightValue') || isMixed('heightMode'), placeholder: isHeightFixed ? undefined : sizeTypeLabel(heightType), onCommit: (raw) => handleCommitHeight(combineTypedWithType(raw, heightType)), ...(STEPPABLE_TYPES.has(heightType)
                             ? { onArrow: makeArrowHandler(heightType, heightNumber, handleCommitHeight) }
-                            : {}), computed: !isHeightFixed, suffix: _jsx(SizeTypeSelect, { value: heightType, orientation: "vertical", onSelect: handleSelectHeightType, ...(disabledTypes ? { disabledTypes } : {}), ariaLabel: "Height type" }) })] }), parentIsGrid && (_jsxs(_Fragment, { children: [_jsx(Row, { label: "", children: _jsx(PrefixSuffixInput, { prefix: "Col", title: "grid-column", value: element.gridColumn, placeholder: "span 2", onCommit: (value) => patchElement(elementId, { gridColumn: value.trim() }) }) }), _jsx(Row, { label: "", children: _jsx(PrefixSuffixInput, { prefix: "Row", title: "grid-row", value: element.gridRow, placeholder: "1 / 3", onCommit: (value) => patchElement(elementId, { gridRow: value.trim() }) }) }), _jsxs(Row, { label: "", children: [_jsx(EnumSelect, { value: element.alignSelf, options: SELF_ALIGN_OPTIONS, onChange: (value) => patchElement(elementId, { alignSelf: value }), title: "Align self" }), _jsx(EnumSelect, { value: element.justifySelf, options: GRID_SELF_OPTIONS, onChange: (value) => patchElement(elementId, { justifySelf: value }), title: "Justify self" })] })] })), (parentIsFlex || parentIsGrid) && (_jsxs("button", { type: "button", className: styles.advancedHeader, "aria-expanded": advancedOpen, "aria-label": "Advanced", onClick: () => setAdvancedOpen((o) => !o), children: [advancedOpen ? _jsx(IconChevronDown, { size: 13 }) : _jsx(IconChevronRight, { size: 13 }), _jsx("span", { className: styles.advancedLabel, children: "Advanced" })] })), advancedOpen && parentIsGrid && (_jsx(Row, { label: "", children: _jsx(NumberInput, { prefix: "Order", title: "order \u2014 visual position among siblings; lower first", value: element.order, onChange: (value) => patchElement(elementId, { order: value ?? 0 }) }) })), advancedOpen && parentIsFlex && (_jsxs(_Fragment, { children: [_jsxs(Row, { label: "", children: [_jsx(NumberInput, { prefix: "Grow", title: "flex-grow \u2014 share of leftover space this child takes (0 = none)", value: element.flexGrow, min: 0, onChange: (value) => patchElement(elementId, { flexGrow: value ?? 0 }) }), _jsx(NumberInput, { prefix: "Shrink", title: "flex-shrink \u2014 how readily this child gives up space when the line overflows (0 = never)", value: element.flexShrink, min: 0, onChange: (value) => patchElement(elementId, { flexShrink: value ?? 1 }) })] }), _jsxs(Row, { label: "", children: [_jsx(PrefixSuffixInput, { prefix: "Basis", title: "flex-basis \u2014 starting size before grow / shrink (auto, 200px, 0%, var(--w))", value: element.flexBasis, placeholder: "auto", onCommit: (value) => {
+                            : {}), computed: !isHeightFixed, suffix: _jsx(SizeTypeSelect, { value: heightType, orientation: "vertical", onSelect: handleSelectHeightType, ...(disabledTypes ? { disabledTypes } : {}), ariaLabel: "Height type" }) })] }), parentIsGrid && (_jsxs(_Fragment, { children: [_jsx(Row, { label: "", children: _jsx(PrefixSuffixInput, { prefix: "Col", title: "grid-column", value: element.gridColumn, mixed: isMixed('gridColumn'), placeholder: "span 2", onCommit: (value) => patchElement(elementId, { gridColumn: value.trim() }) }) }), _jsx(Row, { label: "", children: _jsx(PrefixSuffixInput, { prefix: "Row", title: "grid-row", value: element.gridRow, mixed: isMixed('gridRow'), placeholder: "1 / 3", onCommit: (value) => patchElement(elementId, { gridRow: value.trim() }) }) }), _jsxs(Row, { label: "", children: [_jsx(EnumSelect, { value: element.alignSelf, mixed: isMixed('alignSelf'), options: SELF_ALIGN_OPTIONS, onChange: (value) => patchElement(elementId, { alignSelf: value }), title: "Align self" }), _jsx(EnumSelect, { value: element.justifySelf, mixed: isMixed('justifySelf'), options: GRID_SELF_OPTIONS, onChange: (value) => patchElement(elementId, { justifySelf: value }), title: "Justify self" })] })] })), (parentIsFlex || parentIsGrid) && (_jsxs("button", { type: "button", className: styles.advancedHeader, "aria-expanded": advancedOpen, "aria-label": "Advanced", onClick: () => setAdvancedOpen((o) => !o), children: [advancedOpen ? _jsx(IconChevronDown, { size: 13 }) : _jsx(IconChevronRight, { size: 13 }), _jsx("span", { className: styles.advancedLabel, children: "Advanced" })] })), advancedOpen && parentIsGrid && (_jsx(Row, { label: "", children: _jsx(NumberInput, { prefix: "Order", title: "order \u2014 visual position among siblings; lower first", value: element.order, mixed: isMixed('order'), onChange: (value) => patchElement(elementId, { order: value ?? 0 }) }) })), advancedOpen && parentIsFlex && (_jsxs(_Fragment, { children: [_jsxs(Row, { label: "", children: [_jsx(NumberInput, { prefix: "Grow", title: "flex-grow \u2014 share of leftover space this child takes (0 = none)", value: element.flexGrow, mixed: isMixed('flexGrow'), min: 0, onChange: (value) => patchElement(elementId, { flexGrow: value ?? 0 }) }), _jsx(NumberInput, { prefix: "Shrink", title: "flex-shrink \u2014 how readily this child gives up space when the line overflows (0 = never)", value: element.flexShrink, mixed: isMixed('flexShrink'), min: 0, onChange: (value) => patchElement(elementId, { flexShrink: value ?? 1 }) })] }), _jsxs(Row, { label: "", children: [_jsx(PrefixSuffixInput, { prefix: "Basis", title: "flex-basis \u2014 starting size before grow / shrink (auto, 200px, 0%, var(--w))", value: element.flexBasis, mixed: isMixed('flexBasis'), placeholder: "auto", onCommit: (value) => {
                                     const v = value.trim();
                                     patchElement(elementId, { flexBasis: v === 'auto' ? '' : v });
                                 } }), _jsx("button", { type: "button", className: `${styles.shrinkButton} ${element.flexShrink === 0 ? styles.shrinkButtonActive : ''}`, onClick: () => patchElement(elementId, {
                                     flexShrink: element.flexShrink === 0 ? 1 : 0,
-                                }), "aria-pressed": element.flexShrink === 0, title: "Don't shrink \u2014 keep this size even when the line overflows (flex-shrink: 0)", children: "Don\u2019t shrink" })] }), _jsxs(Row, { label: "", children: [_jsx(EnumSelect, { value: element.alignSelf, options: SELF_ALIGN_OPTIONS, onChange: (value) => patchElement(elementId, { alignSelf: value }), title: "Align self \u2014 this child's cross-axis alignment; Auto follows the parent" }), _jsx(NumberInput, { prefix: "Order", title: "order \u2014 visual position among siblings; lower first", value: element.order, onChange: (value) => patchElement(elementId, { order: value ?? 0 }) })] })] }))] }));
+                                }), "aria-pressed": element.flexShrink === 0, title: "Don't shrink \u2014 keep this size even when the line overflows (flex-shrink: 0)", children: "Don\u2019t shrink" })] }), _jsxs(Row, { label: "", children: [_jsx(EnumSelect, { value: element.alignSelf, mixed: isMixed('alignSelf'), options: SELF_ALIGN_OPTIONS, onChange: (value) => patchElement(elementId, { alignSelf: value }), title: "Align self \u2014 this child's cross-axis alignment; Auto follows the parent" }), _jsx(NumberInput, { prefix: "Order", title: "order \u2014 visual position among siblings; lower first", value: element.order, mixed: isMixed('order'), onChange: (value) => patchElement(elementId, { order: value ?? 0 }) })] })] }))] }));
 };

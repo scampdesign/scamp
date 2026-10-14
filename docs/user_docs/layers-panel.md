@@ -15,9 +15,10 @@ code. Nested elements appear indented under their parents.
 - Shift-click to select multiple elements. A change you make in the
   properties panel then applies to every selected element it fits:
   Typography changes only the text elements, and a component instance
-  takes only a size. Sections that edit one element's own settings,
-  such as **Element** and **Position**, show when one element is
-  selected.
+  takes only a size. A field the selected elements disagree on reads
+  **Mixed**; type a value to set it on all of them. Sections that edit
+  one element's own settings, such as **Element** and **Position**, show
+  when one element is selected.
 
 ## Collapse branches
 

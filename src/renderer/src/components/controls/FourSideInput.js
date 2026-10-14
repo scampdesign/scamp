@@ -92,12 +92,12 @@ const bumpSide = (v, delta, min) => {
  *
  * Invalid input reverts on blur via the PrefixSuffixInput value sync.
  */
-export const FourSideInput = ({ value, onChange, min = 0, prefix, label, title, tokens, onOpenTheme, allowAuto = false, }) => {
+export const FourSideInput = ({ value, onChange, min = 0, prefix, label, title, tokens, onOpenTheme, allowAuto = false, mixed = false, }) => {
     const handleCommit = (draft) => {
         const parsed = parseShorthand(draft, min, allowAuto);
         if (!parsed)
             return;
-        if (!spaceTupleEquals(parsed, value))
+        if (mixed || !spaceTupleEquals(parsed, value))
             onChange(parsed);
     };
     const handleArrow = (draft, direction, shift) => {
@@ -137,5 +137,5 @@ export const FourSideInput = ({ value, onChange, min = 0, prefix, label, title, 
     // `prefix` when it's a string, else a generic fallback.
     const tokenName = label ?? (typeof prefix === 'string' ? prefix : undefined);
     const suffix = tokens ? (_jsx(SpaceTokenButton, { tokens: tokens, onSelect: handleSelectToken, ...(onOpenTheme ? { onOpenTheme } : {}), active: anyTokenSide, ariaLabel: tokenName ? `Pick ${tokenName} token` : 'Pick spacing token' })) : undefined;
-    return (_jsx(PrefixSuffixInput, { value: formatSpaceShorthand(value), onCommit: handleCommit, onArrow: handleArrow, prefix: prefix, ...(label !== undefined ? { dataPrefix: label } : {}), placeholder: "0", title: tooltip, ...(suffix !== undefined ? { suffix } : {}) }));
+    return (_jsx(PrefixSuffixInput, { value: formatSpaceShorthand(value), onCommit: handleCommit, onArrow: handleArrow, prefix: prefix, ...(label !== undefined ? { dataPrefix: label } : {}), placeholder: "0", mixed: mixed, title: tooltip, ...(suffix !== undefined ? { suffix } : {}) }));
 };

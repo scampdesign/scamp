@@ -4,6 +4,7 @@ import { runsOf, styleOfRange } from '@lib/textRuns';
 import { IconAlignLeft, IconAlignCenter, IconAlignRight, IconTypography, } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { selectionPatchers } from '@store/selectionPatch';
+import { useMixedFields } from '@store/hooks/useMixedFields';
 import { SECTION_FITS } from '@lib/multiEdit';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
@@ -29,6 +30,7 @@ const isFontWeight = (n) => Number.isInteger(n) && n >= 1 && n <= 1000;
 export const TypographySection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
     const { patchElement } = selectionPatchers(SECTION_FITS.typography);
+    const { isMixed } = useMixedFields(SECTION_FITS.typography);
     const styleTextRange = useCanvasStore((s) => s.styleTextRange);
     const textSelection = useCanvasStore((s) => s.textSelection);
     /**
@@ -119,9 +121,9 @@ export const TypographySection = ({ elementId }) => {
             'text-align',
             'line-height',
             'letter-spacing',
-        ], children: [_jsx(Row, { label: "", children: _jsx(FontPicker, { value: element.fontFamily ?? '', fonts: allFonts, fontTokens: fontFamilyTokens, onChange: (value) => patchElement(elementId, {
+        ], children: [_jsx(Row, { label: "", children: _jsx(FontPicker, { value: element.fontFamily ?? '', mixed: isMixed('fontFamily'), fonts: allFonts, fontTokens: fontFamilyTokens, onChange: (value) => patchElement(elementId, {
                         fontFamily: value.length > 0 ? value : undefined,
-                    }), title: "Font family" }) }), _jsxs(Row, { label: "", children: [_jsx(TokenOrNumberInput, { prefix: "Sz", title: "Font size", value: element.fontSize, tokens: fontSizeTokens, defaultUnit: "px", onChange: (value) => patchElement(elementId, { fontSize: value }), onOpenTheme: onOpenTheme, placeholder: "auto" }), _jsx(WeightSelect
+                    }), title: "Font family" }) }), _jsxs(Row, { label: "", children: [_jsx(TokenOrNumberInput, { prefix: "Sz", title: "Font size", value: element.fontSize, mixed: isMixed('fontSize'), tokens: fontSizeTokens, defaultUnit: "px", onChange: (value) => patchElement(elementId, { fontSize: value }), onOpenTheme: onOpenTheme, placeholder: "auto" }), _jsx(WeightSelect
                     // The SELECTION's weight when a range is selected, so the
                     // control shows what it is about to change. Empty for a
                     // mixed range rather than one run's answer.
@@ -129,7 +131,7 @@ export const TypographySection = ({ elementId }) => {
                         // The SELECTION's weight when a range is selected, so the
                         // control shows what it is about to change. Empty for a
                         // mixed range rather than one run's answer.
-                        value: rangeStyle?.mixed.includes('fontWeight')
+                        mixed: range === null && isMixed('fontWeight'), value: rangeStyle?.mixed.includes('fontWeight')
                             ? ''
                             : String(rangeStyle?.shared.fontWeight ?? element.fontWeight ?? 400), onChange: (value) => {
                             const n = Number(value);
@@ -149,12 +151,12 @@ export const TypographySection = ({ elementId }) => {
                         // `mixed` deliberately shows nothing rather than one run's
                         // answer: red for a red-and-blue selection is a lie the user
                         // then acts on.
-                        value: rangeStyle?.mixed.includes('color')
+                        mixed: range === null && isMixed('color'), value: rangeStyle?.mixed.includes('color')
                             ? ''
                             : (rangeStyle?.shared.color ?? element.color ?? '#000000'), onChange: (value) => {
                             if (range !== null)
                                 styleTextRange(elementId, range.start, range.end, { color: value });
                             else
                                 patchElement(elementId, { color: value });
-                        }, onPreview: previewStyle(elementId, 'color', SECTION_FITS.typography), historyElementId: elementId, historyPropertyKey: "color", presetColors: presetColors, tokens: themeTokens, onOpenTheme: onOpenTheme }), _jsx(SegmentedControl, { value: element.textAlign ?? 'left', options: TEXT_ALIGN_OPTIONS, onChange: (value) => patchElement(elementId, { textAlign: value }), title: "Text align" })] }), _jsxs(Row, { label: "", children: [_jsx(TokenOrNumberInput, { prefix: "LH", title: "Line height", value: element.lineHeight, tokens: lineHeightTokens, defaultUnit: "", onChange: (value) => patchElement(elementId, { lineHeight: value }), onOpenTheme: onOpenTheme, placeholder: "auto" }), _jsx(TokenOrNumberInput, { prefix: "LS", title: "Letter spacing", value: element.letterSpacing, tokens: letterSpacingTokens, defaultUnit: "px", onChange: (value) => patchElement(elementId, { letterSpacing: value }), onOpenTheme: onOpenTheme, placeholder: "0" })] })] }));
+                        }, onPreview: previewStyle(elementId, 'color', SECTION_FITS.typography), historyElementId: elementId, historyPropertyKey: "color", presetColors: presetColors, tokens: themeTokens, onOpenTheme: onOpenTheme }), _jsx(SegmentedControl, { value: element.textAlign ?? 'left', mixed: isMixed('textAlign'), options: TEXT_ALIGN_OPTIONS, onChange: (value) => patchElement(elementId, { textAlign: value }), title: "Text align" })] }), _jsxs(Row, { label: "", children: [_jsx(TokenOrNumberInput, { prefix: "LH", title: "Line height", value: element.lineHeight, mixed: isMixed('lineHeight'), tokens: lineHeightTokens, defaultUnit: "", onChange: (value) => patchElement(elementId, { lineHeight: value }), onOpenTheme: onOpenTheme, placeholder: "auto" }), _jsx(TokenOrNumberInput, { prefix: "LS", title: "Letter spacing", value: element.letterSpacing, mixed: isMixed('letterSpacing'), tokens: letterSpacingTokens, defaultUnit: "px", onChange: (value) => patchElement(elementId, { letterSpacing: value }), onOpenTheme: onOpenTheme, placeholder: "0" })] })] }));
 };

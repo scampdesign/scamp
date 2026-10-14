@@ -28,6 +28,8 @@ type Props = {
   placeholder?: string;
   /** Tooltip on the whole row. */
   title?: string;
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+  mixed?: boolean;
 };
 
 const VAR_RE = /^var\(\s*(--[\w-]+)\s*\)$/;
@@ -77,8 +79,10 @@ export const TokenOrNumberInput = ({
   prefix,
   placeholder,
   title,
+  mixed = false,
 }: Props): JSX.Element => {
-  const [draft, setDraft] = useState<string>(value ?? '');
+  const shown = mixed ? '' : value ?? '';
+  const [draft, setDraft] = useState<string>(shown);
 
   const popover = usePopover<HTMLButtonElement>({
     position: {
@@ -89,10 +93,11 @@ export const TokenOrNumberInput = ({
   });
 
   useEffect(() => {
-    setDraft(value ?? '');
-  }, [value]);
+    setDraft(shown);
+  }, [shown]);
 
   const commit = (): void => {
+    if (mixed && draft.trim().length === 0) return;
     const formatted = formatCommit(draft, defaultUnit);
     if (formatted === null) {
       // Revert on invalid.
@@ -103,13 +108,14 @@ export const TokenOrNumberInput = ({
       if (value !== undefined) onChange(undefined);
       return;
     }
-    if (formatted !== value) onChange(formatted);
+    if (formatted !== value || mixed) onChange(formatted);
     setDraft(formatted);
   };
 
   // Arrow-key stepping: only meaningful for numeric values. Parse the
   // draft, step by 1 (or 10 with shift), preserve the unit suffix.
   const step = (delta: number): void => {
+    if (mixed) return;
     const match = draft.trim().match(/^(-?\d*\.?\d+)(\D*)$/);
     if (!match) return;
     const n = Number(match[1]);
@@ -137,7 +143,7 @@ export const TokenOrNumberInput = ({
     }
   };
 
-  const showingToken = isVarRef(value);
+  const showingToken = !mixed && isVarRef(value);
   const tokenName = showingToken && value ? tokenNameFromValue(value) : '';
 
   const clearToken = (): void => {
@@ -170,7 +176,7 @@ export const TokenOrNumberInput = ({
           inputMode="decimal"
           className={styles.input}
           value={draft}
-          placeholder={placeholder}
+          placeholder={mixed ? 'Mixed' : placeholder}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={handleKeyDown}

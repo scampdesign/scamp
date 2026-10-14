@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { selectionPatchers } from '@store/selectionPatch';
+import { useMixedFields } from '@store/hooks/useMixedFields';
 import { SECTION_FITS } from '@lib/multiEdit';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
@@ -27,6 +28,7 @@ const BORDER_STYLE_OPTIONS: ReadonlyArray<{ value: BorderStyle; label: string }>
 export const BorderSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
   const { patchElement } = selectionPatchers(SECTION_FITS.box);
+  const { isMixed } = useMixedFields(SECTION_FITS.box);
   const { presetColors, themeTokens, onOpenTheme } = useColorPickerContext();
   // Hide the eye when no border is set AND no rounded corners.
   // Border radius lives in the same group, so a rounded-but-
@@ -66,6 +68,7 @@ export const BorderSection = ({ elementId }: Props): JSX.Element | null => {
       <Row label="">
         <ColorInput
           value={element.borderColor}
+          mixed={isMixed('borderColor')}
           onChange={(value) => patchElement(elementId, { borderColor: value })}
           onPreview={previewStyle(elementId, 'borderColor', SECTION_FITS.box)}
           historyElementId={elementId}
@@ -76,6 +79,7 @@ export const BorderSection = ({ elementId }: Props): JSX.Element | null => {
         />
         <EnumSelect<BorderStyle>
           value={element.borderStyle}
+          mixed={isMixed('borderStyle')}
           options={BORDER_STYLE_OPTIONS}
           onChange={(value) => patchElement(elementId, { borderStyle: value })}
           title="Border style"
@@ -86,6 +90,7 @@ export const BorderSection = ({ elementId }: Props): JSX.Element | null => {
           prefix="W"
           title="Border width (top right bottom left)"
           value={element.borderWidth}
+          mixed={isMixed('borderWidth')}
           onChange={(next) => patchElement(elementId, { borderWidth: next })}
           min={0}
           tokens={borderWidthTokens}
@@ -95,6 +100,7 @@ export const BorderSection = ({ elementId }: Props): JSX.Element | null => {
           prefix="R"
           title="Border radius (top-left top-right bottom-right bottom-left)"
           value={element.borderRadius}
+          mixed={isMixed('borderRadius')}
           onChange={(next) => patchElement(elementId, { borderRadius: next })}
           min={0}
           tokens={radiusTokens}

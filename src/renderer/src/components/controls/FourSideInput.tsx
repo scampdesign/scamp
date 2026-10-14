@@ -35,6 +35,8 @@ type Props = {
   onOpenTheme?: () => void;
   /** Accept `auto` on a side — margins only. */
   allowAuto?: boolean;
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+  mixed?: boolean;
 };
 
 /**
@@ -138,11 +140,12 @@ export const FourSideInput = ({
   tokens,
   onOpenTheme,
   allowAuto = false,
+  mixed = false,
 }: Props): JSX.Element => {
   const handleCommit = (draft: string): void => {
     const parsed = parseShorthand(draft, min, allowAuto);
     if (!parsed) return;
-    if (!spaceTupleEquals(parsed, value)) onChange(parsed);
+    if (mixed || !spaceTupleEquals(parsed, value)) onChange(parsed);
   };
 
   const handleArrow = (draft: string, direction: 1 | -1, shift: boolean): void => {
@@ -205,6 +208,7 @@ export const FourSideInput = ({
       prefix={prefix}
       {...(label !== undefined ? { dataPrefix: label } : {})}
       placeholder="0"
+      mixed={mixed}
       title={tooltip}
       {...(suffix !== undefined ? { suffix } : {})}
     />

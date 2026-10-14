@@ -11,7 +11,7 @@ import styles from './Controls.module.css';
  * Contrast / Inversion / Component) so the dropdown reads like the
  * spec.
  */
-export const BlendModeSelect = ({ value, onChange, title, }) => {
-    const select = (_jsxs("select", { className: styles.select, value: value, onChange: (e) => onChange(e.target.value), children: [_jsx("option", { value: "normal", children: "Normal" }), BLEND_MODE_GROUPS.map((group) => (_jsx("optgroup", { label: group.name, children: group.options.map((opt) => (_jsx("option", { value: opt.value, children: opt.label }, opt.value))) }, group.name)))] }));
+export const BlendModeSelect = ({ value, onChange, title, mixed = false, }) => {
+    const select = (_jsxs("select", { className: styles.select, value: mixed ? '' : value, onChange: (e) => onChange(e.target.value), children: [mixed && (_jsx("option", { value: "", disabled: true, hidden: true, children: "Mixed" })), _jsx("option", { value: "normal", children: "Normal" }), BLEND_MODE_GROUPS.map((group) => (_jsx("optgroup", { label: group.name, children: group.options.map((opt) => (_jsx("option", { value: opt.value, children: opt.label }, opt.value))) }, group.name)))] }));
     return title ? _jsx(Tooltip, { label: title, children: select }) : select;
 };

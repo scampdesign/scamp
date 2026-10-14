@@ -1,6 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useCanvasStore } from '@store/canvasSlice';
 import { useListField } from '@store/hooks/useListField';
+import { useMixedFields } from '@store/hooks/useMixedFields';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import { Button } from '../controls/Button';
 import { EnumSelect } from '../controls/EnumSelect';
@@ -54,25 +56,27 @@ const ORIGIN_PRESETS = [
 const CUSTOM_ORIGIN = '__custom__';
 export const TransformSection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
-    const patchElement = useCanvasStore((s) => s.patchElement);
+    const { patchElement } = selectionPatchers(SECTION_FITS.box);
+    const { isMixed } = useMixedFields(SECTION_FITS.box);
+    const transformsMixed = isMixed('transforms');
     const groupToggle = useGroupToggle(elementId, 'transform', (element?.transforms.length ?? 0) > 0 ||
         (element?.transformOrigin.length ?? 0) > 0);
-    const listField = useListField(() => element?.transforms ?? [], (next) => patchElement(elementId, { transforms: next }));
+    const listField = useListField(() => (transformsMixed ? [] : element?.transforms ?? []), (next) => patchElement(elementId, { transforms: next }));
     if (!element)
         return null;
-    const transforms = element.transforms;
+    const transforms = transformsMixed ? [] : element.transforms;
     const origin = element.transformOrigin;
     const originIsPreset = ORIGIN_PRESETS.some((p) => p.value === origin);
     const originOptions = originIsPreset
         ? ORIGIN_PRESETS
         : [...ORIGIN_PRESETS, { value: CUSTOM_ORIGIN, label: 'Custom…' }];
-    return (_jsxs(Section, { title: "Transform", collapsible: true, defaultOpen: transforms.length > 0 || origin.length > 0, elementId: elementId, groupToggle: groupToggle, fields: ['transforms', 'transformOrigin'], cssProperties: ['transform', 'transform-origin'], children: [transforms.length === 0 && _jsx(SectionEmptyState, { testId: "transform-empty" }), transforms.map((transform, idx) => (_jsx(TransformRow, { index: idx, transform: transform, onReplace: (next) => patchElement(elementId, {
+    return (_jsxs(Section, { title: "Transform", collapsible: true, defaultOpen: transforms.length > 0 || origin.length > 0, elementId: elementId, groupToggle: groupToggle, fields: ['transforms', 'transformOrigin'], cssProperties: ['transform', 'transform-origin'], children: [transforms.length === 0 && _jsx(SectionEmptyState, { testId: "transform-empty", children: transformsMixed ? 'Mixed' : undefined }), transforms.map((transform, idx) => (_jsx(TransformRow, { index: idx, transform: transform, onReplace: (next) => patchElement(elementId, {
                     transforms: transforms.map((t, i) => (i === idx ? next : t)),
-                }), onRemove: () => listField.remove(idx) }, idx))), _jsx(Row, { label: "", children: _jsx(Button, { variant: "addRow", onClick: () => listField.add(makeTransform('translate')), children: "+ Add transform" }) }), _jsx("div", { className: styles.originDivider }), _jsx("div", { className: styles.originTitle, children: "Origin" }), _jsxs(Row, { label: "", tooltip: "The point rotate, scale and skew pivot around (transform-origin). Center is the CSS default.", children: [_jsx(EnumSelect, { value: originIsPreset ? origin : CUSTOM_ORIGIN, options: originOptions, onChange: (value) => {
+                }), onRemove: () => listField.remove(idx) }, idx))), _jsx(Row, { label: "", children: _jsx(Button, { variant: "addRow", onClick: () => listField.add(makeTransform('translate')), children: "+ Add transform" }) }), _jsx("div", { className: styles.originDivider }), _jsx("div", { className: styles.originTitle, children: "Origin" }), _jsxs(Row, { label: "", tooltip: "The point rotate, scale and skew pivot around (transform-origin). Center is the CSS default.", children: [_jsx(EnumSelect, { value: originIsPreset ? origin : CUSTOM_ORIGIN, mixed: isMixed('transformOrigin'), options: originOptions, onChange: (value) => {
                             if (value === CUSTOM_ORIGIN)
                                 return;
                             patchElement(elementId, { transformOrigin: value });
-                        }, title: "Transform origin" }), _jsx(PrefixSuffixInput, { prefix: "At", title: "transform-origin \u2014 any CSS value, e.g. 20px 40px or 100% 0", value: origin, placeholder: "50% 50%", onCommit: (value) => patchElement(elementId, { transformOrigin: value.trim() }) })] })] }));
+                        }, title: "Transform origin" }), _jsx(PrefixSuffixInput, { prefix: "At", title: "transform-origin \u2014 any CSS value, e.g. 20px 40px or 100% 0", value: origin, mixed: isMixed('transformOrigin'), placeholder: "50% 50%", onCommit: (value) => patchElement(elementId, { transformOrigin: value.trim() }) })] })] }));
 };
 const TransformRow = ({ index, transform, onReplace, onRemove, }) => {
     // Switching kind resets to that kind's no-op rather than carrying

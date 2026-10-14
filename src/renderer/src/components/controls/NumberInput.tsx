@@ -29,6 +29,8 @@ type Props = {
    * to a fixed mode.
    */
   computed?: boolean;
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+  mixed?: boolean;
 };
 
 const clamp = (n: number, min?: number, max?: number): number => {
@@ -54,6 +56,7 @@ export const NumberInput = ({
   title,
   disabled = false,
   computed = false,
+  mixed = false,
 }: Props): JSX.Element => {
   const stringValue = value === undefined ? '' : String(value);
 
@@ -65,7 +68,7 @@ export const NumberInput = ({
     const parsed = Number(draft);
     if (!Number.isFinite(parsed)) return;
     const next = clamp(parsed, min, max);
-    if (next !== value) onChange(next);
+    if (next !== value || mixed) onChange(next);
   };
 
   const handleArrow = (draft: string, direction: 1 | -1, shift: boolean): void => {
@@ -90,6 +93,7 @@ export const NumberInput = ({
       title={title}
       disabled={disabled}
       computed={computed}
+      mixed={mixed}
     />
   );
 };

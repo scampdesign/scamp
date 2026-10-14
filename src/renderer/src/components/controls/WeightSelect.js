@@ -28,8 +28,8 @@ const parseWeight = (raw) => {
  * the dropdown, or type any value (e.g. 350 for a variable font). Emits the
  * committed weight as a string; the caller decides how to store it.
  */
-export const WeightSelect = ({ value, onChange, title, }) => {
-    const [draft, setDraft] = useState(value);
+export const WeightSelect = ({ value, onChange, title, mixed = false, }) => {
+    const [draft, setDraft] = useState(mixed ? '' : value);
     const popover = usePopover({
         position: {
             width: POPOVER_WIDTH,
@@ -37,17 +37,18 @@ export const WeightSelect = ({ value, onChange, title, }) => {
             align: 'right',
         },
     });
+    const shown = mixed ? '' : value;
     useEffect(() => {
-        setDraft(value);
-    }, [value]);
+        setDraft(shown);
+    }, [shown]);
     const commit = () => {
         const n = parseWeight(draft);
         if (n === null) {
-            setDraft(value); // revert on invalid
+            setDraft(shown); // revert on invalid, and an empty Mixed field
             return;
         }
         const next = String(n);
-        if (next !== value)
+        if (next !== value || mixed)
             onChange(next);
         setDraft(next);
     };
@@ -77,11 +78,11 @@ export const WeightSelect = ({ value, onChange, title, }) => {
     };
     const selectWeight = (v) => {
         setDraft(v);
-        if (v !== value)
+        if (v !== value || mixed)
             onChange(v);
         popover.setOpen(false);
     };
-    const rowEl = (_jsxs("div", { className: styles.row, children: [_jsx("input", { type: "text", inputMode: "numeric", className: styles.input, value: draft, onChange: (e) => setDraft(e.target.value), onBlur: commit, onKeyDown: handleKeyDown, "aria-label": "Font weight" }), _jsx("span", { className: styles.name, children: nameForWeight(draft) }), _jsx("button", { ref: popover.triggerRef, type: "button", className: styles.caret, onClick: popover.toggle, "aria-label": "Pick font weight", children: "\u25BE" })] }));
+    const rowEl = (_jsxs("div", { className: styles.row, children: [_jsx("input", { type: "text", inputMode: "numeric", className: styles.input, value: draft, placeholder: mixed ? 'Mixed' : undefined, onChange: (e) => setDraft(e.target.value), onBlur: commit, onKeyDown: handleKeyDown, "aria-label": "Font weight" }), _jsx("span", { className: styles.name, children: nameForWeight(draft) }), _jsx("button", { ref: popover.triggerRef, type: "button", className: styles.caret, onClick: popover.toggle, "aria-label": "Pick font weight", children: "\u25BE" })] }));
     const popoverEl = popover.open && popover.position ? (_jsx("div", { ref: popover.popoverRef, className: styles.popover, style: {
             left: popover.position.left,
             top: popover.position.top,

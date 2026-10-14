@@ -38,7 +38,7 @@ const primaryFamily = (value) => {
     }
     return cleaned;
 };
-export const FontPicker = ({ value, fonts, fontTokens = [], onChange, title, }) => {
+export const FontPicker = ({ value, fonts, fontTokens = [], onChange, title, mixed = false, }) => {
     const [query, setQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
     const [scrollTop, setScrollTop] = useState(0);
@@ -235,9 +235,9 @@ export const FontPicker = ({ value, fonts, fontTokens = [], onChange, title, }) 
         // Render the trigger itself in the selected font so it doubles as
         // a preview. Tokens skip this — we show the token name in the
         // default UI font alongside a swatch icon.
-        style: triggerLabel && !triggerIsToken
+        style: !mixed && triggerLabel && !triggerIsToken
             ? { fontFamily: quoteFamilyName(triggerLabel) }
-            : undefined, children: [triggerIsToken && (_jsx("span", { className: styles.triggerIcon, "aria-hidden": "true", children: _jsx(IconColorSwatch, { size: 14, stroke: 1.75 }) })), _jsx("span", { className: `${styles.triggerLabel} ${triggerLabel ? '' : styles.triggerPlaceholder}`, children: triggerLabel ?? 'System font' }), _jsx("span", { className: styles.triggerCaret, children: "\u25BE" })] }));
+            : undefined, children: [!mixed && triggerIsToken && (_jsx("span", { className: styles.triggerIcon, "aria-hidden": "true", children: _jsx(IconColorSwatch, { size: 14, stroke: 1.75 }) })), _jsx("span", { className: `${styles.triggerLabel} ${triggerLabel && !mixed ? '' : styles.triggerPlaceholder}`, children: mixed ? 'Mixed' : triggerLabel ?? 'System font' }), _jsx("span", { className: styles.triggerCaret, children: "\u25BE" })] }));
     return (_jsxs(_Fragment, { children: [title ? _jsx(Tooltip, { label: title, children: triggerEl }) : triggerEl, popover.open && popover.position && (_jsxs("div", { ref: popover.popoverRef, className: styles.popover, style: {
                     left: popover.position.left,
                     top: popover.position.top,

@@ -1,9 +1,9 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { Tooltip } from './Tooltip';
 import styles from './Controls.module.css';
-export const SegmentedControl = ({ value, options, onChange, title, }) => {
+export const SegmentedControl = ({ value, options, onChange, title, mixed = false, }) => {
     const group = (_jsx("div", { className: styles.segmented, role: "radiogroup", children: options.map((opt) => {
-            const active = opt.value === value;
+            const active = !mixed && opt.value === value;
             const accessibleName = opt.ariaLabel ??
                 opt.tooltip ??
                 (typeof opt.label === 'string' ? opt.label : undefined);

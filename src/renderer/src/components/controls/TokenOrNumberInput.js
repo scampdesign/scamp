@@ -39,8 +39,9 @@ const formatCommit = (draft, defaultUnit) => {
     // Anything else we don't know how to format.
     return null;
 };
-export const TokenOrNumberInput = ({ value, tokens, defaultUnit, onChange, onOpenTheme, prefix, placeholder, title, }) => {
-    const [draft, setDraft] = useState(value ?? '');
+export const TokenOrNumberInput = ({ value, tokens, defaultUnit, onChange, onOpenTheme, prefix, placeholder, title, mixed = false, }) => {
+    const shown = mixed ? '' : value ?? '';
+    const [draft, setDraft] = useState(shown);
     const popover = usePopover({
         position: {
             width: POPOVER_WIDTH,
@@ -49,9 +50,11 @@ export const TokenOrNumberInput = ({ value, tokens, defaultUnit, onChange, onOpe
         },
     });
     useEffect(() => {
-        setDraft(value ?? '');
-    }, [value]);
+        setDraft(shown);
+    }, [shown]);
     const commit = () => {
+        if (mixed && draft.trim().length === 0)
+            return;
         const formatted = formatCommit(draft, defaultUnit);
         if (formatted === null) {
             // Revert on invalid.
@@ -63,13 +66,15 @@ export const TokenOrNumberInput = ({ value, tokens, defaultUnit, onChange, onOpe
                 onChange(undefined);
             return;
         }
-        if (formatted !== value)
+        if (formatted !== value || mixed)
             onChange(formatted);
         setDraft(formatted);
     };
     // Arrow-key stepping: only meaningful for numeric values. Parse the
     // draft, step by 1 (or 10 with shift), preserve the unit suffix.
     const step = (delta) => {
+        if (mixed)
+            return;
         const match = draft.trim().match(/^(-?\d*\.?\d+)(\D*)$/);
         if (!match)
             return;
@@ -97,7 +102,7 @@ export const TokenOrNumberInput = ({ value, tokens, defaultUnit, onChange, onOpe
             return;
         }
     };
-    const showingToken = isVarRef(value);
+    const showingToken = !mixed && isVarRef(value);
     const tokenName = showingToken && value ? tokenNameFromValue(value) : '';
     const clearToken = () => {
         onChange(undefined);
@@ -106,7 +111,7 @@ export const TokenOrNumberInput = ({ value, tokens, defaultUnit, onChange, onOpe
         onChange(`var(${token.name})`);
         popover.setOpen(false);
     };
-    const rowEl = (_jsxs("div", { className: styles.row, "data-prefix": prefix, children: [prefix && _jsx("span", { className: styles.prefix, children: prefix }), showingToken ? (_jsxs("div", { className: styles.pill, children: [_jsx("span", { className: styles.pillLabel, children: tokenName }), _jsx("button", { type: "button", className: styles.pillClear, onClick: clearToken, "aria-label": "Clear token", children: "\u00D7" })] })) : (_jsx("input", { type: "text", inputMode: "decimal", className: styles.input, value: draft, placeholder: placeholder, onChange: (e) => setDraft(e.target.value), onBlur: commit, onKeyDown: handleKeyDown })), _jsx("button", { ref: popover.triggerRef, type: "button", className: `${styles.tokenButton} ${showingToken ? styles.tokenButtonActive : ''}`, onClick: popover.toggle, "aria-label": "Pick token", children: _jsx(IconColorSwatch, { size: 14, stroke: 1.75 }) })] }));
+    const rowEl = (_jsxs("div", { className: styles.row, "data-prefix": prefix, children: [prefix && _jsx("span", { className: styles.prefix, children: prefix }), showingToken ? (_jsxs("div", { className: styles.pill, children: [_jsx("span", { className: styles.pillLabel, children: tokenName }), _jsx("button", { type: "button", className: styles.pillClear, onClick: clearToken, "aria-label": "Clear token", children: "\u00D7" })] })) : (_jsx("input", { type: "text", inputMode: "decimal", className: styles.input, value: draft, placeholder: mixed ? 'Mixed' : placeholder, onChange: (e) => setDraft(e.target.value), onBlur: commit, onKeyDown: handleKeyDown })), _jsx("button", { ref: popover.triggerRef, type: "button", className: `${styles.tokenButton} ${showingToken ? styles.tokenButtonActive : ''}`, onClick: popover.toggle, "aria-label": "Pick token", children: _jsx(IconColorSwatch, { size: 14, stroke: 1.75 }) })] }));
     // Render the popover into `document.body` via a portal so it can't
     // be affected by any `transform`, `filter`, or `overflow` on parent
     // components — it positions purely against the viewport.

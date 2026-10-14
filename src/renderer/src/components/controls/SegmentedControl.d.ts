@@ -28,6 +28,8 @@ type Props<V extends string> = {
      * per-option tooltips — the group-level tooltip describes the axis,
      * per-option tooltips describe each segment. */
     title?: string;
+    /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+    mixed?: boolean;
 };
-export declare const SegmentedControl: <V extends string>({ value, options, onChange, title, }: Props<V>) => JSX.Element;
+export declare const SegmentedControl: <V extends string>({ value, options, onChange, title, mixed, }: Props<V>) => JSX.Element;
 export {};

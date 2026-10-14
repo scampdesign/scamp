@@ -54,6 +54,8 @@ type Props = {
    * may switch the field to a fixed mode.
    */
   computed?: boolean;
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+  mixed?: boolean;
 };
 
 /**
@@ -84,19 +86,21 @@ export const PrefixSuffixInput = ({
   autoCapitalize,
   autoCorrect,
   computed = false,
+  mixed = false,
 }: Props): JSX.Element => {
-  const [draft, setDraft] = useState(value);
+  const shown = mixed ? '' : value;
+  const [draft, setDraft] = useState(shown);
 
   useEffect(() => {
-    setDraft(value);
-  }, [value]);
+    setDraft(shown);
+  }, [shown]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') {
       e.currentTarget.blur();
       return;
     }
-    if (onArrow && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+    if (onArrow && !mixed && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       e.preventDefault();
       onArrow(draft, e.key === 'ArrowUp' ? 1 : -1, e.shiftKey);
       return;
@@ -126,7 +130,7 @@ export const PrefixSuffixInput = ({
           computed ? styles.computedValue : ''
         } ${inputClassName ?? ''}`}
         value={draft}
-        placeholder={placeholder}
+        placeholder={mixed ? 'Mixed' : placeholder}
         disabled={disabled}
         spellCheck={spellCheck}
         autoCapitalize={autoCapitalize}
@@ -136,8 +140,9 @@ export const PrefixSuffixInput = ({
           onDraftChange?.(e.target.value);
         }}
         onBlur={() => {
-          onCommit(draft.trim());
-          setDraft(value);
+          // Leaving a Mixed field empty keeps every element's own value.
+          if (!mixed || draft.trim().length > 0) onCommit(draft.trim());
+          setDraft(shown);
         }}
         onKeyDown={handleKeyDown}
       />

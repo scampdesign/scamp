@@ -1,5 +1,7 @@
 import { useCanvasStore } from './canvasSlice';
 import { resolveElementAtState } from '@lib/stateCascade';
+import { SECTION_FITS } from '@lib/multiEdit';
+import { forSelection } from './selectionPatch';
 import type {
   BreakpointOverride,
   PropertyGroup,
@@ -120,7 +122,11 @@ export const useGroupToggle = (
   if (!hasContent && isOn) return undefined;
   return {
     isOn,
-    onChange: (on: boolean): void => togglePropertyGroup(elementId, group, on),
+    // A multi-selection toggles the group on each element it fits.
+    onChange: (on: boolean): void =>
+      forSelection(group === 'typography' ? SECTION_FITS.typography : SECTION_FITS.box, elementId, ['toggledOffGroups'], (id) =>
+        togglePropertyGroup(id, group, on)
+      ),
   };
 };
 

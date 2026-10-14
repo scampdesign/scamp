@@ -1,5 +1,8 @@
 import { useCanvasStore } from '@store/canvasSlice';
 import { useListField } from '@store/hooks/useListField';
+import { useMixedFields } from '@store/hooks/useMixedFields';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import type { TransformDef, TransformKind } from '@lib/element';
 
@@ -64,7 +67,9 @@ const CUSTOM_ORIGIN = '__custom__';
 
 export const TransformSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.box);
+  const { isMixed } = useMixedFields(SECTION_FITS.box);
+  const transformsMixed = isMixed('transforms');
   const groupToggle = useGroupToggle(
     elementId,
     'transform',
@@ -72,12 +77,12 @@ export const TransformSection = ({ elementId }: Props): JSX.Element | null => {
       (element?.transformOrigin.length ?? 0) > 0
   );
   const listField = useListField<TransformDef>(
-    () => element?.transforms ?? [],
+    () => (transformsMixed ? [] : element?.transforms ?? []),
     (next) => patchElement(elementId, { transforms: next })
   );
   if (!element) return null;
 
-  const transforms = element.transforms;
+  const transforms = transformsMixed ? [] : element.transforms;
   const origin = element.transformOrigin;
   const originIsPreset = ORIGIN_PRESETS.some((p) => p.value === origin);
   const originOptions = originIsPreset
@@ -94,7 +99,7 @@ export const TransformSection = ({ elementId }: Props): JSX.Element | null => {
       fields={['transforms', 'transformOrigin']}
       cssProperties={['transform', 'transform-origin']}
     >
-      {transforms.length === 0 && <SectionEmptyState testId="transform-empty" />}
+      {transforms.length === 0 && <SectionEmptyState testId="transform-empty">{transformsMixed ? 'Mixed' : undefined}</SectionEmptyState>}
       {transforms.map((transform, idx) => (
         <TransformRow
           key={idx}
@@ -122,6 +127,7 @@ export const TransformSection = ({ elementId }: Props): JSX.Element | null => {
       <Row label="" tooltip="The point rotate, scale and skew pivot around (transform-origin). Center is the CSS default.">
         <EnumSelect<string>
           value={originIsPreset ? origin : CUSTOM_ORIGIN}
+          mixed={isMixed('transformOrigin')}
           options={originOptions}
           onChange={(value) => {
             if (value === CUSTOM_ORIGIN) return;
@@ -133,6 +139,7 @@ export const TransformSection = ({ elementId }: Props): JSX.Element | null => {
           prefix="At"
           title="transform-origin — any CSS value, e.g. 20px 40px or 100% 0"
           value={origin}
+          mixed={isMixed('transformOrigin')}
           placeholder="50% 50%"
           onCommit={(value) =>
             patchElement(elementId, { transformOrigin: value.trim() })

@@ -45,6 +45,8 @@ type Props = {
      * may switch the field to a fixed mode.
      */
     computed?: boolean;
+    /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+    mixed?: boolean;
 };
 /**
  * Shared prefix + input + suffix row. Owns local draft state so the
@@ -54,5 +56,5 @@ type Props = {
  * commit reads as "draft moves to new value" and an invalid one reads
  * as "draft reverts".
  */
-export declare const PrefixSuffixInput: ({ value, onCommit, onDraftChange, prefix, dataPrefix, suffix, flushPrefix, placeholder, inputMode, title, disabled, onArrow, stopKeyPropagation, inputRef, inputClassName, spellCheck, autoCapitalize, autoCorrect, computed, }: Props) => JSX.Element;
+export declare const PrefixSuffixInput: ({ value, onCommit, onDraftChange, prefix, dataPrefix, suffix, flushPrefix, placeholder, inputMode, title, disabled, onArrow, stopKeyPropagation, inputRef, inputClassName, spellCheck, autoCapitalize, autoCorrect, computed, mixed, }: Props) => JSX.Element;
 export {};

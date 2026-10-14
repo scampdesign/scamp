@@ -11,6 +11,8 @@ type Props = {
   onChange: (value: string) => void;
   /** Tooltip on the whole control. */
   title?: string;
+  /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
+  mixed?: boolean;
 };
 
 /** The nine standard named weights, in ramp order. */
@@ -46,8 +48,9 @@ export const WeightSelect = ({
   value,
   onChange,
   title,
+  mixed = false,
 }: Props): JSX.Element => {
-  const [draft, setDraft] = useState<string>(value);
+  const [draft, setDraft] = useState<string>(mixed ? '' : value);
 
   const popover = usePopover<HTMLButtonElement>({
     position: {
@@ -57,18 +60,19 @@ export const WeightSelect = ({
     },
   });
 
+  const shown = mixed ? '' : value;
   useEffect(() => {
-    setDraft(value);
-  }, [value]);
+    setDraft(shown);
+  }, [shown]);
 
   const commit = (): void => {
     const n = parseWeight(draft);
     if (n === null) {
-      setDraft(value); // revert on invalid
+      setDraft(shown); // revert on invalid, and an empty Mixed field
       return;
     }
     const next = String(n);
-    if (next !== value) onChange(next);
+    if (next !== value || mixed) onChange(next);
     setDraft(next);
   };
 
@@ -99,7 +103,7 @@ export const WeightSelect = ({
 
   const selectWeight = (v: string): void => {
     setDraft(v);
-    if (v !== value) onChange(v);
+    if (v !== value || mixed) onChange(v);
     popover.setOpen(false);
   };
 
@@ -110,6 +114,7 @@ export const WeightSelect = ({
         inputMode="numeric"
         className={styles.input}
         value={draft}
+        placeholder={mixed ? 'Mixed' : undefined}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={handleKeyDown}
