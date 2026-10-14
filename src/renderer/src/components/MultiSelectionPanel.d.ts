@@ -4,6 +4,6 @@
  * and writing to all of them; a field the elements disagree on reads
  * **Mixed**. Sections that edit one element's own things (name, tag,
  * image, SVG source, position, table style) and Animation show only for
- * a single element. see docs/plans/multi-select-edit-plan.md
+ * a single element. see docs/archive/2026-10-14-multi-select-edit-plan.md
  */
 export declare const MultiSelectionPanel: () => JSX.Element;

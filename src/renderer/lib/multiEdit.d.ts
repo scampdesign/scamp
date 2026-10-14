@@ -2,7 +2,7 @@ import { type ScampElement } from './element';
 /**
  * Which elements a properties-panel section can edit. With several
  * elements selected, a section reads from the first one it fits and
- * writes to every one it fits. see docs/plans/multi-select-edit-plan.md
+ * writes to every one it fits. see docs/archive/2026-10-14-multi-select-edit-plan.md
  */
 export type SectionFit = (el: ScampElement) => boolean;
 export declare const SECTION_FITS: {

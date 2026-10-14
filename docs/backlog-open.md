@@ -7,7 +7,7 @@ each story below is copied from them unchanged apart from its heading.
 
 | Story | Kind | Size | From | Plan |
 |---|---|---|---|---|
-| Edit every selected element at once | Bug | M | v12 #1 | |
+| ~~Edit every selected element at once~~ **Done** | Bug | M | v12 #1 | `archive/2026-10-14-multi-select-edit-plan.md` |
 | Narrowing a text element keeps the height I set | Bug | S | v12 #2 | |
 | Drag a component instance on the canvas | Bug | M | v12 #3 | |
 | Drop an image onto the canvas | Bug | S | v12 #4 | |
@@ -33,7 +33,9 @@ SVG color.
 
 ## Bugs
 
-### Edit every selected element at once
+### Edit every selected element at once - DONE
+
+Built 2026-10-14; see `docs/archive/2026-10-14-multi-select-edit-plan.md`.
 
 As a designer, I want a change I make with several elements selected to
 apply to all of them, so that I can restyle a set of elements in one

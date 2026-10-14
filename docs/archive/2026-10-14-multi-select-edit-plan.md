@@ -1,6 +1,6 @@
 # Edit every selected element at once
 
-Status: **built**, 2026-10-14. Both phases.
+Status: **done**, 2026-10-14. Both phases built and manually tested.
 
 Story: "Edit every selected element at once", the first bug in
 `docs/backlog-open.md`.

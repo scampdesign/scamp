@@ -7,6 +7,6 @@ export type MixedFields = {
 /**
  * Which of a section's fields the selected elements it fits disagree on,
  * at the active breakpoint and state. Nothing is mixed for one element.
- * see docs/plans/multi-select-edit-plan.md
+ * see docs/archive/2026-10-14-multi-select-edit-plan.md
  */
 export declare const useMixedFields: (fits: SectionFit) => MixedFields;

@@ -39,7 +39,7 @@ const asOneStep = (ids, propertyKeys, edit) => {
 /**
  * `patchElement` for a properties-panel section: with several elements
  * selected, the patch reaches each one `fits` accepts, routed into its
- * own breakpoint or state override. see docs/plans/multi-select-edit-plan.md
+ * own breakpoint or state override. see docs/archive/2026-10-14-multi-select-edit-plan.md
  */
 export const patchSelection = (fits, leadId, input) => {
     const { patchElement } = useCanvasStore.getState();
