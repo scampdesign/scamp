@@ -21,6 +21,8 @@ const api = {
     /** `.dev.vars` keys only; the values never reach the renderer. */
     readDevVars: (args) => ipcRenderer.invoke(IPC.DevVarsRead, args),
     openDevVars: (args) => ipcRenderer.invoke(IPC.DevVarsOpen, args),
+    checkFrameworkUpdate: (args) => ipcRenderer.invoke(IPC.FrameworkCheckUpdate, args),
+    updateFramework: (args) => ipcRenderer.invoke(IPC.FrameworkUpdate, args),
     onRoutesChanged: (handler) => {
         const listener = () => handler();
         ipcRenderer.on(IPC.RoutesChanged, listener);

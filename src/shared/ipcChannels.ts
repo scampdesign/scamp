@@ -150,6 +150,8 @@ export const IPC = {
   RoutesRenameView: 'routes:renameView',
   DevVarsRead: 'devVars:read',
   DevVarsOpen: 'devVars:open',
+  FrameworkCheckUpdate: 'framework:checkUpdate',
+  FrameworkUpdate: 'framework:update',
   /** main → renderer: a request or error line from `scamp dev --json`. */
   DevServerLog: 'preview:devLog',
   /** main → renderer: a file under routes/ was added, changed, or removed. */

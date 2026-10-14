@@ -13,6 +13,7 @@ import { NumberInput } from './controls/NumberInput';
 import { PrefixSuffixInput } from './controls/PrefixSuffixInput';
 import { FontsSection } from './sections/FontsSection';
 import { RouteList } from './projectShell/RoutesSection';
+import type { FrameworkUpdate } from './projectShell/useFrameworkUpdate';
 import styles from './ProjectSettingsPage.module.css';
 
 /** Fallback shown in the card-color picker when the project has none set.
@@ -29,6 +30,8 @@ type Props = {
    * Scamp-framework projects: the keys in `.dev.vars`, the local secrets
    * `load()` and API routes read through `env`. Values stay on disk.
    */
+  /** Scamp-framework projects: the installed scampjs, and an update when npm has one. */
+  framework?: FrameworkUpdate;
   environment?: { exists: boolean; keys: ReadonlyArray<string>; onOpen: () => void };
   /**
    * Scamp-framework projects: every route in the project, page and
@@ -50,6 +53,7 @@ export const ProjectSettingsPage = ({
   projectName,
   projectPath,
   environment,
+  framework,
   routes,
   config,
   onChange,
@@ -115,6 +119,41 @@ export const ProjectSettingsPage = ({
             </div>
           </div>
         </div>
+
+        {framework !== undefined && (
+          <div className={styles.section} data-testid="settings-framework">
+            <h2 className={styles.sectionTitle}>Framework</h2>
+            <div className={styles.row}>
+              <span className={styles.rowLabel}>
+                <code>scampjs</code>
+              </span>
+              <div className={styles.rowControl}>
+                <span data-testid="framework-version">
+                  {framework.installed === null
+                    ? 'Not installed yet'
+                    : framework.updateTo === null
+                      ? `${framework.installed}, up to date`
+                      : `${framework.installed}, ${framework.updateTo} available`}
+                </span>
+                {framework.updateTo !== null && (
+                  <Button variant="primary" size="sm" onClick={framework.onUpdate} disabled={framework.updating}>
+                    {framework.updating ? 'Updating…' : 'Update'}
+                  </Button>
+                )}
+              </div>
+            </div>
+            {framework.error !== null && (
+              <p className={styles.hint} role="alert">
+                The update failed: {framework.error}
+              </p>
+            )}
+            <p className={styles.hint}>
+              {framework.installed === null
+                ? 'Scamp installs it the first time you open the preview.'
+                : 'Updating runs npm install in the project and restarts the preview. Restart any dev server you run yourself.'}
+            </p>
+          </div>
+        )}
 
         {routes !== undefined && (
           <div className={styles.section} data-testid="settings-routes">

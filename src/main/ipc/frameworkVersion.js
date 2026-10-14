@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { isSupportedContract } from '@shared/projectConfig';
 /**
  * What version of the framework a project has installed, and which
  * contract it implements — read from `node_modules/scampjs/package.json`
@@ -39,4 +40,33 @@ export const readRequestedFrameworkRange = async (projectPath) => {
     catch {
         return null;
     }
+};
+/** `1.2.3` as numbers; null for a prerelease or anything else. */
+export const parseVersion = (version) => {
+    const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+    return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+};
+const isNewer = (a, b) => a[0] !== b[0] ? a[0] > b[0] : a[1] !== b[1] ? a[1] > b[1] : a[2] > b[2];
+/**
+ * The newest release in an npm packument (`registry.npmjs.org/scampjs`)
+ * that implements a contract this build supports, and is newer than
+ * `installed`. Null when there's none, or `installed` isn't a release.
+ */
+export const newerUsableVersion = (packument, installed) => {
+    const current = parseVersion(installed);
+    if (current === null || !packument || typeof packument !== 'object')
+        return null;
+    const versions = packument.versions;
+    if (!versions || typeof versions !== 'object')
+        return null;
+    let best = null;
+    for (const [name, meta] of Object.entries(versions)) {
+        const parts = parseVersion(name);
+        if (parts === null || !isNewer(parts, best?.parts ?? current))
+            continue;
+        const contract = meta?.scampjs?.contract;
+        if (isSupportedContract(contract))
+            best = { name, parts };
+    }
+    return best?.name ?? null;
 };

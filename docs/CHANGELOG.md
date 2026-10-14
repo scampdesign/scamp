@@ -26,6 +26,11 @@ release time.
 
 **Added**
 
+- **See and update a project's scampjs version.** Project Settings has a
+  **Framework** section that shows the installed `scampjs` version and,
+  when npm has a newer release this version of Scamp supports, an
+  **Update** button that installs it. Before, you had to check and run
+  `npm install` yourself.
 - **Shadows that use a theme token show in the panel.** A
   `box-shadow: var(--shadow-card)` appears in the Shadow section by
   token name and keeps following the theme. **Detach** turns it into

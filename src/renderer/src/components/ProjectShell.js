@@ -52,6 +52,7 @@ import { useSvgAssetReload } from './projectShell/useSvgAssetReload';
 import { useSnapshotAutoSave } from './projectShell/useSnapshotAutoSave';
 import { useProjectStoreSync } from './projectShell/useProjectStoreSync';
 import { useRoutes } from './projectShell/useRoutes';
+import { useFrameworkUpdate } from './projectShell/useFrameworkUpdate';
 import { allUnroutedViews, RoutesSection } from './projectShell/RoutesSection';
 import { useAppLogStore } from '@store/appLogSlice';
 import { useWebsiteImport } from './projectShell/useWebsiteImport';
@@ -119,6 +120,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
     // Routes in a Scamp-framework project, and the dev server's request
     // log in the app log. see docs/notes/routes-in-the-app.md
     const routesApi = useRoutes(project);
+    const frameworkUpdate = useFrameworkUpdate(project, showProjectSettings, onProjectChange);
     useEffect(() => {
         if (project.format !== 'scamp')
             return;
@@ -359,7 +361,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
                                         breakpoints: projectConfig.breakpoints,
                                         react: { appName, tokens },
                                     });
-                                } })), showProjectSettings && (_jsx(ProjectSettingsPage, { projectName: project.name, projectPath: project.path, config: projectConfig, onChange: handleProjectConfigChange, onBack: () => setShowProjectSettings(false), routes: project.format === 'scamp'
+                                } })), showProjectSettings && (_jsx(ProjectSettingsPage, { projectName: project.name, projectPath: project.path, config: projectConfig, onChange: handleProjectConfigChange, onBack: () => setShowProjectSettings(false), framework: frameworkUpdate, routes: project.format === 'scamp'
                                     ? {
                                         routes: routesApi.routes,
                                         unrouted: allUnroutedViews(routesApi.routes, project.components.filter((c) => componentKindOf(c) === 'view')),

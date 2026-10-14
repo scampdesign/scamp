@@ -66,6 +66,18 @@ export type FrameworkInfo = {
     /** The contract that install implements, or null when not installed. */
     contract: number | null;
 };
+export type FrameworkCheckUpdateArgs = {
+    projectPath: string;
+};
+export type FrameworkUpdateArgs = {
+    projectPath: string;
+    version: string;
+};
+/** What's installed now, and the newest release this build can use, when newer. */
+export type FrameworkUpdateCheck = {
+    installed: FrameworkInfo;
+    updateTo: string | null;
+};
 /** A route's rendering mode, the `render` export of a page route file. */
 export type RouteRender = 'static' | 'server' | 'client';
 /**

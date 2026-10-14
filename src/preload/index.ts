@@ -54,6 +54,10 @@ import type {
   DevServerLogPayload,
   DevVarsReadArgs,
   DevVarsReadResult,
+  FrameworkCheckUpdateArgs,
+  FrameworkInfo,
+  FrameworkUpdateArgs,
+  FrameworkUpdateCheck,
   RouteFile,
   RouteReadArgs,
   RouteSetRenderArgs,
@@ -157,6 +161,10 @@ const api = {
     ipcRenderer.invoke(IPC.DevVarsRead, args),
   openDevVars: (args: DevVarsReadArgs): Promise<void> =>
     ipcRenderer.invoke(IPC.DevVarsOpen, args),
+  checkFrameworkUpdate: (args: FrameworkCheckUpdateArgs): Promise<FrameworkUpdateCheck> =>
+    ipcRenderer.invoke(IPC.FrameworkCheckUpdate, args),
+  updateFramework: (args: FrameworkUpdateArgs): Promise<FrameworkInfo> =>
+    ipcRenderer.invoke(IPC.FrameworkUpdate, args),
   onRoutesChanged: (handler: () => void): (() => void) => {
     const listener = (): void => handler();
     ipcRenderer.on(IPC.RoutesChanged, listener);

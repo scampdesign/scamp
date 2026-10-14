@@ -1,4 +1,5 @@
 import type { ComponentFile, ProjectConfig, RouteFile, RouteRender } from '@shared/types';
+import type { FrameworkUpdate } from './projectShell/useFrameworkUpdate';
 type Props = {
     projectName: string;
     projectPath: string;
@@ -9,6 +10,8 @@ type Props = {
      * Scamp-framework projects: the keys in `.dev.vars`, the local secrets
      * `load()` and API routes read through `env`. Values stay on disk.
      */
+    /** Scamp-framework projects: the installed scampjs, and an update when npm has one. */
+    framework?: FrameworkUpdate;
     environment?: {
         exists: boolean;
         keys: ReadonlyArray<string>;
@@ -29,5 +32,5 @@ type Props = {
         onGenerate: (viewName: string) => void;
     };
 };
-export declare const ProjectSettingsPage: ({ projectName, projectPath, environment, routes, config, onChange, onBack, }: Props) => JSX.Element;
+export declare const ProjectSettingsPage: ({ projectName, projectPath, environment, framework, routes, config, onChange, onBack, }: Props) => JSX.Element;
 export {};

@@ -39,6 +39,7 @@ import { registerImportIpc } from './importWindow';
 import { registerReactImportIpc } from './ipc/reactImport';
 import { stopAllReactApps } from './reactImport/appServer';
 import { registerRoutesIpc } from './ipc/routes';
+import { registerFrameworkIpc } from './ipc/framework';
 import {
   closeAllPreviewWindows,
   closePreviewWindow,
@@ -379,6 +380,7 @@ app.whenReady().then(() => {
     update: updatePreviewWindow,
   });
   registerRoutesIpc();
+  registerFrameworkIpc();
   registerTestIpc();
 
   // Sentry opt-in toggle — called from the renderer when the

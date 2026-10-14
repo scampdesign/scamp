@@ -10,3 +10,11 @@ import type { FrameworkInfo } from '@shared/types';
 export declare const readFrameworkInfo: (projectPath: string) => Promise<FrameworkInfo>;
 /** The `scampjs` version range a project's package.json asks for, if any. */
 export declare const readRequestedFrameworkRange: (projectPath: string) => Promise<string | null>;
+/** `1.2.3` as numbers; null for a prerelease or anything else. */
+export declare const parseVersion: (version: string) => [number, number, number] | null;
+/**
+ * The newest release in an npm packument (`registry.npmjs.org/scampjs`)
+ * that implements a contract this build supports, and is newer than
+ * `installed`. Null when there's none, or `installed` isn't a release.
+ */
+export declare const newerUsableVersion: (packument: unknown, installed: string) => string | null;

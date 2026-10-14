@@ -45,6 +45,20 @@ Set the color of the area behind the canvas—the background you see when
 you zoom out or around the edges of your design. It doesn't affect
 generated code; it's a visual preference for this project's workspace.
 
+### Framework
+
+In a Scamp-framework project, **Framework** shows the version of
+`scampjs` the project has installed. When npm has a newer release that
+your version of Scamp supports, the version line says so and an
+**Update** button appears.
+
+To update, click **Update**. Scamp runs `npm install` in the project
+and, if the preview is open, restarts it. If you run the project's dev
+server yourself, restart it to pick up the new version.
+
+Scamp only offers releases it can read and write. If a newer `scampjs`
+needs a newer Scamp, update Scamp first.
+
 ### Breakpoints
 
 The responsive breakpoints for this project. Default: Desktop (1440),

@@ -30,6 +30,7 @@ import { registerImportIpc } from './importWindow';
 import { registerReactImportIpc } from './ipc/reactImport';
 import { stopAllReactApps } from './reactImport/appServer';
 import { registerRoutesIpc } from './ipc/routes';
+import { registerFrameworkIpc } from './ipc/framework';
 import { closeAllPreviewWindows, closePreviewWindow, openPreviewWindow, updatePreviewWindow, } from './previewWindow';
 import { setDevServerLogSink, stopAllDevServers } from './devServer/devServerManager';
 import { initWatcher, disposeWatcher, getWatchedPath } from './watcher';
@@ -345,6 +346,7 @@ app.whenReady().then(() => {
         update: updatePreviewWindow,
     });
     registerRoutesIpc();
+    registerFrameworkIpc();
     registerTestIpc();
     // Sentry opt-in toggle — called from the renderer when the
     // Privacy switch (or the first-launch prompt) flips. The SDK
