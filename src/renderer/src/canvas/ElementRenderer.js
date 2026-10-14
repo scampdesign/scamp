@@ -232,9 +232,8 @@ row = null) => {
     const runs = isText && rowText === undefined && overrideValue === undefined ? runsOf(element) : [];
     const styledRuns = !hasChildren && fragments.length === 0 && (runs.length > 1 || runs.some(isStyled));
     const prefix = instanceClassPrefix('', instanceClass);
-    // Prop-text always carries the hit-test attrs and overrides the
-    // inner wrapper's `pointer-events: none` so `elementsFromPoint`
-    // surfaces it for `propTextHitTest`. The dashed edit affordance
+    // Prop-text always carries the hit-test attrs, so
+    // `elementsFromPoint` surfaces it for `propTextHitTest`. The dashed edit affordance
     // only shows once the owning instance is selected — otherwise a
     // page full of instances would be noisy with outlines around
     // every editable string. The affordance lives on a CSS-module
@@ -595,8 +594,9 @@ export const ElementRenderer = ({ elementId, row }) => {
     // contents are the component definition's own element subtree,
     // rendered from `componentTrees[name].elements`. We wrap the
     // subtree in a positioned div that owns selection / double-
-    // click / context-menu, and apply `pointer-events: none` to
-    // the inner subtree so every click lands on the wrapper.
+    // click / context-menu. The inner subtree has no element ids, so
+    // the canvas hit test resolves a hit inside it to this wrapper.
+    // see docs/archive/2026-10-14-instance-hit-test-plan.md
     //
     // Double-click navigates the canvas into the component editor
     // for this instance's component (one-shot request consumed by
@@ -766,7 +766,7 @@ export const ElementRenderer = ({ elementId, row }) => {
         // content-sized block cut an imported sidebar's background off
         // where its links ended. Over a content-sized wrapper `100%` is
         // still `auto`, so a hugging instance is unchanged.
-        return (_jsx("div", { ...wrapperProps, children: _jsx("div", { style: { pointerEvents: 'none', display: 'block', height: '100%' }, "aria-hidden": "true", children: inner }) }));
+        return (_jsx("div", { ...wrapperProps, children: _jsx("div", { style: { display: 'block', height: '100%' }, "aria-hidden": "true", children: inner }) }));
     }
     // The actual HTML tag — uses the element's stored override if any,
     // otherwise the type's default (`p` for text, `div` for rect).

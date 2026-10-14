@@ -19,10 +19,21 @@ export const elementIdOf = (node: Element): string | undefined =>
  * Hit-test the cursor against existing elements. Returns the deepest
  * `data-element-id` under the point.
  */
+/**
+ * The page element a hit node belongs to: itself, or its nearest ancestor
+ * with a `data-element-id`. An instance's drawn contents carry none, so
+ * they resolve to the instance — even when the instance's wrapper box is
+ * 0 × 0. see docs/archive/2026-10-14-instance-hit-test-plan.md
+ */
+const owningElementId = (node: Element): string | undefined => {
+  const owner = node.closest('[data-element-id]');
+  return owner === null ? undefined : elementIdOf(owner);
+};
+
 export const hitTest = (clientX: number, clientY: number): string | null => {
   const candidates = document.elementsFromPoint(clientX, clientY);
   for (const node of candidates) {
-    const id = elementIdOf(node);
+    const id = owningElementId(node);
     if (id) return id;
   }
   return null;
@@ -40,7 +51,7 @@ export const instanceAt = (
   isInstance: (id: string) => boolean
 ): string | null => {
   for (const node of document.elementsFromPoint(clientX, clientY)) {
-    const id = elementIdOf(node);
+    const id = owningElementId(node);
     if (id !== undefined && isInstance(id)) return id;
   }
   return null;

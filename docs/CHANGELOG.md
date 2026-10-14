@@ -85,6 +85,11 @@ release time.
 
 **Fixed**
 
+- **Click and drag a component instance on the canvas.** A click
+  anywhere an instance draws now selects it, so you can drag it and
+  double-click it. Before, an instance whose content didn't give it a
+  box of its own couldn't be clicked: the click selected the page behind
+  it, and you had to select it in the layers panel.
 - **Dragging a side handle no longer resets the other dimension.**
   Narrowing a text box from its right edge keeps its height hugging the
   text, so the text wraps and the box grows. Before, the drag started

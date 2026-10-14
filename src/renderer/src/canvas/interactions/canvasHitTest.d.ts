@@ -7,10 +7,6 @@ import type { ResizeHandle } from './types';
  * can't target it while dragging). Both element kinds carry `dataset`.
  */
 export declare const elementIdOf: (node: Element) => string | undefined;
-/**
- * Hit-test the cursor against existing elements. Returns the deepest
- * `data-element-id` under the point.
- */
 export declare const hitTest: (clientX: number, clientY: number) => string | null;
 /**
  * The component instance under the cursor: the first element in the
