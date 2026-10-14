@@ -9,7 +9,7 @@ each story below is copied from them unchanged apart from its heading.
 |---|---|---|---|---|
 | ~~Edit every selected element at once~~ **Done** | Bug | M | v12 #1 | `archive/2026-10-14-multi-select-edit-plan.md` |
 | ~~Narrowing a text element keeps the height I set~~ **Done** | Bug | S | v12 #2 | `archive/2026-10-14-text-resize-height-plan.md` |
-| Drag a component instance on the canvas | Bug | M | v12 #3 | |
+| ~~Drag a component instance on the canvas~~ **Done** | Bug | M | v12 #3 | `archive/2026-10-14-instance-hit-test-plan.md` |
 | Drop an image onto the canvas | Bug | S | v12 #4 | |
 | Find per-side padding | Discoverability | S | v12 #5 | |
 | Alignment guides when dragging a component | Feature | M | v12 #7 | |
@@ -93,7 +93,9 @@ a side handle may behave differently.
 - When the height is `auto`, the panel says so, so growth from wrapping
   reads as expected rather than as a reset.
 
-### Drag a component instance on the canvas
+### Drag a component instance on the canvas - DONE
+
+Built 2026-10-14; see `docs/archive/2026-10-14-instance-hit-test-plan.md`.
 
 As a designer, I want to drag a component instance with a mouse or
 trackpad like any other element, so that I don't have to use the layers
