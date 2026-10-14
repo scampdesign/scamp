@@ -1,5 +1,7 @@
 import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
 import { useCanvasStore } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import { assetsDirSegment } from '@renderer/src/lib/path';
@@ -30,8 +32,8 @@ const BG_POSITION_OPTIONS = [
 ];
 export const BackgroundSection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
-    const patchElement = useCanvasStore((s) => s.patchElement);
-    const patchCustomProperties = useCanvasStore((s) => s.patchCustomProperties);
+    const { patchElement } = selectionPatchers(SECTION_FITS.box);
+    const { patchCustomProperties } = selectionPatchers(SECTION_FITS.box);
     const { presetColors, themeTokens, onOpenTheme } = useColorPickerContext();
     const projectFormat = useCanvasStore((s) => s.projectFormat);
     const projectPath = useCanvasStore((s) => s.projectPath);
@@ -92,5 +94,5 @@ export const BackgroundSection = ({ elementId }) => {
             'background-position',
             'background-repeat',
             'background-blend-mode',
-        ], children: [_jsx(Row, { label: "", children: _jsx(ColorInput, { value: element.backgroundColor, onChange: (value) => patchElement(elementId, { backgroundColor: value }), onPreview: previewStyle(elementId, 'backgroundColor'), historyElementId: elementId, historyPropertyKey: "backgroundColor", presetColors: presetColors, tokens: themeTokens, onOpenTheme: onOpenTheme }) }), (!isImage || bgImage) && (_jsx(Row, { label: "", children: _jsx(Button, { variant: "secondary", size: "sm", fullWidth: true, onClick: () => void handleSetBackgroundImage(), children: bgImage ? 'Replace image' : 'Set background image' }) })), bgImage && (_jsxs(_Fragment, { children: [_jsx(Row, { label: "Size", children: _jsx(SegmentedControl, { value: bgSize, options: BG_SIZE_OPTIONS, onChange: (value) => updateBgProp('background-size', value) }) }), _jsx(Row, { label: "Position", children: _jsx("div", { className: styles.positionGrid, children: BG_POSITION_OPTIONS.map((opt) => (_jsx(Tooltip, { label: `Anchor the image to the ${opt}`, children: _jsx("button", { className: `${styles.positionBtn} ${bgPosition === opt ? styles.positionActive : ''}`, onClick: () => updateBgProp('background-position', opt), type: "button" }) }, opt))) }) }), _jsx(Row, { label: "Repeat", children: _jsx(SegmentedControl, { value: bgRepeat, options: BG_REPEAT_OPTIONS, onChange: (value) => updateBgProp('background-repeat', value) }) }), showBackgroundBlend && (_jsx(Row, { label: "Blend", children: _jsx(BlendModeSelect, { value: element.backgroundBlendMode, onChange: (value) => patchElement(elementId, { backgroundBlendMode: value }), title: "How the background image blends with the background color" }) })), _jsx(Row, { label: "", children: _jsx(Button, { variant: "dangerGhost", size: "sm", fullWidth: true, onClick: handleRemoveBackgroundImage, children: "Remove background image" }) })] }))] }));
+        ], children: [_jsx(Row, { label: "", children: _jsx(ColorInput, { value: element.backgroundColor, onChange: (value) => patchElement(elementId, { backgroundColor: value }), onPreview: previewStyle(elementId, 'backgroundColor', SECTION_FITS.box), historyElementId: elementId, historyPropertyKey: "backgroundColor", presetColors: presetColors, tokens: themeTokens, onOpenTheme: onOpenTheme }) }), (!isImage || bgImage) && (_jsx(Row, { label: "", children: _jsx(Button, { variant: "secondary", size: "sm", fullWidth: true, onClick: () => void handleSetBackgroundImage(), children: bgImage ? 'Replace image' : 'Set background image' }) })), bgImage && (_jsxs(_Fragment, { children: [_jsx(Row, { label: "Size", children: _jsx(SegmentedControl, { value: bgSize, options: BG_SIZE_OPTIONS, onChange: (value) => updateBgProp('background-size', value) }) }), _jsx(Row, { label: "Position", children: _jsx("div", { className: styles.positionGrid, children: BG_POSITION_OPTIONS.map((opt) => (_jsx(Tooltip, { label: `Anchor the image to the ${opt}`, children: _jsx("button", { className: `${styles.positionBtn} ${bgPosition === opt ? styles.positionActive : ''}`, onClick: () => updateBgProp('background-position', opt), type: "button" }) }, opt))) }) }), _jsx(Row, { label: "Repeat", children: _jsx(SegmentedControl, { value: bgRepeat, options: BG_REPEAT_OPTIONS, onChange: (value) => updateBgProp('background-repeat', value) }) }), showBackgroundBlend && (_jsx(Row, { label: "Blend", children: _jsx(BlendModeSelect, { value: element.backgroundBlendMode, onChange: (value) => patchElement(elementId, { backgroundBlendMode: value }), title: "How the background image blends with the background color" }) })), _jsx(Row, { label: "", children: _jsx(Button, { variant: "dangerGhost", size: "sm", fullWidth: true, onClick: handleRemoveBackgroundImage, children: "Remove background image" }) })] }))] }));
 };

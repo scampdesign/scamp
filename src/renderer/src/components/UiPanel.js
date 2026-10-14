@@ -20,6 +20,7 @@ import { TransformSection } from './sections/TransformSection';
 import { TransitionsSection } from './sections/TransitionsSection';
 import { AnimationSection } from './sections/AnimationSection';
 import { ExportSection } from './sections/ExportSection';
+import { MultiSelectionPanel } from './MultiSelectionPanel';
 import styles from './PropertiesPanel.module.css';
 /**
  * The typed view of the properties panel. Reads the primary selected
@@ -33,6 +34,7 @@ import styles from './PropertiesPanel.module.css';
  */
 export const UiPanel = () => {
     const elementId = useCanvasStore((s) => s.selectedElementIds[0] ?? null);
+    const isMulti = useCanvasStore((s) => s.selectedElementIds.length > 1);
     const element = useCanvasStore((s) => (elementId ? s.elements[elementId] : undefined));
     const parentIsFlex = useCanvasStore((s) => {
         if (!element || !element.parentId)
@@ -42,6 +44,8 @@ export const UiPanel = () => {
     });
     if (!elementId || !element)
         return _jsx(_Fragment, {});
+    if (isMulti)
+        return _jsx(MultiSelectionPanel, {});
     const isRoot = elementId === ROOT_ELEMENT_ID;
     const isText = element.type === 'text';
     const isImage = element.type === 'image';

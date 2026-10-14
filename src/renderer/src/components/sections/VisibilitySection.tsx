@@ -1,5 +1,7 @@
 import { IconPercentage } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 import type { BlendMode } from '@lib/element';
 import { BlendModeSelect } from '../controls/BlendModeSelect';
@@ -24,7 +26,7 @@ const toPercent = (opacity: number): number => Math.round(opacity * 100);
 
 export const VisibilitySection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.box);
   if (!element) return null;
 
   const currentPercent = toPercent(element.opacity);

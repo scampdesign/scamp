@@ -2,6 +2,8 @@ import { IconBoxMargin, IconBoxPadding } from '@tabler/icons-react';
 
 import { useMemo } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 import { tokensForField } from '@lib/tokensForField';
 import { FourSideInput } from '../controls/FourSideInput';
@@ -14,7 +16,7 @@ type Props = {
 
 export const SpacingSection = ({ elementId, hideMargin = false }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.box);
   const themeTokens = useCanvasStore((s) => s.themeTokens);
   const openThemePanel = useCanvasStore((s) => s.openThemePanel);
   // Padding / margin offer length tokens with `--space-*` floated first.

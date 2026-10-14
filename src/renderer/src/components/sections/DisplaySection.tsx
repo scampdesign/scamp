@@ -1,4 +1,6 @@
 import { useCanvasStore } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 
 import { DisplaySelect } from '../controls/DisplaySelect';
@@ -14,7 +16,7 @@ type Props = {
  */
 export const DisplaySection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.display);
   if (!element || element.visibilityMode === 'none') return null;
   return (
     <Section title="Display" elementId={elementId} fields={['display', 'displayOuter']} cssProperties={['display']}>

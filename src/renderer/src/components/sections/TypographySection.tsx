@@ -8,6 +8,8 @@ import {
 } from '@tabler/icons-react';
 
 import { useCanvasStore } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import { useFontsStore, selectAllFonts } from '@store/fontsSlice';
@@ -41,7 +43,7 @@ const isFontWeight = (n: number): boolean =>
 
 export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.typography);
   const styleTextRange = useCanvasStore((s) => s.styleTextRange);
   const textSelection = useCanvasStore((s) => s.textSelection);
   /**
@@ -230,7 +232,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
             if (range !== null) styleTextRange(elementId, range.start, range.end, { color: value });
             else patchElement(elementId, { color: value });
           }}
-          onPreview={previewStyle(elementId, 'color')}
+          onPreview={previewStyle(elementId, 'color', SECTION_FITS.typography)}
           historyElementId={elementId}
           historyPropertyKey="color"
           presetColors={presetColors}

@@ -1,6 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useMemo } from 'react';
-import { useCanvasStore } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import { ColorInput } from '../controls/ColorInput';
@@ -18,7 +19,7 @@ const BORDER_STYLE_OPTIONS = [
 ];
 export const BorderSection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
-    const patchElement = useCanvasStore((s) => s.patchElement);
+    const { patchElement } = selectionPatchers(SECTION_FITS.box);
     const { presetColors, themeTokens, onOpenTheme } = useColorPickerContext();
     // Hide the eye when no border is set AND no rounded corners.
     // Border radius lives in the same group, so a rounded-but-
@@ -40,5 +41,5 @@ export const BorderSection = ({ elementId }) => {
             'border-style',
             'border-color',
             'border-radius',
-        ], children: [_jsxs(Row, { label: "", children: [_jsx(ColorInput, { value: element.borderColor, onChange: (value) => patchElement(elementId, { borderColor: value }), onPreview: previewStyle(elementId, 'borderColor'), historyElementId: elementId, historyPropertyKey: "borderColor", presetColors: presetColors, tokens: themeTokens, onOpenTheme: onOpenTheme }), _jsx(EnumSelect, { value: element.borderStyle, options: BORDER_STYLE_OPTIONS, onChange: (value) => patchElement(elementId, { borderStyle: value }), title: "Border style" })] }), _jsxs(Row, { label: "", children: [_jsx(FourSideInput, { prefix: "W", title: "Border width (top right bottom left)", value: element.borderWidth, onChange: (next) => patchElement(elementId, { borderWidth: next }), min: 0, tokens: borderWidthTokens, onOpenTheme: onOpenTheme }), _jsx(FourSideInput, { prefix: "R", title: "Border radius (top-left top-right bottom-right bottom-left)", value: element.borderRadius, onChange: (next) => patchElement(elementId, { borderRadius: next }), min: 0, tokens: radiusTokens, onOpenTheme: onOpenTheme })] })] }));
+        ], children: [_jsxs(Row, { label: "", children: [_jsx(ColorInput, { value: element.borderColor, onChange: (value) => patchElement(elementId, { borderColor: value }), onPreview: previewStyle(elementId, 'borderColor', SECTION_FITS.box), historyElementId: elementId, historyPropertyKey: "borderColor", presetColors: presetColors, tokens: themeTokens, onOpenTheme: onOpenTheme }), _jsx(EnumSelect, { value: element.borderStyle, options: BORDER_STYLE_OPTIONS, onChange: (value) => patchElement(elementId, { borderStyle: value }), title: "Border style" })] }), _jsxs(Row, { label: "", children: [_jsx(FourSideInput, { prefix: "W", title: "Border width (top right bottom left)", value: element.borderWidth, onChange: (next) => patchElement(elementId, { borderWidth: next }), min: 0, tokens: borderWidthTokens, onOpenTheme: onOpenTheme }), _jsx(FourSideInput, { prefix: "R", title: "Border radius (top-left top-right bottom-right bottom-left)", value: element.borderRadius, onChange: (next) => patchElement(elementId, { borderRadius: next }), min: 0, tokens: radiusTokens, onOpenTheme: onOpenTheme })] })] }));
 };

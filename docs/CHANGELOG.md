@@ -26,6 +26,12 @@ release time.
 
 **Added**
 
+- **Edit several elements at once.** With two or more elements
+  selected, a change in Typography, Size, Layout, Display, Spacing,
+  Background, Border, or Visibility applies to every selected element it
+  fits, as one undo step. Before, only the first selected element
+  changed. Typography reaches only text, and a component instance takes
+  only a size.
 - **See and update a project's scampjs version.** Project Settings has a
   **Framework** section that shows the installed `scampjs` version and,
   when npm has a newer release this version of Scamp supports, an

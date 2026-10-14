@@ -19,6 +19,7 @@ import { TransformSection } from './sections/TransformSection';
 import { TransitionsSection } from './sections/TransitionsSection';
 import { AnimationSection } from './sections/AnimationSection';
 import { ExportSection } from './sections/ExportSection';
+import { MultiSelectionPanel } from './MultiSelectionPanel';
 import styles from './PropertiesPanel.module.css';
 
 /**
@@ -33,6 +34,7 @@ import styles from './PropertiesPanel.module.css';
  */
 export const UiPanel = (): JSX.Element => {
   const elementId = useCanvasStore((s) => s.selectedElementIds[0] ?? null);
+  const isMulti = useCanvasStore((s) => s.selectedElementIds.length > 1);
   const element = useCanvasStore((s) => (elementId ? s.elements[elementId] : undefined));
   const parentIsFlex = useCanvasStore((s) => {
     if (!element || !element.parentId) return false;
@@ -41,6 +43,7 @@ export const UiPanel = (): JSX.Element => {
   });
 
   if (!elementId || !element) return <></>;
+  if (isMulti) return <MultiSelectionPanel />;
 
   const isRoot = elementId === ROOT_ELEMENT_ID;
   const isText = element.type === 'text';

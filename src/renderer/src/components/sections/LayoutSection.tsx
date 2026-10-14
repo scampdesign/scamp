@@ -10,6 +10,8 @@ import {
 
 import { useMemo } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 import { AlignmentGrid } from '../controls/AlignmentGrid';
 import { DisplaySelect } from '../controls/DisplaySelect';
@@ -215,7 +217,7 @@ const computeLayoutPatch = (
 
 export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.layout);
   const elements = useCanvasStore((s) => s.elements);
   const themeTokens = useCanvasStore((s) => s.themeTokens);
   const openThemePanel = useCanvasStore((s) => s.openThemePanel);

@@ -12,7 +12,12 @@ code. Nested elements appear indented under their parents.
 
 - Click an element to select it. The element highlights on the canvas,
   and its properties appear in the [properties panel](properties-panel.md).
-- Shift-click to select multiple elements.
+- Shift-click to select multiple elements. A change you make in the
+  properties panel then applies to every selected element it fits:
+  Typography changes only the text elements, and a component instance
+  takes only a size. Sections that edit one element's own settings,
+  such as **Element** and **Position**, show when one element is
+  selected.
 
 ## Collapse branches
 

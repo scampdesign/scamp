@@ -127,6 +127,14 @@ font-size: 12px;
   border-top: 1px solid var(--border);
 }
 
+.multiNote {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
 .hint {
   padding: 8px 12px;
 font-size: 11px;

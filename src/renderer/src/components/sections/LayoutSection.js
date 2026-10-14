@@ -2,6 +2,8 @@ import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-run
 import { IconArrowDown, IconArrowRight, IconArrowsLeftRight, IconLayoutBoard, IconLayoutGrid, IconTextWrap, IconTextWrapDisabled, } from '@tabler/icons-react';
 import { useMemo } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 import { AlignmentGrid } from '../controls/AlignmentGrid';
 import { DisplaySelect } from '../controls/DisplaySelect';
@@ -153,7 +155,7 @@ const computeLayoutPatch = (current, next) => {
 };
 export const LayoutSection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
-    const patchElement = useCanvasStore((s) => s.patchElement);
+    const { patchElement } = selectionPatchers(SECTION_FITS.layout);
     const elements = useCanvasStore((s) => s.elements);
     const themeTokens = useCanvasStore((s) => s.themeTokens);
     const openThemePanel = useCanvasStore((s) => s.openThemePanel);

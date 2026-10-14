@@ -6,6 +6,8 @@ import {
   IconLinkOff,
 } from '@tabler/icons-react';
 import { useCanvasStore, selectIsRatioLocked } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 import { EnumSelect } from '../controls/EnumSelect';
 import { NumberInput } from '../controls/NumberInput';
@@ -163,7 +165,7 @@ const useMeasuredSize = (
 
 export const SizeSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.size);
   const toggleRatioLock = useCanvasStore((s) => s.toggleRatioLock);
   const clearRatioLock = useCanvasStore((s) => s.clearRatioLock);
   const ratioLocked = useCanvasStore((s) => selectIsRatioLocked(s, elementId));

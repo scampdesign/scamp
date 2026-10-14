@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import { ColorInput } from '../controls/ColorInput';
@@ -24,7 +26,7 @@ const BORDER_STYLE_OPTIONS: ReadonlyArray<{ value: BorderStyle; label: string }>
 
 export const BorderSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
+  const { patchElement } = selectionPatchers(SECTION_FITS.box);
   const { presetColors, themeTokens, onOpenTheme } = useColorPickerContext();
   // Hide the eye when no border is set AND no rounded corners.
   // Border radius lives in the same group, so a rounded-but-
@@ -65,7 +67,7 @@ export const BorderSection = ({ elementId }: Props): JSX.Element | null => {
         <ColorInput
           value={element.borderColor}
           onChange={(value) => patchElement(elementId, { borderColor: value })}
-          onPreview={previewStyle(elementId, 'borderColor')}
+          onPreview={previewStyle(elementId, 'borderColor', SECTION_FITS.box)}
           historyElementId={elementId}
           historyPropertyKey="borderColor"
           presetColors={presetColors}

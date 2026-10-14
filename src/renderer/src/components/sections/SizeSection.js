@@ -2,6 +2,8 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
 import { useEffect, useState } from 'react';
 import { IconChevronDown, IconChevronRight, IconLink, IconLinkOff, } from '@tabler/icons-react';
 import { useCanvasStore, selectIsRatioLocked } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useResolvedElement } from '@store/useResolvedElement';
 import { EnumSelect } from '../controls/EnumSelect';
 import { NumberInput } from '../controls/NumberInput';
@@ -122,7 +124,7 @@ const useMeasuredSize = (elementId, widthMode, heightMode) => {
 };
 export const SizeSection = ({ elementId }) => {
     const element = useResolvedElement(elementId);
-    const patchElement = useCanvasStore((s) => s.patchElement);
+    const { patchElement } = selectionPatchers(SECTION_FITS.size);
     const toggleRatioLock = useCanvasStore((s) => s.toggleRatioLock);
     const clearRatioLock = useCanvasStore((s) => s.clearRatioLock);
     const ratioLocked = useCanvasStore((s) => selectIsRatioLocked(s, elementId));

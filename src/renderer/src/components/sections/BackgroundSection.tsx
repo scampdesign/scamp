@@ -1,4 +1,6 @@
 import { useCanvasStore } from '@store/canvasSlice';
+import { selectionPatchers } from '@store/selectionPatch';
+import { SECTION_FITS } from '@lib/multiEdit';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useGroupToggle, useResolvedElement } from '@store/useResolvedElement';
 import { assetsDirSegment } from '@renderer/src/lib/path';
@@ -38,8 +40,8 @@ const BG_POSITION_OPTIONS = [
 
 export const BackgroundSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useResolvedElement(elementId);
-  const patchElement = useCanvasStore((s) => s.patchElement);
-  const patchCustomProperties = useCanvasStore((s) => s.patchCustomProperties);
+  const { patchElement } = selectionPatchers(SECTION_FITS.box);
+  const { patchCustomProperties } = selectionPatchers(SECTION_FITS.box);
   const { presetColors, themeTokens, onOpenTheme } = useColorPickerContext();
   const projectFormat = useCanvasStore((s) => s.projectFormat);
   const projectPath = useCanvasStore((s) => s.projectPath);
@@ -120,7 +122,7 @@ export const BackgroundSection = ({ elementId }: Props): JSX.Element | null => {
         <ColorInput
           value={element.backgroundColor}
           onChange={(value) => patchElement(elementId, { backgroundColor: value })}
-          onPreview={previewStyle(elementId, 'backgroundColor')}
+          onPreview={previewStyle(elementId, 'backgroundColor', SECTION_FITS.box)}
           historyElementId={elementId}
           historyPropertyKey="backgroundColor"
           presetColors={presetColors}
