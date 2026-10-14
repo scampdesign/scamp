@@ -1,6 +1,6 @@
 # SVG colors: put the controls where people look
 
-Backlog: `docs/backlog-11.md` story #6.
+Backlog: `docs/archive/backlog-11.md` story #6.
 
 > SVG items color change (not working or need to know how to change it)
 

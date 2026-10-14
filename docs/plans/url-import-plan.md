@@ -3,7 +3,7 @@
 Status: **proposed** — for review. Open questions at the bottom; several
 change the shape of the work and are worth settling before Phase 1.
 
-Source story: `docs/backlog-10.md` §3. The sibling story (§4, Figma
+Source story: `docs/archive/backlog-10.md` §3. The sibling story (§4, Figma
 import) shares this plan's back half — everything from "DOM tree →
 ElementTree" onwards is the same problem with a different front end, so
 the seam between fetch and translate is drawn deliberately.

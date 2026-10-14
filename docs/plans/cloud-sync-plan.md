@@ -7,7 +7,7 @@ backend's existing file-level storage. The backend additions it needs
 are collected in one section near the end, meant to be handed to the
 website repo as-is.
 
-Source story: `docs/backlog-10.md` §2, superseded by the target model
+Source story: `docs/archive/backlog-10.md` §2, superseded by the target model
 (reproduced in short under "The target"). Backend today:
 `scamp-website/api-docs` and its reference client
 `scripts/fake-client.mjs`; backend plan: `scamp-website/plans/cloud-sync.md`.
