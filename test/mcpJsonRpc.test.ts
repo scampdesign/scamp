@@ -11,7 +11,7 @@ import {
 /**
  * The JSON-RPC envelope. Malformed input arrives here from a process we
  * don't control, so the unhappy paths are the point.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 
 describe('parsePayload — single messages', () => {

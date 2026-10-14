@@ -6,7 +6,7 @@ protocol from the spec to make a change — it records **what we implement, what
 we deliberately skip, and what a real client was observed doing.**
 
 Code: `src/main/mcp/jsonRpc.ts` (envelope) and `protocol.ts` (semantics).
-Plan and decision history: `docs/plans/mcp-server-plan.md`.
+Plan and decision history: `docs/archive/2026-08-06-mcp-server-plan.md`.
 
 ## Why hand-rolled
 

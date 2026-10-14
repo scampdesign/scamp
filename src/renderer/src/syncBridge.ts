@@ -179,7 +179,7 @@ export const initSyncBridge = (): (() => void) => {
   );
   // Second, independent consumer of the same store: the agent context file.
   // Kept separate from the save path so a context write can never delay or
-  // interfere with a disk write. see docs/plans/live-context-file-plan.md
+  // interfere with a disk write. see docs/archive/2026-08-05-live-context-file-plan.md
   const unsubContext = useCanvasStore.subscribe(makeContextFileHandler());
   // Seed the file for whatever is already open, so an agent reading it
   // before the user's first click still gets the page.
@@ -187,7 +187,7 @@ export const initSyncBridge = (): (() => void) => {
 
   // Third consumer of the same store, and the only one that reads on demand
   // rather than on change: the MCP server asks, this answers.
-  // see docs/plans/mcp-server-plan.md
+  // see docs/archive/2026-08-06-mcp-server-plan.md
   const offMcp = installMcpResponder();
   // The built-in agent's edits, answered the same way.
   const offAgentTools = installAgentToolResponder();

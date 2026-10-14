@@ -9,7 +9,7 @@
  *   3. npm run dev, and opt in when prompted.
  *
  * It prints one line per session and per error event. The two things worth
- * watching, both from docs/plans/dau-tracking-plan.md:
+ * watching, both from docs/archive/2026-08-11-dau-tracking-plan.md:
  *
  *   - SESSION lines must show `did=<uuid>`. A `did=(none)` means the install
  *     id isn't reaching the session, and Sentry can't count unique users.

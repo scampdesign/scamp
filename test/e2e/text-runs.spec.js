@@ -20,7 +20,7 @@ test.describe('text runs', () => {
         // The risky half of Phase 4. A styled sentence is editable in place
         // again, which means `handleEditableBlur` runs on it — and if that
         // commits `textContent` unconditionally, one stray click flattens
-        // every run. see docs/plans/inline-spans-plan.md
+        // every run. see docs/archive/2026-09-29-inline-spans-plan.md
         await writeSentence(window);
         await expect(canvasElementsByPrefix(window, 'text_')).toHaveCount(1);
         // Style "alongside" through the same store call the panel makes.

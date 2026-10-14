@@ -5,7 +5,7 @@
  * layers tree can't disagree about what the cursor position means. Pure
  * and axis-agnostic: the tree always splits vertically, a flex-row
  * container splits horizontally, and both hand in the same shape.
- * see docs/plans/drop-placement-helpers-plan.md
+ * see docs/archive/2026-08-13-drop-placement-helpers-plan.md
  */
 /**
  * How far into an element the "drop beside it" band reaches.

@@ -2,7 +2,7 @@
 
 Backlog: `docs/ai-backlog.md` story 2 (the design brief; read `:142-209`).
 Status: **proposed** — for review.
-Builds on story 1 (`docs/plans/live-context-file-plan.md`), which shipped
+Builds on story 1 (`docs/archive/2026-08-05-live-context-file-plan.md`), which shipped
 `lib/contextMarkdown.ts`.
 
 ## Goal

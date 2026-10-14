@@ -2,7 +2,7 @@
 
 Give Scamp a React project folder; it imports the app's pages as views,
 the way the HTML importer imports a URL. SCMP-102. Split out of
-[`builtin-agent-plan.md`](builtin-agent-plan.md) on 2026-10-05; this
+[`../archive/2026-10-06-builtin-agent-plan.md`](../archive/2026-10-06-builtin-agent-plan.md) on 2026-10-05; this
 replaces the scoping draft of the same name (2026-10-06).
 
 Test project throughout: `riq_design/riq_frontend_demo` — React 19,

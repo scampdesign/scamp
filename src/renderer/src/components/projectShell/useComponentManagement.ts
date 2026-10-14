@@ -511,7 +511,7 @@ export const useComponentManagement = ({
    * `views/<Name>/` in the component file shape, and the page file
    * becomes the one-line wrapper that previews the view. A snapshot is
    * taken first, so the page is one restore away.
-   * see docs/plans/framework-phase-1-plan.md, step 2
+   * see docs/archive/2026-09-16-framework-phase-1-plan.md, step 2
    */
   /**
    * Turn one page into a view: generate the view files from the page's

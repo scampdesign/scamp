@@ -8,7 +8,7 @@ import { ROOT_ELEMENT_ID } from '@lib/element';
  * covers which subtrees a selection resolves to; this covers what the
  * actions then do with them — where a paste lands, what cut removes, and
  * how many undo steps each takes.
- * see docs/plans/copy-cut-paste-plan.md
+ * see docs/archive/2026-08-12-copy-cut-paste-plan.md
  */
 /** History is bucketed per page; the actions key off `activePageId`. */
 const HISTORY_PAGE = '/p/home.tsx';

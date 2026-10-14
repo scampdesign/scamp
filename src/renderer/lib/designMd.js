@@ -10,7 +10,7 @@ import { resolveTokenChain } from './resolveToken';
  * The token YAML is always regenerated from `theme.css`; only the prose
  * (name / description / section bodies) round-trips — matching the spec's
  * "tokens are authoritative, prose is authored" split.
- * see docs/plans/design-system-plan.md
+ * see docs/archive/2026-07-23-design-system-plan.md
  */
 /** The spec's required prose section order. Empty sections are omitted. */
 export const DESIGN_MD_SECTIONS = [

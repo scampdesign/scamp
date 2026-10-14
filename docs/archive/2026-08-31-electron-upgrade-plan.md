@@ -141,7 +141,7 @@ needs its own investigation before anything else proceeds.
 `sharp` 0.35.3 ships prebuilt platform binaries rather than compiling,
 so it is far lower risk, but the `@img/sharp-*` and `asarUnpack` setup in
 `electron-builder.yml` must be re-verified in a **packaged** build — per
-`docs/plans/image-import-speed-plan.md` those failures appear only after
+`docs/archive/2026-08-14-image-import-speed-plan.md` those failures appear only after
 packaging.
 
 ### 4. Toolchain floor: Node 22+

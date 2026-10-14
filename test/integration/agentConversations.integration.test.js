@@ -5,7 +5,7 @@ import path from 'path';
 import { AGENT_HISTORY_DIR, asConversationKey, conversationFileName, deleteConversation, loadConversation, saveConversation, } from '../../src/main/agent/conversationStore';
 /**
  * Each page's agent conversation, on a real disk.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const HOME = { kind: 'page', name: 'home' };
 const USAGE = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 };

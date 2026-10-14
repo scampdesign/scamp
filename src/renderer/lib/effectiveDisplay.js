@@ -14,7 +14,7 @@ import { TABLE_LAYOUT_TAGS } from './tableGrid';
  * on one is the "neither" sentinel, so every caller answered no and
  * Scamp absolutely positioned the cells. An out-of-flow grid item is
  * placed by nothing, so the columns reached no cell at all.
- * see docs/plans/tables-plan.md
+ * see docs/archive/2026-10-05-tables-plan.md
  */
 export const effectiveDisplay = (el) => {
     if (!el)

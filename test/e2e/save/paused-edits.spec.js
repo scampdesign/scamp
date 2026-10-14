@@ -6,7 +6,7 @@ import { pageRoot, pageSidebarItem, saveStatus } from '../fixtures/selectors';
 /**
  * Edits made while sync is paused reach disk, and the indicator doesn't
  * call them saved before they do. Audit items 7 and 8 in
- * docs/plans/audit-2026-10-12.md.
+ * docs/archive/2026-10-12-audit-2026-10-12.md.
  */
 test.use({ projectOptions: { extraPages: ['about'] } });
 const toggleSync = async (window) => {

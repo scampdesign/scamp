@@ -7,7 +7,7 @@
  * links where, which stylesheet an instance's rules land in, how deep a
  * relative path has to climb — testable without Electron or a temp dir.
  *
- * see docs/plans/html-export-plan.md
+ * see docs/archive/2026-08-27-html-export-plan.md
  */
 /** A file to write, at a path relative to the export root. */
 export type ExportFile = {

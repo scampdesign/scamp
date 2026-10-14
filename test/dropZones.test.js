@@ -4,7 +4,7 @@ import { MAX_EDGE_BAND, MIN_EDGE_BAND, edgeBandFor, resolveDropZone, } from '@li
  * The shared drop-target rule. Both drag surfaces resolve the cursor
  * through this, so the awkward cases (tiny rows, huge containers, leaves,
  * exact boundaries) are pinned here rather than by dragging pixels in an
- * e2e. see docs/plans/drop-placement-helpers-plan.md
+ * e2e. see docs/archive/2026-08-13-drop-placement-helpers-plan.md
  */
 /** A 100px-tall container starting at 0, unless overridden. */
 const zoneAt = (cursor, opts = {}) => resolveDropZone({

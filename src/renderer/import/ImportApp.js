@@ -14,7 +14,7 @@ import styles from './ImportApp.module.css';
  * live document, after cascade and scripts, is the thing worth reading.
  * What comes back is handed straight to main; this window never sees a
  * project, a file, or the element model.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 /**
  * How each fidelity level reads in the report.

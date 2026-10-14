@@ -132,7 +132,7 @@ export const createDesignSystemSlice: StateCreator<
   // Load a parsed theme.css: store the base (:root) tokens + per-theme
   // override blocks, rebuild the theme list, and re-derive the flat
   // `themeTokens` for the active theme (preserved if it still exists,
-  // else Light). see docs/plans/design-system-plan.md
+  // else Light). see docs/archive/2026-07-23-design-system-plan.md
   setThemeData: (parsed: ParsedTheme) =>
     set((state) => {
       const themes = themeDefsFromParsed(parsed);

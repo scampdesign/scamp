@@ -33,7 +33,7 @@
  *
  * `:where` for the same reason as above: zero specificity, so the
  * page's own rules win and this only fills in what they do not set.
- * see docs/plans/tables-plan.md */
+ * see docs/archive/2026-10-05-tables-plan.md */
 .element:where(table) {
   border-collapse: collapse;
   border-spacing: 0;
@@ -129,7 +129,7 @@
 /* Component slot marker (component editor). A dashed accent outline + a
  * centered label so a slot rectangle reads as "content goes here". The
  * slot's own styling still applies; this layers on top.
- * see docs/plans/component-slots-plan.md */
+ * see docs/archive/2026-07-16-component-slots-plan.md */
 .slot {
   outline: 1px dashed var(--accent);
   outline-offset: -1px;
@@ -152,7 +152,7 @@
 /* Page-instance slot drop zone (Phase 2). Re-enables pointer events (the
  * instance's inner subtree sets pointer-events:none) so slot content is
  * selectable, and marks an empty slot as a dashed "Drop elements here"
- * target. see docs/plans/component-slots-plan.md */
+ * target. see docs/archive/2026-07-16-component-slots-plan.md */
 .slotDrop {
   position: relative;
   pointer-events: auto;

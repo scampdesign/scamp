@@ -9,7 +9,7 @@ import { planTable } from '@lib/importTable';
 import { isGridTable } from '@lib/tableGrid';
 
 /**
- * Phase 4 of docs/plans/tables-plan.md: an imported table arrives as a
+ * Phase 4 of docs/archive/2026-10-05-tables-plan.md: an imported table arrives as a
  * Scamp grid table — columns once, on the table — rather than as flex
  * columns that stack every cell.
  */

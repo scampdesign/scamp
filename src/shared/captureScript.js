@@ -37,7 +37,7 @@ export const capturePolicy = () => ({
  * Scrolling the whole page and returning to the top triggers those
  * observers, and is what a person would have done before deciding they
  * wanted this page.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 export const prepareFn = async () => {
     const step = Math.max(200, window.innerHeight * 0.8);

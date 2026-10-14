@@ -26,7 +26,7 @@ import { lintView } from '@lib/viewLint';
  * The Scamp Agent's edits. The property that matters most: whatever an
  * edit produces survives a save and reload unchanged — the round-trip
  * invariant, held for agent edits too.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 
 const TSX = `<div data-scamp-id="root" className={styles.root}>

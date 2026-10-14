@@ -181,7 +181,7 @@ const api = {
    * Returns the window id so callers can correlate; main spawns the
    * dev server in parallel as the window opens.
    */
-  // Website import. see docs/plans/website-import-plan.md
+  // Website import. see docs/archive/2026-09-23-website-import-plan.md
   openImport: (args: ImportOpenArgs): Promise<{ id: number }> =>
     ipcRenderer.invoke(IPC.ImportOpen, args),
   /** A captured page arriving from the import window. */
@@ -462,7 +462,7 @@ const api = {
   },
 
   // Scamp Agent provider key. Write-only from here: the key goes in, and
-  // only a status ever comes back. see docs/plans/builtin-agent-plan.md
+  // only a status ever comes back. see docs/archive/2026-10-06-builtin-agent-plan.md
   // React app import. see docs/plans/react-import-plan.md
   reactImportInspect: (): Promise<ReactImportInspectResult> => ipcRenderer.invoke(IPC.ReactImportInspect),
   reactImportStart: (args: ReactImportStartArgs): Promise<ReactImportStartResult> =>

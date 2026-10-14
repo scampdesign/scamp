@@ -9,7 +9,7 @@ import type { BetaTool } from '@anthropic-ai/sdk/resources/beta/messages/message
  *
  * `eager_input_streaming` so a long CSS value arrives as it's written; the
  * renderer validates every input before it acts on it.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 
 const element = {

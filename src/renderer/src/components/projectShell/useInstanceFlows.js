@@ -45,7 +45,7 @@ export const useInstanceFlows = ({ project, onProjectChange, projectConfig, onPr
         // page canvas (replaceSubtreeWithInstance below removes it).
         // offsetWidth/Height are logical (scale-independent) px, so this is the
         // true size even for stretch/percentage sizing — used to seed the new
-        // component editor's canvas. see docs/plans/component-canvas-sizing-plan.md
+        // component editor's canvas. see docs/archive/2026-07-17-component-canvas-sizing-plan.md
         // Scope to the canvas frame — the layers-panel rows also carry
         // `data-element-id`, and a bare document query would match the (tiny)
         // sidebar row instead of the rendered canvas element.

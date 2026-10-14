@@ -26,7 +26,7 @@ import { getProjectFormat } from './projectFormatCache';
  * Scamp Agent handlers. The key arrives once, on `agent:key-set`, and is
  * never sent back — every reply is a status. A message goes in on
  * `agent:send` and the turn streams back on `agent:event`.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const seams = () => readE2eSeams(process.env, app.isPackaged);
 const isSignedIn = () => seams().signedIn || currentAuthToken() !== null;

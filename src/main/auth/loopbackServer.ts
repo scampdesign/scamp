@@ -8,7 +8,7 @@ import { LOOPBACK_PORT } from './desktopAuthFlow';
  * Chosen over the `scamp://` scheme as the primary mechanism: no OS
  * protocol registration, one entry point instead of three, and no other
  * application can claim it — we hold the socket. See decision 5 in
- * docs/plans/electron-sign-in-plan.md.
+ * docs/archive/2026-08-28-electron-sign-in-plan.md.
  *
  * The port is fixed because the backend's redirect allowlist is exact
  * match with no wildcard, so a random port would be refused. That makes

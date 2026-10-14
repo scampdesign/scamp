@@ -31,7 +31,7 @@ type Props = {
  * rendered in its own font / size / weight / …) that opens a popover editor
  * with the same typography controls as the WYSIWYG panel — the design-system
  * equivalent of the colour-swatch → picker pattern.
- * see docs/plans/design-system-plan.md
+ * see docs/archive/2026-07-23-design-system-plan.md
  */
 export const TextStyleRow = ({
   style,

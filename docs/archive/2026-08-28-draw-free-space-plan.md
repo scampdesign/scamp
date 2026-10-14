@@ -1,6 +1,6 @@
 # Drawing into flex parents: free-space drawing — SUPERSEDED
 
-Superseded by `flex-sizing-contract-plan.md` before any code was
+Superseded by `2026-09-04-flex-sizing-contract-plan.md` before any code was
 written.
 
 This plan proposed constraining the draw gesture to a flex parent's

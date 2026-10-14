@@ -23,7 +23,7 @@ import { viewSlugFor } from '@shared/templates';
  * can no-op with no error — so a success that the user can't see is
  * indistinguishable from a failure they can't see either.
  *
- * see docs/plans/html-export-plan.md
+ * see docs/archive/2026-08-27-html-export-plan.md
  */
 export type HtmlExportState = {
   exportHtml: () => Promise<void>;

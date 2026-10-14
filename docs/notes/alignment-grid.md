@@ -67,7 +67,7 @@ tolerance passes for both the bug and the fix and guards nothing.
 ## Reverse directions map by axis
 
 `row-reverse` and `column-reverse` (added with
-`docs/plans/flex-controls-plan.md`) do not mirror the grid. The left
+`docs/archive/2026-09-04-flex-controls-plan.md`) do not mirror the grid. The left
 column still means `justify-content: flex-start` in a row, even though
 the browser now draws that item on the right. Mirroring would make the
 same cell mean different CSS depending on the Reverse toggle elsewhere

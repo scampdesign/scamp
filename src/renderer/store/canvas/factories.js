@@ -97,7 +97,7 @@ export const makeImage = (input, id) => ({
 /**
  * Inline `<svg>` element from a sanitized/normalized source. Image-family
  * type with the `svg` tag override; `svgSource` is the (already-prepared)
- * inner markup. see docs/plans/svg-improvements-plan.md
+ * inner markup. see docs/archive/2026-06-30-svg-improvements-plan.md
  */
 export const makeSvg = (input, id) => {
     // SVG attributes emitted on the regenerated `<svg>` wrapper. `viewBox`
@@ -168,7 +168,7 @@ export const makeComponentInstance = (input, id) => makeInstanceElement(input, i
  * Scamp class — and the derived subgrid rule then reaches the row
  * through a tag selector, but nothing the user set on it does. Landing
  * on the shape the parser would have built avoids the whole question.
- * see docs/plans/tables-plan.md
+ * see docs/archive/2026-10-05-tables-plan.md
  */
 const CHILD_TAG_FOR_CONTAINER = {
     ul: 'li',

@@ -9,7 +9,7 @@ import { ROOT_ELEMENT_ID, type ScampElement } from '@lib/element';
  * The copy-context one-liner. It gets pasted in front of a question, so the
  * things that matter are that it stays on one line, stays short, and names
  * the element unambiguously.
- * see docs/plans/copy-context-button-plan.md
+ * see docs/archive/2026-08-06-copy-context-button-plan.md
  */
 
 const el = (overrides: Partial<ScampElement> & { id: string }): ScampElement => ({

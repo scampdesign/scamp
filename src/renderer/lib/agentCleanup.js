@@ -5,7 +5,7 @@
  * because that's the cleanup's to-do list, and the agent can't read it any
  * other way: the report lives in the import window, not the view. Exact
  * changes are left out; they cost tokens and say "nothing to do".
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const MAX_LINES = 10;
 export const cleanupRequest = (viewName, report) => {

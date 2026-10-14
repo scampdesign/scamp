@@ -9,7 +9,7 @@ import { parseViewWrapper } from '../../src/shared/templates';
  * Views on disk: `views/<Name>/`, the wrapper page that previews one
  * through Next, and the scan that lists views beside components while
  * never listing a wrapper as a page. Real files in a temp dir.
- * see docs/plans/framework-phase-1-plan.md, step 2
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md, step 2
  */
 describe('view operations', () => {
     let dir;

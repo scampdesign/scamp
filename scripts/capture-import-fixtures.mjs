@@ -14,7 +14,7 @@
 // committed `.js` shims use extensionless imports, which Vite and Vitest
 // resolve and plain Node does not. Bundling also means this reads the
 // `.ts` source directly, so it can never test a stale shim.
-// see docs/plans/website-import-plan.md
+// see docs/archive/2026-09-23-website-import-plan.md
 
 import { chromium } from '@playwright/test';
 import { build } from 'esbuild';

@@ -81,7 +81,7 @@ export const DEFAULT_SHADOW_TOKENS = [
  * Stable-reorder tokens so those whose name starts with `prefix` come
  * first — used to float the property-relevant tokens (`--border-*` for a
  * border-width picker, `--radius-*` for a radius picker, …) to the top of
- * the WYSIWYG token list without hiding the rest. see docs/plans/design-system-plan.md
+ * the WYSIWYG token list without hiding the rest. see docs/archive/2026-07-23-design-system-plan.md
  */
 export const prioritizeByPrefix = (tokens, prefix) => {
     const match = [];

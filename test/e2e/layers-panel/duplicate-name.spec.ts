@@ -18,7 +18,7 @@ import { waitForSaved } from '../fixtures/assertions';
  * `parseCode.test.ts` the trip to disk; this covers the wiring — that
  * Cmd+D and the right-click item both reach that clone, and that the
  * tree shows the name on both copies.
- * see docs/plans/duplicate-preserves-names-plan.md
+ * see docs/archive/2026-08-11-duplicate-preserves-names-plan.md
  */
 
 type Win = Parameters<typeof pageRoot>[0];

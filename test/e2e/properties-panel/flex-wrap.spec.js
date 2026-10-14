@@ -3,7 +3,7 @@ import { drawAndSelectRect, panelSection } from '../fixtures/panel';
 import { pageRoot } from '../fixtures/selectors';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 /**
- * The container-side flex controls added by docs/plans/flex-controls-plan.md:
+ * The container-side flex controls added by docs/archive/2026-09-04-flex-controls-plan.md:
  * Wrap, the Reverse toggle, and Align content. Each writes the real CSS
  * property to the page's module.
  */

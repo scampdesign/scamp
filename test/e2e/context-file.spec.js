@@ -7,7 +7,7 @@ import { pageRoot } from './fixtures/selectors';
  * The live agent-context file, end to end. The unit tests cover what the
  * markdown says; this is the only level that proves the store subscription
  * is actually wired and the file lands on disk.
- * see docs/plans/live-context-file-plan.md
+ * see docs/archive/2026-08-05-live-context-file-plan.md
  */
 test.use({ projectOptions: { format: 'nextjs' } });
 const contextPath = (dir) => join(dir, '.scamp', 'context.md');

@@ -9,7 +9,7 @@ import { pageRoot, pageSidebarItem } from '../fixtures/selectors';
  * Phase 7's exit: a designer adds a page (a view), clicks Generate route,
  * and the route file appears with a load() that returns the view's
  * sample data; the render control rewrites the export; the preview runs
- * the route. see docs/plans/framework-phase-7-plan.md
+ * the route. see docs/archive/2026-09-16-framework-phase-7-plan.md
  */
 
 const REPO_MODULES = path.resolve(__dirname, '../../../node_modules');

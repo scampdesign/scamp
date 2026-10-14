@@ -4,7 +4,7 @@
 // rewrites those props into ordinary JSX children carrying a
 // `data-scamp-slot="<name>"` marker, so the normal structural parse handles
 // them; a post-pass then lifts the marker into the element's `slotName`.
-// see docs/plans/component-slots-plan.md
+// see docs/archive/2026-07-16-component-slots-plan.md
 /** The attribute the hoist injects onto slot-content elements. Read back
  *  into `slotName` after the structural parse, then dropped from the bag. */
 import { findMatchingBrace, findOpeningTagClose } from '../jsxScan';

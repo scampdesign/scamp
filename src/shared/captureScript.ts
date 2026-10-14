@@ -34,7 +34,7 @@ import {
  * Keeping it a real exported function rather than a template string
  * means it typechecks and the fixture generator can call it directly
  * through Playwright's `page.evaluate`.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 
 export type CapturePolicy = {
@@ -66,7 +66,7 @@ export type CapturePolicy = {
    * be the only way to tell a width the author chose from a width the
    * element got for free — which is the difference between an import
    * that reflows and a pixel snapshot. Four numbers a node.
-   * see docs/plans/website-import-plan.md
+   * see docs/archive/2026-09-23-website-import-plan.md
    */
   includeRects?: boolean;
   /**
@@ -113,7 +113,7 @@ export const capturePolicy = (): CapturePolicy => ({
  * Scrolling the whole page and returning to the top triggers those
  * observers, and is what a person would have done before deciding they
  * wanted this page.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 export const prepareFn = async (): Promise<void> => {
   const step = Math.max(200, window.innerHeight * 0.8);

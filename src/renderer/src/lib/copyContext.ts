@@ -11,7 +11,7 @@ import type { ContextTarget } from '@lib/contextModel';
  *
  * The shortcut is the only route to the PAGE-level string: right-clicking
  * always selects an element first, so the menu can only ever describe one.
- * see docs/plans/copy-context-button-plan.md
+ * see docs/archive/2026-08-06-copy-context-button-plan.md
  */
 
 /** Project-relative, so the copied text never leaks a home directory. */

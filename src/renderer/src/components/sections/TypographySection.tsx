@@ -49,7 +49,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
    *
    * With a range selected, colour and weight apply to those words
    * rather than the whole element — which is what makes a span.
-   * see docs/plans/inline-spans-plan.md
+   * see docs/archive/2026-09-29-inline-spans-plan.md
    */
   const range = textSelection?.elementId === elementId ? textSelection : null;
   /** What the selected characters have in common, and what is mixed. */
@@ -109,7 +109,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
    * Apply a whole text style: link the string props to the style's tokens
    * via `var()`, and set the concrete numeric weight (elements store weight
    * as a number, so it can't hold a var). Only props the style defines are
-   * touched. see docs/plans/design-system-plan.md
+   * touched. see docs/archive/2026-07-23-design-system-plan.md
    */
   const applyTextStyle = (name: string): void => {
     const style = textStyles.find((s) => s.name === name);

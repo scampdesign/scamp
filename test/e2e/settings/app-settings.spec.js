@@ -76,7 +76,7 @@ test.describe('settings: app-level', () => {
      * the UI — "just a random ID for this install", removed if you opt out
      * — has to hold on disk. The pure pieces are unit-tested; this is the
      * only level that proves the button actually reaches them.
-     * see docs/plans/dau-tracking-plan.md
+     * see docs/archive/2026-08-11-dau-tracking-plan.md
      */
     test('the privacy toggle mints an install id, and opting out removes it', async ({ window, userDataDir, }) => {
         const settingsFile = path.join(userDataDir, 'settings.json');

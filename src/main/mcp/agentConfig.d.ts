@@ -10,7 +10,7 @@
  * ⚠️ This is the only code in the MCP feature that writes OUTSIDE `.scamp/`.
  * Every write merges into whatever the user already had — clobbering someone's
  * editor or agent config is the one bug here that damages something Scamp
- * doesn't own. see docs/plans/mcp-server-plan.md
+ * doesn't own. see docs/archive/2026-08-06-mcp-server-plan.md
  */
 /** The key we own inside each agent's server map. */
 export declare const SERVER_KEY = "scamp";

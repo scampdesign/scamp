@@ -24,7 +24,7 @@ it crops, and it only fires for one page.
 
 The original idea was to capture when the project closes, so the card
 always reflects the latest state. Two problems, both settled in
-`docs/plans/project-thumbnails-plan.md`:
+`docs/archive/2026-08-28-project-thumbnails-plan.md`:
 
 - **`onClose` is not the only exit.** It fires only when you click Close
   and land back on the start screen. Quitting with a project open

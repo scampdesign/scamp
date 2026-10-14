@@ -4,7 +4,7 @@ import type { ThemeToken } from '@shared/types';
  * the tokens that make sense for it — the single source of truth that
  * replaces the `themeTokens.filter(classifyToken(...) === '…')` snippets
  * that were scattered across the property sections.
- * see docs/plans/design-system-plan.md
+ * see docs/archive/2026-07-23-design-system-plan.md
  */
 export type TokenField = 'fontSize' | 'lineHeight' | 'fontFamily' | 'letterSpacing' | 'spacing' | 'borderWidth' | 'radius' | 'shadow';
 /**

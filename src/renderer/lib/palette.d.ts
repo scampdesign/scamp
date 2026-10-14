@@ -14,6 +14,6 @@ export type PaletteShade = {
  * 500 back to a fixed mid-lightness. Hue is kept from the seed; chroma tapers
  * toward the light/dark ends where high chroma leaves the sRGB gamut. Returns
  * hex values, or `[]` if the seed can't be parsed.
- * see docs/plans/design-system-plan.md
+ * see docs/archive/2026-07-23-design-system-plan.md
  */
 export declare const generatePalette: (seedHex: string) => PaletteShade[];

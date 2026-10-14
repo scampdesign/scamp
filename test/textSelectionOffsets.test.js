@@ -8,7 +8,7 @@ import { selectionOffsetsWithin } from '@renderer/src/canvas/textSelectionOffset
  * styled sentence renders as several spans, so a selection routinely
  * starts in one text node and ends in another, and getting the
  * accumulation wrong styles the wrong words with nothing to show for it.
- * see docs/plans/inline-spans-plan.md
+ * see docs/archive/2026-09-29-inline-spans-plan.md
  */
 /** `works <span>alongside</span> AI.` as the canvas renders it. */
 const styledHost = () => {

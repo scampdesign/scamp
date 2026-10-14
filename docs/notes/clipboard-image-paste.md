@@ -34,7 +34,7 @@ sharp is already a dependency and is the obvious tool for a format
 convert — but it **must not be called from the main process**. libvips'
 GObject collides with the GLib instance Chromium runs there, which is
 why image optimisation is done in a forked child in the first place. See
-`docs/plans/image-import-speed-plan.md`. Spawning a child process for a
+`docs/archive/2026-08-14-image-import-speed-plan.md`. Spawning a child process for a
 clipboard paste would add process-launch latency to an interaction that
 should feel instant, so `NativeImage` — already in-process — wins.
 

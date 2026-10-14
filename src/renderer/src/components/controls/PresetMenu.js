@@ -10,7 +10,7 @@ const POPOVER_MAX_HEIGHT = 320;
  * the Typography "Text style" and Shadow "Preset" pickers so both apply a
  * multi-value preset from a single, consistent icon control. Shares the
  * token-picker button + popover styling. Renders nothing when there are
- * no options. see docs/plans/design-system-plan.md
+ * no options. see docs/archive/2026-07-23-design-system-plan.md
  */
 export const PresetMenu = ({ icon, ariaLabel, options, onSelect, active = false, testId, }) => {
     const popover = usePopover({

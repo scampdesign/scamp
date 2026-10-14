@@ -10,7 +10,7 @@ import type { AgentConversationKey, AgentSkillRequest } from '@shared/types';
  * A file holds both sides: `model` is the history the model sees, kept
  * whole (thinking blocks are bound to it, so it is never trimmed or
  * edited); `transcript` is what the panel draws.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export type StoredConversation = {
     version: 1;

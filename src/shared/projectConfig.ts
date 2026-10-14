@@ -19,7 +19,7 @@ import {
  * Read against `scampjs.contract` in a project's installed
  * `node_modules/scampjs/package.json` on open; outside the range the app
  * shows a banner instead of guessing at a shape it doesn't know.
- * see docs/plans/framework-phase-1-plan.md
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md
  */
 export const SUPPORTED_CONTRACT = { min: 0, max: 2 } as const;
 

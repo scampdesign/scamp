@@ -16,7 +16,7 @@ import {
 
 /**
  * Each page's agent conversation, on a real disk.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 
 const HOME = { kind: 'page' as const, name: 'home' };

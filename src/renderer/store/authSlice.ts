@@ -10,7 +10,7 @@ import type { AuthStatusResult, AuthUser } from '@shared/types';
  * sign-out, and a session the heartbeat found gone. The token itself never
  * reaches the renderer. `unknown` until the first answer, so a gated surface
  * doesn't flash in for a signed-out user.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export type AuthState = {
   status: 'unknown' | 'signed-in' | 'signed-out';

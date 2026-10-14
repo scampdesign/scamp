@@ -19,7 +19,7 @@ import {
  * so the tests are weighted towards what happens to files the user already
  * owned: nothing may be lost, and anything we can't safely merge must be left
  * exactly as it was.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 
 const URL = 'http://127.0.0.1:39841/mcp';

@@ -28,7 +28,7 @@ export const DETACH_INSTANCE_EVENT = 'scamp:detach-instance';
  * it rather than calling `toggleSlotOnRect` directly, so `ProjectShell` can
  * first check whether instances on other pages have content in this slot
  * and — if so — surface a confirm dialog before the slot is removed.
- * see docs/plans/component-slots-plan.md
+ * see docs/archive/2026-07-16-component-slots-plan.md
  */
 export const REQUEST_REMOVE_SLOT_EVENT = 'scamp:request-remove-slot';
 const EVENT_NAME = 'scamp:open-element-context-menu';

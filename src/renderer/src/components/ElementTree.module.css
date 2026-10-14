@@ -16,7 +16,7 @@
    matches the canvas's container highlight, so "this will become a child
    of this" reads the same on both surfaces; the fill stays because a
    tint alone is hard to pick out in a dense list of rows.
-   see docs/plans/drop-placement-helpers-plan.md */
+   see docs/archive/2026-08-13-drop-placement-helpers-plan.md */
 .rowDropInside .row {
   background: var(--accent-dark);
   color: var(--text-inverse);
@@ -130,7 +130,7 @@ font-size: 11px;
  *
  * Absolutely positioned against the row wrapper rather than nested inside
  * the row button — a button within a button is invalid HTML and breaks
- * keyboard semantics. see docs/plans/tree-collapse-plan.md */
+ * keyboard semantics. see docs/archive/2026-08-11-tree-collapse-plan.md */
 .disclosure {
   position: absolute;
   top: 50%;

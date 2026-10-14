@@ -208,7 +208,7 @@ const createWindow = () => {
             win.webContents.send(IPC.DevServerLog, payload);
     });
     // MCP reply listener. The server itself starts when a project opens
-    // (see ipc/project.ts). docs/plans/mcp-server-plan.md
+    // (see ipc/project.ts). docs/archive/2026-08-06-mcp-server-plan.md
     initMcp(win);
     // Background auto-update: checks GitHub Releases on launch and every
     // 4 hours, downloads silently, and notifies the renderer's update
@@ -238,7 +238,7 @@ protocol.registerSchemesAsPrivileged([
  * editing the same project would fight over the same files — and it also
  * keeps sign-in coherent: the loopback listener binds a fixed port, so a
  * second copy could not receive a callback anyway.
- * see docs/plans/electron-sign-in-plan.md
+ * see docs/archive/2026-08-28-electron-sign-in-plan.md
  */
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {

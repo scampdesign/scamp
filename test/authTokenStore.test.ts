@@ -14,7 +14,7 @@ import {
  * The behaviour that matters here is what happens when the OS cannot
  * encrypt — a Linux box with no keyring, or a keychain identity that
  * changed between builds. Neither may end with a bearer token readable on
- * disk. see docs/plans/electron-sign-in-plan.md
+ * disk. see docs/archive/2026-08-28-electron-sign-in-plan.md
  */
 
 /**

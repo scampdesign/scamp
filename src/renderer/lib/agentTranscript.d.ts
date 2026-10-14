@@ -2,7 +2,7 @@ import type { AgentUsage } from '@shared/types';
 /**
  * The panel's words for the Scamp Agent conversation. The transcript
  * itself is shared with main, in `@shared/agentTranscript`.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 import type { TranscriptEntry } from '@shared/agentTranscript';
 export { applyAgentEvent, settleTranscript, startTurn, type TranscriptEntry, type TranscriptPart, type TranscriptToolCall, } from '@shared/agentTranscript';

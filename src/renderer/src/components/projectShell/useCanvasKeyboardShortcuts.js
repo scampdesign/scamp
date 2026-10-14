@@ -100,7 +100,7 @@ export const useCanvasKeyboardShortcuts = (keyDeps, componentEditor) => {
             // selection to the OS clipboard. Checked BEFORE the plain Cmd+C
             // branch (which guards `!e.shiftKey`) so the modifier wins.
             // Works with nothing selected too: the page-level string is useful.
-            // see docs/plans/copy-context-button-plan.md
+            // see docs/archive/2026-08-06-copy-context-button-plan.md
             if ((e.metaKey || e.ctrlKey) &&
                 e.shiftKey &&
                 (e.key === 'c' || e.key === 'C')) {
@@ -155,7 +155,7 @@ export const useCanvasKeyboardShortcuts = (keyDeps, componentEditor) => {
             }
             // Cmd/Ctrl+V — paste. Internal element clipboard wins; otherwise
             // fall back to the OS clipboard (an SVG copied as markup, or a
-            // raster image). see docs/plans/svg-improvements-plan.md
+            // raster image). see docs/archive/2026-06-30-svg-improvements-plan.md
             if ((e.metaKey || e.ctrlKey) && (e.key === 'v' || e.key === 'V') && !e.shiftKey) {
                 if (isEditableTarget(e.target))
                     return;

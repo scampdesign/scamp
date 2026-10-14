@@ -25,7 +25,7 @@ type Props = {
  * one, not by editing a track list. This writes `grid-template-columns`
  * on the table and nothing else; every row picks the tracks up through
  * the subgrid rule the generator derives.
- * see docs/plans/tables-plan.md
+ * see docs/archive/2026-10-05-tables-plan.md
  */
 
 /** How many cells the table's first row holds, or 0 if it has no rows. */

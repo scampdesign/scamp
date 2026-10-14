@@ -88,7 +88,7 @@ type PendingDelete = {
 
 // The editor renders every section stacked in the main area; the left sidebar
 // nav (ThemeSectionNav) scroll-jumps to these via `data-theme-section`.
-// see docs/plans/design-system-plan.md
+// see docs/archive/2026-07-23-design-system-plan.md
 export type ThemeSectionId =
   | 'colors'
   | 'typography'
@@ -180,7 +180,7 @@ export const ThemePanel = ({ projectPath }: Props): JSX.Element => {
   // holds the per-theme semantic overrides (.dark / .theme-*). The
   // Semantic area renders the Light block (base values) plus one block
   // per theme, each editable inline; preview lives in the canvas toolbar.
-  // see docs/plans/design-system-plan.md
+  // see docs/archive/2026-07-23-design-system-plan.md
   const themeBaseTokens = useCanvasStore((s) => s.themeBaseTokens);
   const storeOverrides = useCanvasStore((s) => s.themeOverrides);
   const elements = useCanvasStore((s) => s.elements);
@@ -256,7 +256,7 @@ export const ThemePanel = ({ projectPath }: Props): JSX.Element => {
   // shade or a semantic mapping). Its VALUE may classify as anything —
   // a semantic token's `var(--color-…)` reads as `unknown` — so we route
   // by NAME here, otherwise those tokens double-render in both Colors and
-  // Typography/Unknown. see docs/plans/design-system-plan.md
+  // Typography/Unknown. see docs/archive/2026-07-23-design-system-plan.md
   const isColorToken = (name: string): boolean => name.startsWith('--color-');
 
   const inColors = (category: TokenCategory, name: string): boolean =>
@@ -302,7 +302,7 @@ export const ThemePanel = ({ projectPath }: Props): JSX.Element => {
 
   // Structured VIEW over the flat colour tokens: primitive palettes +
   // semantic tokens. The flat list stays authoritative; every edit below
-  // mutates it and reserializes. see docs/plans/design-system-plan.md
+  // mutates it and reserializes. see docs/archive/2026-07-23-design-system-plan.md
   const colorModel = useMemo(() => buildColorModel(localTokens), [localTokens]);
 
   /**
@@ -344,7 +344,7 @@ export const ThemePanel = ({ projectPath }: Props): JSX.Element => {
    * the store first so the canvas + pickers reflect the edit immediately
    * for the active theme; the chokidar reparse confirms it later. Font
    * imports and hand-written CSS are preserved (see serializeThemeFile).
-   * see docs/plans/design-system-plan.md
+   * see docs/archive/2026-07-23-design-system-plan.md
    */
   const persist = async (
     base: ThemeToken[],
@@ -713,7 +713,7 @@ export const ThemePanel = ({ projectPath }: Props): JSX.Element => {
    * Add a theme: a new override block seeded with a copy of every current
    * semantic value, so it starts identical to Light and the user tweaks
    * it in place. Auto-named ("Dark", then "Theme 2"…); rename inline via
-   * the block header. see docs/plans/design-system-plan.md
+   * the block header. see docs/archive/2026-07-23-design-system-plan.md
    */
   const handleAddTheme = (): void => {
     const usedClasses = new Set(localOverrides.map((b) => b.cssClass));

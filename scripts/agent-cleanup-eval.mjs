@@ -22,7 +22,7 @@
 // Confirmations are approved automatically and counted. Every run spends
 // real money on a real key with --provider anthropic; the scripted
 // provider runs the whole pipeline for nothing.
-// see docs/plans/builtin-agent-plan.md
+// see docs/archive/2026-10-06-builtin-agent-plan.md
 
 import { chromium } from '@playwright/test';
 import { build } from 'esbuild';

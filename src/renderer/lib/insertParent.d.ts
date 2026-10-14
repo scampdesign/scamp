@@ -5,7 +5,7 @@ import type { ScampElement } from './element';
  *
  * Exported so the drag surfaces share one definition — the layers tree
  * used to test `type !== 'text'` on its own and so offered "drop inside"
- * an image. see docs/plans/drop-placement-helpers-plan.md
+ * an image. see docs/archive/2026-08-13-drop-placement-helpers-plan.md
  */
 export declare const canContainChildren: (el: ScampElement) => boolean;
 /**

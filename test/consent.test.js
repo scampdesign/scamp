@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, parseSettingsBlob } from '../src/main/ipc/settingsOps
  * Consent versioning. The rule these pin: an opt-in recorded against older
  * wording must NOT carry forward, because the user was never shown what we
  * now send.
- * see docs/plans/dau-tracking-plan.md
+ * see docs/archive/2026-08-11-dau-tracking-plan.md
  */
 const settings = (over = {}) => ({
     ...DEFAULT_SETTINGS,

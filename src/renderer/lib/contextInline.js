@@ -8,7 +8,7 @@ import { buildContextModel, parseDeclarations, } from './contextModel';
  *
  * Same facts as the markdown context file, different shape — both render
  * `contextModel`, so they can't describe the same element differently.
- * see docs/plans/copy-context-button-plan.md
+ * see docs/archive/2026-08-06-copy-context-button-plan.md
  */
 /** Children listed inline before collapsing to `+N more`. */
 const CHILD_LIMIT = 3;

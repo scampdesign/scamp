@@ -4,7 +4,7 @@ import type { AgentEvent, AgentTurnOutcome, AgentUsage } from './types';
  * events main streams back. Pure and shared: the panel folds events into
  * it as they arrive, and main folds the same events to keep each page's
  * conversation on disk.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export type TranscriptToolCall = {
     id: string;

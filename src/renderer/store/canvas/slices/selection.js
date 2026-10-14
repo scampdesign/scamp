@@ -8,7 +8,7 @@ export const createSelectionSlice = (set) => ({
      *
      * Transient UI state, beside `editingElementId` for the same reason:
      * it lives for as long as the caret does and never reaches a file.
-     * see docs/plans/inline-spans-plan.md
+     * see docs/archive/2026-09-29-inline-spans-plan.md
      */
     textSelection: null,
     activeTool: 'select',

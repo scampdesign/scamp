@@ -17,7 +17,7 @@ import { stopReactAppAt } from './reactImport/appServer';
  * window, which holds the canvas store, the project, and the pure
  * reducer. Main's job here is to carry a payload from one window to the
  * other and carry the verdict back.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 const importWindows = new Map();
 /** What each window was opened for: a React app keeps its own session. */

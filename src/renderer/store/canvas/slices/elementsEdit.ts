@@ -156,7 +156,7 @@ export const createElementsEditSlice: StateCreator<
       // a VISIBLE loss of styling, which is the honest outcome of
       // replacing the sentence — silently keeping stale boundaries
       // would style the wrong words.
-      // see docs/plans/inline-spans-plan.md
+      // see docs/archive/2026-09-29-inline-spans-plan.md
       const { runs: _dropped, ...rest } = el;
       return {
         elements: { ...state.elements, [id]: { ...rest, text } },

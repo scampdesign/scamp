@@ -12,7 +12,7 @@
  * recoverable, which is exactly the silent plaintext write the story
  * forbids.
  *
- * see docs/plans/electron-sign-in-plan.md
+ * see docs/archive/2026-08-28-electron-sign-in-plan.md
  */
 /** The slice of Electron's safeStorage this needs. */
 export type SafeStorageLike = {
@@ -60,7 +60,7 @@ export declare const saveToken: (token: string, deps: TokenStoreDeps) => Promise
 /**
  * Persist any secret under `fileName` in userData, with the same refusal
  * as the session token: encrypted, or not at all. The Scamp Agent's
- * provider key uses it too. see docs/plans/builtin-agent-plan.md
+ * provider key uses it too. see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export declare const saveSecret: (fileName: string, secret: string, { safeStorage, userDataDir }: TokenStoreDeps) => Promise<SaveResult>;
 /**

@@ -58,7 +58,7 @@ export const CANVAS_SKIP_ATTRS_BY_TAG: Record<string, ReadonlySet<string>> = {
  * Resolve a `var(--name)` reference against theme tokens, following the whole
  * chain (semantic → primitive → hex). Unknown/cyclic references render as the
  * `transparent` sentinel so a broken colour is visibly absent, not a stray
- * `var(--x)` string. see docs/plans/design-system-plan.md
+ * `var(--x)` string. see docs/archive/2026-07-23-design-system-plan.md
  */
 const resolveTokenColor = (
   value: string,
@@ -363,7 +363,7 @@ export const elementToStyle = (
   // `currentColor` inside an svg resolves to the CSS `color` property, so
   // the SvgSection's "Current color" swatch writes `el.color`; apply it on
   // the wrapper (the text path above is text-only). see
-  // docs/plans/svg-color-editing-plan.md
+  // docs/archive/2026-07-14-svg-color-editing-plan.md
   if (el.tag === 'svg' && el.color !== undefined && el.color.length > 0) {
     base.color = resolveTokenColor(el.color, tokens);
   }

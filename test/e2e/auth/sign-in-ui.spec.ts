@@ -8,7 +8,7 @@ import { test, expect } from '../fixtures/app';
  * The sign-in gesture itself opens a real browser, so it is not driven
  * here — that flow is covered end to end against the real backend in
  * test/integration/desktopAuthLive.integration.test.ts.
- * see docs/plans/electron-sign-in-plan.md
+ * see docs/archive/2026-08-28-electron-sign-in-plan.md
  */
 /** The fixture boots into a project, so step back to the start screen. */
 const toStartScreen = async (window: Parameters<typeof expect>[0] extends never ? never : any): Promise<void> => {

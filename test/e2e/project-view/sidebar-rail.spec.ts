@@ -3,7 +3,7 @@ import { pageRoot } from '../fixtures/selectors';
 
 // The project view's left icon rail switches the sidebar between Pages,
 // Components and History, and launches the Design System (theme) + Settings
-// overlays. see docs/plans/icon-sidebar-nav-plan.md
+// overlays. see docs/archive/2026-07-20-icon-sidebar-nav-plan.md
 
 test.use({ projectOptions: { format: 'nextjs' } });
 

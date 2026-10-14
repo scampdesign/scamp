@@ -10,7 +10,7 @@ import { pageRoot, saveStatus } from '../fixtures/selectors';
  * A save that fails doesn't cost the edit: the next save writes it too.
  * The write cache used to keep the failed content, so the next save was
  * refused and its merge undid the failed edit.
- * Audit item 9 in docs/plans/audit-2026-10-12.md.
+ * Audit item 9 in docs/archive/2026-10-12-audit-2026-10-12.md.
  */
 
 type StoreHandle = {

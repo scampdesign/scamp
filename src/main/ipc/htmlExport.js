@@ -18,7 +18,7 @@ import { candidateFolderName, classifyTarget, copyAssets, exportFolderName, MAX_
 const dialogApprovedDirs = new Set();
 /**
  * Last export destination, so a second export doesn't send the user back
- * to ~/Downloads. see docs/plans/electron-upgrade-plan.md
+ * to ~/Downloads. see docs/archive/2026-08-31-electron-upgrade-plan.md
  */
 let lastExportDir = null;
 const chooseFolder = async () => {

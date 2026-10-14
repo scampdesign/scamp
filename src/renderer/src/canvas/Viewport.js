@@ -265,7 +265,7 @@ export const Viewport = ({ canvasWidth, canvasHeight, heightIsFixed = false, cli
     // Uses `offsetLeft/Top/Width/Height` (already logical, scale-free) rather
     // than `getBoundingClientRect()/scale`: at a fractional zoom (e.g. Fit ≈ 0.5)
     // dividing client px by the scale AMPLIFIES sub-pixel rounding, which left a
-    // ~2px gap below the hugged content. see docs/plans/component-canvas-sizing-plan.md
+    // ~2px gap below the hugged content. see docs/archive/2026-07-17-component-canvas-sizing-plan.md
     const measureContentSize = useCallback(() => {
         const frame = frameRef.current;
         if (!frame)
@@ -302,7 +302,7 @@ export const Viewport = ({ canvasWidth, canvasHeight, heightIsFixed = false, cli
         // that overflows a fixed box (e.g. text line-height in a fixed-height,
         // padded header) must NOT push the canvas past the root's edge. For
         // non-fixed axes the root fills the canvas, so hug to the content bounds
-        // plus the root's own padding (breathing room). see docs/plans/component-canvas-sizing-plan.md
+        // plus the root's own padding (breathing room). see docs/archive/2026-07-17-component-canvas-sizing-plan.md
         const rootNode = frame.querySelector(`[data-element-id="${rootElementId}"]`);
         const rootEl = elements[rootElementId];
         const rs = rootNode instanceof HTMLElement ? getComputedStyle(rootNode) : null;

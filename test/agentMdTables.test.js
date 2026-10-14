@@ -7,7 +7,7 @@ import { lintView } from '@lib/viewLint';
  * agent.md's Tables section is instructions an agent copies. Its CSS
  * examples are checked against the parser here, so the document can't
  * promise a rule Scamp then reads as something else.
- * see docs/plans/tables-plan.md
+ * see docs/archive/2026-10-05-tables-plan.md
  */
 const VARIANTS = [
     ['legacy', AGENT_MD_CONTENT_LEGACY],

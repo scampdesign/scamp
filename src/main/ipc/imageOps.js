@@ -41,7 +41,7 @@ const statOrNull = async (path) => {
  * Windows doesn't reliably populate `ino`, so it falls back to a
  * case-insensitive path compare — which is the correct semantic there,
  * NTFS being case-insensitive.
- * see docs/plans/reuse-existing-assets-plan.md
+ * see docs/archive/2026-08-12-reuse-existing-assets-plan.md
  */
 const isSameFile = async (a, b) => {
     const [statA, statB] = await Promise.all([statOrNull(a), statOrNull(b)]);

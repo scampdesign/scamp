@@ -17,7 +17,7 @@ import type { SafeStorageLike } from '../src/main/auth/tokenStore';
 /**
  * The whole gesture, with the outside world injected. The failure paths
  * are the point — they are the ones hard to provoke against a real
- * backend. see docs/plans/electron-sign-in-plan.md
+ * backend. see docs/archive/2026-08-28-electron-sign-in-plan.md
  */
 
 const user = { id: 'u1', name: 'Angie', email: 'a@e.com', emailVerified: true };

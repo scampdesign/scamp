@@ -35,7 +35,7 @@ type Props = {
  * The project view's left icon rail (VS Code activity-bar style). Pages,
  * Components and History switch the sidebar panel; Design System and Settings
  * launch their existing overlays (rework into inline panels is a follow-up).
- * see docs/plans/icon-sidebar-nav-plan.md
+ * see docs/archive/2026-07-20-icon-sidebar-nav-plan.md
  */
 export const SidebarRail = ({
   section,

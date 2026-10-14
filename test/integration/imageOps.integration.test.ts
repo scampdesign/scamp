@@ -94,7 +94,7 @@ describe('copyImage', () => {
  * it, not clone it. All three image pickers open in that folder, so this
  * is the common path — and the dedupe loop turns it into a duplicate
  * every single time unless the import notices.
- * see docs/plans/reuse-existing-assets-plan.md
+ * see docs/archive/2026-08-12-reuse-existing-assets-plan.md
  */
 describe('copyImage: a file already in the assets folder', () => {
   let projectDir: string;
@@ -242,7 +242,7 @@ describe('copyImage: a file already in the assets folder', () => {
 
 /**
  * Imports are re-encoded to WebP on the way in — same pixels, fewer
- * bytes. see docs/plans/image-optimization-plan.md
+ * bytes. see docs/archive/2026-08-13-image-optimization-plan.md
  */
 describe('copyImage: WebP conversion', () => {
   let projectDir: string;

@@ -10,7 +10,7 @@ import type { ContextWriteArgs } from '@shared/types';
  * `.gitignore` already excludes that folder, and the file watcher excludes
  * every dotfile path (`watcher.ts`). Move it and Scamp would see its own
  * write as an external edit — pausing the sync bridge and auto-snapshotting
- * on every click. see docs/plans/live-context-file-plan.md
+ * on every click. see docs/archive/2026-08-05-live-context-file-plan.md
  */
 export const contextFilePath = (projectPath: string): string =>
   join(projectPath, '.scamp', 'context.md');

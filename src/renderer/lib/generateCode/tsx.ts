@@ -194,7 +194,7 @@ const renderElement = (
     // Group slot content: the default (`children`) slot emits as JSX
     // children of the tag; named slots emit as `slotName={<…>}` props
     // (a `<>…</>` fragment when more than one element fills the slot).
-    // see docs/plans/component-slots-plan.md
+    // see docs/archive/2026-07-16-component-slots-plan.md
     const defaultChildren: ScampElement[] = [];
     const namedSlots = new Map<string, ScampElement[]>();
     for (const childId of el.childIds) {
@@ -306,7 +306,7 @@ const renderElement = (
   // Component slot: a slot-marked rectangle emits `{slotName}` — the page
   // instance's children fill it. Its own def-children aren't emitted
   // ("Make slot" is forbidden on a rectangle that has children). see
-  // docs/plans/component-slots-plan.md
+  // docs/archive/2026-07-16-component-slots-plan.md
   const slotRef =
     isComponent && el.slot !== undefined && el.slot.length > 0
       ? el.slot
@@ -338,7 +338,7 @@ const renderElement = (
     const runs = runsOf(el);
     // Styled runs become spans carrying a run class, on one line. A
     // plain run stays bare, so a sentence with one coloured word is one
-    // span rather than three. see docs/plans/inline-spans-plan.md
+    // span rather than three. see docs/archive/2026-09-29-inline-spans-plan.md
     if (propRef === null && (runs.length > 1 || runs.some(isStyled))) {
       const cls = classNameFor(el);
       // A run's own tag (`<em>`), or a span when it is only styled; a

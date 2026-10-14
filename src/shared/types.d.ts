@@ -30,7 +30,7 @@ export type PageFile = {
  * but it lives under `views/<Name>/`, is never placed on a page as an
  * instance, and — in a Next.js project — previews through a one-line
  * wrapper page (`app/<slug>/page.tsx`) that renders it.
- * see docs/plans/framework-phase-1-plan.md, step 2
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md, step 2
  */
 export type ComponentKind = 'component' | 'view';
 export type ComponentFile = {
@@ -112,7 +112,7 @@ export type ProjectData = {
      * App Router layout).
      */
     components: ComponentFile[];
-    /** Present for `scamp`-format projects. see docs/plans/framework-phase-1-plan.md */
+    /** Present for `scamp`-format projects. see docs/archive/2026-09-16-framework-phase-1-plan.md */
     framework?: FrameworkInfo;
 };
 export type RecentProject = {
@@ -336,7 +336,7 @@ export type ProjectConfig = {
      * The Pages list's order and groups, top level first. Absent until the
      * user groups or reorders: the list is then Home first, then by slug.
      * Purely organizational — no page file, route, or output depends on it.
-     * see docs/plans/page-groups-plan.md
+     * see docs/archive/2026-10-12-page-groups-plan.md
      */
     pageLayout?: PageLayoutEntry[];
     /**
@@ -442,7 +442,7 @@ export type GoogleFontAxis = {
  * see docs/notes/import-variable-fonts.md
  */
 export type ResolveFontsResult = Record<string, false | GoogleFontAxis[]>;
-/** Fetch a remote image into the project's assets. see website-import-plan.md */
+/** Fetch a remote image into the project's assets. see docs/archive/2026-09-23-website-import-plan.md */
 export type FetchImageArgs = {
     /** Absolute http(s) URL as the capture resolved it, or a `data:` URL. */
     url: string;
@@ -471,7 +471,7 @@ export type CopyImageResult = {
      * nothing was written. The IPC handler uses this to skip its watcher
      * suppression — suppressing a write that never happened would swallow
      * the next real external edit to that file.
-     * see docs/plans/reuse-existing-assets-plan.md
+     * see docs/archive/2026-08-12-reuse-existing-assets-plan.md
      */
     reused: boolean;
 };
@@ -487,7 +487,7 @@ export type ChooseImageResult = {
  * OS clipboard contents relevant to a canvas paste. `svg` carries the
  * raw markup (inlined as an editable element); `image` carries a PNG
  * data URL (saved to assets and referenced as `<img>`); `empty` means
- * nothing pasteable. see docs/plans/svg-improvements-plan.md
+ * nothing pasteable. see docs/archive/2026-06-30-svg-improvements-plan.md
  */
 export type ClipboardReadResult = {
     kind: 'svg';
@@ -569,7 +569,7 @@ export type FileChangedPayload = {
  * (external edit). `fileName` is the asset's basename; the renderer
  * matches it against inline SVG elements' `data-scamp-svg-src` to offer a
  * reload. `content` is the new file text. see
- * docs/plans/svg-color-editing-plan.md
+ * docs/archive/2026-07-14-svg-color-editing-plan.md
  */
 export type SvgAssetChangedPayload = {
     fileName: string;
@@ -908,7 +908,7 @@ export type ContextWriteArgs = {
 };
 /**
  * One MCP tool call, forwarded from the main process to the renderer so it
- * can answer from live canvas state. See docs/plans/mcp-server-plan.md.
+ * can answer from live canvas state. See docs/archive/2026-08-06-mcp-server-plan.md.
  */
 export type McpQueryArgs = {
     /** Correlates the reply — main may have several calls in flight. */

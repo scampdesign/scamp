@@ -12,7 +12,7 @@
  * can contain descendant selectors, attribute selectors and strings, all of
  * which a "prefix the first token" regex would corrupt.
  *
- * see docs/plans/html-export-plan.md
+ * see docs/archive/2026-08-27-html-export-plan.md
  */
 
 const IDENT_START = /[A-Za-z_-]/;

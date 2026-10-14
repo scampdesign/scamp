@@ -7,7 +7,7 @@ import { AUTO_SPACE_VALUE, formatSpaceShorthand, hasAutoSide, isTokenSpaceValue,
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
 /**
  * `auto` on a margin side — `margin: 0 auto` centers. Item 4 of
- * docs/plans/checks-cleanup-plan.md
+ * docs/archive/2026-10-13-checks-cleanup-plan.md
  */
 describe('the auto space value', () => {
     it('formats, compares, and is not a token', () => {

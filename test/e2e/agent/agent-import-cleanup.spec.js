@@ -9,7 +9,7 @@ import { pageRoot } from '../fixtures/selectors';
  * AI-assisted import, end to end on the scripted provider: import a page,
  * pick a token mode in the import window, and the cleanup starts in the
  * Agent panel under the skill — plan first, applied only on approval.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const FIXTURE_URL = pathToFileURL(path.resolve(__dirname, '../../fixtures/import/pages/marketing.html')).href;
 const SCRIPT = path.join(os.tmpdir(), `scamp-e2e-agent-import-${process.pid}.json`);

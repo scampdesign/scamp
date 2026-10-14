@@ -11,7 +11,7 @@ Roughly ordered by how much they cost per day of ignoring them.
 ## 1. `preserveDrawnSize` is inconsistent, by decision deferred
 
 **Status: resolved 2026-09-04** with the flex-controls work
-(`docs/plans/flex-controls-plan.md`). Angie chose the first option —
+(`docs/archive/2026-09-04-flex-controls-plan.md`). Angie chose the first option —
 **px means don't-shrink** — and the guard moved to a typed `flexShrink`
 field: `preserveDrawnSize` sets it on draw, `shrinkGuardPatch` sets it
 when a px size is typed into the main axis and clears it on Fill / Hug /
@@ -38,7 +38,7 @@ Whichever is chosen, the guard must be **stored in the file**, never
 derived: a derived declaration is invisible to the browser and broke
 `parity: nested-flex-with-gap-and-padding` (canvas 120.0 vs browser
 103.7). see the "Rule 2 reversal" section of
-`docs/plans/flex-sizing-contract-plan.md`.
+`docs/archive/2026-09-04-flex-sizing-contract-plan.md`.
 
 ---
 

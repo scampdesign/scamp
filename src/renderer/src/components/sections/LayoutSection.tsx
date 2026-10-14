@@ -261,7 +261,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
   // A table's layout is not one of the modes: it is a grid, always, and
   // its rows are `<tr>` elements rather than track-list entries. So it
   // gets the Columns control on its own and none of the mode picker.
-  // see docs/plans/tables-plan.md
+  // see docs/archive/2026-10-05-tables-plan.md
   if (element.tag === 'table') {
     return (
       <Section

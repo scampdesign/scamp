@@ -16,7 +16,7 @@ import { AGENT_MODEL } from './config';
  * - The system prompt carries a cache breakpoint (tools render before it,
  *   so they're covered too), and top-level automatic caching covers the
  *   growing history.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export const createAnthropicProvider = (apiKey) => {
     const client = new Anthropic({ apiKey });

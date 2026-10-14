@@ -190,7 +190,7 @@ export const useCanvasGeometry = (
    * fall through to the absolute-move path, where dragging them did
    * nothing visible and the only drop feedback came from whichever
    * sibling happened to be under the cursor.
-   * see docs/plans/drop-placement-helpers-plan.md
+   * see docs/archive/2026-08-13-drop-placement-helpers-plan.md
    */
   const isFlowChild = (el: ScampElement | undefined): boolean => {
     if (!el || !el.parentId) return false;
@@ -222,7 +222,7 @@ export const useCanvasGeometry = (
       // Component slot drop zone: route the drop into the owning instance
       // (the dropped element becomes page-owned slot content). The zone
       // carries `data-scamp-slot` + `data-slot-owner-id` (the instance's
-      // canvas id). see docs/plans/component-slots-plan.md
+      // canvas id). see docs/archive/2026-07-16-component-slots-plan.md
       if (node instanceof HTMLElement && node.dataset['scampSlot']) {
         const ownerId = node.dataset['slotOwnerId'];
         if (

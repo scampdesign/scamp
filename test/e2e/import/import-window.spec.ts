@@ -15,7 +15,7 @@ import { importFrom, openPagesSection } from '../fixtures/components';
  * tests use, so a failure here is about the window and the round trip
  * rather than about the reduction — that is already covered offline in
  * `test/importReduce.test.ts`.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 
 const FIXTURE_URL = pathToFileURL(

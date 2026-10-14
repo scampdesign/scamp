@@ -11,7 +11,7 @@ import { patchLog } from './patchStream';
  *
  * Every query MUST get exactly one reply: main is waiting on a 2s timeout,
  * and a dropped reply turns into a spurious "canvas did not respond".
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 /** Project-relative, so no path we hand an agent leaks a home directory. */
 const relativeTo = (projectPath, absolute) => {

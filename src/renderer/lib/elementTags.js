@@ -34,7 +34,7 @@ export const TAG_OPTIONS = {
         // `th` and `td` are dual-natured like `li` — a plain `<td>Smith</td>`
         // parses as a text element, one with element children as a
         // rectangle — so they appear in BOTH lists.
-        // see docs/plans/tables-plan.md
+        // see docs/archive/2026-10-05-tables-plan.md
         { value: 'table', label: 'table' },
         { value: 'thead', label: 'thead' },
         { value: 'tbody', label: 'tbody' },
@@ -78,7 +78,7 @@ export const TAG_OPTIONS = {
         // list above).
         { value: 'button', label: 'button' },
         // The dual-natured half of the table family, plus `caption`, which
-        // only ever holds words. see docs/plans/tables-plan.md
+        // only ever holds words. see docs/archive/2026-10-05-tables-plan.md
         { value: 'th', label: 'th' },
         { value: 'td', label: 'td' },
         { value: 'caption', label: 'caption' },
@@ -168,7 +168,7 @@ export const TAG_ATTRIBUTES = {
     dialog: [{ name: 'open', label: 'Open', kind: 'boolean' }],
     // A cell's span. Scamp derives `grid-column: span n` from this, so
     // the semantic attribute is the only place it is written down.
-    // see docs/plans/tables-plan.md
+    // see docs/archive/2026-10-05-tables-plan.md
     th: TABLE_CELL_ATTRIBUTES,
     td: TABLE_CELL_ATTRIBUTES,
     label: [{ name: 'htmlFor', label: 'For', kind: 'text', placeholder: 'input-id' }],

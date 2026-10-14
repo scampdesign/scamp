@@ -7,7 +7,7 @@ test.use({ projectOptions: { format: 'nextjs' } });
  * A page's design is a view. "Add page" creates views/<Name>/ plus a
  * one-line route wrapper, lists it by slug beside legacy pages, and opens
  * it like a page — no component-editor banner.
- * see docs/plans/framework-phase-1-plan.md, step 2
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md, step 2
  */
 test.describe('pages are views', () => {
     test('Add page creates a view, its route wrapper, and opens it as a page', async ({ window, project, }) => {

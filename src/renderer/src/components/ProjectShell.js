@@ -109,7 +109,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
     }, [activeComponent, setActiveComponentState]);
     // A captured page arriving from the import window lands here: this is
     // where the project, the reducer and the generator all are.
-    // see docs/plans/website-import-plan.md
+    // see docs/archive/2026-09-23-website-import-plan.md
     useWebsiteImport({
         project,
         breakpoints: projectConfig.breakpoints,

@@ -11,7 +11,7 @@ import type { ImportFinding } from '@lib/importReduce';
  * These cases are mostly about readability under load — the report has
  * to stay useful on a page that produced three hundred findings, which
  * is exactly when someone needs it.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 
 const finding = (kind: string, at?: string): ImportFinding =>

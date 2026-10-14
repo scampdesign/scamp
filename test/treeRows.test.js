@@ -6,7 +6,7 @@ import { ancestorIds, descendantIds, flattenTree, hasChildRows, hasCollapsedAnce
  * What the layers tree shows for a given collapse state. Pure, so the
  * awkward cases — nesting, cycles, inline fragments — are checked here
  * rather than through the UI.
- * see docs/plans/tree-collapse-plan.md
+ * see docs/archive/2026-08-11-tree-collapse-plan.md
  */
 const el = (overrides) => ({
     ...DEFAULT_RECT_STYLES,

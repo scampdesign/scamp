@@ -12,7 +12,7 @@ type Props = {
  * "Clean up this import", for the view imported most recently. The token
  * question comes first, because it decides what the cleanup may touch:
  * theme.css, or nothing outside the page.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export const AgentCleanupCard = ({ projectPath, viewName }: Props): JSX.Element => {
   const startCleanup = useAgentStore((s) => s.startCleanup);

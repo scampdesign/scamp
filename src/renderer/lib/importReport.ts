@@ -25,7 +25,7 @@ import type { ImportFinding } from './importReduce';
  *
  * Sorting the worst first is what stops the real problems being buried
  * under the bookkeeping.
- * see docs/plans/website-import-plan.md and docs/agent-native-review.md
+ * see docs/archive/2026-09-23-website-import-plan.md and docs/agent-native-review.md
  */
 
 type Describe = {

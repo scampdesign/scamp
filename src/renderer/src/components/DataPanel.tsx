@@ -150,7 +150,7 @@ const SlotRow = ({
         className={styles.slotRemove}
         onClick={() => {
           // Route through ProjectShell so it can warn when instances on other
-          // pages have content in this slot. see component-slots-plan.md
+          // pages have content in this slot. see docs/archive/2026-07-16-component-slots-plan.md
           if (activeComponentName === null) {
             toggleSlotOnRect(row.id);
             return;

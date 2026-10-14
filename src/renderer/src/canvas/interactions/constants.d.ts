@@ -24,6 +24,6 @@ export declare const DEFAULT_NEW_INPUT_HEIGHT = 32;
  * Dropped / pasted SVGs at or under this many bytes are inlined as an
  * editable `<svg>` element (fill/stroke editable); larger ones are copied
  * into assets and referenced as `<img>` to keep the TSX lean.
- * see docs/plans/svg-improvements-plan.md
+ * see docs/archive/2026-06-30-svg-improvements-plan.md
  */
 export declare const INLINE_SVG_MAX_BYTES: number;

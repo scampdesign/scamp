@@ -37,7 +37,7 @@ import {
  *
  * Pure: no store reads, no IPC, no clock. Everything arrives in
  * `SnapshotInput` so the whole surface is testable without an app.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 
 /** Everything the eight tools need, supplied by the caller. */

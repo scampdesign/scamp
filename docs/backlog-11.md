@@ -167,7 +167,7 @@ my design.
 
 **Today:** an inlined SVG takes `fill` and `stroke` at the element level,
 which works for icons drawn in `currentColor`. An icon with colors
-written on its shapes ignores them. `docs/plans/svg-color-editing-plan.md`
+written on its shapes ignores them. `docs/archive/2026-07-14-svg-color-editing-plan.md`
 (proposed) covers listing an SVG's colors and editing each one.
 
 **Done when:**
@@ -189,7 +189,7 @@ without guessing.
 > No guidelines for the alignment while dragging a component (is the
 > component at the center or left)
 
-**Today:** `docs/plans/drop-placement-helpers-plan.md` shipped drop
+**Today:** `docs/archive/2026-08-13-drop-placement-helpers-plan.md` shipped drop
 indicators for dropping into flex and grid containers. Dragging
 something freely shows no smart guides for center, edges, or equal
 spacing.

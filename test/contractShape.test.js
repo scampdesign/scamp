@@ -9,7 +9,7 @@ import { WRITTEN_CONTRACT } from '@shared/projectConfig';
  * step 1: the `_scamp` export on components and views, and `color`
  * surviving on a container. The byte-for-byte check against the
  * published fixture is `contract0Drift.test.ts`.
- * see docs/plans/framework-phase-1-plan.md
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md
  */
 const componentTsx = (meta) => `import styles from './Tag.module.css';
 

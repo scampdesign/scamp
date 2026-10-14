@@ -36,7 +36,7 @@ type Props = {
  * - Natural-height rule (clip on): a subtle line marking where content
  *   actually ends.
  *
- * see docs/plans/canvas-overflow-boundary-plan.md
+ * see docs/archive/2026-07-13-canvas-overflow-boundary-plan.md
  */
 export const CanvasBoundaryOverlay = ({
   scale,

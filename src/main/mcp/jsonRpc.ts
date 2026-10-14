@@ -4,7 +4,7 @@
  * Split from `protocol.ts` so the wire format and the MCP semantics are
  * testable apart: this file knows nothing about tools or handshakes, only
  * about ids, methods, and error codes.
- * see docs/plans/mcp-server-plan.md, docs/notes/mcp-protocol.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md, docs/notes/mcp-protocol.md
  */
 
 /** JSON-RPC permits a string or number id. MCP only ever sends these two. */

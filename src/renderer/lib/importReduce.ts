@@ -47,7 +47,7 @@ import type { RawElement } from './parseCode/tsx';
  * The declaration → typed field mapping is NOT reimplemented here: it
  * reuses `makeBaseline` + `applyDeclarations`, the same pair `parseCode`
  * uses, so an imported element and a hand-written one can't disagree.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 
 export type ImportFindingKind =
@@ -510,7 +510,7 @@ const inheritedTypography = (styles: Record<string, string>): Record<string, str
  * border or `display: inline-block` is a box in the line and has to stay
  * an element — the page's `.mark` is exactly that, and turning it into a
  * run would drop everything but its colour.
- * see docs/plans/inline-spans-plan.md
+ * see docs/archive/2026-09-29-inline-spans-plan.md
  */
 const RUNNABLE_PROPERTIES: ReadonlySet<string> = new Set([
   'color',
@@ -606,7 +606,7 @@ const inlineToFragments = (
   // is what forced the words apart, which is what lost the spaces
   // between them, and what made an imported headline three layers
   // nobody can edit as a sentence.
-  // see docs/plans/inline-spans-plan.md
+  // see docs/archive/2026-09-29-inline-spans-plan.md
   if (
     hasElement &&
     // `markup` is verbatim source and cannot be a run — it is kept
@@ -716,7 +716,7 @@ const inlineToFragments = (
   // nowhere to keep a leading or trailing space and the round trip
   // depends on that. The space computed here is discarded there. Kept
   // because it is the half that belongs in this file, and because the
-  // fix for the other half needs it. see docs/plans/inline-spans-plan.md
+  // fix for the other half needs it. see docs/archive/2026-09-29-inline-spans-plan.md
   // Trimmed at the line's own edges, which is ITEM position, not text
   // position. Using the first and last TEXT run instead collapsed the
   // gap in `<b>a</b> <i>b</i>` to nothing: that run is the only text,
@@ -986,7 +986,7 @@ const TABLE_LAYOUT_ROLES: ReadonlySet<TableRole> = new Set(['table', 'section', 
  * rows lose their `display` so the subgrid rule Scamp derives from the
  * table reaches them, and a cell or caption loses its `table-cell` /
  * `table-caption`, which mean nothing inside a grid.
- * see docs/plans/tables-plan.md
+ * see docs/archive/2026-10-05-tables-plan.md
  */
 const tablePartStyles = (
   styles: Record<string, string>,
@@ -1099,7 +1099,7 @@ export type ReduceOptions = {
  * there, which is not an override but an absence, and Scamp has no way
  * to say "gone below 768px". Those are counted and reported rather than
  * guessed at.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 /**
  * Push inherited typography down onto the elements that render words.
@@ -1529,7 +1529,7 @@ export const reduceCapture = (
     // `makeBaseline` builds from the PARSER's raw shape, whose runs
     // carry a class rather than a style — so ours are attached here,
     // the same way `parseCode/index.ts` attaches its own once the CSS
-    // is in hand. see docs/plans/inline-spans-plan.md
+    // is in hand. see docs/archive/2026-09-29-inline-spans-plan.md
     const element =
       inlineRun?.runs === undefined
         ? withStyles

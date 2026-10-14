@@ -5,7 +5,7 @@ import { authBaseUrl, buildSignInUrl, challengeFor, DEFAULT_AUTH_BASE_URL, DEV_A
  * These mirror the assertions the backend's own check script makes, from
  * the app's side of the flow. The properties that matter are about what an
  * interceptor can do with a callback it steals — see decision 3 of
- * docs/plans/electron-sign-in-plan.md.
+ * docs/archive/2026-08-28-electron-sign-in-plan.md.
  */
 describe('PKCE verifier and challenge', () => {
     it('generates a verifier inside the RFC 7636 length range', () => {

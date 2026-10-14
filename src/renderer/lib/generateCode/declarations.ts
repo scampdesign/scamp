@@ -104,7 +104,7 @@ export const sizeDeclarationLines = (
   // allowed to shrink (measured: 187/213 vs 350/50). That case trades a
   // proportional squeeze for "the sibling keeps its height and fill
   // takes what is left", which is what the mode name promises.
-  // see docs/plans/flex-sizing-contract-plan.md
+  // see docs/archive/2026-09-04-flex-sizing-contract-plan.md
   const fill = fillHeightKind(el, parent);
   const fillHeightAsFlex = fill === 'flex';
   const fillHeightAsAlignSelf = fill === 'align-self';
@@ -201,7 +201,7 @@ export const elementDeclarationLines = (
   // Slot content — a page-owned child of a component-instance — flows
   // inside the component's slot rect (React `{children}`). It must NOT be
   // absolutely positioned or it escapes the slot to the component root.
-  // see docs/plans/component-slots-plan.md
+  // see docs/archive/2026-07-16-component-slots-plan.md
   const inInstanceParent = parent?.type === 'component-instance';
   const inLayoutParent = inFlexParent || inGridParent || inInstanceParent;
   // Different default set for root vs any other rect — a root defaults
@@ -307,7 +307,7 @@ export const elementDeclarationLines = (
       // Per-axis gaps are real on a flex container too (the row gap
       // between wrapped lines is the usual reason). Each emits from its
       // own field, as the grid branch does — they used to be parsed and
-      // then silently dropped here. see docs/plans/flex-controls-plan.md
+      // then silently dropped here. see docs/archive/2026-09-04-flex-controls-plan.md
       if (!spaceValueEquals(el.columnGap, BASE.columnGap)) {
         lines.push(`column-gap: ${formatSpaceValue(el.columnGap)};`);
       }
@@ -323,7 +323,7 @@ export const elementDeclarationLines = (
   if (parent && parentDisplay === 'grid') {
     // A cell's span comes from its `colSpan` / `rowSpan` attribute. An
     // explicit placement the user typed still wins — this only fills in
-    // what the attribute already said. see docs/plans/tables-plan.md
+    // what the attribute already said. see docs/archive/2026-10-05-tables-plan.md
     const span = cellSpanPlacement(el);
     if (el.gridColumn.trim().length > 0) {
       lines.push(`grid-column: ${el.gridColumn};`);
@@ -512,7 +512,7 @@ export const elementDeclarationLines = (
   }
   // `color` on an svg backs its `currentColor` shapes (the "Current color"
   // swatch). Emitted here for svg because the typography block above is
-  // text-only. see docs/plans/svg-color-editing-plan.md
+  // text-only. see docs/archive/2026-07-14-svg-color-editing-plan.md
   if (el.tag === 'svg' && el.color !== undefined && el.color.length > 0) {
     lines.push(`color: ${el.color};`);
   }
@@ -600,7 +600,7 @@ export const elementDeclarationLines = (
   // `inline`, `inline-flex`, `contents` and the rest were raw CSS before
   // they had a field, and raw CSS goes last. Written in that same place,
   // a file that has one round-trips byte for byte — the published
-  // contract fixture included. see docs/plans/checks-cleanup-plan.md
+  // contract fixture included. see docs/archive/2026-10-13-checks-cleanup-plan.md
   if (el.displayOuter !== undefined && el.visibilityMode !== 'none') {
     lines.push(`display: ${displayKeyword(el.display, el.displayOuter)};`);
   }

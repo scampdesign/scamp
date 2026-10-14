@@ -15,7 +15,7 @@ import { AGENT_MD_CONTENT, AGENT_MD_CONTENT_SCAMP } from '../../src/shared/templ
  * dependency, read without pages, with its theme and design doc under
  * `design/`, and its installed framework's contract read from
  * node_modules. Real files in a temp dir.
- * see docs/plans/framework-phase-1-plan.md, step 6
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md, step 6
  */
 describe('scamp project format', () => {
   let dir: string;

@@ -285,7 +285,7 @@ export const lintView = (input) => {
         // rows inside the table, cells inside a row. Anything else is moved
         // or dropped by the HTML parser in the exported page, while the
         // canvas — built without that parser — shows it where it was.
-        // see docs/plans/tables-plan.md
+        // see docs/archive/2026-10-05-tables-plan.md
         const parent = el.parentId === null ? undefined : elements[el.parentId];
         const parentTag = tagOf(parent);
         const ownTag = tagOf(el);

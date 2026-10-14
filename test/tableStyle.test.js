@@ -3,7 +3,7 @@ import { generateCode } from '../src/renderer/lib/generateCode';
 import { parseCode } from '../src/renderer/lib/parseCode';
 import { matchTableRule, mergeTableStyle, tableStyleRules } from '../src/renderer/lib/tableStyle';
 /**
- * Phase 3 of docs/plans/tables-plan.md: row and cell styling is set once
+ * Phase 3 of docs/archive/2026-10-05-tables-plan.md: row and cell styling is set once
  * on the table and derived into zero-specificity rules, so no row or
  * cell carries a copy of it.
  */

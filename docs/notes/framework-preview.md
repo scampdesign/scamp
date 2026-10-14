@@ -2,7 +2,7 @@
 
 How the app previews a Scamp-framework project, what it measures the
 framework against, and the numbers phase 3 recorded. The plan is
-`docs/plans/framework-phase-3-plan.md`; the framework's side is
+`docs/archive/2026-09-16-framework-phase-3-plan.md`; the framework's side is
 `CONTRACT.md` section 2 in the scampjs repo.
 
 ## Which server, and how the app knows it's up

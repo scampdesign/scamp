@@ -5,7 +5,7 @@
 // parsed back, exactly as if a person had typed them in the CSS tab. So an
 // agent edit can't produce a model that wouldn't survive a save and reload,
 // and a value the panel can't type is caught and reported, not guessed at.
-// see docs/plans/builtin-agent-plan.md
+// see docs/archive/2026-10-06-builtin-agent-plan.md
 import postcss from 'postcss';
 import { DESKTOP_BREAKPOINT_ID } from '@shared/types';
 import { validateComponentName } from '@shared/componentName';

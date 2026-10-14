@@ -1,7 +1,7 @@
 # Follow-up story — "Lint design system" button (DESIGN.md)
 
 **Status:** deferred / not started. Follow-up to design-system Phase 7 (see
-`design-system-plan.md`). The DESIGN.md generation + prose forms shipped; this
+`../archive/2026-07-23-design-system-plan.md`). The DESIGN.md generation + prose forms shipped; this
 is the remaining piece of PRD story 6.
 
 ## Goal

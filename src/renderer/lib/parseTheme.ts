@@ -299,7 +299,7 @@ const rebuildRootBlock = (
  * `.dark`/`.theme-*` blocks to match `parsed`, while leaving every other
  * rule and hand-written declaration (resets, `body {}`, user CSS) untouched.
  * Returns null if the CSS won't parse so the caller can fall back to a
- * from-scratch write. see docs/plans/design-system-plan.md
+ * from-scratch write. see docs/archive/2026-07-23-design-system-plan.md
  */
 const mergeIntoExistingCss = (
   parsed: ParsedTheme,

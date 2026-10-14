@@ -8,7 +8,7 @@ import { pageRoot } from '../fixtures/selectors';
  * The Scamp Agent editing the canvas, end to end on the scripted
  * provider: the edits reach the canvas and the files, one Cmd+Z undoes
  * the whole turn, and a restore point was taken first.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const SCRIPT = path.join(os.tmpdir(), `scamp-e2e-agent-edits-${process.pid}.json`);
 writeFileSync(SCRIPT, JSON.stringify([

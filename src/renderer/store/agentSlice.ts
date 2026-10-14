@@ -28,7 +28,7 @@ import { useSnapshotsStore } from './snapshotsSlice';
  * component has its own; main owns them and keeps them on disk, and this
  * is the one the panel shows — read from main when it opens, then folded
  * from the events main streams back.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export type AgentState = {
   /** The project this conversation belongs to. */

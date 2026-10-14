@@ -19,7 +19,7 @@ import { join } from 'path';
  * A scamp-format project: the framework layout (`views/` at the root) and
  * `scampjs` in its dependencies. Checked before the Next.js test because
  * a migrated project may keep an `app/` folder around for a while.
- * see docs/plans/framework-phase-1-plan.md, step 6
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md, step 6
  */
 const isScampFormat = async (folderPath) => {
     try {

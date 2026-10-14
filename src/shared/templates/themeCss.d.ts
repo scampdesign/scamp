@@ -112,7 +112,7 @@ export declare const TABLE_RESET_SENTINEL = "/* scamp: table reset \u2014 the br
  * `font-weight: inherit` rather than `normal`: a `th` inside a heading
  * or a bolded row should still follow it. The point is to stop the
  * browser deciding, not to decide the other way.
- * see docs/plans/tables-plan.md
+ * see docs/archive/2026-10-05-tables-plan.md
  */
 export declare const TABLE_RESET_BLOCK = "/* scamp: table reset \u2014 the browser styles a table before anyone asks */\ntable {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n\nth {\n  font-weight: inherit;\n  text-align: inherit;\n}\n\ncaption {\n  text-align: inherit;\n}\n\nth,\ntd {\n  padding: 0;\n}";
 /**

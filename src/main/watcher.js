@@ -157,7 +157,7 @@ const emitChange = async (changedPath) => {
     // An imported SVG's asset file changed externally. Only forward genuine
     // external edits (`consumed === null` — Scamp's own copyImage write
     // registers a suppression), and let the renderer decide whether any
-    // inline SVG element references it. see docs/plans/svg-color-editing-plan.md
+    // inline SVG element references it. see docs/archive/2026-07-14-svg-color-editing-plan.md
     if (ext.toLowerCase() === '.svg') {
         if (consumed !== null)
             return; // Scamp's own asset write — ignore.

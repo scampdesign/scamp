@@ -1,7 +1,7 @@
 # Cross-project paste and the system clipboard — Plan
 
 Backlog: `docs/backlog-9.md` story 3 (read `:160-198`) — the half carved
-out of `docs/plans/copy-cut-paste-plan.md` on review.
+out of `docs/archive/2026-08-12-copy-cut-paste-plan.md` on review.
 Status: **proposed** — for review.
 
 ## Context
@@ -17,7 +17,7 @@ same-project and cross-page cases:
 2. **The system clipboard** — a text (TSX + CSS) representation of the
    copied elements, and parsing Scamp TSX back in from a text editor.
 
-Depends on `copy-cut-paste-plan.md` landing first — this extends the
+Depends on `../archive/2026-08-12-copy-cut-paste-plan.md` landing first — this extends the
 clipboard payload that plan introduces.
 
 ---

@@ -7,7 +7,7 @@ import { drawAndSelectRect } from '../fixtures/panel';
 import { pageRoot, pageSidebarItem, pagesList } from '../fixtures/selectors';
 /**
  * Groups in the Pages list: a layer over the list only. Pages keep their
- * files, routes, and output. see docs/plans/page-groups-plan.md
+ * files, routes, and output. see docs/archive/2026-10-12-page-groups-plan.md
  */
 test.use({ projectOptions: { format: 'nextjs', extraPages: ['about', 'pricing'] } });
 const groupHeader = (window, name) => pagesList(window).locator(`[data-testid="page-group"][data-group="${name}"]`);

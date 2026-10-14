@@ -2,7 +2,7 @@
  * Real PNG / JPEG / WebP bytes for the image-import tests, produced with
  * the same library the app uses — so every fixture is guaranteed
  * decodable by the code under test.
- * see docs/plans/image-import-speed-plan.md
+ * see docs/archive/2026-08-14-image-import-speed-plan.md
  */
 export type RawImage = {
     data: Uint8ClampedArray;

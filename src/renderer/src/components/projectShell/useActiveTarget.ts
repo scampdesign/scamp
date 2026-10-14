@@ -245,7 +245,7 @@ export const useActiveTarget = ({
     }
     // A component written for a newer framework contract than this
     // build knows would be rewritten into the older shape on the next
-    // save, so it's shown but not edited. see docs/plans/framework-phase-1-plan.md
+    // save, so it's shown but not edited. see docs/archive/2026-09-16-framework-phase-1-plan.md
     if (parsed.viewMeta && !isSupportedContract(parsed.viewMeta.contract)) {
       const reason = `This component was written for scampjs contract ${parsed.viewMeta.contract}; this version of Scamp supports ${SUPPORTED_CONTRACT.min}\u2013${SUPPORTED_CONTRACT.max}. Update Scamp to edit it.`;
       useAppLogStore.getState().log('error', `"${component.name}": ${reason}`);

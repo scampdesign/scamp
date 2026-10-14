@@ -17,7 +17,7 @@ const withDefaultName = (prose, defaultName) => prose.name === undefined || pros
  *    can't be mistaken for an external edit and clobber in-flight edits.
  *
  * The token YAML is always derived from theme.css; only the prose round-trips.
- * see docs/plans/design-system-plan.md
+ * see docs/archive/2026-07-23-design-system-plan.md
  */
 export const useDesignMdSync = (projectPath, projectName) => {
     const themeBaseTokens = useCanvasStore((s) => s.themeBaseTokens);

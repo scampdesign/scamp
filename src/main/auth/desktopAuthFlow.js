@@ -14,7 +14,7 @@ import { createHash, randomBytes } from 'crypto';
  * proves a callback belongs to a request we made; it does not prove only
  * we can use it.
  *
- * see docs/plans/electron-sign-in-plan.md
+ * see docs/archive/2026-08-28-electron-sign-in-plan.md
  */
 /** Default sign-in host. Overridden by SCAMP_AUTH_BASE_URL for local dev. */
 export const DEFAULT_AUTH_BASE_URL = 'https://www.scamp.club';

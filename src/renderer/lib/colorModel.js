@@ -7,7 +7,7 @@ const SHADE_RE = /^(.+)-(\d+)$/;
  * (`--color-<palette>-<shade>`) and semantic tokens (`--color-<name>`, which
  * usually reference a primitive). This is a derived VIEW over the flat token
  * list — the flat list stays authoritative; edits mutate it and reserialize.
- * see docs/plans/design-system-plan.md
+ * see docs/archive/2026-07-23-design-system-plan.md
  */
 export const buildColorModel = (tokens) => {
     const paletteMap = new Map();

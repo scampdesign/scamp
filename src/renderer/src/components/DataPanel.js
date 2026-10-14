@@ -86,7 +86,7 @@ const SlotRow = ({ row, otherSlotNames, }) => {
     };
     return (_jsxs("div", { className: styles.row, children: [_jsx("button", { type: "button", className: styles.slotBadge, onClick: () => selectElement(row.id), title: "Select this slot on the canvas", children: "\u2726 slot" }), _jsxs("div", { className: styles.renameWrap, children: [_jsx("input", { className: styles.renameInput, type: "text", value: draftName, onChange: (e) => setDraftName(e.target.value), onBlur: commitRename, onKeyDown: handleKeyDown, spellCheck: false, "aria-label": "Slot name" }), validationError && (_jsx("div", { className: styles.renameError, children: validationError }))] }), _jsx("button", { type: "button", className: styles.slotRemove, onClick: () => {
                     // Route through ProjectShell so it can warn when instances on other
-                    // pages have content in this slot. see component-slots-plan.md
+                    // pages have content in this slot. see docs/archive/2026-07-16-component-slots-plan.md
                     if (activeComponentName === null) {
                         toggleSlotOnRect(row.id);
                         return;

@@ -6,7 +6,7 @@ import type { ImportBatchRef, ImportBatchReport, ImportOpenArgs, ImportResultPay
  * API: this window hosts a third-party page in a `<webview>`, so its
  * renderer is the least trusted in the app. It can say "here is a page
  * I captured" and nothing else.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 declare const importApi: {
     /** The project and starting URL, sent once the window is up. */

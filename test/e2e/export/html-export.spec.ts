@@ -12,7 +12,7 @@ import { waitForSaved } from '../fixtures/assertions';
  * The folder picker is stubbed, and `shell.openPath` is neutered so the
  * success path doesn't spawn a file manager mid-run.
  *
- * see docs/plans/html-export-plan.md
+ * see docs/archive/2026-08-27-html-export-plan.md
  */
 
 /** Stop the export's "reveal the folder" step from opening a real window. */

@@ -5,7 +5,7 @@ import path from 'path';
  * live in `src/renderer/lib/htmlExport.ts`; this module only puts the
  * resulting bytes on disk safely.
  *
- * see docs/plans/html-export-plan.md
+ * see docs/archive/2026-08-27-html-export-plan.md
  */
 /**
  * Dropped in the export folder so a later export can tell "this is a folder

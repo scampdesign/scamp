@@ -53,7 +53,7 @@ export { scaffoldLegacyProject, scaffoldNextjsProject };
  * Where the folder picker opens. Electron 43+ points an omitted
  * `defaultPath` at ~/Downloads and stops the OS restoring the last-used
  * directory, so we track it ourselves.
- * see docs/plans/electron-upgrade-plan.md
+ * see docs/archive/2026-08-31-electron-upgrade-plan.md
  */
 let lastProjectDir: string | null = null;
 

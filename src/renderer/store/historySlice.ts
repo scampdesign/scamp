@@ -122,7 +122,7 @@ type HistoryState = {
    * Close the outermost transaction WITHOUT committing an entry — for a
    * gesture the user abandoned (Escape mid-drag). The caller is
    * responsible for restoring the pre-gesture state first.
-   * see docs/plans/drop-placement-helpers-plan.md
+   * see docs/archive/2026-08-13-drop-placement-helpers-plan.md
    */
   cancelHistoryTransaction: () => void;
   /**

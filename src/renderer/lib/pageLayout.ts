@@ -4,7 +4,7 @@ import type { PageLayoutEntry } from '@shared/types';
  * The Pages list's groups and order, as stored in `scamp.config.json`.
  * Pure: every function returns a new layout. The files decide which pages
  * exist; the layout only decides where they show.
- * see docs/plans/page-groups-plan.md
+ * see docs/archive/2026-10-12-page-groups-plan.md
  */
 
 /** A row the user can drag, or drop onto. */

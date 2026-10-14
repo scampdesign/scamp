@@ -139,7 +139,7 @@ test.describe('history panel — snapshots', () => {
     test('leaving the page during a preview leaves the live page on disk', async ({ window, project, }) => {
         // Regression: the flush that runs on a page switch wrote whatever the
         // canvas held — the preview — over the live page.
-        // Audit item 10 in docs/plans/audit-2026-10-12.md.
+        // Audit item 10 in docs/archive/2026-10-12-audit-2026-10-12.md.
         await oneRectSnapshotThenTwo(window);
         const live = (await readPageFiles(project.dir, 'home')).tsx;
         expect(live.match(/data-scamp-id="rect_/g)).toHaveLength(2);

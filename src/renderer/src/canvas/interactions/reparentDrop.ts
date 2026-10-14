@@ -163,7 +163,7 @@ export const flowIndicator = (
  * "between" would promise something the user can't see.
  *
  * Returns the parent id to retarget to, or null to leave the drop alone.
- * see docs/plans/drop-placement-helpers-plan.md
+ * see docs/archive/2026-08-13-drop-placement-helpers-plan.md
  */
 const besideTargetFor = (
   hit: { parentId: string; isFlow: boolean; slotName?: string },
@@ -211,14 +211,14 @@ export const resolveReparentDrop = (
   // siblings included. Reordering a flex child still works: dropping in the
   // GAP between siblings targets the shared PARENT (rejected below as
   // "same parent"), so it falls through to the reorder path; only dropping
-  // onto a sibling's body nests into it. see docs/plans/component-slots-plan.md
+  // onto a sibling's body nests into it. see docs/archive/2026-07-16-component-slots-plan.md
   const hit = geometry.resolveDropContainer(clientX, clientY, draggedEl.id);
   if (!hit) return null;
 
   // …except near its edges. Without this the only way to drop BESIDE a
   // container inside a flex parent is to hit the gap between siblings;
   // anywhere on its body nests you inside it, which is the "I meant
-  // between" problem. see docs/plans/drop-placement-helpers-plan.md
+  // between" problem. see docs/archive/2026-08-13-drop-placement-helpers-plan.md
   const beside = besideTargetFor(hit, clientX, clientY, geometry, elements);
   const drop = beside ? { parentId: beside, isFlow: true } : hit;
   if (drop.parentId === draggedEl.parentId) return null;

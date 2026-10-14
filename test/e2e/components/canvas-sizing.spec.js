@@ -8,7 +8,7 @@ import { canvasElementsByPrefix, componentSidebarItem, pageRoot, } from '../fixt
 import { waitForSaved } from '../fixtures/assertions';
 // Backlog: the component editor's artboard should match the source element on
 // creation, expose resize handles, and hug its content on a handle
-// double-click. see docs/plans/component-canvas-sizing-plan.md
+// double-click. see docs/archive/2026-07-17-component-canvas-sizing-plan.md
 test.use({ projectOptions: { format: 'nextjs' } });
 const readConfig = async (dir) => JSON.parse(await readFile(path.join(dir, 'scamp.config.json'), 'utf8'));
 /** Right-click an element at a frame-local point and convert it via the menu. */

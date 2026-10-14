@@ -15,7 +15,7 @@ import { extname, join } from 'path';
  * uses GLib too; the two corrupt each other's GObject state and take the
  * main process down after a handful of encodes. WASM shares nothing with
  * the host, so it can't have that conflict.
- * see docs/plans/image-optimization-plan.md
+ * see docs/archive/2026-08-13-image-optimization-plan.md
  */
 /** Quality for the lossy encode. 80 is the usual photographic sweet spot. */
 const WEBP_QUALITY = 80;
@@ -39,7 +39,7 @@ const LOSSLESS_MAX_PIXELS = 4_000_000;
  * Measured on a 96MP (12000x8002) source: 2.94MB in 30.7s at native
  * resolution, 0.45MB in 0.67s capped. Quality alone fixes neither — q70
  * at native is still 2.18MB and 28s.
- * see docs/plans/image-import-speed-plan.md
+ * see docs/archive/2026-08-14-image-import-speed-plan.md
  */
 const MAX_LONG_EDGE = 3000;
 /**

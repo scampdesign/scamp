@@ -119,7 +119,7 @@ export const createElementsCreateSlice: StateCreator<
           // Stored, not derived: the guard must be IN the file, or the
           // canvas (which renders the model) and the browser (which
           // renders the file) disagree about a box that has not been
-          // saved yet. see docs/plans/flex-sizing-contract-plan.md
+          // saved yet. see docs/archive/2026-09-04-flex-sizing-contract-plan.md
           [id]: dropDrawnOffset(preserveDrawnSize(withTag, parent), parent),
           [input.parentId]: { ...parent, childIds: [...parent.childIds, id] },
         },

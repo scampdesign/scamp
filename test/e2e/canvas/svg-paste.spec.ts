@@ -13,7 +13,7 @@ import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 /**
  * Paste an SVG copied as markup (Cmd/Ctrl+V) → inline editable <svg>
  * element. Drives the real OS clipboard via the Electron main process.
- * see docs/plans/svg-improvements-plan.md
+ * see docs/archive/2026-06-30-svg-improvements-plan.md
  */
 test.describe('canvas: paste SVG from clipboard', () => {
   test('pastes copied SVG markup as an inline svg element', async ({

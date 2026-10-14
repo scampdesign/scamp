@@ -156,7 +156,7 @@ describe('cloneElementSubtree', () => {
 /**
  * A duplicate keeps the user's name and only regenerates the id suffix,
  * so `menu_a1b2` duplicates to `menu_c3d4` rather than reverting to
- * `rect_c3d4`. see docs/plans/duplicate-preserves-names-plan.md
+ * `rect_c3d4`. see docs/archive/2026-08-11-duplicate-preserves-names-plan.md
  */
 describe('cloneElementSubtree: names', () => {
     it('keeps the name on the clone while giving it a fresh id', () => {

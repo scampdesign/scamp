@@ -20,7 +20,7 @@ import {
  * reach for it rather than restating the name. Schemas are strict
  * (`additionalProperties: false`) so a hallucinated argument fails loudly at
  * the boundary instead of being silently ignored.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 
 /** The tools that take no arguments. */

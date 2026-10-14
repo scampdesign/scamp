@@ -13,7 +13,7 @@ import { pageRoot } from '../fixtures/selectors';
  * Anchored on the element the image is going into, because that's where
  * the user is looking: the first version was a pill at the bottom edge
  * of the canvas and got missed entirely.
- * see docs/plans/image-import-speed-plan.md
+ * see docs/archive/2026-08-14-image-import-speed-plan.md
  */
 /** A photo big enough that the conversion window is observable. */
 const writeBigJpeg = async (dir) => {

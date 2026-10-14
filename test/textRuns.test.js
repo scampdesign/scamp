@@ -3,7 +3,7 @@ import { applyStyleToRange, isStyled, mergeRuns, runsFromText, runsOf, splitAt, 
 /**
  * A text element's content as styled runs.
  *
- * Phase 1 of `docs/plans/inline-spans-plan.md`. Nothing stores runs yet,
+ * Phase 1 of `docs/archive/2026-09-29-inline-spans-plan.md`. Nothing stores runs yet,
  * so these test the operations the later phases need — splitting at a
  * selection, applying a style to a range, and reporting what a range
  * has in common — before any of it is wired to the UI.

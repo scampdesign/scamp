@@ -5,7 +5,7 @@ import type { FrameworkInfo } from '@shared/types';
  * (the package keeps `./package.json` in its exports map for this).
  * A project that was never installed has neither; that isn't an error,
  * the banner just says which version to install.
- * see docs/plans/framework-phase-1-plan.md, step 6
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md, step 6
  */
 export declare const readFrameworkInfo: (projectPath: string) => Promise<FrameworkInfo>;
 /** The `scampjs` version range a project's package.json asks for, if any. */

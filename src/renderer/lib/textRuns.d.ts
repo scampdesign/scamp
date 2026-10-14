@@ -13,7 +13,7 @@
  * run of the element's `text`, so every existing element already has a
  * runs view and no file changes. The operations below are the half that
  * later phases need and that can be built and tested now.
- * see docs/plans/inline-spans-plan.md
+ * see docs/archive/2026-09-29-inline-spans-plan.md
  */
 /**
  * Style a run may carry.

@@ -6,7 +6,7 @@ import { WRITE_TOOL_NAMES } from './writeTools';
  * always asks, and so does a burst of edits big enough that the user
  * should see the list before it lands. The model is also told to describe
  * and ask first for large changes; this is what holds when it doesn't.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 /** Edits that always ask. */
 export const ALWAYS_CONFIRM = new Set([

@@ -7,7 +7,7 @@ import { createProviderKey } from '../src/main/agent/providerKey';
 /**
  * The Scamp Agent's provider key. What matters: it is never written in
  * the clear, never stored unverified, and never handed out to a
- * signed-out user. see docs/plans/builtin-agent-plan.md
+ * signed-out user. see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const KEY = 'sk-ant-api03-test-key';
 /** Reversible, but never leaves the plaintext visible on disk. */

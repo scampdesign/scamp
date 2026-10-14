@@ -34,7 +34,7 @@
 /* "Optimising image…" while an import converts. Anchored over the element
    the image is going into, because that's where the user is looking — a
    pill at the edge of the canvas got missed entirely.
-   see docs/plans/image-import-speed-plan.md */
+   see docs/archive/2026-08-14-image-import-speed-plan.md */
 .importOverlay {
   position: absolute;
   z-index: 210;

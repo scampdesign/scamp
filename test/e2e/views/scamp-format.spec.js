@@ -12,7 +12,7 @@ test.use({ projectOptions: { sourceDir: FIXTURE, name: 'contract-0' } });
  * its bindings from the samples, and nothing is rewritten on open. The
  * fixture has no node_modules, and that is not worth a banner: designing
  * doesn't need the framework installed.
- * see docs/plans/framework-phase-1-plan.md, step 6
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md, step 6
  */
 test('the contract fixture opens as a scamp project and is left byte-identical', async ({ window, project, }) => {
     await openPagesSection(window);

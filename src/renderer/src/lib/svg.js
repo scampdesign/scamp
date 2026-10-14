@@ -2,7 +2,7 @@
 // so this lives under src/renderer/src/lib (alongside exportCapture)
 // rather than the env-agnostic src/renderer/lib core. Used by the
 // drop/paste insert flows and by ElementRenderer before injecting svg
-// markup into the live canvas DOM. see docs/plans/svg-improvements-plan.md
+// markup into the live canvas DOM. see docs/archive/2026-06-30-svg-improvements-plan.md
 import DOMPurify from 'dompurify';
 /**
  * Cheap structural check: does this text look like an SVG document?

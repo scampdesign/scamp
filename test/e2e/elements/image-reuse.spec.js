@@ -11,7 +11,7 @@ import { waitForSaved } from '../fixtures/assertions';
  * the only level that proves the whole path — the IPC handler, the
  * format-derived assets dir, and the real file dialog (stubbed) — behaves
  * the way the user actually hit the bug.
- * see docs/plans/reuse-existing-assets-plan.md
+ * see docs/archive/2026-08-12-reuse-existing-assets-plan.md
  */
 /** Default test projects are `legacy` format: assets at <project>/assets. */
 const assetNames = async (assetsDir) => (await fs.readdir(assetsDir).catch(() => [])).sort();
@@ -61,7 +61,7 @@ test.describe('images: choosing one already in the project', () => {
         // The behaviour that must not regress — an external file is still
         // imported into the assets folder. It arrives as `.webp`: imports are
         // re-encoded on the way in.
-        // see docs/plans/image-optimization-plan.md
+        // see docs/archive/2026-08-13-image-optimization-plan.md
         await expect(pageRoot(window)).toBeVisible();
         await drawAndSelectRect(window, { x: 100, y: 100 }, { x: 260, y: 200 });
         await waitForSaved(window);

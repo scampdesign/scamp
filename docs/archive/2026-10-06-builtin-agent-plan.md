@@ -33,7 +33,7 @@ hex values**. See *Token mode* under Phase 5.
 code; `projectMigrate.ts` only moves Scamp's own formats. The bulk-import
 plan for React repos is unimplemented. **Decided:** the beta's headline
 is AI-assisted **HTML (URL)** import, and React import has its own plan,
-[`react-import-plan.md`](react-import-plan.md), to follow the beta.
+[`react-import-plan.md`](../plans/react-import-plan.md), to follow the beta.
 
 **4. One-click restore doesn't cover everything the agent changes.**
 Snapshots capture page, view and component `.tsx`/`.module.css` only —
@@ -560,7 +560,7 @@ Made 2026-10-05:
 1. **Tokens in cleanup:** the user picks **Create theme tokens** or
    **Keep hex values** when a cleanup starts (Phase 5, *Token mode*).
 2. **React import:** out of the beta, in its own plan,
-   [`react-import-plan.md`](react-import-plan.md). The beta is HTML
+   [`react-import-plan.md`](../plans/react-import-plan.md). The beta is HTML
    import.
 3. **Write tools over MCP:** built-in agent only for the beta.
 

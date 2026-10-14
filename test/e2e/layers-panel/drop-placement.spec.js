@@ -10,7 +10,7 @@ import { waitForSaved } from '../fixtures/assertions';
  * `dropZones.test.ts` pins the before/inside/after rule itself; this
  * covers the wiring — that the tree feeds real geometry into it, shows
  * the matching indicator, and drops where the indicator said.
- * see docs/plans/drop-placement-helpers-plan.md
+ * see docs/archive/2026-08-13-drop-placement-helpers-plan.md
  */
 const DRAG_MIME = 'application/x-scamp-element-id';
 /**

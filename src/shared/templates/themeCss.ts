@@ -184,7 +184,7 @@ export const TABLE_RESET_SENTINEL =
  * `font-weight: inherit` rather than `normal`: a `th` inside a heading
  * or a bolded row should still follow it. The point is to stop the
  * browser deciding, not to decide the other way.
- * see docs/plans/tables-plan.md
+ * see docs/archive/2026-10-05-tables-plan.md
  */
 export const TABLE_RESET_BLOCK = `${TABLE_RESET_SENTINEL}
 table {

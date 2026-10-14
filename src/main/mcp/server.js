@@ -5,7 +5,7 @@ import { handlePayload } from './protocol';
  *
  * Deliberately Electron-free so an integration test can start a real server
  * on a real port — the only level that catches a transport-shape mistake.
- * see docs/plans/mcp-server-plan.md, docs/notes/mcp-protocol.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md, docs/notes/mcp-protocol.md
  */
 /**
  * The advertised default. Fixed rather than ephemeral because the URL ends

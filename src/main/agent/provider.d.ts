@@ -5,7 +5,7 @@ import type { BetaMessage, BetaMessageParam, BetaTool } from '@anthropic-ai/sdk/
  * Shaped in Anthropic's message types, because the history has to be
  * stored in them anyway — thinking blocks are bound to the conversation
  * and must be replayed exactly. A second provider translates at this seam.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export type ProviderRequest = {
     /** Stable for a session, so it caches. */

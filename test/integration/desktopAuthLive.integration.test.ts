@@ -16,7 +16,7 @@ import type { SafeStorageLike } from '../../src/main/auth/tokenStore';
  *
  * SKIPS when the backend is not running, so it never fails CI or a
  * machine without it. Start it with `npm run dev` in the scamp-website
- * repo, then run this. see docs/plans/electron-sign-in-plan.md
+ * repo, then run this. see docs/archive/2026-08-28-electron-sign-in-plan.md
  */
 const BASE = process.env['SCAMP_AUTH_BASE_URL'] ?? 'http://localhost:3000';
 let backendUp = false;

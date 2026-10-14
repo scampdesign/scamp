@@ -5,7 +5,7 @@
  * Inert unless BOTH the e2e flag is set and the app is unpackaged, so a
  * shipped build ignores the environment entirely — setting variables
  * cannot sign anyone in or bypass a key check there.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export type E2eSeams = {
     /** Report a signed-in user without a session token. */

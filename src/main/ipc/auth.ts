@@ -21,7 +21,7 @@ import { E2E_USER, readE2eSeams } from '../e2eSeams';
  * The token never crosses this boundary. The renderer asks for a sign-in
  * and receives an identity; the credential itself stays in the main
  * process, which is also where authenticated requests will be made from.
- * see docs/plans/electron-sign-in-plan.md
+ * see docs/archive/2026-08-28-electron-sign-in-plan.md
  */
 
 const deps = (): AuthDeps => ({

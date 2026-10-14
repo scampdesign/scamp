@@ -7,7 +7,7 @@
  * whole sentence, and a caller holding a `Range` has no way to convert
  * one to the other. A styled sentence renders as several spans, so the
  * selection routinely starts in one text node and ends in another.
- * see docs/plans/inline-spans-plan.md
+ * see docs/archive/2026-09-29-inline-spans-plan.md
  */
 /** Every text node under `host`, in the order they render. */
 const textNodesOf = (host) => {

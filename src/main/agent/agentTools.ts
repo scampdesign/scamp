@@ -9,7 +9,7 @@ import type { ToolDescriptor } from '../mcp/protocol';
  * describe the canvas differently. Left out: the component scaffold, which
  * hands back files to write — the built-in agent edits through the store,
  * never by writing files.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const EXCLUDED: ReadonlySet<string> = new Set(['scamp_get_component_scaffold']);
 

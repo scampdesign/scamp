@@ -15,7 +15,7 @@ import { waitForSaved } from '../fixtures/assertions';
  * `treeRows.test.ts` covers which rows a given collapse state produces; this
  * covers the wiring — that the triangle reaches the store, that the state
  * outlives an unmount, and that selection and collapse don't fight.
- * see docs/plans/tree-collapse-plan.md
+ * see docs/archive/2026-08-11-tree-collapse-plan.md
  */
 
 type Win = Parameters<typeof pageRoot>[0];

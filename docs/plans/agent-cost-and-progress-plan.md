@@ -12,7 +12,7 @@ Two goals:
 2. **Progress.** Edits land on the canvas in bursts at the end of each
    model step, so a long run looks frozen and then changes all at once.
 
-Related: `docs/plans/builtin-agent-plan.md` (the harness, skills, confirm
+Related: `docs/archive/2026-10-06-builtin-agent-plan.md` (the harness, skills, confirm
 policy), `docs/plans/react-import-plan.md` (batch import, Phase 6 skill).
 
 ---

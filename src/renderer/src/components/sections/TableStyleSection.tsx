@@ -53,7 +53,7 @@ const CELL_ALIGN_OPTIONS = [
  * Reads the stored element rather than the resolved one: `tableStyle`
  * has no breakpoint or state overrides, so the stored value is what
  * every breakpoint and state shows.
- * see docs/plans/tables-plan.md
+ * see docs/archive/2026-10-05-tables-plan.md
  */
 export const TableStyleSection = ({ elementId }: Props): JSX.Element | null => {
   const element = useCanvasStore((s) => s.elements[elementId]);

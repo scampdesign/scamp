@@ -6,7 +6,7 @@ import { ROOT_ELEMENT_ID } from '@lib/element';
  * The live context file. Everything an agent reads about the canvas comes
  * through here, so the unhappy paths (nothing selected, a stale selection,
  * a corrupt parent link) matter as much as the happy one.
- * see docs/plans/live-context-file-plan.md
+ * see docs/archive/2026-08-05-live-context-file-plan.md
  */
 const el = (overrides) => ({
     ...DEFAULT_RECT_STYLES,

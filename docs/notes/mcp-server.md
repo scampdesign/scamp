@@ -5,7 +5,7 @@ its styles are, what the tree looks like — instead of relying on the user to
 describe it, or on a context file that may be a moment stale.
 
 Protocol details: `docs/notes/mcp-protocol.md`.
-Decision history: `docs/plans/mcp-server-plan.md`.
+Decision history: `docs/archive/2026-08-06-mcp-server-plan.md`.
 
 ## Shape
 

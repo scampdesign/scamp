@@ -3,7 +3,7 @@
  *
  * Agents and humans write `flex: 1` and `flex: none` far more often than
  * the longhands, so the parser has to read the shorthand. The generator
- * only ever writes longhands — see docs/plans/flex-controls-plan.md,
+ * only ever writes longhands — see docs/archive/2026-09-04-flex-controls-plan.md,
  * open question 1 — so this is one-directional by design.
  */
 

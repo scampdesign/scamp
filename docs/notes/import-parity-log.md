@@ -343,7 +343,7 @@ that being true.
 
 **Deferred**, because fixing it is a change to the two core functions
 rather than to the importer. Planned in
-[`../plans/inline-spans-plan.md`](../plans/inline-spans-plan.md), whose
+[`../archive/2026-09-29-inline-spans-plan.md`](../archive/2026-09-29-inline-spans-plan.md), whose
 Phase 2 closes it — and which also builds what the bug is really a
 symptom of: styling a range of text inside a text element.
 
@@ -451,7 +451,7 @@ gap this described is closed; what it was chasing is not.
   `approximated` — on a 3-column patient list with a caption, a `colspan`
   footer and collapsed borders, geometry went from 9 elements off (the
   table 720x213 → 720x546, every row stacking its cells) to 25 of 25
-  within 2px, and pixels to 99.99%. see `docs/plans/tables-plan.md`
+  within 2px, and pixels to 99.99%. see `docs/archive/2026-10-05-tables-plan.md`
 - **`<canvas>`, `<iframe>`, `<video>`.** Drawn by something other than
   CSS. Masked in the pixel harness, with the masked area printed, because
   diffing them measures nothing.

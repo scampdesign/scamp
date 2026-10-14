@@ -6,7 +6,7 @@
  * turn instead. Project conventions are a tool call away
  * (`scamp_get_conventions`) rather than pasted in: agent.md runs past a
  * thousand lines in a real project and most messages need none of it.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export const AGENT_SYSTEM_PROMPT = `You are the Scamp Agent, built into Scamp, a desktop design tool. The person talking to you is designing in Scamp. They draw elements on a canvas; Scamp keeps the canvas in sync with real files — a React component (.tsx) and a CSS module — so what they design ships as code.
 

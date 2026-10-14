@@ -14,7 +14,7 @@
  * `sharp` is required by absolute path, handed over by the parent, because
  * this file is resolved from the app bundle rather than from a place
  * where bare-specifier resolution would find node_modules.
- * see docs/plans/image-import-speed-plan.md
+ * see docs/archive/2026-08-14-image-import-speed-plan.md
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const send = (msg) => {

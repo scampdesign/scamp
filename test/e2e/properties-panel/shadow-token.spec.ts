@@ -9,7 +9,7 @@ import { pageRoot } from '../fixtures/selectors';
 /**
  * `box-shadow: var(--shadow-card)` shows in the Shadow section as the
  * token, and can be detached into layers or removed.
- * Item 5 of docs/plans/checks-cleanup-plan.md
+ * Item 5 of docs/archive/2026-10-13-checks-cleanup-plan.md
  */
 
 const TSX = [

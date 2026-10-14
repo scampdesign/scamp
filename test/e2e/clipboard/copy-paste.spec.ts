@@ -15,7 +15,7 @@ import { waitForSaved } from '../fixtures/assertions';
  * the store actions do; this covers the wiring — that the shortcuts and
  * the menu items reach them, and that the clipboard outlives a page
  * switch (which is the feature's main use case).
- * see docs/plans/copy-cut-paste-plan.md
+ * see docs/archive/2026-08-12-copy-cut-paste-plan.md
  */
 
 type Win = Parameters<typeof pageRoot>[0];

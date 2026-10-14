@@ -9,7 +9,7 @@ import { pageRoot } from '../fixtures/selectors';
  * answer with what the tool returned — which proves the question went
  * from the panel to main, the tool ran against the live canvas, and the
  * answer came back.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const SCRIPT = path.join(os.tmpdir(), `scamp-e2e-agent-script-${process.pid}.json`);
 writeFileSync(SCRIPT, JSON.stringify([

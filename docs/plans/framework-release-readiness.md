@@ -40,7 +40,7 @@ explicitly, or under `SCAMP_E2E_FORMAT=scamp`. And
 builds, and publishes. There is no workflow that runs Playwright, so
 nothing has ever exercised the format this release is about.
 
-This is not theoretical. `framework-phase-5-plan.md` records that
+This is not theoretical. `../archive/2026-09-16-framework-phase-5-plan.md` records that
 running just the **canvas** specs under `SCAMP_E2E_FORMAT=scamp` found
 four failures, all with one cause: a view kept the component artboard
 instead of the page canvas. That was one folder out of thirty.

@@ -15,7 +15,7 @@ import {
  * Transport-free on purpose — it takes a parsed message and returns a
  * response, so the whole protocol is testable without binding a port. The
  * HTTP layer (Phase 4) only decides status codes.
- * see docs/plans/mcp-server-plan.md, docs/notes/mcp-protocol.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md, docs/notes/mcp-protocol.md
  */
 
 /**

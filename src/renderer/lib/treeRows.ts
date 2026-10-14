@@ -7,7 +7,7 @@ import type { ScampElement } from './element';
  * Extracted from `ElementTree` so the walk is testable on its own: what the
  * tree shows for a given collapse state is real logic, and the component
  * around it is just rendering.
- * see docs/plans/tree-collapse-plan.md
+ * see docs/archive/2026-08-11-tree-collapse-plan.md
  */
 
 export type TreeRow =

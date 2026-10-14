@@ -8,7 +8,7 @@ import { pageRoot } from '../fixtures/selectors';
  * The Scamp Agent's design-system edits — a component and theme tokens —
  * each confirmed first, and each taken back by Undo AI changes, including
  * the files a plain restore would leave behind.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const script = (name, turns) => {
     const file = path.join(os.tmpdir(), `scamp-e2e-agent-${name}-${process.pid}.json`);

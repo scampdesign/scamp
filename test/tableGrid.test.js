@@ -3,7 +3,7 @@ import { generateCode } from '../src/renderer/lib/generateCode';
 import { parseCode } from '../src/renderer/lib/parseCode';
 import { isGridTable, tableCaptionRule, tableSubgridRule } from '../src/renderer/lib/tableGrid';
 /**
- * Phase 2 of docs/plans/tables-plan.md: the columns are defined once,
+ * Phase 2 of docs/archive/2026-10-05-tables-plan.md: the columns are defined once,
  * on the table, and reach every row through `subgrid`.
  *
  * The rule is derived from the table's own state rather than stored on

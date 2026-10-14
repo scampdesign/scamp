@@ -104,7 +104,7 @@ export const ThemePanel = ({ projectPath }) => {
     // holds the per-theme semantic overrides (.dark / .theme-*). The
     // Semantic area renders the Light block (base values) plus one block
     // per theme, each editable inline; preview lives in the canvas toolbar.
-    // see docs/plans/design-system-plan.md
+    // see docs/archive/2026-07-23-design-system-plan.md
     const themeBaseTokens = useCanvasStore((s) => s.themeBaseTokens);
     const storeOverrides = useCanvasStore((s) => s.themeOverrides);
     const elements = useCanvasStore((s) => s.elements);
@@ -164,7 +164,7 @@ export const ThemePanel = ({ projectPath }) => {
     // shade or a semantic mapping). Its VALUE may classify as anything —
     // a semantic token's `var(--color-…)` reads as `unknown` — so we route
     // by NAME here, otherwise those tokens double-render in both Colors and
-    // Typography/Unknown. see docs/plans/design-system-plan.md
+    // Typography/Unknown. see docs/archive/2026-07-23-design-system-plan.md
     const isColorToken = (name) => name.startsWith('--color-');
     const inColors = (category, name) => isColorToken(name) || category === 'color';
     const tabCounts = useMemo(() => {
@@ -212,7 +212,7 @@ export const ThemePanel = ({ projectPath }) => {
     const textStyles = useMemo(() => buildTextStyles(localTokens), [localTokens]);
     // Structured VIEW over the flat colour tokens: primitive palettes +
     // semantic tokens. The flat list stays authoritative; every edit below
-    // mutates it and reserializes. see docs/plans/design-system-plan.md
+    // mutates it and reserializes. see docs/archive/2026-07-23-design-system-plan.md
     const colorModel = useMemo(() => buildColorModel(localTokens), [localTokens]);
     /**
      * The primitives, as tokens for the semantic row's picker. Only
@@ -247,7 +247,7 @@ export const ThemePanel = ({ projectPath }) => {
      * the store first so the canvas + pickers reflect the edit immediately
      * for the active theme; the chokidar reparse confirms it later. Font
      * imports and hand-written CSS are preserved (see serializeThemeFile).
-     * see docs/plans/design-system-plan.md
+     * see docs/archive/2026-07-23-design-system-plan.md
      */
     const persist = async (base, overrides) => {
         try {
@@ -563,7 +563,7 @@ export const ThemePanel = ({ projectPath }) => {
      * Add a theme: a new override block seeded with a copy of every current
      * semantic value, so it starts identical to Light and the user tweaks
      * it in place. Auto-named ("Dark", then "Theme 2"…); rename inline via
-     * the block header. see docs/plans/design-system-plan.md
+     * the block header. see docs/archive/2026-07-23-design-system-plan.md
      */
     const handleAddTheme = () => {
         const usedClasses = new Set(localOverrides.map((b) => b.cssClass));

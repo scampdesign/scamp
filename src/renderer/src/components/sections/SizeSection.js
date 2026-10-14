@@ -154,7 +154,7 @@ export const SizeSection = ({ elementId }) => {
     });
     // A cell's width belongs to its column, so the W field is shown
     // disabled with the reason rather than quietly removed.
-    // see docs/plans/tables-plan.md
+    // see docs/archive/2026-10-05-tables-plan.md
     const cellWidthOwnedByColumn = useCanvasStore((s) => {
         const el = s.elements[elementId];
         return el ? columnOwnsWidth(el, s.elements) : false;

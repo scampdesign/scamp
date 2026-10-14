@@ -94,7 +94,7 @@ built-in agent can edit any view or component, not only the open one
 
 ## Why MCP is read-only
 
-Decision 3 of [the built-in agent plan](../plans/builtin-agent-plan.md):
+Decision 3 of [the built-in agent plan](../archive/2026-10-06-builtin-agent-plan.md):
 write tools are for the built-in agent only for now. An agent writing
 files directly skips the round-trip check, the confirmations, and the
 one-step undo. Exposing the edit tools over MCP is a reasonable next step,

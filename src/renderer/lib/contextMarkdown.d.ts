@@ -6,7 +6,7 @@ import { type ContextInput } from './contextModel';
  *
  * A renderer over `contextModel`, nothing more. The facts live there so this
  * and the copy-context one-liner can't disagree.
- * see docs/plans/live-context-file-plan.md
+ * see docs/archive/2026-08-05-live-context-file-plan.md
  */
 export type { ContextInput, ContextTarget } from './contextModel';
 /**

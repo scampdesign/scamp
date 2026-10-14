@@ -11,7 +11,7 @@ Source story: `docs/backlog-10.md` §2, superseded by the target model
 (reproduced in short under "The target"). Backend today:
 `scamp-website/api-docs` and its reference client
 `scripts/fake-client.mjs`; backend plan: `scamp-website/plans/cloud-sync.md`.
-Builds on `docs/plans/electron-sign-in-plan.md`, which is built.
+Builds on `docs/archive/2026-08-28-electron-sign-in-plan.md`, which is built.
 
 ## The target
 

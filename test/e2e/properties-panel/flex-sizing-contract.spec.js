@@ -10,7 +10,7 @@ import { waitForSaved } from '../fixtures/assertions';
  * week — a stylesheet can read perfectly while the canvas shows
  * something else. So these measure boxes.
  *
- * see docs/plans/flex-sizing-contract-plan.md
+ * see docs/archive/2026-09-04-flex-sizing-contract-plan.md
  */
 const HOME_TSX = `import styles from './page.module.css';
 

@@ -10,6 +10,6 @@ export type DropInsert = {
  * `<img>`. SVGs are sanitized/normalized and inlined as an editable
  * `<svg>` element (so fill/stroke are editable), unless they're larger
  * than INLINE_SVG_MAX_BYTES, in which case they fall back to the asset +
- * `<img>` path. see docs/plans/svg-improvements-plan.md
+ * `<img>` path. see docs/archive/2026-06-30-svg-improvements-plan.md
  */
 export declare const useDropInsert: (geometry: CanvasGeometry) => DropInsert;

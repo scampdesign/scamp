@@ -18,7 +18,7 @@ measureFrame()  →  content.right  →  fitWidth  →  fitScale  →  scale
 
 `settleExtent` (`lib/canvasOverflow.ts`) snaps anything within `CONTENT_EXTENT_TOLERANCE_PX` of the frame box onto the frame box exactly. Real overflow (beyond the tolerance) rounds up, so the boundary indicator never under-reports. `measureFrame` also bails out of `setContent` when the value is unchanged — the extent drives the zoom, so a no-op re-render is a full lap around the sizing loop.
 
-The same trap is documented for the component-canvas hug in `component-canvas-sizing-plan.md`, which is why `measureContentSize` uses `offsetLeft/offsetWidth` chains instead of dividing client rects by the scale.
+The same trap is documented for the component-canvas hug in `../archive/2026-07-17-component-canvas-sizing-plan.md`, which is why `measureContentSize` uses `offsetLeft/offsetWidth` chains instead of dividing client rects by the scale.
 
 **2. The scrollbar.** `.artboardScroll` was `overflow: auto` with no reserved gutter. A vertical scrollbar appearing shrinks `clientWidth`, which shrinks `fitScale`, which shrinks `shellHeight`, which removes the scrollbar, which grows `clientWidth` — forever. `scrollbar-gutter: stable` takes the scrollbar out of the loop entirely.
 

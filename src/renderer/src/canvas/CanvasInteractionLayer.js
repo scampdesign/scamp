@@ -78,7 +78,7 @@ export const CanvasInteractionLayer = ({ frameRef, scale }) => {
     // Escape abandons a drag in flight: the element goes back where it
     // started and nothing is committed. Listening on window rather than the
     // layer because the pointer is captured during a drag, so the layer
-    // never has keyboard focus. see docs/plans/drop-placement-helpers-plan.md
+    // never has keyboard focus. see docs/archive/2026-08-13-drop-placement-helpers-plan.md
     const dragActive = move.move !== null || reorder.active;
     useEffect(() => {
         if (!dragActive)

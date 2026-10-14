@@ -8,7 +8,7 @@
 //
 // Those subgrid declarations are DERIVED, not stored: writing them onto
 // each row is the duplication this exists to remove.
-// see docs/plans/tables-plan.md
+// see docs/archive/2026-10-05-tables-plan.md
 /**
  * Is this element a table whose columns are defined?
  *

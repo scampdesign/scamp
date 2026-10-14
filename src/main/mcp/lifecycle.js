@@ -14,7 +14,7 @@ import { canvasToolInvoker, initCanvasQueries, rejectCanvasQueries } from '../ca
  * Everything testable lives in its neighbours — this file exists so
  * `server.ts`, `tools.ts`, and `pendingQueries.ts` never import Electron and
  * can be unit tested without an app.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 let running = null;
 let activeProject = null;

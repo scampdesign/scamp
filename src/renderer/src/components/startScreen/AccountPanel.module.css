@@ -1,6 +1,6 @@
 /* Sits at the foot of the start-screen sidebar. Quiet by default: an
    account is optional and the signed-out state must not look like a
-   prompt. see docs/plans/electron-sign-in-plan.md */
+   prompt. see docs/archive/2026-08-28-electron-sign-in-plan.md */
 .panel {
   margin-top: auto;
   padding-top: 16px;

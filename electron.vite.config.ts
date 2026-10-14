@@ -142,7 +142,7 @@ export default defineConfig(({ mode }) => {
         rollupOptions: {
           // Two entries: the app itself, and the image-conversion child
           // process, which has to exist as its own file for `fork`.
-          // see docs/plans/image-import-speed-plan.md
+          // see docs/archive/2026-08-14-image-import-speed-plan.md
           input: {
             index: resolve(__dirname, 'src/main/index.ts'),
             imageOptimizeChild: resolve(
@@ -155,7 +155,7 @@ export default defineConfig(({ mode }) => {
           // external so they load from node_modules in the asar.
           // `sharp` is a native module: it resolves a platform-specific
           // binary at require time, which Rollup can't follow.
-          // see docs/plans/image-import-speed-plan.md
+          // see docs/archive/2026-08-14-image-import-speed-plan.md
           external: [
             // The framework is a devDependency: its templates subpath is
             // bundled for the scaffold and the migration; nothing else of

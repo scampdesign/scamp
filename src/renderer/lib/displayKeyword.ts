@@ -6,7 +6,7 @@ import type { DisplayMode, DisplayOuter } from './element';
  * (`displayOuter`, absent meaning block). One keyword in the file, two
  * fields in the model, so every "is this a flex or grid container?" check
  * reads `display` alone — `inline-flex` is a flex container.
- * see docs/plans/checks-cleanup-plan.md
+ * see docs/archive/2026-10-13-checks-cleanup-plan.md
  */
 
 const OUTERS: ReadonlySet<string> = new Set(['inline', 'inline-block', 'contents', 'list-item']);

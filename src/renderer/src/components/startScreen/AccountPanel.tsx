@@ -13,7 +13,7 @@ import styles from './AccountPanel.module.css';
  *
  * Everything here is optional. Scamp works fully signed out, so this must
  * never block, never prompt on launch, and never imply an account is
- * required. see docs/plans/electron-sign-in-plan.md
+ * required. see docs/archive/2026-08-28-electron-sign-in-plan.md
  */
 
 type State =

@@ -4,7 +4,7 @@
 // things every row or every cell has. Stored on each one, they are the
 // same duplication a table's columns exist to remove, so they live on
 // the `<table>` and the generator derives one rule per setting.
-// see docs/plans/tables-plan.md
+// see docs/archive/2026-10-05-tables-plan.md
 
 import type { RawDeclaration } from './parseCode/css';
 import type { TableRowDivider, TableStyle, TextAlign } from './element';
@@ -28,7 +28,7 @@ const slotSelectors = (className: string): Record<TableStyleSlot, string> => {
     // while the exported page always has one: the HTML parser inserts
     // it around a `tr` written straight inside a `table`. `of tr` keeps
     // a `thead` or `caption` sibling from shifting the count on the
-    // canvas. see docs/plans/tables-plan.md
+    // canvas. see docs/archive/2026-10-05-tables-plan.md
     stripe:
       `${t} > :where(tbody) > :where(tr:nth-child(even)),\n` +
       `${t} > :where(tr:nth-child(even of tr))`,

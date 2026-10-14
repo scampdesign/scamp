@@ -23,7 +23,7 @@ import {
 /**
  * Real encoding of real files in a temp dir — no mocking, because "is
  * the WebP actually smaller" is the whole question and a stub can't
- * answer it. see docs/plans/image-optimization-plan.md
+ * answer it. see docs/archive/2026-08-13-image-optimization-plan.md
  */
 
 let dir: string;
@@ -60,7 +60,7 @@ describe('isConvertible', () => {
  * Which encodes get attempted. Lossless is both the slowest and the one
  * that loses hardest on photographs — a 12MP photo took 6.7s to produce
  * 7.2MB against a 2.8MB source — so it's only worth trying where it can
- * plausibly win. see docs/plans/image-import-speed-plan.md
+ * plausibly win. see docs/archive/2026-08-14-image-import-speed-plan.md
  */
 describe('shouldTryLossless', () => {
   it('tries it for a small PNG — flat UI art is where it wins', () => {
@@ -94,7 +94,7 @@ describe('shouldTryLossless', () => {
  * The dimension cap. A 12000px source renders at ~1200-2000 CSS pixels,
  * so keeping 96 megapixels costs bytes and encode time for detail nobody
  * can see: that image was 2.94MB in 30.7s at native resolution and
- * 0.45MB in 0.67s capped. see docs/plans/image-import-speed-plan.md
+ * 0.45MB in 0.67s capped. see docs/archive/2026-08-14-image-import-speed-plan.md
  */
 describe('targetDimensions', () => {
   it('leaves an image already within the cap alone', () => {
@@ -256,7 +256,7 @@ describe('toWebpIfSmaller', () => {
  *
  * WASM runs synchronously on the calling thread. Run on the main thread,
  * a 12MP import froze the entire app — no IPC, no saves, no redraw — for
- * around nine seconds. see docs/plans/image-import-speed-plan.md
+ * around nine seconds. see docs/archive/2026-08-14-image-import-speed-plan.md
  */
 describe('the encode does not block the event loop', () => {
   it('keeps timers firing while a large image converts', async () => {

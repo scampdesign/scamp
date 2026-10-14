@@ -7,7 +7,7 @@ import type { BetaTool } from '@anthropic-ai/sdk/resources/beta/messages/message
  * A skill is chosen when a conversation starts and holds for the rest of
  * it. Its instructions ride in as a mid-conversation system message, so
  * the cached system prompt in front of them never changes.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export type AgentSkill = {
     id: string;

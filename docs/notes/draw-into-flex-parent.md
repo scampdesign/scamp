@@ -64,7 +64,7 @@ it wraps, which is a different decision.
 
 The guard is the typed `flexShrink` field (it began life as a
 `customProperties` entry, before flex-item fields existed — see
-`docs/plans/flex-controls-plan.md`). It is written to the file as
+`docs/archive/2026-09-04-flex-controls-plan.md`). It is written to the file as
 `flex-shrink: 0`, so the preview and any browser agree with the canvas;
 it round-trips through `parseCode` like any other declaration; and the
 Size panel shows it as the **Don't shrink** toggle in the flex-child

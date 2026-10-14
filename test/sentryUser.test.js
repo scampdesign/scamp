@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  *
  * That separation is the whole privacy story of DAU tracking: we learn how
  * many people are active without making any error report identifiable.
- * see docs/plans/dau-tracking-plan.md
+ * see docs/archive/2026-08-11-dau-tracking-plan.md
  */
 const setUser = vi.fn();
 const init = vi.fn();

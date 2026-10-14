@@ -564,7 +564,7 @@ describe('parseCode — svg source', () => {
 /**
  * Duplicating a named element has to survive the trip to disk, not just
  * look right in the store — the class prefix IS the only place the name
- * is written. see docs/plans/duplicate-preserves-names-plan.md
+ * is written. see docs/archive/2026-08-11-duplicate-preserves-names-plan.md
  */
 describe('parseCode + generateCode — duplicated names survive a round trip', () => {
     it('writes both duplicates as menu_* classes and parses both back as "menu"', () => {

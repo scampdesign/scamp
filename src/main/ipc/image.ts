@@ -67,7 +67,7 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
  *
  * Every failure is a returned error rather than a throw: an import that
  * pulls forty images should not lose the other thirty-nine because one
- * host was down. see docs/plans/website-import-plan.md
+ * host was down. see docs/archive/2026-09-23-website-import-plan.md
  */
 /** `data:[<type>][;base64],<payload>` → bytes plus its media type. */
 const decodeDataUrl = (href: string): { bytes: Buffer; type: string } | null => {
@@ -161,7 +161,7 @@ const fetchImage = async (args: FetchImageArgs): Promise<FetchImageResult> => {
  * family, in parallel, and a network failure reads as "not available"
  * rather than failing the import — a font we could not check is one the
  * user should be told to install either way.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 /**
  * Every family's variable axes, from Google's public metadata.

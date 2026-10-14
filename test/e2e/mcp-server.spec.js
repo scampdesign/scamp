@@ -12,7 +12,7 @@ import { waitForSaved } from './fixtures/assertions';
  * arriving over HTTP in main comes back with live canvas state from the
  * renderer's store. The test speaks the real protocol over the real socket,
  * exactly as an agent would.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 test.use({ projectOptions: { format: 'nextjs' } });
 /** Wait for the server to advertise itself — startup races project open. */

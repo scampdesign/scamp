@@ -138,7 +138,7 @@ test.describe('canvas: drag to reparent', () => {
  * only way to drop BESIDE a container inside a flex parent was to hit the
  * gap between siblings — anywhere on its body nested you inside it, which
  * is the ambiguity the story is about.
- * see docs/plans/drop-placement-helpers-plan.md
+ * see docs/archive/2026-08-13-drop-placement-helpers-plan.md
  */
 test.describe('canvas: drop beside vs inside', () => {
     /** Drag an element's centre to a viewport point. */
@@ -236,7 +236,7 @@ test.describe('canvas: drop beside vs inside', () => {
  * Two things the first pass got wrong, reported from manual testing:
  * a flow drop drew a line but never said WHICH container the element
  * would join, and grid parents didn't get the edge-band treatment flex
- * parents did. see docs/plans/drop-placement-helpers-plan.md
+ * parents did. see docs/archive/2026-08-13-drop-placement-helpers-plan.md
  */
 test.describe('canvas: which container am I dropping into', () => {
     /** The mid-drag container outline. */
@@ -330,7 +330,7 @@ test.describe('canvas: which container am I dropping into', () => {
  * drag/reorder decision asked `isFlexChild`; they fell through to the
  * absolute-move machine, where dragging did nothing visible and the only
  * feedback came from whichever sibling happened to be under the cursor.
- * see docs/plans/drop-placement-helpers-plan.md
+ * see docs/archive/2026-08-13-drop-placement-helpers-plan.md
  */
 test.describe('canvas: reordering inside a grid', () => {
     const dropOutline = (window) => window.locator('[class*="dropContainer"]');

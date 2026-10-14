@@ -26,7 +26,7 @@ npmRebuild: true
 # `.node` inside the asar can't be dlopen'd. The image-conversion child
 # process is forked by path, which also can't come from inside the asar.
 # All three would work in dev and fail only once packaged.
-# see docs/plans/image-import-speed-plan.md
+# see docs/archive/2026-08-14-image-import-speed-plan.md
 asarUnpack:
   - "**/node_modules/sharp/**"
   - "**/node_modules/@img/**"

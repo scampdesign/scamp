@@ -27,7 +27,7 @@ import { ROOT_ELEMENT_ID, type ScampElement } from '@lib/element';
  * The MCP tool return shapes. An agent acts on these without a human
  * checking them, so the unhappy paths matter as much as the happy ones —
  * a wrong answer is worse than a missing one.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 
 const el = (overrides: Partial<ScampElement> & { id: string }): ScampElement => ({

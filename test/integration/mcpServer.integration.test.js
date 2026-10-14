@@ -21,7 +21,7 @@ let nextPort = 41800;
  * shouldn't be there, a header check that rejects a legitimate client.
  * Header casing and the `Accept` value below match what Phase 0 observed
  * from Claude Code 2.1.222, not what the spec merely permits.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 const TOKEN = 'test-token-1234';
 describe('MCP HTTP server', () => {

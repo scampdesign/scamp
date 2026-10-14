@@ -3,7 +3,7 @@
 How the app shows and touches `routes/` in a Scamp-framework project
 without becoming a backend builder. The framework owns routing
 (scampjs CONTRACT.md section 1.5); the app reads, lists, and writes two
-small things. The plan is `docs/plans/framework-phase-7-plan.md`.
+small things. The plan is `docs/archive/2026-09-16-framework-phase-7-plan.md`.
 
 ## What the app reads
 

@@ -12,7 +12,7 @@ import {
  * an identical file on every selection is the point. A user often clicks the
  * thing they're about to ask about, and the file's mtime moving is the
  * signal that the context is fresh rather than left over from earlier.
- * see docs/plans/live-context-file-plan.md
+ * see docs/archive/2026-08-05-live-context-file-plan.md
  */
 
 /** Matches the sync bridge's own write debounce for style edits. */

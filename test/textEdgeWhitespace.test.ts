@@ -8,7 +8,7 @@ import { parseCode } from '@lib/parseCode';
 /**
  * A space at the start or end of a text element survives the round trip.
  *
- * Phase 2 of `docs/plans/inline-spans-plan.md`. It could not before:
+ * Phase 2 of `docs/archive/2026-09-29-inline-spans-plan.md`. It could not before:
  * the generator indents a text element onto its own line, so the parser
  * reads `\n      works \n    ` and has to trim to recover the words —
  * and the trim took real edge spaces with it. `works alongside AI.`

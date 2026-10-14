@@ -75,7 +75,7 @@ export const PROP_REF_TEXT_RE = /^\s*\{([a-z][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_]+)*)\
 /**
  * Match a `name?: React.ReactNode` entry in a component's props type —
  * how a SLOT is declared. Slot names are the `React.ReactNode` props (vs
- * text props, which are `?: string`). see docs/plans/component-slots-plan.md
+ * text props, which are `?: string`). see docs/archive/2026-07-16-component-slots-plan.md
  */
 const SLOT_PROP_TYPE_RE = /([a-z][a-zA-Z0-9_]*)\s*\?\s*:\s*React\.ReactNode/g;
 /**
@@ -106,7 +106,7 @@ const SCAMP_META_RE = /export\s+const\s+_scamp\s*=\s*\{\s*contract:\s*(\d+)\s*,\
  * Read the `_scamp` export (contract version + event-prop names). Null
  * when the file has none — every page, and components written before
  * the framework contract. The generator always writes it back, so
- * nothing here needs preserving. see docs/plans/framework-phase-1-plan.md
+ * nothing here needs preserving. see docs/archive/2026-09-16-framework-phase-1-plan.md
  */
 export const parseScampMeta = (tsx) => {
     const match = SCAMP_META_RE.exec(tsx);
@@ -193,7 +193,7 @@ const TEXT_TAGS = new Set([
     // A plain `<td>Smith</td>` is a text element. One with element
     // children is corrected to a rectangle by the same structural pass
     // that handles `<a>`, `<li>` and `<button>`.
-    // see docs/plans/tables-plan.md
+    // see docs/archive/2026-10-05-tables-plan.md
     'th',
     'td',
     'caption',
@@ -341,7 +341,7 @@ export const parseTsxStructure = (rawTsx) => {
      * `atStart` / `atEnd` say whether this piece sits at the element's
      * own edge. A piece between two runs is trimmed at neither: the
      * space around a styled word IS its content.
-     * see docs/plans/inline-spans-plan.md
+     * see docs/archive/2026-09-29-inline-spans-plan.md
      */
     const decodeJsxText = (raw, atStart, atEnd) => {
         let out = raw;
@@ -541,7 +541,7 @@ export const parseTsxStructure = (rawTsx) => {
             // element. `span` is also a text-capable tag, so without this it
             // would parse as a child text element and split the sentence,
             // which is the whole thing runs exist to avoid.
-            // see docs/plans/inline-spans-plan.md
+            // see docs/archive/2026-09-29-inline-spans-plan.md
             {
                 const classForRun = attribs['className'] ?? attribs['classname'] ?? '';
                 const runClass = /\{\s*styles\.([A-Za-z0-9_]+__r\d+)\s*\}|["']([^"']*__r\d+)["']/.exec(classForRun);
@@ -775,7 +775,7 @@ export const parseTsxStructure = (rawTsx) => {
             if (top !== undefined && runPieces.has(top)) {
                 // Assemble the runs in source order. Styles are attached
                 // later, from the CSS: the TSX only says which class each run
-                // wears. see docs/plans/inline-spans-plan.md
+                // wears. see docs/archive/2026-09-29-inline-spans-plan.md
                 const pieces = runPieces.get(top) ?? [];
                 // Markup becomes part of the run list only when the text holds
                 // no element: around a child element the fragments keep their
@@ -824,7 +824,7 @@ export const parseTsxStructure = (rawTsx) => {
                 // `{' '}` is how the generator writes an edge space, and it
                 // survives the trim because it is not whitespace. Decode
                 // after trimming, never before.
-                // see docs/plans/inline-spans-plan.md
+                // see docs/archive/2026-09-29-inline-spans-plan.md
                 top.text = decodeJsxText(top.text, true, true);
             }
             if (top?.range) {

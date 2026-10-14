@@ -185,7 +185,7 @@ export const LayoutSection = ({ elementId }) => {
     // A table's layout is not one of the modes: it is a grid, always, and
     // its rows are `<tr>` elements rather than track-list entries. So it
     // gets the Columns control on its own and none of the mode picker.
-    // see docs/plans/tables-plan.md
+    // see docs/archive/2026-10-05-tables-plan.md
     if (element.tag === 'table') {
         return (_jsx(Section, { title: "Columns", elementId: elementId, fields: ['display', 'gridTemplateColumns'], cssProperties: ['display', 'grid-template-columns'], children: _jsx(Row, { label: "", children: _jsx(TableColumnsEditor, { table: element, elements: elements, onChange: (patch) => patchElement(elementId, patch) }) }) }));
     }

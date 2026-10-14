@@ -68,7 +68,7 @@ export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
    * structured rows, replacing whatever the element currently has. The
    * element model stores shadows structurally (no `var()`), so this is a
    * one-time application rather than a live token link.
-   * see docs/plans/design-system-plan.md
+   * see docs/archive/2026-07-23-design-system-plan.md
    */
   const applyShadowPreset = (name: string): void => {
     const token = shadowTokens.find((t) => t.name === name);

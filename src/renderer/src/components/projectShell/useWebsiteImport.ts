@@ -51,7 +51,7 @@ import { useAuthStore } from '@store/authSlice';
  * generated markup replaces the scaffold's. Reusing it means an
  * imported view is indistinguishable from a hand-made one, route
  * included.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 
 type Options = {

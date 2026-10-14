@@ -13,7 +13,7 @@ import { errorMessage } from '@shared/errorMessage';
  * the file picker (a conversion failure, a rejected path, a full disk)
  * was an unhandled rejection and the user saw the picker close and
  * nothing else happen. Failures are logged and reported as `null`.
- * see docs/plans/image-import-speed-plan.md
+ * see docs/archive/2026-08-14-image-import-speed-plan.md
  */
 export const importImage = async (sourcePath, projectPath) => {
     const { setImageImportBusy } = useCanvasStore.getState();

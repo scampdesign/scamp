@@ -99,7 +99,7 @@ const elementCssChunks = (el, parent, mustEstablishPositioningContext = false) =
     // A grid table's columns reach its rows through one derived rule,
     // right after the table's own so a row can still override it.
     // Nothing is stored per row — that copy is the duplication tables
-    // exist to remove. see docs/plans/tables-plan.md
+    // exist to remove. see docs/archive/2026-10-05-tables-plan.md
     if (isGridTable(el)) {
         chunks.push(tableSubgridRule(classNameFor(el)));
         chunks.push(tableCaptionRule(classNameFor(el)));
@@ -139,7 +139,7 @@ export const generateCss = (elements, rootId, breakpoints, customMediaBlocks, pa
         const chunks = elementCssChunks(el, parent, positioningContextIds.has(el.id));
         // A styled run's rule sits right after its element's, so the file
         // reads in the order the page does.
-        // see docs/plans/inline-spans-plan.md
+        // see docs/archive/2026-09-29-inline-spans-plan.md
         if (el.type !== 'text')
             return chunks;
         const cls = classNameFor(el);

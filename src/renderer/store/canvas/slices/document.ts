@@ -180,7 +180,7 @@ export const createDocumentSlice: StateCreator<
       // unrelated element. Only clear on an actual target change —
       // `loadPage` is also the reload path (external edits, a theme-panel
       // round trip), and wiping the user's tree view on those would be a
-      // bug in itself. see docs/plans/tree-collapse-plan.md
+      // bug in itself. see docs/archive/2026-08-11-tree-collapse-plan.md
       collapsedIds:
         state.activePage?.tsxPath === page.tsxPath ? state.collapsedIds : {},
     }));

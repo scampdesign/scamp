@@ -7,7 +7,7 @@ import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 /**
  * Row and cell styling is set once on the table and written as one
  * derived rule per setting, not onto every row or cell.
- * see docs/plans/tables-plan.md
+ * see docs/archive/2026-10-05-tables-plan.md
  */
 
 const TSX = [

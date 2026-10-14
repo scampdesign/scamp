@@ -25,7 +25,7 @@ import {
  *
  * The action lives on the element right-click menu rather than the toolbar:
  * it acts on a specific element, so it belongs with the other per-element
- * actions. see docs/plans/copy-context-button-plan.md
+ * actions. see docs/archive/2026-08-06-copy-context-button-plan.md
  */
 
 test.use({ projectOptions: { format: 'nextjs' } });

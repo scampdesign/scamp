@@ -30,7 +30,7 @@ export type RawElement = {
      * Styled runs, when the element has any. Carries the CLASS rather
      * than the style — the TSX only says which class each run wears, and
      * the CSS pass attaches what it means.
-     * see docs/plans/inline-spans-plan.md
+     * see docs/archive/2026-09-29-inline-spans-plan.md
      */
     runs?: RawTextRun[];
     /** The HTML tag name as written in the source file. Captured so the
@@ -124,7 +124,7 @@ export type ScampViewMeta = {
  * Read the `_scamp` export (contract version + event-prop names). Null
  * when the file has none — every page, and components written before
  * the framework contract. The generator always writes it back, so
- * nothing here needs preserving. see docs/plans/framework-phase-1-plan.md
+ * nothing here needs preserving. see docs/archive/2026-09-16-framework-phase-1-plan.md
  */
 export declare const parseScampMeta: (tsx: string) => ScampViewMeta | null;
 export declare const parsePropsDestructure: (tsx: string) => Map<string, string>;

@@ -14,7 +14,7 @@ import {
 /**
  * The Scamp Agent's edits against the real stores: they land in the
  * canvas, and one turn's edits undo as one step.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 
 const TSX = `<div data-scamp-id="root" className={styles.root}>

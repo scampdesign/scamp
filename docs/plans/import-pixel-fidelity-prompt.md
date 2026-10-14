@@ -27,7 +27,7 @@ fixing the importer and the canvas until each site's rendered import
 matches its source to **99% of pixels** or until you can show why the
 remainder is not fixable.
 
-Read `docs/plans/website-import-plan.md` and
+Read `docs/archive/2026-09-23-website-import-plan.md` and
 `docs/notes/parity-harness.md` before you start. The importer's own
 accounting of what it knowingly loses is in
 `src/renderer/lib/importReport.ts` — that list is the boundary of what a

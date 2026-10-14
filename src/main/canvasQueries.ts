@@ -19,7 +19,7 @@ import type { ToolInvoker } from './mcp/protocol';
  * terminal, and the built-in Scamp Agent. It lives outside the MCP
  * lifecycle on purpose: the MCP server can fail to start (a port in use)
  * and the built-in agent must not go down with it.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 
 let mainWindow: BrowserWindow | null = null;

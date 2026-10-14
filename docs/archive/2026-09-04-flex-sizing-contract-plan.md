@@ -3,14 +3,14 @@
 Status: **Phases 1-3 landed, with one rule inverted by the parity
 harness — see "Rule 2 reversal" below. The explicit don't-shrink
 control landed 2026-09-04 as a typed `flexShrink` field with the
-px-means-don't-shrink rule (`docs/plans/flex-controls-plan.md`), which
+px-means-don't-shrink rule (`docs/archive/2026-09-04-flex-controls-plan.md`), which
 closes this.**
 
 Earlier status: **Phase 0 complete — results below changed the design.** Rule 3's
 main-axis half is DROPPED on the evidence; the fill-height half is kept
 and measured safe. Phases 1-4 proceed from the revised contract.
 
-Supersedes `draw-free-space-plan.md` (free-space-constrained drawing),
+Supersedes `2026-08-28-draw-free-space-plan.md` (free-space-constrained drawing),
 which is kept as a stub pointing here.
 
 ## Context

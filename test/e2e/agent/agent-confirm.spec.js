@@ -6,7 +6,7 @@ import { canvasElement, pageRoot } from '../fixtures/selectors';
 /**
  * The Scamp Agent asks before a delete, and only the user's answer
  * decides it. Scripted provider; no network.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const SCRIPT = path.join(os.tmpdir(), `scamp-e2e-agent-confirm-${process.pid}.json`);
 writeFileSync(SCRIPT, JSON.stringify([
@@ -60,7 +60,7 @@ test('Apply changes deletes it', async ({ window }) => {
     await expect(window.getByTestId('agent-tool')).toHaveText('Deleted card_a1b2');
 });
 test('closing the project stops a waiting turn and saves what the model knows', async ({ window, project }) => {
-    // Audit items 11-12 in docs/plans/audit-2026-10-12.md: a turn used to
+    // Audit items 11-12 in docs/archive/2026-10-12-audit-2026-10-12.md: a turn used to
     // outlive its project, and a project switch wiped its model history.
     await askToDelete(window);
     await window.getByRole('button', { name: '← Projects' }).click();

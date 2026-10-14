@@ -33,7 +33,7 @@ const KIND_ORDER = [
     'table-rowspan',
     'table-cell-width',
     'table-repeated-style',
-    // Notes, after every problem. see docs/plans/checks-cleanup-plan.md
+    // Notes, after every problem. see docs/archive/2026-10-13-checks-cleanup-plan.md
     'not-panel-editable',
     'side-not-typed',
 ];

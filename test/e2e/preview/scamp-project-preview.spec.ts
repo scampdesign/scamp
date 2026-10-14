@@ -9,7 +9,7 @@ import { pageRoot } from '../fixtures/selectors';
  * A new project on the Scamp framework, the default since phase 5,
  * previews through `scamp dev`. The framework comes from the
  * repo's devDependency, linked into the project instead of installed, so
- * the test needs no network. see docs/plans/framework-phase-3-plan.md
+ * the test needs no network. see docs/archive/2026-09-16-framework-phase-3-plan.md
  */
 
 const REPO_MODULES = path.resolve(__dirname, '../../../node_modules');

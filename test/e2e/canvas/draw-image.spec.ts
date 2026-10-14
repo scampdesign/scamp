@@ -45,7 +45,7 @@ test.describe('canvas: draw image', () => {
     // Imports are re-encoded to WebP on the way in. Asserting only that
     // SOME src is emitted would pass unchanged if conversion silently
     // stopped happening — and this is the only import path the picker
-    // drives directly. see docs/plans/image-import-speed-plan.md
+    // drives directly. see docs/archive/2026-08-14-image-import-speed-plan.md
     expect(tsx).toMatch(
       new RegExp(`data-scamp-id="${className}"[^>]*src="[^"]*\\.webp"`)
     );

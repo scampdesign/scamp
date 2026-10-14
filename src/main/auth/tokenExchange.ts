@@ -8,7 +8,7 @@
  * The token that comes back is an opaque Better Auth session token, not a
  * JWT: 30 days, refreshed on use, no refresh token. So there is no
  * lifecycle to manage here — a later `401` means sign in again, not
- * refresh. see docs/plans/electron-sign-in-plan.md
+ * refresh. see docs/archive/2026-08-28-electron-sign-in-plan.md
  *
  * `fetch` is injected so the failure paths can be tested without a
  * network or a running backend.

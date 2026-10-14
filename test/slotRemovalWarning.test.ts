@@ -11,7 +11,7 @@ import type { PageFile } from '@shared/types';
 /**
  * Phase 4 (component slots): the cross-page scan that powers the
  * "remove slot" confirm dialog — which instances on which pages have
- * content filling a given slot. see docs/plans/component-slots-plan.md
+ * content filling a given slot. see docs/archive/2026-07-16-component-slots-plan.md
  */
 
 const makePageRoot = (childIds: string[]): ScampElement => ({

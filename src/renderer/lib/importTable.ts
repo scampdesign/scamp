@@ -4,7 +4,7 @@
 // rows through a derived subgrid rule. Importing one means finding those
 // columns in what the page measured, and knowing which captured node is
 // the table, a section, a row or a cell — the reducer treats each
-// differently. see docs/plans/tables-plan.md
+// differently. see docs/archive/2026-10-05-tables-plan.md
 
 import type { CapturedNode } from '@shared/importCapture';
 

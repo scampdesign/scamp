@@ -4,7 +4,7 @@ import { createQueryRegistry } from '../src/main/mcp/pendingQueries';
  * The pull-through correlation layer. Its whole job is that a query either
  * gets its answer or fails visibly — never hangs, never resolves with
  * somebody else's data.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 describe('createQueryRegistry', () => {
     let sent;

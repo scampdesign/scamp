@@ -29,7 +29,7 @@
  * in both documents, so that one IS safe. The real diff, against
  * Scamp's own baseline, happens in the reducer where `makeBaseline`
  * already knows the answer and a test can check it.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 /** Bumped when the payload shape changes, so a stale fixture fails loudly. */
 export declare const CAPTURE_VERSION = 3;

@@ -11,6 +11,6 @@ import type { CopyImageResult } from '@shared/types';
  * the file picker (a conversion failure, a rejected path, a full disk)
  * was an unhandled rejection and the user saw the picker close and
  * nothing else happen. Failures are logged and reported as `null`.
- * see docs/plans/image-import-speed-plan.md
+ * see docs/archive/2026-08-14-image-import-speed-plan.md
  */
 export declare const importImage: (sourcePath: string, projectPath: string) => Promise<CopyImageResult | null>;

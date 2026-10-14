@@ -7,7 +7,7 @@ import { DEFAULT_BREAKPOINTS } from '@shared/types';
 
 /**
  * `display` as two fields — how the box lays out its children, and how it
- * sits in its parent. see docs/plans/checks-cleanup-plan.md
+ * sits in its parent. see docs/archive/2026-10-13-checks-cleanup-plan.md
  */
 
 const KEYWORDS = ['block', 'inline', 'inline-block', 'contents', 'list-item', 'flex', 'inline-flex', 'grid', 'inline-grid'];

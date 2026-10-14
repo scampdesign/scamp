@@ -13,7 +13,7 @@ import path from 'path';
  * it lives: sharp is loaded inside the child, so a broken install, a
  * missing binary for the platform, or a process that won't start all
  * surface the same way from the parent's side.
- * see docs/plans/image-import-speed-plan.md
+ * see docs/archive/2026-08-14-image-import-speed-plan.md
  */
 vi.mock('child_process', async (importOriginal) => {
     const actual = await importOriginal();

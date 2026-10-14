@@ -6,7 +6,7 @@
  * silently and one that fails silently look identical, which is the
  * failure this exists to prevent. Testing it needs no React.
  *
- * see docs/plans/html-export-plan.md
+ * see docs/archive/2026-08-27-html-export-plan.md
  */
 
 export type HtmlExportStatus = 'idle' | 'exporting' | 'done' | 'error';

@@ -11,7 +11,7 @@ import type { SpaceValue, SpaceTuple } from '../spaceValue';
  * (relative path under `public/assets`). Stored in the element's generic
  * `attributes` bag so it round-trips through the TSX verbatim, and read by
  * the file-watch reload to locate the on-disk source. see
- * docs/plans/svg-color-editing-plan.md
+ * docs/archive/2026-07-14-svg-color-editing-plan.md
  */
 import type { TextRun } from '../textRuns';
 
@@ -123,7 +123,7 @@ export type TextAlign = 'left' | 'center' | 'right';
  * same per-row duplication a table's columns exist to remove. The
  * generator derives one zero-specificity rule per setting, so anything
  * set on a row or cell itself still wins.
- * see docs/plans/tables-plan.md
+ * see docs/archive/2026-10-05-tables-plan.md
  */
 export type TableRowDivider = {
   width: number;
@@ -462,7 +462,7 @@ export type ScampElement = {
    * Only meaningful when `tag === 'svg'`. The raw inner source between
    * the `<svg>` open and close tags, preserved verbatim so the
    * generator can re-emit it byte-for-byte. Rendered (sanitized) on the
-   * canvas via ElementRenderer. see docs/plans/svg-improvements-plan.md
+   * canvas via ElementRenderer. see docs/archive/2026-06-30-svg-improvements-plan.md
    */
   svgSource?: string;
 
@@ -642,7 +642,7 @@ export type ScampElement = {
    * of a different colour rather than a child element. Making it a child
    * is what forces the "a host with children cannot also hold words"
    * rule, which splits the sentence, which loses the spaces around it.
-   * see docs/plans/inline-spans-plan.md
+   * see docs/archive/2026-09-29-inline-spans-plan.md
    */
   runs?: ReadonlyArray<TextRun>;
   /**
@@ -682,7 +682,7 @@ export type ScampElement = {
    * only). When set, the element emits `{slotName}` and declares a
    * `slotName?: React.ReactNode` prop — page instances fill it with their
    * own children. Default name is `'children'`. Only meaningful in a
-   * component definition. see docs/plans/component-slots-plan.md
+   * component definition. see docs/archive/2026-07-16-component-slots-plan.md
    */
   slot?: string;
   /**
@@ -690,7 +690,7 @@ export type ScampElement = {
    * fills. Absent means the default (`children`) slot. Set on the direct
    * children of a `component-instance`. A `children`/default slot emits as
    * JSX children of the instance; a named slot emits as a
-   * `slotName={<…>}` prop. see docs/plans/component-slots-plan.md
+   * `slotName={<…>}` prop. see docs/archive/2026-07-16-component-slots-plan.md
    */
   slotName?: string;
   fontFamily?: string;
@@ -734,7 +734,7 @@ export type ScampElement = {
   /**
    * `box-shadow: var(--shadow-card)` — the whole shadow from a theme
    * token, kept as the reference so it follows the theme. When set,
-   * `boxShadows` is empty. see docs/plans/checks-cleanup-plan.md
+   * `boxShadows` is empty. see docs/archive/2026-10-13-checks-cleanup-plan.md
    */
   boxShadowToken?: string;
 

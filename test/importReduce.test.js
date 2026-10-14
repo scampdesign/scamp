@@ -13,7 +13,7 @@ import { ROOT_ELEMENT_ID } from '@lib/element';
  * `scripts/capture-import-fixtures.mjs` — proves the rules hold against
  * a layout engine's actual output, which is where every wrong
  * assumption has shown up so far.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 const node = (over = {}) => ({
     id: 0,
@@ -1772,7 +1772,7 @@ describe('whitespace around an inline span', () => {
      * The two text runs are `"…works "` and `" AI."`, and both boundary
      * spaces live there.
      *
-     * **Closed by Phase 2** of `docs/plans/inline-spans-plan.md`. These
+     * **Closed by Phase 2** of `docs/archive/2026-09-29-inline-spans-plan.md`. These
      * were `it.fails` while the model had nowhere to keep an edge space;
      * the generator now writes one as `{' '}` and the parser reads it back
      * after trimming its own indentation, so they assert normally.
@@ -1848,7 +1848,7 @@ describe('whitespace around an inline span', () => {
 });
 describe('a glyph-only span becomes a run, not an element', () => {
     /**
-     * Phase 5 of `docs/plans/inline-spans-plan.md`. `works
+     * Phase 5 of `docs/archive/2026-09-29-inline-spans-plan.md`. `works
      * <span class="gradient">alongside</span> AI.` used to arrive as three
      * sibling elements, which is what forced the words apart and lost the
      * spaces between them. It is now one text element with three runs —

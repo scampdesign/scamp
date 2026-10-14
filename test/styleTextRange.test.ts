@@ -7,7 +7,7 @@ import { ROOT_ELEMENT_ID, type ScampElement } from '@lib/element';
 /**
  * Styling a range of a text element, through the store.
  *
- * Phase 4 of `docs/plans/inline-spans-plan.md`. The pure half is
+ * Phase 4 of `docs/archive/2026-09-29-inline-spans-plan.md`. The pure half is
  * `textRuns.test.ts`; this covers what the action does to an element —
  * when it writes `runs`, when it deliberately does not, and what a
  * retyped sentence does to styling that no longer fits it.

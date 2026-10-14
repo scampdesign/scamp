@@ -13,7 +13,7 @@
  * run of the element's `text`, so every existing element already has a
  * runs view and no file changes. The operations below are the half that
  * later phases need and that can be built and tested now.
- * see docs/plans/inline-spans-plan.md
+ * see docs/archive/2026-09-29-inline-spans-plan.md
  */
 /**
  * Tags a run can be, rather than an element: inline, holding only words.
@@ -240,7 +240,7 @@ export const runStyleDeclarations = (style) => {
     // is what makes it text rather than a coloured box behind the words.
     // Emitted from the image's presence rather than stored, because the
     // two are never meaningful apart. `runInlineStyle` does the same for
-    // the canvas. see docs/plans/inline-spans-plan.md
+    // the canvas. see docs/archive/2026-09-29-inline-spans-plan.md
     if (style.backgroundImage !== undefined) {
         out.push('background-clip: text;', '-webkit-background-clip: text;');
     }

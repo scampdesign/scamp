@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/app';
 /**
  * Connecting the Scamp Agent's provider key. The key check is stubbed
  * through the e2e seams, so this never calls Anthropic.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const openAppSettings = async (window) => {
     await window.getByRole('button', { name: '← Projects' }).click();

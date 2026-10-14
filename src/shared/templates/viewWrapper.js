@@ -2,7 +2,7 @@
  * The one-line Next.js page that renders a view, so a `views/<Name>/`
  * file previews through `next dev` until the framework's own dev
  * server exists. App-owned and regenerated; never listed as a page.
- * see docs/plans/framework-phase-1-plan.md, step 2
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md, step 2
  */
 export const viewWrapperTsx = (viewName) => `import ${viewName} from '@/views/${viewName}/${viewName}';
 

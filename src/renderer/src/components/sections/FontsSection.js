@@ -38,7 +38,7 @@ export const FontsSection = ({ projectPath }) => {
     // Write the BASE (:root) tokens and per-theme override blocks — NOT the
     // derived active-theme list — so a font edit while previewing a non-Light
     // theme neither writes that theme's values into :root nor drops the
-    // `.dark`/`.theme-*` blocks. see docs/plans/design-system-plan.md
+    // `.dark`/`.theme-*` blocks. see docs/archive/2026-07-23-design-system-plan.md
     const themeBaseTokens = useCanvasStore((s) => s.themeBaseTokens);
     const themeOverrides = useCanvasStore((s) => s.themeOverrides);
     const [draft, setDraft] = useState('');

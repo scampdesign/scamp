@@ -6,7 +6,7 @@
 // `editFeedback`. So the import-cleanup eval measures the agent the app
 // actually runs — on real imported pages, in plain Node, at no cost when
 // the provider is scripted.
-// see docs/plans/builtin-agent-plan.md
+// see docs/archive/2026-10-06-builtin-agent-plan.md
 
 import { DEFAULT_BREAKPOINTS, type Breakpoint } from '@shared/types';
 

@@ -11,7 +11,7 @@ import type { AgentProvider } from './provider';
  * trimmed — and nothing is appended that would leave the history invalid
  * (a `tool_use` with no matching result), so a turn that ends early still
  * leaves a conversation the next message can continue.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 /** An event before the session stamps it with its turn. */

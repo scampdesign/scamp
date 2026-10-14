@@ -29,7 +29,7 @@ export declare const makeImage: (input: NewImageInput, id: string) => ScampEleme
 /**
  * Inline `<svg>` element from a sanitized/normalized source. Image-family
  * type with the `svg` tag override; `svgSource` is the (already-prepared)
- * inner markup. see docs/plans/svg-improvements-plan.md
+ * inner markup. see docs/archive/2026-06-30-svg-improvements-plan.md
  */
 export declare const makeSvg: (input: NewSvgInput, id: string) => ScampElement;
 /**

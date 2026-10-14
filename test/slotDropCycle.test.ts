@@ -10,7 +10,7 @@ import type { ReparentDrop } from '@renderer/src/canvas/interactions/types';
  * instance's slot must be refused when — and only when — it would fold the
  * dragged component into the component currently being edited such that a
  * cycle forms. On a page (no active component) it's always allowed.
- * see docs/plans/component-slots-plan.md
+ * see docs/archive/2026-07-16-component-slots-plan.md
  */
 
 const makeEl = (

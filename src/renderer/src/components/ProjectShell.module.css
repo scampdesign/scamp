@@ -529,7 +529,7 @@ font-size: 14px;
   border-color: var(--border-strong);
 }
 
-/* Page groups — see docs/plans/page-groups-plan.md */
+/* Page groups — see docs/archive/2026-10-12-page-groups-plan.md */
 .pageGroup {
   display: flex;
   flex-direction: column;

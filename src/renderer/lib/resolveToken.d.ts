@@ -8,6 +8,6 @@ import type { ThemeToken } from '@shared/types';
  * Returns `null` when a reference is missing or a cycle is detected. A value
  * that isn't exactly `var(--x)` — a literal, or `var(--x, fallback)` /
  * `calc(var(--x) * 2)`, which we don't resolve yet — passes straight through
- * unchanged. see docs/plans/design-system-plan.md
+ * unchanged. see docs/archive/2026-07-23-design-system-plan.md
  */
 export declare const resolveTokenChain: (value: string, tokens: ReadonlyArray<ThemeToken>) => string | null;

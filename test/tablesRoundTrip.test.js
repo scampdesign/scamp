@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { generateCode } from '../src/renderer/lib/generateCode';
 import { parseCode } from '../src/renderer/lib/parseCode';
 /**
- * Phase 1 of docs/plans/tables-plan.md: the table tags exist and
+ * Phase 1 of docs/archive/2026-10-05-tables-plan.md: the table tags exist and
  * nothing downstream trips on them. No layout work — a ported table
  * keeps its meaning and its content, and looks no worse than the `div`
  * soup it replaces.

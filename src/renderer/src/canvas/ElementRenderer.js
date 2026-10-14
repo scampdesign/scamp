@@ -113,7 +113,7 @@ instanceSelected,
  * recursion reaches a slot-marked rectangle in the definition; the
  * callback (closing over the page instance) returns the instance's
  * page-owned slot children (or an empty drop zone). see
- * docs/plans/component-slots-plan.md
+ * docs/archive/2026-07-16-component-slots-plan.md
  */
 renderSlot, 
 /** The repeat row this subtree is rendered for. see docs/notes/view-bindings.md */
@@ -264,7 +264,7 @@ row = null) => {
     // no-children short-circuit because a slot rect has no definition
     // children of its own. Marks the box as a drop target + re-enables
     // pointer events so content is selectable. Matches the generated
-    // `<slotRect>{children}</slotRect>`. see docs/plans/component-slots-plan.md
+    // `<slotRect>{children}</slotRect>`. see docs/archive/2026-07-16-component-slots-plan.md
     if (typeof element.slot === 'string' && element.slot.length > 0) {
         const { content } = renderSlot(element.slot);
         return createElement(tag, {
@@ -427,7 +427,7 @@ export const ElementRenderer = ({ elementId, row }) => {
     // inside the slot rather than being absolutely positioned by its page
     // x/y — otherwise it renders at its old page coordinates, escaping the
     // slot. Treat the instance parent as a flex column so children stack.
-    // see docs/plans/component-slots-plan.md
+    // see docs/archive/2026-07-16-component-slots-plan.md
     const parentIsInstance = parentResolved?.type === 'component-instance';
     const parentDisplay = parentIsInstance ? 'flex' : effectiveDisplay(parentResolved);
     const parentDirection = parentIsInstance
@@ -558,7 +558,7 @@ export const ElementRenderer = ({ elementId, row }) => {
     // them that way because `handleEditableBlur` committed `textContent`
     // and would have flattened every run into one; the commit is now
     // run-aware, so a styled sentence is editable in place like any
-    // other. see docs/plans/inline-spans-plan.md
+    // other. see docs/archive/2026-09-29-inline-spans-plan.md
     const runs = isText ? runsOf(element) : [];
     const hasStyledRuns = runs.length > 1 || runs.some(isStyled);
     const isComposed = element.childIds.length > 0 || element.inlineFragments.length > 0;
@@ -697,7 +697,7 @@ export const ElementRenderer = ({ elementId, row }) => {
         // rendered as real page elements (so they're selectable / editable).
         // "Default" = the `children` slot, or the sole slot when a component
         // has exactly one (even if renamed). Additional named slots show an
-        // empty drop zone until Phase 3. see docs/plans/component-slots-plan.md
+        // empty drop zone until Phase 3. see docs/archive/2026-07-16-component-slots-plan.md
         const componentSlotCount = Object.values(componentTreeForInstance.elements).filter((e) => typeof e.slot === 'string' && e.slot.length > 0).length;
         // Return the CONTENT that fills a slot (the instance's page-owned
         // children, or an empty-state label). `renderComponentSubtree` nests it
@@ -929,7 +929,7 @@ export const ElementRenderer = ({ elementId, row }) => {
     // dashed outline + a "✦ slot: <name>" label so the user can see it. A
     // slot has no children of its own — the label IS the content. The
     // `data-scamp-slot` attr is the drop-routing token Phase 2 hit-tests.
-    // see docs/plans/component-slots-plan.md
+    // see docs/archive/2026-07-16-component-slots-plan.md
     if (typeof element.slot === 'string' && element.slot.length > 0) {
         const baseClass = typeof props['className'] === 'string' ? props['className'] : '';
         return createElement(tag, {

@@ -15,7 +15,7 @@ import { isColumnDirection } from './flexAxis';
  * Scamp's promise is that a fixed size means that size, so a fixed box in
  * a flex parent opts out of shrinking. The guard is the typed `flexShrink`
  * field: it is written to the file (never derived — see the "Rule 2
- * reversal" in docs/plans/flex-sizing-contract-plan.md), it round-trips
+ * reversal" in docs/archive/2026-09-04-flex-sizing-contract-plan.md), it round-trips
  * through `parseCode` like any other declaration, and the Size panel's
  * "Don't shrink" toggle is the same field.
  *

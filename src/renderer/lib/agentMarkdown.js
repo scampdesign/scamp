@@ -5,7 +5,7 @@
 // into blocks the panel renders as React text nodes — never as HTML — so
 // nothing in a reply can inject markup. Anything it doesn't recognise
 // (links, tables, raw HTML) stays as the text it was written as.
-// see docs/plans/builtin-agent-plan.md
+// see docs/archive/2026-10-06-builtin-agent-plan.md
 /**
  * Bold, italic and code within one line of text. Code first — nothing
  * inside backticks is formatting — then `**strong**`, then `*em*` or

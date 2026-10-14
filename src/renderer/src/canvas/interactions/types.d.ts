@@ -74,7 +74,7 @@ export type DropIndicator = {
      * outline alongside the line: the line says where among the siblings,
      * and this says whose siblings they are — without it a line floating
      * between two boxes doesn't tell you which container you just joined.
-     * see docs/plans/drop-placement-helpers-plan.md
+     * see docs/archive/2026-08-13-drop-placement-helpers-plan.md
      */
     containerRect: {
         x: number;
@@ -106,7 +106,7 @@ export type ReparentDrop = {
     y: number;
     /** Set when the target is a component-instance slot — the reparented
      *  element becomes that slot's content. see
-     *  docs/plans/component-slots-plan.md */
+     *  docs/archive/2026-07-16-component-slots-plan.md */
     slotName?: string;
 };
 /**

@@ -7,7 +7,7 @@ import { waitForSaved } from '../fixtures/assertions';
 // Backlog-6 story 4: component slots. Covers defining a slot in the
 // component editor (→ `{children}` + `React.ReactNode` in the component
 // TSX) and filling it on a page (content nests as the instance's JSX
-// children). see docs/plans/component-slots-plan.md
+// children). see docs/archive/2026-07-16-component-slots-plan.md
 test.describe('components: defining a slot', () => {
     test.use({ projectOptions: { format: 'nextjs' } });
     test('"Make slot" turns a rect into a {children} slot in the component TSX', async ({ window, project, }) => {

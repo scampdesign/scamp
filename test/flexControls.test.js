@@ -8,7 +8,7 @@ import { DEFAULT_BREAKPOINTS } from '@shared/types';
 /**
  * The flex vocabulary the Layout and Size sections expose, end to end
  * through the generator and the parser. Several cases here started life
- * as the Phase 0 characterisation tests in docs/plans/flex-controls-plan.md
+ * as the Phase 0 characterisation tests in docs/archive/2026-09-04-flex-controls-plan.md
  * — each one names a value that used to be silently lost or degraded.
  */
 const makeRoot = (childIds = []) => ({

@@ -6,7 +6,7 @@ import styles from './ThemeSwitcher.module.css';
  * theme (`activeThemeId`), which re-derives `themeTokens` so the canvas
  * repaints in that theme's semantic colours — a quick toggle without
  * opening the theme panel. Hidden when a project has only the Light
- * theme (nothing to switch). see docs/plans/design-system-plan.md
+ * theme (nothing to switch). see docs/archive/2026-07-23-design-system-plan.md
  */
 export const ThemeSwitcher = () => {
     const themes = useCanvasStore((s) => s.themes);

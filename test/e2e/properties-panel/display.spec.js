@@ -5,7 +5,7 @@ import { pageRoot } from '../fixtures/selectors';
 /**
  * Inline, inline-block, contents, list-item, inline-flex and inline-grid
  * are panel values now, not raw CSS the panel couldn't show (item 3 of
- * docs/plans/checks-cleanup-plan.md); so is an `auto` margin (item 4).
+ * docs/archive/2026-10-13-checks-cleanup-plan.md); so is an `auto` margin (item 4).
  */
 const TSX = [
     "import styles from './home.module.css';",

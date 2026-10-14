@@ -8,7 +8,7 @@ test.use({ projectOptions: { format: 'nextjs' } });
  * Convert a page to a view: its elements move to views/<Name>/ in the
  * component file shape, and the page file becomes the one-line wrapper
  * that previews the view at the same route.
- * see docs/plans/framework-phase-1-plan.md, step 2
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md, step 2
  */
 test.describe('convert a page to a view', () => {
     test('moves the page into views/ and leaves a wrapper at the route', async ({ window, project, }) => {

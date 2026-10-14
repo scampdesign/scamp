@@ -245,7 +245,7 @@ export const parseCssDeclarations = (css, breakpoints) => {
         };
         // A table's derived rules. The subgrid one is rebuilt from the
         // columns, so it is dropped; styling ones become typed settings.
-        // see docs/plans/tables-plan.md
+        // see docs/archive/2026-10-05-tables-plan.md
         const tableRule = selector.includes(':where(')
             ? matchTableRule(selector, collectRuleNodes(node).decls)
             : null;

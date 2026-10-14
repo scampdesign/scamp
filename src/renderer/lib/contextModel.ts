@@ -9,7 +9,7 @@ import { classNameFor, elementDeclarationLines, tagFor } from './generateCode';
  * Deriving them once matters more than it looks: two places independently
  * deciding what "the element's styles" means would drift, and the drift
  * would be silent because nothing compares the two outputs.
- * see docs/plans/copy-context-button-plan.md
+ * see docs/archive/2026-08-06-copy-context-button-plan.md
  */
 
 /** The page or component currently open on the canvas. */

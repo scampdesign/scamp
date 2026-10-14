@@ -86,7 +86,7 @@ export const useDrawInteraction = (geometry) => {
             // are editable, instead of an opaque <img>. Insert immediately at the
             // viewBox-derived size (ratio-locked in createSvgElement); the user
             // repositions/resizes after. Falls back to <img> for oversized or
-            // unparseable files. see docs/plans/svg-color-editing-plan.md
+            // unparseable files. see docs/archive/2026-07-14-svg-color-editing-plan.md
             if (chosen.path.toLowerCase().endsWith('.svg')) {
                 let raw = '';
                 try {
@@ -260,7 +260,7 @@ export const useDrawInteraction = (geometry) => {
         // x/y are zeroed to match what lands on disk — the generator emits no
         // left/top for a flow child, so a kept offset would vanish on the
         // next round trip anyway.
-        // see docs/plans/flex-sizing-contract-plan.md
+        // see docs/archive/2026-09-04-flex-sizing-contract-plan.md
         const parentDisplay = elements[draw.parentId]?.display;
         const parentOwnsLayout = parentDisplay === 'flex' || parentDisplay === 'grid';
         const clamped = parentOwnsLayout

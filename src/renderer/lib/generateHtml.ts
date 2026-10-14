@@ -14,7 +14,7 @@
  * page root, which are both `.root` — from colliding once the stylesheets
  * are flattened into one document.
  *
- * see docs/plans/html-export-plan.md
+ * see docs/archive/2026-08-27-html-export-plan.md
  */
 
 import {

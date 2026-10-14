@@ -8,7 +8,7 @@ import { DEFAULT_BREAKPOINTS } from '@shared/types';
 
 /**
  * `box-shadow: var(--shadow-card)` — the whole shadow from a theme token.
- * Item 5 of docs/plans/checks-cleanup-plan.md
+ * Item 5 of docs/archive/2026-10-13-checks-cleanup-plan.md
  */
 
 const page = (css: string): { tsx: string; css: string } => ({

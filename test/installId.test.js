@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS } from '../src/main/ipc/settingsOps';
  * The anonymous install id. The tests that matter are the privacy ones:
  * it must be random, and opting out must actually break the link rather
  * than pause it.
- * see docs/plans/dau-tracking-plan.md
+ * see docs/archive/2026-08-11-dau-tracking-plan.md
  */
 const settings = (over = {}) => ({
     ...DEFAULT_SETTINGS,

@@ -6,7 +6,7 @@ import { createToolInvoker, TOOL_DESCRIPTORS, TOOL_NAMES } from '../src/main/mcp
  * The tool surface an agent sees. Descriptions and schemas are the only
  * thing telling it when to reach for each one, so they get asserted like
  * behaviour rather than treated as prose.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 
 const invoker = (data: unknown = { ok: true }) =>

@@ -7,7 +7,7 @@ import { canvasElementsByPrefix, pageRoot } from './fixtures/selectors';
 /**
  * Selecting words inside a text element and styling them into a span.
  *
- * Phase 4 of `docs/plans/inline-spans-plan.md`. The store action and the
+ * Phase 4 of `docs/archive/2026-09-29-inline-spans-plan.md`. The store action and the
  * offset mapping are unit-tested; this is the wiring — that a real
  * selection in a real contentEditable reaches the panel, and that what
  * the panel writes lands in the file as a span.
@@ -38,7 +38,7 @@ test.describe('text runs', () => {
     // The risky half of Phase 4. A styled sentence is editable in place
     // again, which means `handleEditableBlur` runs on it — and if that
     // commits `textContent` unconditionally, one stray click flattens
-    // every run. see docs/plans/inline-spans-plan.md
+    // every run. see docs/archive/2026-09-29-inline-spans-plan.md
     await writeSentence(window);
     await expect(canvasElementsByPrefix(window, 'text_')).toHaveCount(1);
 

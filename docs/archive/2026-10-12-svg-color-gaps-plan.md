@@ -7,7 +7,7 @@ Backlog: `docs/backlog-11.md` story #6.
 ## Decision
 
 The SVG color and stroke controls already exist (they shipped with
-`svg-color-editing-plan.md`). They were in the **SVG** section near the
+`2026-07-14-svg-color-editing-plan.md`). They were in the **SVG** section near the
 bottom of the visual panel, below Background, Border, Shadows, Filters,
 and Transform, so someone recoloring an icon found the box's background
 color first and never reached them.

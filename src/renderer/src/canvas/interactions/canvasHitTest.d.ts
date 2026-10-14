@@ -27,7 +27,7 @@ export declare const instanceAt: (clientX: number, clientY: number, isInstance: 
  * Returns the owning instance + slot name so a new element can be created
  * as that instance's slot content. Returns null when a real page element
  * is hit first (create nests into it as usual, not into a slot).
- * see docs/plans/component-slots-plan.md
+ * see docs/archive/2026-07-16-component-slots-plan.md
  */
 export declare const slotZoneAt: (clientX: number, clientY: number) => {
     ownerId: string;

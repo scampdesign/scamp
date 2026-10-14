@@ -181,7 +181,7 @@ export const makeBaseline = (raw, isComponent = false) => {
         // Trimming here as well destroyed every real edge space, including
         // the ones an import needs: `works <span>alongside</span> AI.`
         // became `worksalongsideAI.`
-        // see docs/plans/inline-spans-plan.md
+        // see docs/archive/2026-09-29-inline-spans-plan.md
         ...(raw.type === 'text' && raw.text !== null ? { text: raw.text } : {}),
         // Only store an explicit tag when it's NOT the type's default. Keeps
         // the round-trip text-stable: a `<div>` rectangle parses with no
@@ -244,7 +244,7 @@ parentIsLayoutContainer = false) => {
     // generator derives the placement from the attribute, so reading it
     // back into `gridColumn` would leave the model carrying the same
     // span twice — and changing the attribute would then move only one of
-    // them. see docs/plans/tables-plan.md
+    // them. see docs/archive/2026-10-05-tables-plan.md
     const derivedSpan = cellSpanPlacement(baseline);
     for (const { prop, value } of decls) {
         if (prop === 'grid-column' && value.trim() === derivedSpan.gridColumn)

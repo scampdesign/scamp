@@ -23,7 +23,7 @@ import { ancestorIds } from './treeRows';
  * copyable — callers should treat that as "leave the clipboard alone"
  * rather than "clear it".
  *
- * see docs/plans/copy-cut-paste-plan.md
+ * see docs/archive/2026-08-12-copy-cut-paste-plan.md
  */
 export const normalizeCopySelection = (
   elements: Record<string, ScampElement>,

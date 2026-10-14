@@ -10,7 +10,7 @@ import { pageRoot, pageSidebarItem } from '../fixtures/selectors';
  * Each page has its own agent conversation, kept in
  * `.scamp/agent-history/` — so it is there when the user comes back to
  * the page, and when they open the project again.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const SCRIPT = path.join(os.tmpdir(), `scamp-e2e-agent-history-${process.pid}.json`);
 writeFileSync(SCRIPT, JSON.stringify([

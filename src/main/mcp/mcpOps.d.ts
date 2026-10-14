@@ -5,7 +5,7 @@
  * scaffolded `.gitignore` excludes that folder, and the watcher ignores every
  * dotfile path (`watcher.ts:56`). Writing it anywhere else would make Scamp
  * see its own write as an external edit and auto-snapshot on every launch.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 export type McpConfig = {
     url: string;

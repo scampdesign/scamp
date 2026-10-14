@@ -1,6 +1,6 @@
 /* The theme editor fills the main content area (where the canvas normally
    shows). Sections stack in a scroll container; the left-sidebar nav
-   (ThemeSectionNav) scroll-jumps to them. see docs/plans/design-system-plan.md */
+   (ThemeSectionNav) scroll-jumps to them. see docs/archive/2026-07-23-design-system-plan.md */
 .editor {
   flex: 1;
   min-width: 0;
@@ -57,7 +57,7 @@
 
 /* Each theme's semantic mappings render as a stacked block — Light (the
    token definitions) plus one per additional theme. Preview lives in the
-   canvas toolbar. see docs/plans/design-system-plan.md */
+   canvas toolbar. see docs/archive/2026-07-23-design-system-plan.md */
 .themeBlock {
   display: flex;
   flex-direction: column;

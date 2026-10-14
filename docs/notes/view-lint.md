@@ -57,7 +57,7 @@ its hint says so.
 A row's `border-bottom` is exempt from `side-not-typed`. Its advice —
 "write `border` with all four sides" — is wrong for a table row, whose
 divider belongs on the table; `table-repeated-style` says that instead.
-see `docs/plans/tables-plan.md`
+see `docs/archive/2026-10-05-tables-plan.md`
 
 What the rules deliberately DON'T report is the larger set: a property
 with no typed field at all. `aspect-ratio`, `object-fit`, `overflow`,
@@ -147,7 +147,7 @@ section's badge) are problems only, notes are listed apart with a line
 saying to leave them, the agent's post-edit feedback leaves them out,
 and `scamp_get_view_props` `warnings` is problems only. The real fix for
 a note is a control that can hold the value.
-see docs/plans/checks-cleanup-plan.md
+see docs/archive/2026-10-13-checks-cleanup-plan.md
 
 An instance is checked as the tag its component renders
 (`componentRootTags`): a `<Row>` whose root is a `<tr>` inside a

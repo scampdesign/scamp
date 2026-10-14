@@ -95,7 +95,7 @@ export type ActivePage = {
  */
 export type ActiveComponent = {
     name: string;
-    /** A view is a component with a page-sized canvas. see docs/plans/framework-phase-1-plan.md */
+    /** A view is a component with a page-sized canvas. see docs/archive/2026-09-16-framework-phase-1-plan.md */
     kind: ComponentKind;
     tsxPath: string;
     cssPath: string;
@@ -160,7 +160,7 @@ export type BottomPanel = 'code' | 'terminal' | 'none';
  * active document's Layers tree; `'history'` shows the visual history
  * panel. (Design System and Settings are launched as overlays from the
  * rail, so they aren't sidebar-panel sections.) Per-session preference —
- * not persisted to disk. see docs/plans/icon-sidebar-nav-plan.md
+ * not persisted to disk. see docs/archive/2026-07-20-icon-sidebar-nav-plan.md
  */
 export type SidebarSection = 'pages' | 'components' | 'history' | 'agent';
 /** Properties panel display mode. 'data' is component-scoped. */
@@ -187,7 +187,7 @@ export type CanvasState = {
      * Characters selected inside the element being edited, as offsets
      * over its joined text. Null when there is no range — a bare caret
      * is not a selection, and styling nothing is not an operation.
-     * see docs/plans/inline-spans-plan.md
+     * see docs/archive/2026-09-29-inline-spans-plan.md
      */
     textSelection: TextSelection | null;
     activeTool: Tool;
@@ -252,7 +252,7 @@ export type CanvasState = {
      * Ids the user has collapsed in the layers tree. Session-only UI state —
      * never written to disk and never on the element model. Cleared when the
      * canvas swaps page or component (ids are page-scoped and can repeat).
-     * see docs/plans/tree-collapse-plan.md
+     * see docs/archive/2026-08-11-tree-collapse-plan.md
      */
     collapsedIds: Record<string, boolean>;
     /**
@@ -433,7 +433,7 @@ export type CanvasState = {
      * True while an image import is converting. Purely a UI signal — the
      * conversion happens in a child process, so nothing is blocked; this
      * just stops the second or two of silence reading as a hang.
-     * see docs/plans/image-import-speed-plan.md
+     * see docs/archive/2026-08-14-image-import-speed-plan.md
      */
     imageImportBusy: boolean;
     setImageImportBusy: (busy: boolean) => void;
@@ -566,7 +566,7 @@ export type CanvasState = {
      * Toggle a rectangle's component slot marker (component editor only).
      * Off→on auto-names the slot `children` (then slot1/slot2/…); on→off
      * removes it. No-op on a rectangle that has children. see
-     * docs/plans/component-slots-plan.md
+     * docs/archive/2026-07-16-component-slots-plan.md
      */
     toggleSlotOnRect: (id: string) => void;
     /** Rename a slot rectangle's `slot`. Caller validates identifier + uniqueness. */
@@ -738,7 +738,7 @@ export type CanvasState = {
      * A pending "an imported SVG's file changed on disk" reload offer, or
      * null. Set by the asset-change listener when a watched `.svg` referenced
      * by an inline SVG element changes externally; consumed by the reload
-     * banner. see docs/plans/svg-color-editing-plan.md
+     * banner. see docs/archive/2026-07-14-svg-color-editing-plan.md
      */
     pendingSvgReload: SvgAssetChangedPayload | null;
     setPendingSvgReload: (value: SvgAssetChangedPayload | null) => void;

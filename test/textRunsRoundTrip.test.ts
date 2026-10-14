@@ -9,7 +9,7 @@ import type { TextRun } from '@lib/textRuns';
 /**
  * Styled runs survive generateCode → parseCode.
  *
- * Phase 3 of `docs/plans/inline-spans-plan.md`. Without this a run can
+ * Phase 3 of `docs/archive/2026-09-29-inline-spans-plan.md`. Without this a run can
  * be rendered but not saved, which is worse than not having runs: the
  * styling would vanish on the next reload with nothing to explain it.
  */

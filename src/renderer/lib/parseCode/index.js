@@ -233,7 +233,7 @@ export const parseCode = (tsx, css, options) => {
         // Styled runs: the TSX said which class each run wears, and the CSS
         // says what that class means. Attached here because this is the one
         // place both halves are in hand.
-        // see docs/plans/inline-spans-plan.md
+        // see docs/archive/2026-09-29-inline-spans-plan.md
         if (raw.runs !== undefined && raw.runs.length > 0) {
             applied.runs = raw.runs.map((run) => {
                 const kept = {
@@ -481,7 +481,7 @@ export const parseCode = (tsx, css, options) => {
     // single `{slotName}` expression AND whose name is declared as a
     // `React.ReactNode` prop becomes a slot — set the typed `slot` field and
     // drop the `{slotName}` fragment (it re-emits from `slot` on generate).
-    // see docs/plans/component-slots-plan.md
+    // see docs/archive/2026-07-16-component-slots-plan.md
     const slotNames = parseSlotNames(tsx);
     const viewMeta = parseScampMeta(tsx);
     if (slotNames.size > 0) {

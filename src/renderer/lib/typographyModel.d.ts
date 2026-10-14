@@ -4,7 +4,7 @@ import type { ThemeToken } from '@shared/types';
  * prefix: family / size / weight / leading / (optional) tracking. It maps
  * to a heading or body role (H1, Body, Label, …) and is applied to an
  * element as a set via the WYSIWYG "Text style" dropdown.
- * see docs/plans/design-system-plan.md
+ * see docs/archive/2026-07-23-design-system-plan.md
  */
 export type TextStyleProp = 'family' | 'size' | 'weight' | 'leading' | 'tracking';
 export declare const TEXT_STYLE_PROPS: ReadonlyArray<TextStyleProp>;

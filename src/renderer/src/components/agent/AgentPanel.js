@@ -14,7 +14,7 @@ import styles from './AgentPanel.module.css';
 /**
  * The Scamp Agent, in the left sidebar. Signed-in users only — the rail
  * doesn't offer it otherwise.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 /** Starting points, which change with what's selected. */
 const SUGGESTIONS_WITH_SELECTION = [

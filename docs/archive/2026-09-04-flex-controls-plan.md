@@ -19,7 +19,7 @@ thread found the rest of the flex vocabulary is also missing, on both
 the container and the child side, and that a few of the gaps are not
 just "no control" but **silent round-trip loss**.
 
-Related: `docs/plans/flex-sizing-contract-plan.md` (fill semantics, the
+Related: `docs/archive/2026-09-04-flex-sizing-contract-plan.md` (fill semantics, the
 `flex: 1` contract, the drawn-size guard) and `docs/todos.md` §1 (the
 parked "don't shrink" control). Phase 2 here is the natural home for
 that todo.
@@ -88,7 +88,7 @@ This is mostly extending a pattern that has been applied twice before
 | 3×3 alignment picker, direction-aware | `AlignmentGrid` + `lib/alignmentGrid.ts` |
 | Parent-aware child controls | `SizeSection` already gates grid-item controls on `parent.display === 'grid'` |
 | Drawn-size guard on flex children | `flexChild.ts` — `flex-shrink: 0` via `customProperties` |
-| Fill-height in a flex column | `flex: 1` emission + absorption, parity-tested — `flex-sizing-contract-plan.md` |
+| Fill-height in a flex column | `flex: 1` emission + absorption, parity-tested — `2026-09-04-flex-sizing-contract-plan.md` |
 | Canvas-vs-browser parity harness | `test/e2e/parity.spec.ts` |
 
 No new dependencies. No new controls beyond composition of existing ones.

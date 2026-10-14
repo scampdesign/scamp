@@ -7,7 +7,7 @@ import type { Settings } from './types';
  * and attach the install id, the renderer decides whether to show the
  * first-launch prompt. Two copies of this rule would eventually disagree,
  * and the failure mode is sending data the user didn't agree to.
- * see docs/plans/dau-tracking-plan.md
+ * see docs/archive/2026-08-11-dau-tracking-plan.md
  */
 /**
  * Current version of the crash-reporting / usage consent wording.

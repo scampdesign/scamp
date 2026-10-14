@@ -14,7 +14,7 @@ import type { AgentProvider } from './provider';
  *
  * Electron-free — the IPC layer hands it a way to emit events and a way
  * to get a provider, so a test can drive it end to end.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export type AgentSessionDeps = {
   /** Null when there's no usable key. */

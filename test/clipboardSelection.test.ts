@@ -6,7 +6,7 @@ import { ROOT_ELEMENT_ID, type ScampElement } from '@lib/element';
 
 /**
  * Which subtrees a copy or cut acts on, given a raw selection.
- * see docs/plans/copy-cut-paste-plan.md
+ * see docs/archive/2026-08-12-copy-cut-paste-plan.md
  */
 
 const el = (overrides: Partial<ScampElement> & { id: string }): ScampElement => ({

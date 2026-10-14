@@ -15,7 +15,7 @@
 // strict about size: a container that is 40px too tall pushes everything
 // below it down, and reporting all of those as separate failures buries
 // the one that caused them.
-// see docs/plans/website-import-plan.md
+// see docs/archive/2026-09-23-website-import-plan.md
 
 import { chromium } from '@playwright/test';
 import { build } from 'esbuild';

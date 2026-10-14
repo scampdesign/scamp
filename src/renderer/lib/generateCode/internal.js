@@ -51,7 +51,7 @@ export const escapeJsx = (raw) => raw
  * directions: it survives the indentation because it is not whitespace,
  * and the parser turns it back into a space after trimming. Only the
  * edges need it; interior spaces are safe as they are.
- * see docs/plans/inline-spans-plan.md
+ * see docs/archive/2026-09-29-inline-spans-plan.md
  */
 export const jsxText = (raw) => {
     if (raw.length === 0)

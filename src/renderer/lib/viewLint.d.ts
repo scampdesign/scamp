@@ -14,7 +14,7 @@ export type ViewFindingKind = 'marker-leaked' | 'binding-not-parsed' | 'not-pane
  * `note` renders correctly — the panel just has no control that holds
  * the value, so it's edited in the CSS panel. Notes are not to be
  * "fixed": rewriting the value changes the layout.
- * see docs/plans/checks-cleanup-plan.md
+ * see docs/archive/2026-10-13-checks-cleanup-plan.md
  */
 export type FindingSeverity = 'problem' | 'note';
 export declare const severityOf: (kind: ViewFindingKind) => FindingSeverity;

@@ -1,7 +1,7 @@
 # Inline tags inside a sentence
 
 A text element's words are a list of runs (see
-[../plans/inline-spans-plan.md](../plans/inline-spans-plan.md)). Until
+[../archive/2026-09-29-inline-spans-plan.md](../archive/2026-09-29-inline-spans-plan.md)). Until
 2026-10-12 a run could only be a styling `<span>`. Any other inline tag in
 a sentence — `<em>`, `<strong>`, a link — was kept as a JSX fragment, and
 a fragment is placed relative to the element's *children*, not within its

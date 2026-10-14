@@ -16,7 +16,7 @@ import {
  * from. The failure that matters is a silent one: a page whose type
  * falls back to Helvetica looks nothing like the page it copied, and
  * nothing in the file says why.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 
 const el = (id: string, fontFamily?: string): ScampElement => ({

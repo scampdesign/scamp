@@ -169,7 +169,7 @@ export const initSentryIfOptedIn = (optedIn, installId = null) => {
         // sessions into unique users. Safe AFTER init even though the
         // session already started during it: `Scope.setUser` calls
         // `updateSession(session, { user })`, which back-fills the session's
-        // distinct id. See docs/plans/dau-tracking-plan.md.
+        // distinct id. See docs/archive/2026-08-11-dau-tracking-plan.md.
         applyInstallId(optedIn ? installId : null);
         // eslint-disable-next-line no-console
         console.log(`[sentry] initialised — release scamp@${app.getVersion()}, env ${app.isPackaged ? 'production' : 'development'}, enabled=${optedIn}`);

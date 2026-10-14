@@ -7,7 +7,7 @@ import { agentToolsFrom } from '../src/main/agent/agentTools';
 import { TOOL_DESCRIPTORS } from '../src/main/mcp/tools';
 /**
  * The agent loop, against a scripted provider — no network, no key.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 const TREE = '{"id":"root","children":[{"id":"a1b2","class":"rect_a1b2"}]}';
 const fakeInvoke = (calls = []) => async (name, args) => {

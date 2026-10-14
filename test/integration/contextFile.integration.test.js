@@ -8,7 +8,7 @@ import { contextFilePath, writeContextFile, } from '../../src/main/ipc/contextOp
  * worth checking here are the ones a unit test can't see: that the
  * `.scamp/` folder gets created, that a second write replaces rather than
  * appends, and that a failure stays silent.
- * see docs/plans/live-context-file-plan.md
+ * see docs/archive/2026-08-05-live-context-file-plan.md
  */
 describe('context file write', () => {
     let projectDir;

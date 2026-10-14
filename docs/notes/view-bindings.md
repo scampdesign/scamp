@@ -3,7 +3,7 @@
 How a view's (or component's) bindings are stored on `ScampElement` and
 written to the file, and how the parser reads them back. The contract
 is `CONTRACT.md` in the scampjs repo (section 1.3); this is the app's
-side of it. see docs/plans/framework-phase-1-plan.md, step 3.
+side of it. see docs/archive/2026-09-16-framework-phase-1-plan.md, step 3.
 
 ## Five kinds, and where each lives
 

@@ -11,7 +11,7 @@ import type { McpQueryArgs, McpQueryResultArgs } from '@shared/types';
  *
  * Electron-free on purpose: `send` is injected, so the whole correlation and
  * timeout story is testable without a BrowserWindow.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 
 /**

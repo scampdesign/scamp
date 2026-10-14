@@ -25,7 +25,7 @@ import { type ScampElement } from './element';
  * The declaration → typed field mapping is NOT reimplemented here: it
  * reuses `makeBaseline` + `applyDeclarations`, the same pair `parseCode`
  * uses, so an imported element and a hand-written one can't disagree.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 export type ImportFindingKind = CaptureNote['kind'] | 'collapsed-wrapper' | 'dropped-computed-size' | 'wrapped-bare-text' | 'inline-kept' | 'block-to-flex' | 'breakpoint-captured' | 'breakpoint-absent' | 'restored-auto-margin' | 'grid-tracks-to-fr' | 'pseudo-materialized' | 'table-to-grid' | 'unsupported-display';
 export type ImportFinding = {
@@ -87,7 +87,7 @@ export type ReduceOptions = {
  * there, which is not an override but an absence, and Scamp has no way
  * to say "gone below 768px". Those are counted and reported rather than
  * guessed at.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 /**
  * Push inherited typography down onto the elements that render words.

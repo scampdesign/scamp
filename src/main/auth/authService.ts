@@ -22,7 +22,7 @@ import { clearToken, loadToken, saveToken, type SafeStorageLike } from './tokenS
  * failure paths, and those are hard to provoke against a real server.
  *
  * The token is held here and never returned to a caller in the renderer.
- * see docs/plans/electron-sign-in-plan.md
+ * see docs/archive/2026-08-28-electron-sign-in-plan.md
  */
 
 export type AuthDeps = {

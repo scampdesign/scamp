@@ -5,7 +5,7 @@ import { dispatch, errorResult, handlePayload, LATEST_PROTOCOL_VERSION, negotiat
  * MCP semantics. Several cases here exist because Phase 0 watched a real
  * Claude Code client do the thing — they are regression tests for observed
  * behaviour, not guesses at the spec.
- * see docs/plans/mcp-server-plan.md
+ * see docs/archive/2026-08-06-mcp-server-plan.md
  */
 const TOOLS = [
     {

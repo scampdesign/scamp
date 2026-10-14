@@ -45,7 +45,7 @@ export const IPC = {
     // selected element, written to `.scamp/context.md` on every selection so
     // an agent in the terminal can read it instead of asking the user what
     // they clicked. Fire-and-forget: never blocks a canvas update.
-    // see docs/plans/live-context-file-plan.md
+    // see docs/archive/2026-08-05-live-context-file-plan.md
     ContextWrite: 'context:write',
     // Start Screen project list — the union of the recent-opens store and
     // a scan of the default projects folder (deduped, sorted recent-first),
@@ -76,7 +76,7 @@ export const IPC = {
     ClipboardRead: 'clipboard:read',
     // Plain-text write. Used by "Copy context", which puts a one-line
     // description of the selection on the clipboard for pasting in front of a
-    // terminal prompt. see docs/plans/copy-context-button-plan.md
+    // terminal prompt. see docs/archive/2026-08-06-copy-context-button-plan.md
     ClipboardWrite: 'clipboard:write',
     ClipboardSaveImage: 'clipboard:saveImage',
     // Account / sign-in
@@ -88,7 +88,7 @@ export const IPC = {
     AuthComplete: 'auth:complete',
     // Scamp Agent — the user's own provider key. The key goes in and never
     // comes back out; the renderer only ever sees a status.
-    // see docs/plans/builtin-agent-plan.md
+    // see docs/archive/2026-10-06-builtin-agent-plan.md
     AgentKeySet: 'agent:key-set',
     AgentKeyStatus: 'agent:key-status',
     AgentKeyClear: 'agent:key-clear',
@@ -141,7 +141,7 @@ export const IPC = {
     RoutesChanged: 'routes:changed',
     // Website import. A third window kind: the user browses to a page and
     // clicks Import; the payload reaches the app window, which reduces it
-    // to a view. see docs/plans/website-import-plan.md
+    // to a view. see docs/archive/2026-09-23-website-import-plan.md
     ImportOpen: 'import:open',
     // React app import: choose a folder, start its dev server with the
     // user's say-so, and stream its progress. see docs/plans/react-import-plan.md
@@ -230,7 +230,7 @@ export const IPC = {
     // MCP server (main) → renderer canvas query, and the reply back.
     // Pull-through rather than a cached snapshot in main: an agent asking
     // "what is selected" right after the user clicked must not be told about
-    // the previous selection. See docs/plans/mcp-server-plan.md.
+    // the previous selection. See docs/archive/2026-08-06-mcp-server-plan.md.
     McpQuery: 'mcp:query',
     McpQueryResult: 'mcp:query-result',
     // Renderer asks whether the server is up, for the terminal indicator.

@@ -34,7 +34,7 @@ import {
  * edit, so the normal save path writes it, and a turn's edits are one
  * history transaction: one Cmd+Z undoes everything the agent did for one
  * message. Any other view is edited in its files (`agentOffCanvas`).
- * see docs/plans/builtin-agent-plan.md, docs/notes/agent-whole-project.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md, docs/notes/agent-whole-project.md
  */
 
 export type AgentEditAnswer = {

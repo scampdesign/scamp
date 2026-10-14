@@ -1,7 +1,7 @@
 # SVG Colour Editing & Resize Improvements — Plan
 
 Backlog: `docs/backlog-6.md` story #3. Status: **proposed** — for review.
-Builds on the shipped `docs/plans/svg-improvements-plan.md` (inline render,
+Builds on the shipped `docs/archive/2026-06-30-svg-improvements-plan.md` (inline render,
 sanitize, drop/paste, element-level fill/stroke).
 
 ## Goal

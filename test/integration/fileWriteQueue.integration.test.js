@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
  * the other. They used to interleave — the patch read the file, the write
  * replaced it, the patch wrote its copy back — and the write's edit was
  * gone while it reported success.
- * Audit item 15 in docs/plans/audit-2026-10-12.md.
+ * Audit item 15 in docs/archive/2026-10-12-audit-2026-10-12.md.
  */
 const handlers = new Map();
 let projectRoot = '';

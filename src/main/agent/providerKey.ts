@@ -19,7 +19,7 @@ import { PROVIDER_KEY_FILE } from './config';
  * Everything with a side effect is injected — storage, the provider check,
  * whether the user is signed in — so this runs in a unit test with no
  * Electron and no network.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 
 export type VerifyOutcome =

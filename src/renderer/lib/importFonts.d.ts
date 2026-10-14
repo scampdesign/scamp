@@ -14,7 +14,7 @@ import type { ScampElement } from './element';
  *
  * Pure. The two things it cannot know on its own — what is installed,
  * and what Google serves — arrive as arguments.
- * see docs/plans/website-import-plan.md
+ * see docs/archive/2026-09-23-website-import-plan.md
  */
 export type FontNeed = {
     /** The family as the page asked for it, unquoted. */

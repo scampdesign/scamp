@@ -12,7 +12,7 @@ export const saveToken = (token, deps) => saveSecret(FILE_NAME, token, deps);
 /**
  * Persist any secret under `fileName` in userData, with the same refusal
  * as the session token: encrypted, or not at all. The Scamp Agent's
- * provider key uses it too. see docs/plans/builtin-agent-plan.md
+ * provider key uses it too. see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export const saveSecret = async (fileName, secret, { safeStorage, userDataDir }) => {
     if (!safeStorage.isEncryptionAvailable())

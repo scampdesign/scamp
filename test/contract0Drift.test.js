@@ -13,7 +13,7 @@ import { SUPPORTED_CONTRACT, isSupportedContract } from '@shared/projectConfig';
  * the original byte for byte. Cases marked `pending` are expected to
  * fail until the step that makes them pass lands; `it.fails` turns red
  * the moment one starts passing, which is the cue to flip it.
- * see docs/plans/framework-phase-1-plan.md
+ * see docs/archive/2026-09-16-framework-phase-1-plan.md
  */
 const FIXTURE_ROOT = resolve(__dirname, '../node_modules/scampjs/fixtures/contract-0');
 const CASES = [

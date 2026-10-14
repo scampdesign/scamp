@@ -11,7 +11,7 @@
  * page at `/about` — the same route the project used — while the rewritten
  * links still resolve when the folder is opened straight off disk.
  *
- * see docs/plans/html-export-plan.md
+ * see docs/archive/2026-08-27-html-export-plan.md
  */
 
 import { classifyHref } from './linkHref';

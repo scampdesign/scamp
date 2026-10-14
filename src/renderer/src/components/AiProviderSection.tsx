@@ -13,7 +13,7 @@ import styles from './AiProviderSection.module.css';
  * Signed-in users only, and invisible otherwise — no teaser during the
  * beta. The key leaves this component on submit and is never read back:
  * main only ever answers with a status.
- * see docs/plans/builtin-agent-plan.md
+ * see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 
 const STATUS_TEXT: Record<AgentKeyStatus, string> = {
