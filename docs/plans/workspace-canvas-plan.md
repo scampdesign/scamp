@@ -1,6 +1,8 @@
 # Workspaces: pages and components on one infinite canvas
 
-Status: **proposed**, for review. Nothing is built.
+Status: **proposed**, for review. Nothing is built. Phases reordered
+2026-10-16, and scratch components added in place of the staging-area
+plan.
 
 ## The story
 
@@ -90,7 +92,8 @@ Scamp Notebook's canvas is in `scamp-whiteboard`, under `src/canvas/`
   whole window.
 
 So "one shared engine" is a piece of work, not a dependency we can take
-today. Phase 0 does that work.
+today. Phase 2 builds the surface in Scamp, and phase 7 makes it the
+shared engine.
 
 ## Decisions this plan makes
 
@@ -121,10 +124,12 @@ workspace or double-click first.
 
 This choice can be revisited later without throwing anything away.
 
-### 2. The engine is extracted, not copied
+### 2. The engine is built in Scamp first, then extracted
 
-Phase 0 lifts the useful core of the Notebook canvas into a small
-package that both apps import:
+The surface (camera, gestures, culling, zoom to fit, minimap, frame
+dragging) is written in Scamp in phase 2, following the Notebook
+canvas's design. Phase 7 lifts it into a small package that both apps
+import:
 
 - the camera math: `toScreen`, `toWorld`, `zoomAt`, `visibleBounds`
 - pan and zoom gestures
@@ -142,7 +147,9 @@ The package:
 - **Gets tests** for the camera math and culling, which Notebook's
   canvas has never had.
 
-Where the package lives is open question 1.
+The phase 2 code is kept to that shape from the start, so the
+extraction is a move, not a rewrite. Where the package lives is open
+question 1.
 
 ### 3. Workspaces are stored in `.scamp/workspaces.json`, per person
 
@@ -231,40 +238,35 @@ with full test coverage as CLAUDE.md requires.
 
 ## Phases
 
+The order changed on 2026-10-16, when the staging-area plan was dropped
+in favour of this one (`docs/archive/2026-10-16-staging-area-plan.md`):
+
+- **The Viewport split comes first.** Both plans needed it.
+- **The surface is built in Scamp**, and becomes a shared package
+  later. That way Notebook's `canvas-explore` branch doesn't block
+  anything.
+- **Scratch components** cover what the staging area was for.
+
 Each phase can ship on its own.
 
-### Phase 0: the shared engine
+### Phase 1: split the Viewport
 
-**Code:**
+Nothing visible changes. This is the foundation every later phase sits
+on, and the existing canvas end-to-end specs guard it: they must all
+pass unchanged before phase 2 starts.
 
-- Extract from `scamp-whiteboard/src/canvas/`:
-  - `viewport.ts`, the camera math
-  - the gesture code from `Canvas.tsx`
-  - the drag code from `ElementBox.tsx`
-- Add:
-  - A camera that the host controls: `camera` and `onCameraChange`
-    props, plus `zoomToFit(bounds)` and `zoomTo(bounds)` helpers.
-  - Culling: render only the items whose bounds meet the viewport, plus
-    a margin. Off-screen items become a labeled placeholder of the same
-    size.
-  - A minimap component that reads the same item list.
-  - A host-controlled click rule (`passPointer(item)`), so a host can
-    let presses through to its content. Scamp needs this because of
-    decision 1.
+- **Split `Viewport.tsx`.**
+  - Its frame content (theme variables, `containerType`, the
+    stylesheet, the root renderer) becomes a component the editor and
+    the workspace share.
+  - Its scroll and zoom shell stays in the editor only.
+  - The workspace never renders `Viewport`.
+- **Measure against a container, not the frame.** `toFrame` and
+  `measureElementInFrame` (`useCanvasGeometry.ts`) take the container
+  they measure against, instead of assuming the page frame, so a frame
+  can sit anywhere on a larger surface.
 
-**Fixes on the way:**
-
-- Attach the wheel listener natively with `{ passive: false }`.
-- Clamp zoom to Scamp's limits, 0.1–4 (`lib/zoom.ts`).
-
-**Tests:** camera round trips (`toWorld(toScreen(p)) === p`), zooming
-about a point keeps that point fixed, culling at the edges and at
-extreme zoom, and fit with zero, one, and many items.
-
-**Moving Notebook onto the package** is a Notebook task, but it
-should happen soon after, so the two copies never drift.
-
-### Phase 1: the All workspace, read-only
+### Phase 2: the All workspace, read-only
 
 **What you get:**
 
@@ -279,6 +281,10 @@ should happen soon after, so the two copies never drift.
 
 **What this needs:**
 
+- **The canvas surface, in Scamp.** Pan, zoom, culling, zoom to fit,
+  and frame dragging, written in `src/renderer/src/workspace/engine/`
+  from the Notebook canvas's design. It's kept to the package shape
+  decision 2 describes, so phase 7 can lift it out unchanged.
 - **A parsed-page cache.** Add `pageTrees` beside `componentTrees`,
   filled the same way from `project.pages`.
 - **A read-only frame.** A `WorkspaceFrame` component that draws a tree
@@ -295,7 +301,7 @@ should happen soon after, so the two copies never drift.
 
 **Shippable on its own:** you can already see and compare everything.
 
-### Phase 2: edit the active frame
+### Phase 3: edit the active frame
 
 **What you get:**
 
@@ -310,12 +316,6 @@ should happen soon after, so the two copies never drift.
 
 **What this needs:**
 
-- **Split `Viewport.tsx`.**
-  - Its frame content (theme variables, `containerType`, the
-    stylesheet, the root renderer) becomes a component the editor and
-    the workspace share.
-  - Its scroll and zoom shell stays in the editor only.
-  - The workspace never renders `Viewport`.
 - **Scope the global DOM lookups to the active frame.** Element ids are
   only unique within a page, so a global lookup would find the wrong
   frame. The survey found these:
@@ -346,7 +346,43 @@ should happen soon after, so the two copies never drift.
 **Undo** stays per frame: it undoes the active frame's history, as the
 editor does per page today.
 
-### Phase 3: named workspaces
+### Phase 4: scratch components
+
+A place to try things out and park elements, beside your pages, with no
+new storage. It replaces the staging area.
+
+**What you get:**
+
+- **New scratch canvas** in the workspace. It creates a component
+  marked as scratch and places its frame where you clicked.
+- Draw and style in it with the normal tools. It's a real component
+  canvas, so everything works.
+- **Move elements between a scratch canvas and a page** with cut, copy
+  and paste. Paste across pages already works.
+- Scratch components are **committed**, like any component, so they're
+  shared through git.
+
+**What this needs:**
+
+- **The marker.** A `scratch` list of component names in
+  `scamp.config.json`. That's shared and committed, and it's simpler than
+  a marker in the component's code, which would touch the scampjs
+  contract.
+- **Left out of everything about the real project.** Scratch components
+  are excluded from:
+  - the Components sidebar. They appear under a **Scratch** heading
+    instead.
+  - Checks (`projectCheck`) and the MCP's project check.
+  - the agent context file and the MCP's component lists.
+  - the component picker for placing instances.
+
+  The framework builds only what's imported, so an unused scratch
+  component never ships.
+- **Promoting one.** Right-click a scratch component and choose **Make
+  a component**: it's removed from the `scratch` list and appears as a
+  normal component.
+
+### Phase 5: named workspaces
 
 **What you get:**
 
@@ -360,7 +396,7 @@ editor does per page today.
 - Each workspace remembers its camera. The view reopens on the last
   workspace you used.
 
-### Phase 4: finding your way
+### Phase 6: finding your way
 
 - A minimap in a corner of the workspace view, which you can turn on
   and off.
@@ -369,6 +405,56 @@ editor does per page today.
 - Double-clicking a component instance pans to that component's frame
   if the workspace has one. If not, it opens the component in the
   editor, as today.
+
+### Phase 7: extract the shared engine
+
+The surface built in phase 2 moves into its own package, and Notebook
+moves onto it. This can happen any time after phase 3; nothing in
+Scamp waits for it.
+
+
+**Code:**
+
+- Bring across from `scamp-whiteboard/src/canvas/` what phase 2
+  didn't already take:
+  - `viewport.ts`, the camera math
+  - the gesture code from `Canvas.tsx`
+  - the drag code from `ElementBox.tsx`
+- Add:
+  - A camera that the host controls: `camera` and `onCameraChange`
+    props, plus `zoomToFit(bounds)` and `zoomTo(bounds)` helpers.
+  - Culling: render only the items whose bounds meet the viewport, plus
+    a margin. Off-screen items become a labeled placeholder of the same
+    size.
+  - A minimap component that reads the same item list.
+  - A host-controlled click rule (`passPointer(item)`), so a host can
+    let presses through to its content. Scamp needs this because of
+    decision 1.
+
+**Fixes on the way:**
+
+- Attach the wheel listener natively with `{ passive: false }`.
+- Clamp zoom to Scamp's limits, 0.1–4 (`lib/zoom.ts`).
+
+**Tests:** camera round trips (`toWorld(toScreen(p)) === p`), zooming
+about a point keeps that point fixed, culling at the edges and at
+extreme zoom, and fit with zero, one, and many items.
+
+**Moving Notebook onto the package** is a Notebook task, but it
+should happen soon after, so the two copies never drift.
+
+### Later: drag between frames
+
+Only if cut and paste between a scratch canvas and a page feels like
+too much friction.
+
+Dragging an element from one frame into another moves it between two
+files: cut from one, paste into the other, as one undo step. With one
+live frame (decision 1), the drop target has to become the live frame
+mid-drag, so this needs its own plan.
+
+The staging-area plan's design for crossing an edge (`reparentElement`
+with a drop container, one undo step) is the starting point.
 
 ## Tests
 
@@ -380,7 +466,11 @@ editor does per page today.
   - reconcile after a delete and after a rename
   - bounds
   - a malformed file read as empty
-- The engine's own tests, from phase 0.
+- The surface's own tests: camera round trips, zoom about a point,
+  culling, and fit. Phase 2 writes them; phase 7 moves them with the
+  package.
+- The scratch marker: excluded from Checks, the agent context, and the
+  components list, and promoted back out.
 
 ### End-to-end, in `test/e2e/workspace/`
 
@@ -408,7 +498,7 @@ editor does per page today.
   - **Fallback:** below about 0.2 zoom, show each page's thumbnail
     image instead of its DOM. Thumbnails are already captured for the
     start screen.
-  - **Measure first.** Phase 1 records frame time on a 30-page project
+  - **Measure first.** Phase 2 records frame time on a 30-page project
     before deciding.
 - **The iframe plan.** `canvas-iframe-plan.md` would move each canvas
   into an iframe. Frames here are drawn by a single `FrameHost`
@@ -420,11 +510,12 @@ editor does per page today.
   keys to engine calls.
 - **Measuring under zoom.** Any code that measures inside a frame with
   `getBoundingClientRect` must divide by the zoom. The overlays already
-  do. The lookups in phase 2 get checked one by one for this.
+  do. The lookups in phase 3 get checked one by one for this.
 
 ## Not in scope
 
 - **Editing two frames at once**, or undo across frames (decision 1).
+  Dragging between frames is the "Later" phase, not this plan.
 - **The same page at several widths** in one workspace (open
   question 4).
 - **Sharing workspaces** through git (open question 3).
@@ -442,8 +533,9 @@ editor does per page today.
    - A folder in Notebook that Scamp copies.
 
    I'd take the scampjs monorepo: the release pipeline is there and
-   tested. Note that the canvas exists only on Notebook's
-   `canvas-explore` branch, so it needs merging, or a decision, first.
+   tested. This only matters at phase 7 now. The canvas exists only on
+   Notebook's `canvas-explore` branch, so that needs merging, or a
+   decision, by then.
 2. **Is one live frame acceptable** (decision 1)? It changes how
    editing in place feels in one way: the first click on another frame
    switches the frame. It doesn't wait for a double-click.
