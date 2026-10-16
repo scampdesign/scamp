@@ -2,6 +2,8 @@ import { applyPatchWithAxisRouting, } from '../patchRouting';
 import { commitElementsToHistory } from '../history';
 import { stepZoom } from '@lib/zoom';
 import { useCanvasStore, } from '../../canvasSlice';
+const CANVAS_NOTICE_MS = 4000;
+let noticeTimer = null;
 export const createUiSlice = (set) => ({
     bottomPanel: 'none',
     routeSource: null,
@@ -11,6 +13,7 @@ export const createUiSlice = (set) => ({
     fitScale: 1,
     ratioLocks: {},
     imageImportBusy: false,
+    canvasNotice: null,
     collapsedIds: {},
     pendingSvgReload: null,
     exportSettings: { lastFormat: 'png', lastPngScale: 2 },
@@ -41,6 +44,15 @@ export const createUiSlice = (set) => ({
     // over would collapse an unrelated element on the new page.
     clearCollapsed: () => set({ collapsedIds: {} }),
     setImageImportBusy: (imageImportBusy) => set({ imageImportBusy }),
+    showCanvasNotice: (message) => {
+        if (noticeTimer !== null)
+            clearTimeout(noticeTimer);
+        set({ canvasNotice: message });
+        noticeTimer = setTimeout(() => {
+            noticeTimer = null;
+            set({ canvasNotice: null });
+        }, CANVAS_NOTICE_MS);
+    },
     setBottomPanel: (panel) => set({ bottomPanel: panel }),
     setRouteSource: (source) => set({ routeSource: source }),
     // Open the panel, or close it if it's already the open one. Lives in the

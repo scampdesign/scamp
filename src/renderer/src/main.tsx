@@ -57,6 +57,17 @@ window.addEventListener('unhandledrejection', (e) => {
   console.error('[renderer] unhandled rejection:', e.reason);
 });
 
+// A file dropped where nothing takes it would navigate the whole window to
+// it (Electron's default). Targets that take a drop prevent the default
+// first, so only the leftovers land here. see docs/plans/image-drop-plan.md
+const refuseStrayDrop = (e: DragEvent): void => {
+  if (e.defaultPrevented) return;
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+};
+window.addEventListener('dragover', refuseStrayDrop);
+window.addEventListener('drop', refuseStrayDrop);
+
 const container = document.getElementById('root');
 if (!container) throw new Error('Root container missing');
 createRoot(container).render(

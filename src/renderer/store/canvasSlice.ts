@@ -571,6 +571,13 @@ export type CanvasState = {
    */
   imageImportBusy: boolean;
   setImageImportBusy: (busy: boolean) => void;
+  /**
+   * A short message on the canvas about something the user just did that
+   * didn't work, such as a drop that couldn't be used. Cleared after a few
+   * seconds. see docs/plans/image-drop-plan.md
+   */
+  canvasNotice: string | null;
+  showCanvasNotice: (message: string) => void;
 
   setTool: (tool: Tool) => void;
   /** Replace the selection with a single element (or clear it). */

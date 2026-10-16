@@ -309,6 +309,9 @@ export const CanvasInteractionLayer = ({ frameRef, scale }: Props): JSX.Element 
       onPointerCancel={handlePointerUp}
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
+      // Accepting at dragenter too, as the HTML spec has a drop target do;
+      // a drag bridged in from another toolkit can otherwise lag.
+      onDragEnter={handleDragOver}
       onDragOver={handleDragOver}
       onDragLeave={componentDrop.handleDragLeave}
       onDrop={handleDrop}

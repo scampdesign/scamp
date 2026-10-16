@@ -4,37 +4,52 @@ import { prepareSvgForInsert } from '../../lib/svg';
 import { hitTest } from './canvasHitTest';
 import { DEFAULT_IMAGE_SIZE, INLINE_SVG_MAX_BYTES } from './constants';
 import { importImage } from '@renderer/src/lib/importImage';
+import { useAppLogStore } from '@store/appLogSlice';
+import { imageUrlFromDrop } from '@lib/imageUrlFromDrop';
 /**
- * Accepts image files dropped onto the canvas from the OS file manager.
- * Raster images are copied into the project's assets dir and inserted as
- * `<img>`. SVGs are sanitized/normalized and inlined as an editable
+ * Accepts images dropped onto the canvas: files from the OS file manager,
+ * and images dragged from a web browser (a URL, or markup with an
+ * `<img>`). Raster images are copied or downloaded into the project's
+ * assets dir and inserted as `<img>`; a drop that can't be used says why.
+ * see docs/plans/image-drop-plan.md SVGs are sanitized/normalized and inlined as an editable
  * `<svg>` element (so fill/stroke are editable), unless they're larger
  * than INLINE_SVG_MAX_BYTES, in which case they fall back to the asset +
  * `<img>` path. see docs/archive/2026-06-30-svg-improvements-plan.md
  */
+/** A file's bytes as a `data:` URL. */
+const readAsDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+    reader.onerror = () => reject(reader.error ?? new Error(`Could not read ${file.name}`));
+    reader.readAsDataURL(file);
+});
 export const useDropInsert = (geometry) => {
     const activePage = useCanvasStore((s) => s.activePage);
     const activeComponent = useCanvasStore((s) => s.activeComponent);
     const projectPath = useCanvasStore((s) => s.projectPath);
     const createImage = useCanvasStore((s) => s.createImage);
     const createSvgElement = useCanvasStore((s) => s.createSvgElement);
+    const showCanvasNotice = useCanvasStore((s) => s.showCanvasNotice);
+    /** Refuse a drop with a reason, on the canvas and in the app log. */
+    const refuse = (message) => {
+        showCanvasNotice(message);
+        useAppLogStore.getState().log('warn', `Drop: ${message}`);
+    };
     const handleDragOver = (e) => {
-        // Accept image files from the OS file manager.
-        if (e.dataTransfer.types.includes('Files')) {
+        const types = e.dataTransfer.types;
+        // Files from the file manager; a URL or markup from a web browser.
+        if (types.includes('Files') || types.includes('text/uri-list') || types.includes('text/html')) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
         }
     };
     const handleDrop = (e) => {
         e.preventDefault();
-        if (!activePage && !activeComponent)
+        if (!activePage && !activeComponent) {
+            refuse('Open a page to drop an image onto it.');
             return;
-        const files = e.dataTransfer.files;
-        if (files.length === 0)
-            return;
-        const file = files[0];
-        // Only accept image types (svg counts as image/svg+xml).
-        if (!file.type.startsWith('image/'))
+        }
+        if (!projectPath)
             return;
         const hitId = hitTest(e.clientX, e.clientY) ?? ROOT_ELEMENT_ID;
         const parentRect = geometry.measureElementInFrame(hitId) ?? { x: 0, y: 0, w: 0, h: 0 };
@@ -46,13 +61,7 @@ export const useDropInsert = (geometry) => {
             x: Math.round(Math.max(0, Math.min(x - parentRect.x, parent.w - w))),
             y: Math.round(Math.max(0, Math.min(y - parentRect.y, parent.h - h))),
         });
-        const filePath = file.path;
-        const insertRaster = async () => {
-            if (!filePath || !projectPath)
-                return;
-            const copied = await importImage(filePath, projectPath);
-            if (copied === null)
-                return;
+        const placeImage = (asset) => {
             const pos = placement(DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE);
             createImage({
                 parentId: hitId,
@@ -60,18 +69,65 @@ export const useDropInsert = (geometry) => {
                 y: pos.y,
                 width: DEFAULT_IMAGE_SIZE,
                 height: DEFAULT_IMAGE_SIZE,
-                src: copied.relativePath,
-                alt: copied.fileName,
+                src: asset.relativePath,
+                alt: asset.fileName,
             });
         };
+        /** Download (or decode) an image URL into the project's assets, then place it. */
+        const insertFromUrl = async (url, assetName) => {
+            const { setImageImportBusy } = useCanvasStore.getState();
+            setImageImportBusy(true);
+            try {
+                const result = await window.scamp.fetchImportImage({
+                    url,
+                    projectPath,
+                    ...(assetName !== undefined ? { assetName } : {}),
+                });
+                if (result.ok)
+                    placeImage(result);
+                else
+                    refuse(`Couldn't add the image: ${result.error}`);
+            }
+            finally {
+                useCanvasStore.getState().setImageImportBusy(false);
+            }
+        };
+        const insertRaster = async (file) => {
+            const filePath = window.scamp.pathForFile(file);
+            if (filePath === '') {
+                // No file on disk (a browser handed the image over as bytes):
+                // send it as a data: URL through the same import path.
+                await insertFromUrl(await readAsDataUrl(file), file.name.replace(/\.[^.]*$/, ''));
+                return;
+            }
+            const copied = await importImage(filePath, projectPath);
+            if (copied === null)
+                refuse(`Couldn't add ${file.name}. The app log has the details.`);
+            else
+                placeImage(copied);
+        };
+        const file = e.dataTransfer.files[0];
+        if (file === undefined) {
+            const url = imageUrlFromDrop({
+                uriList: e.dataTransfer.getData('text/uri-list'),
+                html: e.dataTransfer.getData('text/html'),
+            });
+            if (url === null)
+                refuse("That drag didn't carry an image.");
+            else
+                void insertFromUrl(url);
+            return;
+        }
+        if (!file.type.startsWith('image/')) {
+            refuse(`${file.name} isn't an image. Drop a PNG, JPEG, WebP, GIF, or SVG.`);
+            return;
+        }
         const isSvg = file.type === 'image/svg+xml' ||
             file.name.toLowerCase().endsWith('.svg');
         if (isSvg) {
             void (async () => {
                 const text = await file.text();
                 const prepared = prepareSvgForInsert(text);
-                // Inline small, editable SVGs; fall back to <img> for large ones
-                // (or anything that didn't parse to a usable svg).
                 if (prepared && text.length <= INLINE_SVG_MAX_BYTES) {
                     const w = Math.round(prepared.width ?? DEFAULT_IMAGE_SIZE);
                     const h = Math.round(prepared.height ?? DEFAULT_IMAGE_SIZE);
@@ -92,11 +148,11 @@ export const useDropInsert = (geometry) => {
                     });
                     return;
                 }
-                await insertRaster();
+                await insertRaster(file);
             })();
             return;
         }
-        void insertRaster();
+        void insertRaster(file);
     };
     return { handleDragOver, handleDrop };
 };

@@ -10,6 +10,7 @@ import { CanvasSizeControl } from '../CanvasSizeControl';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 import { Toolbar } from '../Toolbar';
 import { SvgReloadBanner } from './SvgReloadBanner';
+import { CanvasNotice } from './CanvasNotice';
 import styles from '../ProjectShell.module.css';
 /**
  * The artboard column: component-editor banner + breadcrumb, the canvas
@@ -80,5 +81,5 @@ export const CanvasArea = ({ activeComponent, activePageName, projectConfig, art
                                         componentCanvas: nextMap,
                                     });
                                 }
-                                : undefined })] }) }), _jsx("div", { className: styles.elementToolbar, children: _jsx(Toolbar, {}) })] }));
+                                : undefined })] }) }), _jsx(CanvasNotice, {}), _jsx("div", { className: styles.elementToolbar, children: _jsx(Toolbar, {}) })] }));
 };

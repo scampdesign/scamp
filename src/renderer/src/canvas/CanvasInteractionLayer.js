@@ -268,7 +268,10 @@ export const CanvasInteractionLayer = ({ frameRef, scale }) => {
     const containerRect = crossDrop?.kind === 'absolute'
         ? crossDrop.rect
         : (flowIndicatorForDrop?.containerRect ?? null);
-    return (_jsxs("div", { ref: layerRef, className: styles.layer, "data-canvas-chrome": "true", style: { pointerEvents: isEditing ? 'none' : 'auto' }, onPointerDown: handlePointerDown, onPointerMove: handlePointerMove, onPointerUp: handlePointerUp, onPointerCancel: handlePointerUp, onDoubleClick: handleDoubleClick, onContextMenu: handleContextMenu, onDragOver: handleDragOver, onDragLeave: componentDrop.handleDragLeave, onDrop: handleDrop, children: [drawState && (_jsx(DrawPreview, { x: Math.min(drawState.startX, drawState.currentX) + drawState.parentOffsetX, y: Math.min(drawState.startY, drawState.currentY) + drawState.parentOffsetY, width: Math.abs(drawState.currentX - drawState.startX), height: Math.abs(drawState.currentY - drawState.startY) })), gapRect && (_jsx("div", { className: styles.dropIndicator, style: {
+    return (_jsxs("div", { ref: layerRef, className: styles.layer, "data-canvas-chrome": "true", style: { pointerEvents: isEditing ? 'none' : 'auto' }, onPointerDown: handlePointerDown, onPointerMove: handlePointerMove, onPointerUp: handlePointerUp, onPointerCancel: handlePointerUp, onDoubleClick: handleDoubleClick, onContextMenu: handleContextMenu, 
+        // Accepting at dragenter too, as the HTML spec has a drop target do;
+        // a drag bridged in from another toolkit can otherwise lag.
+        onDragEnter: handleDragOver, onDragOver: handleDragOver, onDragLeave: componentDrop.handleDragLeave, onDrop: handleDrop, children: [drawState && (_jsx(DrawPreview, { x: Math.min(drawState.startX, drawState.currentX) + drawState.parentOffsetX, y: Math.min(drawState.startY, drawState.currentY) + drawState.parentOffsetY, width: Math.abs(drawState.currentX - drawState.startX), height: Math.abs(drawState.currentY - drawState.startY) })), gapRect && (_jsx("div", { className: styles.dropIndicator, style: {
                     left: gapRect.x,
                     top: gapRect.y,
                     width: gapRect.w,

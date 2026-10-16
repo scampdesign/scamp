@@ -59,6 +59,9 @@ import {
   type NewComponentInstanceInput,
 } from '../../canvasSlice';
 
+const CANVAS_NOTICE_MS = 4000;
+let noticeTimer: ReturnType<typeof setTimeout> | null = null;
+
 export const createUiSlice: StateCreator<
   CanvasState,
   [],
@@ -73,6 +76,8 @@ export const createUiSlice: StateCreator<
   | 'ratioLocks'
   | 'imageImportBusy'
   | 'setImageImportBusy'
+  | 'canvasNotice'
+  | 'showCanvasNotice'
   | 'collapsedIds'
   | 'toggleCollapsed'
   | 'setCollapsed'
@@ -109,6 +114,7 @@ export const createUiSlice: StateCreator<
   fitScale: 1,
   ratioLocks: {},
   imageImportBusy: false,
+  canvasNotice: null,
   collapsedIds: {},
   pendingSvgReload: null,
   exportSettings: { lastFormat: 'png', lastPngScale: 2 },
@@ -140,6 +146,15 @@ export const createUiSlice: StateCreator<
   clearCollapsed: () => set({ collapsedIds: {} }),
 
   setImageImportBusy: (imageImportBusy) => set({ imageImportBusy }),
+
+  showCanvasNotice: (message) => {
+    if (noticeTimer !== null) clearTimeout(noticeTimer);
+    set({ canvasNotice: message });
+    noticeTimer = setTimeout(() => {
+      noticeTimer = null;
+      set({ canvasNotice: null });
+    }, CANVAS_NOTICE_MS);
+  },
 
   setBottomPanel: (panel) => set({ bottomPanel: panel }),
 

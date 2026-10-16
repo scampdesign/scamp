@@ -1,0 +1,16 @@
+.notice {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  max-width: min(520px, calc(100% - 32px));
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  box-shadow: var(--shadow-popover);
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+}

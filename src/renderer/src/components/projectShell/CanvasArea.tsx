@@ -13,6 +13,7 @@ import { CanvasSizeControl } from '../CanvasSizeControl';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 import { Toolbar } from '../Toolbar';
 import { SvgReloadBanner } from './SvgReloadBanner';
+import { CanvasNotice } from './CanvasNotice';
 import type { ActiveComponent } from './types';
 import styles from '../ProjectShell.module.css';
 
@@ -222,6 +223,7 @@ export const CanvasArea = ({
           />
         </div>
       </div>
+      <CanvasNotice />
       <div className={styles.elementToolbar}>
         <Toolbar />
       </div>

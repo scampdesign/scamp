@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import { contextBridge, ipcRenderer, IpcRendererEvent, webUtils } from 'electron';
 import { IPC } from '@shared/ipcChannels';
 import type { CapturedSource } from '@shared/importCapture';
 import type { TitleBarColors } from '@shared/titleBarColors';
@@ -195,6 +195,11 @@ const api = {
   /** Download one remote image into the project's assets. */
   fetchImportImage: (args: FetchImageArgs): Promise<FetchImageResult> =>
     ipcRenderer.invoke(IPC.ImportFetchImage, args),
+  /**
+   * A dropped file's path on disk, or '' for one with none (built in the
+   * page, handed over by a browser). Electron 32 removed `File.path`.
+   */
+  pathForFile: (file: File): string => webUtils.getPathForFile(file),
   /** Which of these families does Google Fonts serve? */
   resolveImportFonts: (args: ResolveFontsArgs): Promise<ResolveFontsResult> =>
     ipcRenderer.invoke(IPC.ImportResolveFonts, args),

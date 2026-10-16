@@ -85,6 +85,11 @@ release time.
 
 **Fixed**
 
+- **Drop images onto the canvas again.** A PNG, JPEG, WebP, or GIF
+  dragged from the file manager is copied into the project's assets and
+  placed where you drop it. An image dragged from a web browser is
+  downloaded and placed too. A drop Scamp can't use now says why, for
+  example a file that isn't an image. Before, these drops did nothing.
 - **Click and drag a component instance on the canvas.** A click
   anywhere an instance draws now selects it, so you can drag it and
   double-click it. Before, an instance whose content didn't give it a

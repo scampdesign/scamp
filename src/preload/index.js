@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { IPC } from '@shared/ipcChannels';
 /**
  * Minimal API surface exposed to the renderer. Keep this small — every
@@ -48,6 +48,11 @@ const api = {
     },
     /** Download one remote image into the project's assets. */
     fetchImportImage: (args) => ipcRenderer.invoke(IPC.ImportFetchImage, args),
+    /**
+     * A dropped file's path on disk, or '' for one with none (built in the
+     * page, handed over by a browser). Electron 32 removed `File.path`.
+     */
+    pathForFile: (file) => webUtils.getPathForFile(file),
     /** Which of these families does Google Fonts serve? */
     resolveImportFonts: (args) => ipcRenderer.invoke(IPC.ImportResolveFonts, args),
     /** Tell the import window how it went. */

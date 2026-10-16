@@ -36,6 +36,11 @@ declare const api: {
     onImportDeliver: (listener: (args: ImportCapturedArgs) => void) => (() => void);
     /** Download one remote image into the project's assets. */
     fetchImportImage: (args: FetchImageArgs) => Promise<FetchImageResult>;
+    /**
+     * A dropped file's path on disk, or '' for one with none (built in the
+     * page, handed over by a browser). Electron 32 removed `File.path`.
+     */
+    pathForFile: (file: File) => string;
     /** Which of these families does Google Fonts serve? */
     resolveImportFonts: (args: ResolveFontsArgs) => Promise<ResolveFontsResult>;
     /** Tell the import window how it went. */
