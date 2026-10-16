@@ -101,6 +101,30 @@ const withTransformReset = async (node, fn) => {
     }
 };
 /**
+ * Styles laid over the root of every capture. `html-to-image` copies the
+ * node's computed styles onto its root, so an element placed on the page
+ * (`position: absolute; inset: 40px …`, a margin, a translate) carried
+ * that placement into the image: it drew offset, and squeezed by the far
+ * inset, which read as lost padding and broken type. The image's origin
+ * is the element's own top-left. see docs/notes/export-element-position.md
+ */
+const CAPTURE_ROOT_STYLE = {
+    position: 'static',
+    inset: 'auto',
+    margin: '0',
+    translate: 'none',
+};
+/**
+ * The webfonts on a node, inlined for the capture. A capture renders in an
+ * SVG image that can't fetch, and html-to-image's own font walk can't read
+ * a cross-origin sheet (Adobe Fonts, Google Fonts), so the text fell back
+ * in an export just as it once did in thumbnails. see docs/notes/project-thumbnails.md
+ */
+const fontOptions = async (node) => {
+    const css = await buildFontEmbedCss(node);
+    return css.length > 0 ? { fontEmbedCSS: css } : { skipFonts: true };
+};
+/**
  * Capture a PNG data URL. PNG is rasterised via foreignObject so the
  * output exactly matches what the user sees on the canvas.
  *
@@ -108,16 +132,21 @@ const withTransformReset = async (node, fn) => {
  * crisp images; the resulting data URL decodes to a buffer of
  * `width × scale` × `height × scale` px.
  */
-export const capturePng = (inputs) => withTransformReset(inputs.node, () => withChromeClassesHidden(inputs.node, () => toPng(inputs.node, {
-    width: inputs.width,
-    height: inputs.height,
-    pixelRatio: inputs.scale,
-    cacheBust: true,
-    filter: (n) => !isChromeNode(n),
-    ...(inputs.backgroundColor !== null
-        ? { backgroundColor: inputs.backgroundColor }
-        : {}),
-})));
+export const capturePng = async (inputs) => {
+    const fonts = await fontOptions(inputs.node);
+    return withTransformReset(inputs.node, () => withChromeClassesHidden(inputs.node, () => toPng(inputs.node, {
+        width: inputs.width,
+        height: inputs.height,
+        style: CAPTURE_ROOT_STYLE,
+        pixelRatio: inputs.scale,
+        cacheBust: true,
+        ...fonts,
+        filter: (n) => !isChromeNode(n),
+        ...(inputs.backgroundColor !== null
+            ? { backgroundColor: inputs.backgroundColor }
+            : {}),
+    })));
+};
 /**
  * Capture without touching the live canvas.
  *
@@ -231,10 +260,13 @@ export const captureIsolatedPng = async (inputs) => {
  * disk is real SVG that browsers and downstream tools can read.
  */
 export const captureSvg = async (inputs) => {
+    const fonts = await fontOptions(inputs.node);
     const dataUrl = await withTransformReset(inputs.node, () => withChromeClassesHidden(inputs.node, () => toSvg(inputs.node, {
         width: inputs.width,
         height: inputs.height,
+        style: CAPTURE_ROOT_STYLE,
         cacheBust: true,
+        ...fonts,
         filter: (n) => !isChromeNode(n),
         ...(inputs.backgroundColor !== null
             ? { backgroundColor: inputs.backgroundColor }

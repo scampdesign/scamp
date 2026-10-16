@@ -85,6 +85,14 @@ release time.
 
 **Fixed**
 
+- **An exported element keeps its padding and type.** Exporting an
+  element placed on the page, as a PNG or SVG, drew it shifted by its
+  page position and squeezed. Its padding and text came out clipped or
+  missing. It now draws from the image's top-left at its own size.
+- **Exports embed the fonts they use.** A PNG or SVG export inlines
+  the web fonts on the exported element, Adobe Fonts and Google Fonts
+  included, the way thumbnails already do, and no longer carries Scamp's
+  own interface fonts.
 - **Drop images onto the canvas again.** A PNG, JPEG, WebP, or GIF
   dragged from the file manager is copied into the project's assets and
   placed where you drop it. An image dragged from a web browser is
