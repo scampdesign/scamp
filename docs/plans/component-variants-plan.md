@@ -1,7 +1,9 @@
 # Component variants
 
-Status: **approach decided** (option A, data attributes), 2026-10-17.
-The remaining questions are at the end. Nothing is built. Branch
+Status: **decided, in progress**, 2026-10-17. Option A (data attributes),
+with the answers recorded at the end. Phase 0 is done: scampjs 0.3.2
+fixes the `_scamp` reader and adds contract §1.3.1 with a Button fixture
+(`contract-2/components/Button`). Phase 1 is next. Branch
 `plan/component-variants`.
 
 ## What we want
@@ -353,6 +355,26 @@ outside, and puts it in the top layer.
 I'd ship this as a second phase. The `state` axis covers every case;
 the native popover is the zero-JavaScript shortcut for the common one.
 
+## The exact file shape
+
+Contract §1.3.1 fixes it, and the Button fixture in scampjs 0.3.2 is the
+byte-for-byte target for phase 1's drift test:
+
+- **TSX.** Axis props come first in the props type (they're on the root,
+  which comes first in the document), as double-quoted unions. Defaults
+  are in the destructure. On the root they're bound attributes after the
+  static ones and before events: `type="button" data-variant={variant}
+  data-size={size} onClick={onClick}`.
+- **CSS.** Every element's own rules come first. Then the axis rules,
+  grouped by axis in props order, then by value in union order:
+  `.root[data-variant="outline"]`, its `:hover`,
+  `.root[data-size="small"] .label_c1a1`.
+- **The base rules** are already in Scamp's house style. Run through
+  today's `parseCode` and `generateCode`, the fixture comes back
+  identical except for two things phase 1 adds: the union types (today
+  they come back as `string`), and the grouping of axis rules after
+  every element (today they're kept verbatim after the root's rules).
+
 ## The Scamp side
 
 ### Model
@@ -367,9 +389,8 @@ the native popover is the zero-JavaScript shortcut for the common one.
   }>;
   ```
 
-  The `data-` attribute is `data-<prop>`, always. Phase 1 supports one
-  axis per component; the model holds several, so variant and size can
-  come later without a migration.
+  The `data-` attribute is `data-<prop>`, always. Several axes are
+  supported from phase 1 (decision 3).
 - **Per-element styles.** Each element gets
   `variantOverrides?: Record<string, VariantOverride>`, keyed
   `"variant=outline"`. A `VariantOverride` is a `BreakpointOverride`
@@ -435,13 +456,14 @@ the native popover is the zero-JavaScript shortcut for the common one.
 
 | Phase | What it delivers |
 |---|---|
-| 0. Framework (scampjs) | The `_scamp` regex fix with its test. The contract text and a Button fixture for variant axes. Additive, no bump. Released as a patch. |
+| 0. Framework (scampjs) — **done, scampjs 0.3.2** | The `_scamp` reader fix with its test. Contract §1.3.1, "Variant axes", and a Button fixture with `variant` and `size` axes in `contract-2`. Additive, no bump. |
 | 1. Model and code | `variantAxes`, `variantOverrides`, generate and parse, round-trip tests, the drift test against the new fixture. No UI yet, so files written by hand or by an agent already round-trip. |
 | 2. Design variants | The variant switcher, editing per variant (including hover within a variant), and the side-by-side artboard. |
 | 3. Use variants | The instance **Variant** select, instance rendering, checks, and the agent's tools. |
-| 4. States for interactive components | A Modal and a menu walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. Starter **Modal** and **Menu** components. |
-| 5. Native popovers | The `:popover-open` state on the canvas, and keeping `popovertarget` and `id` matched. |
-| 6. React import | `style-varies` copies become variants. |
+| 4. Starter components and states | Demo **Button** (`variant`, `size`), **Modal** and **Menu** (`state`) components, and a walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. |
+| 5. React import | `style-varies` copies become variants. |
+
+Native popovers were planned as a phase and are dropped for now (decision 4).
 
 ## Tests
 
@@ -487,15 +509,19 @@ Plus: the modal opens and closes in the preview through a route's
   `variant="outline"` is easy; unnamed differences get `variant-2` and
   a note.
 
-## Questions for you
+## Decisions
 
-Option A is decided. Still open:
+Recorded 2026-10-17.
 
-1. **Should the framework changes go first** (phase 0)? The regex fix is
-   a bug either way; the contract text could wait until phase 1.
-2. **One axis per component to start,** or variant and size together
-   from the beginning? The model holds several; the UI is the cost.
-3. **Native popovers:** worth a phase, or is the `state` axis enough?
-4. **Starter components:** should Scamp ship ready-made Button, Modal and
-   Menu components with their variants and states, or document the
-   pattern only?
+1. **Option A,** data-attribute axes. No structural variants: an element
+   only some values show is hidden with `display: none` in the others.
+2. **The framework goes first.** Phase 0 is fixed, tested and released as
+   its own scampjs version before the Scamp work starts.
+3. **Several axes from the start.** `variant` and `size` together, so the
+   model, code, and UI handle any number of axes from phase 1. Each
+   override is keyed by one axis value; a rule that combines two axes
+   (`[data-variant="outline"][data-size="small"]`) stays verbatim.
+4. **The `state` axis for modals and menus. Native popovers are not
+   planned for now.** Phase 5 is dropped.
+5. **Starter components ship as demos:** Button (`variant`, `size`),
+   Modal (`state`) and Menu (`state`), for users to reuse or learn from.
