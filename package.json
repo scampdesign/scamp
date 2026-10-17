@@ -75,7 +75,7 @@
     "preact": "^10.29.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "scampjs": "^0.3.0",
+    "scampjs": "^0.3.2",
     "typescript": "^5.4.5",
     "vite": "^7.3.1",
     "vitest": "^1.6.0"
