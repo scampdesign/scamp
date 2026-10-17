@@ -99,6 +99,29 @@ const collectRuleNodes = (rule) => {
     }
     return { decls, toggledOff };
 };
+const STATE_GROUP = ELEMENT_STATES.join('|');
+const AXIS_RULE_RE = new RegExp(`^\\.([A-Za-z_][\\w-]*)\\[data-([a-z][a-z0-9]*)="([^"]*)"\\](?::(${STATE_GROUP}))?(?:\\s+\\.([A-Za-z_][\\w-]*)(?::(${STATE_GROUP}))?)?$`);
+/**
+ * Read an axis rule's selector: the root's attribute, then optionally a
+ * descendant class, with a state on whichever comes last. A state on the
+ * root followed by a descendant is outside the grammar.
+ */
+export const matchAxisSelector = (selector) => {
+    const m = AXIS_RULE_RE.exec(selector);
+    if (m === null)
+        return null;
+    const [, anchorClass = '', axis = '', value = '', anchorState, targetClass, targetState] = m;
+    if (targetClass !== undefined && anchorState !== undefined)
+        return null;
+    const state = (targetClass !== undefined ? targetState : anchorState) ?? null;
+    return {
+        anchorClass,
+        axis,
+        value,
+        targetClass: targetClass ?? anchorClass,
+        state: state === null ? null : state,
+    };
+};
 const SUPPORTED_STATES = new Map(ELEMENT_STATES.map((s) => [`:${s}`, s]));
 const classifyClassSelector = (selector) => {
     if (!selector.startsWith('.'))
@@ -196,6 +219,25 @@ const parseCssLenient = (css) => {
         return recovered;
     }
 };
+/**
+ * A rule as a verbatim block. Formats the body as one string; postcss's
+ * `Declaration.toString()` omits the trailing `;`, so it's re-appended:
+ * without it a block of two or more declarations re-emits as invalid CSS
+ * and the next parse fails for the whole page.
+ * See docs/plans/2026-06-19-style-loss-on-css-edit.md.
+ */
+const rawBlockOf = (node) => ({
+    selector: node.selector.trim(),
+    body: node.nodes
+        .map((child) => {
+        const s = child.toString().trim();
+        if (s.length === 0)
+            return '';
+        return child.type === 'decl' ? `  ${s};` : `  ${s}`;
+    })
+        .filter((s) => s.length > 0)
+        .join('\n'),
+});
 export const parseCssDeclarations = (css, breakpoints) => {
     const byClass = new Map();
     const byBreakpoint = new Map();
@@ -205,6 +247,7 @@ export const parseCssDeclarations = (css, breakpoints) => {
     const keyframesBlocks = [];
     const toggledOffByClass = new Map();
     const tableStyleByClass = new Map();
+    const axisRules = [];
     /** Merge a freshly-parsed `toggledOff` list into the union map. */
     const mergeToggledOff = (className, groups) => {
         if (groups.length === 0)
@@ -223,24 +266,10 @@ export const parseCssDeclarations = (css, breakpoints) => {
         if (node.type !== 'rule')
             continue;
         const selector = node.selector.trim();
-        // Preserve verbatim. Format the body as a single string —
-        // postcss's `raws` give us original whitespace and comments.
-        // `Declaration.toString()` omits the trailing `;`, so re-append it
-        // for declarations: without it a raw block with two+ declarations
-        // re-emits as invalid CSS and the next parse fails for the whole
-        // page. See docs/plans/2026-06-19-style-loss-on-css-edit.md.
+        // Preserve verbatim (see rawBlockOf).
         const keepRaw = (className) => {
-            const body = node.nodes
-                .map((child) => {
-                const s = child.toString().trim();
-                if (s.length === 0)
-                    return '';
-                return child.type === 'decl' ? `  ${s};` : `  ${s}`;
-            })
-                .filter((s) => s.length > 0)
-                .join('\n');
             const list = rawByClass.get(className) ?? [];
-            list.push({ selector, body });
+            list.push(rawBlockOf(node));
             rawByClass.set(className, list);
         };
         // A table's derived rules. The subgrid one is rebuilt from the
@@ -259,6 +288,11 @@ export const parseCssDeclarations = (css, breakpoints) => {
             else if (tableRule.kind === 'raw') {
                 keepRaw(tableRule.className);
             }
+            continue;
+        }
+        const axisMatch = matchAxisSelector(selector);
+        if (axisMatch !== null) {
+            axisRules.push({ ...axisMatch, decls: collectRuleNodes(node).decls, raw: rawBlockOf(node) });
             continue;
         }
         const classification = classifyClassSelector(selector);
@@ -374,5 +408,6 @@ export const parseCssDeclarations = (css, breakpoints) => {
         keyframesBlocks,
         toggledOffByClass,
         tableStyleByClass,
+        axisRules,
     };
 };

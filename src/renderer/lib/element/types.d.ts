@@ -720,6 +720,19 @@ export type ScampElement = {
      */
     customSelectorBlocks?: ReadonlyArray<RawSelectorBlock>;
     /**
+     * A component root's variant axes: each a prop bound to `data-<prop>`
+     * on the root, typed as a union of its values. Only the root of a
+     * component carries them. see docs/plans/component-variants-plan.md
+     */
+    variantAxes?: ReadonlyArray<VariantAxis>;
+    /**
+     * This element's styles under one value of an axis, keyed
+     * `variantKey(axis, value)` (`variant=outline`). The default value
+     * has none: its look is the element's own styles. Emitted as
+     * `.root[data-<axis>="<value>"]` rules after every element's own.
+     */
+    variantOverrides?: Record<string, VariantOverride>;
+    /**
      * Row and cell styling a `<table>` sets once for all of them. Not
      * overridable per breakpoint or state.
      */
@@ -738,7 +751,7 @@ export type ScampElement = {
  * (the matrix is deferred — see the element-states plan), and the
  * raw-selector passthrough lives only at the top level.
  */
-export type BreakpointOverride = Partial<Omit<ScampElement, 'id' | 'type' | 'parentId' | 'childIds' | 'breakpointOverrides' | 'stateOverrides' | 'customSelectorBlocks' | 'tableStyle' | 'tag' | 'attributes' | 'selectOptions' | 'svgSource' | 'text' | 'runs' | 'name'>>;
+export type BreakpointOverride = Partial<Omit<ScampElement, 'id' | 'type' | 'parentId' | 'childIds' | 'breakpointOverrides' | 'stateOverrides' | 'customSelectorBlocks' | 'variantAxes' | 'variantOverrides' | 'tableStyle' | 'tag' | 'attributes' | 'selectOptions' | 'svgSource' | 'text' | 'runs' | 'name'>>;
 /**
  * The fixed set of CSS pseudo-classes Scamp models as first-class
  * "states" with typed per-field overrides. Other pseudo-classes
@@ -779,6 +792,18 @@ export declare const ELEMENT_STATES: ReadonlyArray<ElementStateName>;
 export type StateOverride = BreakpointOverride & {
     animation?: ElementAnimation;
 };
+/** One variant axis of a component: its prop, its values in order, and the default. */
+export type VariantAxis = {
+    prop: string;
+    values: ReadonlyArray<string>;
+    defaultValue: string;
+};
+/** An element's styles under one axis value, with its states under that value. */
+export type VariantOverride = BreakpointOverride & {
+    states?: Partial<Record<ElementStateName, StateOverride>>;
+};
+/** The `variantOverrides` key for one axis value. */
+export declare const variantKey: (axis: string, value: string) => string;
 /**
  * One pseudo-class rule the parser couldn't route into a typed state
  * override — preserved verbatim so the generator can re-emit it

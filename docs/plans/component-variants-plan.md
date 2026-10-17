@@ -3,7 +3,8 @@
 Status: **decided, in progress**, 2026-10-17. Option A (data attributes),
 with the answers recorded at the end. Phase 0 is done: scampjs 0.3.2
 fixes the `_scamp` reader and adds contract §1.3.1 with a Button fixture
-(`contract-2/components/Button`). Phase 1 is next. Branch
+(`contract-2/components/Button`). Phase 1 is done (see "What phase 1
+built"). Phase 2 is next. Branch
 `plan/component-variants`.
 
 ## What we want
@@ -457,7 +458,7 @@ byte-for-byte target for phase 1's drift test:
 | Phase | What it delivers |
 |---|---|
 | 0. Framework (scampjs) — **done, scampjs 0.3.2** | The `_scamp` reader fix with its test. Contract §1.3.1, "Variant axes", and a Button fixture with `variant` and `size` axes in `contract-2`. Additive, no bump. |
-| 1. Model and code | `variantAxes`, `variantOverrides`, generate and parse, round-trip tests, the drift test against the new fixture. No UI yet, so files written by hand or by an agent already round-trip. |
+| 1. Model and code — **done** | `variantAxes`, `variantOverrides`, generate and parse, round-trip tests, the drift test against the new fixture. No UI yet, so files written by hand or by an agent already round-trip. |
 | 2. Design variants | The variant switcher, editing per variant (including hover within a variant), and the side-by-side artboard. |
 | 3. Use variants | The instance **Variant** select, instance rendering, checks, and the agent's tools. |
 | 4. Starter components and states | Demo **Button** (`variant`, `size`), **Modal** and **Menu** (`state`) components, and a walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. |
@@ -508,6 +509,46 @@ Plus: the modal opens and closes in the preview through a route's
 - **The React import** has to name values well. A captured
   `variant="outline"` is easy; unnamed differences get `variant-2` and
   a note.
+
+## What phase 1 built
+
+- **Types** (`lib/element/types.ts`):
+  - `VariantAxis` (`prop`, `values`, `defaultValue`), on the root as
+    `variantAxes`.
+  - `VariantOverride` (a breakpoint-shaped override plus `states`), on
+    any element as `variantOverrides`, keyed by
+    `variantKey(axis, value)`.
+  - Neither field can appear inside a breakpoint or state override.
+- **Parse.**
+  - `readVariantAxes` (`parseCode/tsx.ts`) reads each prop typed as a
+    union of string literals that the root binds as
+    `data-<prop>={<prop>}`.
+  - `matchAxisSelector` (`parseCode/css.ts`) recognises
+    `.root[data-<axis>="<value>"]`, with an optional descendant class
+    and a state on whichever comes last.
+  - A post-pass in `parseCode` puts each rule for a declared axis and
+    value on its element. Everything else goes back to the anchor class
+    verbatim:
+    - an undeclared axis or value
+    - the default value's own rule
+    - two axes in one selector
+    - a state before a descendant
+  - Axis rules inside `@media` stay in the verbatim media bucket.
+- **Generate.**
+  - `collectViewProps` types an axis prop as its union, with the axis
+    default.
+  - `variantAxisBlocks` (`generateCode/css.ts`) writes the axis rules
+    after every element's own rules, grouped by axis, then value, then
+    element, base before states.
+- **`_scamp` reader.** `parseScampMeta` now reads the export by field,
+  the same fix as the framework's.
+- **Tests** (`test/variantAxes.test.ts`):
+  - the contract-2 Button fixture round-trips byte for byte, with both
+    axes and the overrides on the right elements
+  - each verbatim case
+  - generating from the model, including removing a value
+  - a component without axes unchanged
+  - `_scamp` with extra fields
 
 ## Decisions
 

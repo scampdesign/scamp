@@ -46,6 +46,10 @@ export const BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set([
   'autoFocus',
 ]);
 
+/** A TypeScript double-quoted string literal. */
+const quoteLiteral = (value: string): string =>
+  `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+
 /** `player.label` binds a row field, not a prop. */
 export const isRowPath = (ref: string): boolean => ref.includes('.');
 
@@ -144,11 +148,16 @@ export const collectViewProps = (
         continue;
       }
       const literal = isInstance ? el.propOverrides?.[attr] : attributeSample(el, attr);
+      // A variant axis types as the union of its values. CONTRACT.md §1.3.1
+      const axis =
+        id === rootId && attr === `data-${name}`
+          ? el.variantAxes?.find((a) => a.prop === name)
+          : undefined;
       add(props, {
         name,
         kind: 'attribute',
-        tsType: 'string',
-        defaultValue: literal ?? '',
+        tsType: axis !== undefined ? axis.values.map(quoteLiteral).join(' | ') : 'string',
+        defaultValue: axis !== undefined ? axis.defaultValue : literal ?? '',
       });
     }
     for (const handler of Object.values(el.on ?? {})) {

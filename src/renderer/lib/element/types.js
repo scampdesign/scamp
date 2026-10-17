@@ -9,6 +9,8 @@ export const ELEMENT_STATES = [
     'active',
     'focus',
 ];
+/** The `variantOverrides` key for one axis value. */
+export const variantKey = (axis, value) => `${axis}=${value}`;
 /**
  * The id used for the implicit page-root element. Stays constant across
  * all pages so other code can rely on a known anchor.

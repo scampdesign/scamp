@@ -5,7 +5,9 @@ import {
   ROOT_ELEMENT_ID,
   type ElementType,
   type RepeatBinding,
+  type ScampElement,
   type SelectOption,
+  type VariantAxis,
 } from "../element";
 import { requireAt } from "../safeAccess";
 import { INLINE_RUN_TAGS, runFromMarkup } from "../textRuns";
@@ -235,11 +237,39 @@ const decodeTsStringLiteral = (raw: string): string =>
  * `text` field after its JSX-expression body resolves to a known
  * prop name.
  */
+/** A double-quoted string literal, raw. */
+const QUOTED = '"(?:\\\\.|[^"\\\\])*"';
+/** `name?: "a" | "b";` in a props type: a prop typed as a union of string literals. */
+const UNION_PROP_RE = new RegExp(`^\\s*([a-z][a-z0-9]*)\\?\\s*:\\s*(${QUOTED}(?:\\s*\\|\\s*${QUOTED})+)\\s*;`, 'gm');
+
+/**
+ * The variant axes a component declares: each prop typed as a union of
+ * string literals that the root binds as `data-<prop>={<prop>}`. The
+ * default is the root's sample for that attribute (the destructure
+ * default), else the first value. CONTRACT.md §1.3.1.
+ * see docs/plans/component-variants-plan.md
+ */
+export const readVariantAxes = (tsx: string, root: ScampElement | undefined): VariantAxis[] => {
+  if (root === undefined) return [];
+  const axes: VariantAxis[] = [];
+  for (const m of tsx.matchAll(UNION_PROP_RE)) {
+    const prop = m[1] ?? '';
+    if (root.bind?.[`data-${prop}`] !== prop) continue;
+    const values = (m[2] ?? '').split('|').map((part) => decodeTsStringLiteral(part.trim().slice(1, -1)));
+    const sample = root.attributes?.[`data-${prop}`];
+    axes.push({ prop, values, defaultValue: sample !== undefined && values.includes(sample) ? sample : values[0] ?? '' });
+  }
+  return axes;
+};
+
 /** The `_scamp` export a component or view ends with. */
 export type ScampViewMeta = { contract: number; events: string[] };
 
-const SCAMP_META_RE =
-  /export\s+const\s+_scamp\s*=\s*\{\s*contract:\s*(\d+)\s*,\s*events:\s*\[([^\]]*)\]\s*\}\s*as\s+const\s*;?/;
+// Read by field, not exact shape: CONTRACT.md §1.4 lets fields be added
+// without a bump, and the stricter form read such a file as having no export.
+const SCAMP_META_RE = /export\s+const\s+_scamp\s*=\s*\{([\s\S]*?)\}\s*as\s+const\s*;?/;
+const META_CONTRACT_RE = /\bcontract\s*:\s*(\d+)/;
+const META_EVENTS_RE = /\bevents\s*:\s*\[([^\]]*)\]/;
 
 /**
  * Read the `_scamp` export (contract version + event-prop names). Null
@@ -248,10 +278,11 @@ const SCAMP_META_RE =
  * nothing here needs preserving. see docs/archive/2026-09-16-framework-phase-1-plan.md
  */
 export const parseScampMeta = (tsx: string): ScampViewMeta | null => {
-  const match = SCAMP_META_RE.exec(tsx);
-  if (!match) return null;
-  const contract = Number(match[1]);
-  const events = (match[2] ?? '')
+  const body = SCAMP_META_RE.exec(tsx)?.[1];
+  const contractMatch = body === undefined ? null : META_CONTRACT_RE.exec(body);
+  if (body === undefined || contractMatch === null) return null;
+  const contract = Number(contractMatch[1]);
+  const events = (META_EVENTS_RE.exec(body)?.[1] ?? '')
     .split(',')
     .map((s) => s.trim().replace(/^['"]|['"]$/g, ''))
     .filter((s) => s.length > 0);

@@ -1,5 +1,5 @@
 import { type SourceMap } from "../sourceMap";
-import { type ElementType, type RepeatBinding, type SelectOption } from "../element";
+import { type ElementType, type RepeatBinding, type ScampElement, type SelectOption, type VariantAxis } from "../element";
 /**
  * Where an element sits in the text it was parsed from. Offsets are
  * into the file as written: `parseTsxStructure` maps them back through
@@ -108,13 +108,13 @@ export declare const PROP_REF_TEXT_RE: RegExp;
  */
 export declare const parseSlotNames: (tsx: string) => Set<string>;
 /**
- * Parse the function-signature destructure into a `propName →
- * defaultText` map. Components with no text-props (and pages,
- * which never emit this form) return an empty map. The returned
- * map is the authoritative source for restoring a text element's
- * `text` field after its JSX-expression body resolves to a known
- * prop name.
+ * The variant axes a component declares: each prop typed as a union of
+ * string literals that the root binds as `data-<prop>={<prop>}`. The
+ * default is the root's sample for that attribute (the destructure
+ * default), else the first value. CONTRACT.md §1.3.1.
+ * see docs/plans/component-variants-plan.md
  */
+export declare const readVariantAxes: (tsx: string, root: ScampElement | undefined) => VariantAxis[];
 /** The `_scamp` export a component or view ends with. */
 export type ScampViewMeta = {
     contract: number;

@@ -54,6 +54,32 @@ export type ParsedCss = {
      * `@lib/tableStyle` derives. Keyed by the table's class name.
      */
     tableStyleByClass: Map<string, TableStyle>;
+    /**
+     * Variant-axis rules (`.root[data-variant="outline"] .label`), in source
+     * order. Whether one is typed depends on the component's props type, so
+     * `parseCode` decides; one it can't place goes back to the anchor
+     * class's raw blocks verbatim. see docs/plans/component-variants-plan.md
+     */
+    axisRules: AxisRule[];
 };
+/** One `[data-<axis>="<value>"]` rule, as read and as written. */
+export type AxisRule = {
+    /** The class carrying the attribute: the component's root. */
+    anchorClass: string;
+    axis: string;
+    value: string;
+    /** The element the declarations style: the anchor, or a descendant. */
+    targetClass: string;
+    state: ElementStateName | null;
+    decls: RawDeclaration[];
+    /** Verbatim, for when the axis isn't one the props type declares. */
+    raw: RawSelectorBlock;
+};
+/**
+ * Read an axis rule's selector: the root's attribute, then optionally a
+ * descendant class, with a state on whichever comes last. A state on the
+ * root followed by a descendant is outside the grammar.
+ */
+export declare const matchAxisSelector: (selector: string) => Omit<AxisRule, "decls" | "raw"> | null;
 export declare const parseCssDeclarations: (css: string, breakpoints: ReadonlyArray<Breakpoint>) => ParsedCss;
 export {};
