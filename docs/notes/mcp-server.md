@@ -96,7 +96,12 @@ Rules the merge follows, all tested:
 **Not yet supported:** VS Code (`servers` key; the reachable docs describe the
 extension-provider API, and `.vscode/mcp.json` permits comments our merge
 can't preserve) and Codex (TOML; project-level support unconfirmed). Both are
-additive — the terminal copy button covers them meanwhile.
+additive. Meanwhile the terminal copy button opens a menu with the connect
+command or config for each agent: Claude Code, Codex, OpenCode, Gemini CLI,
+Cursor, VS Code, and a generic URL-and-header shape. The snippets are in
+`src/renderer/lib/mcpConnect.ts`, each checked against the tool's own docs on
+2026-10-17. Windsurf is left out: its docs moved to Devin's, with a different
+config path, and a wrong path is silently ignored.
 
 ## Approval, and the declined case
 
@@ -125,8 +130,8 @@ So the pill now has three states, driven by two new fields on
 | `disabled` | `detectDisabledAgents` found our key in `disabledMcpjsonServers` | amber |
 
 Detection is read fresh on every poll (4s) so it clears the moment the user
-runs `claude mcp reset-project-choices` — which is what the copy button
-hands over in the disabled state. We still don't write
+runs `claude mcp reset-project-choices` — which the copy button's menu lists
+first in the disabled state. We still don't write
 `enabledMcpjsonServers` ourselves; surfacing the state is the line.
 
 ## Guidance the server itself carries

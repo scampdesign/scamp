@@ -36,9 +36,10 @@ Only agents you have installed get a file; Scamp checks for each one's
 config folder in your home directory first. Existing servers in those
 files are left alone. Scamp adds only its own entry.
 
-VS Code and Codex aren't configured automatically yet. For those, use
-the copy button on the terminal's MCP indicator to get a ready-to-paste
-connect command. See [Is it working?](#is-it-working).
+For other agents, such as Codex, OpenCode, and VS Code, click the copy
+button on the terminal's MCP indicator and select your agent from the
+menu. Scamp copies the command to run, or the config to paste, and says
+where it goes. See [Is it working?](#is-it-working).
 
 ### Approve the server once
 
@@ -163,11 +164,11 @@ than "running":
 |---|---|---|
 | **Gray** | Running, but no agent has connected yet | Nothing, if you haven't started one. If your agent is open and has no `scamp_*` tools, approve the server there. |
 | **Green** | An agent has connected this session | Nothing; it's working. |
-| **Amber** | An agent has this server disabled for this project because you declined its prompt | Click the copy button; it now copies `claude mcp reset-project-choices`. Run it in the project folder, restart the agent, and approve. |
+| **Amber** | An agent has this server disabled for this project because you declined its prompt | Click the copy button and select **Claude Code: reset**. That copies `claude mcp reset-project-choices`. Run it in the project folder, restart the agent, and approve. |
 
 The tooltip spells out the current state and lists which agent configs
-Scamp registered. The copy button gives you the connect command in the
-gray and green states, and the reset command in amber.
+Scamp registered. The copy button opens a menu of agents, each with its
+connect command or config. In amber, the reset command is first.
 
 If the indicator is absent, no project is open or the server didn't
 start.

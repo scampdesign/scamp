@@ -54,3 +54,49 @@
 .copy[data-copied='true'] {
   color: var(--status-success);
 }
+
+.menu {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-popover);
+}
+
+.menuTitle {
+  padding: 8px 10px 4px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.menuItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: var(--bg-hover);
+}
+
+.menuLabel {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.menuHint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}

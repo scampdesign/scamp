@@ -26,6 +26,11 @@ release time.
 
 **Added**
 
+- **Connect Codex, OpenCode, VS Code, and other agents to Scamp's MCP
+  server.** The copy button on the terminal's **MCP** indicator now
+  opens a menu of agents. Select yours to copy its connect command or
+  config, with a note on where it goes. Before, it copied only the
+  Claude Code command.
 - **Edit several elements at once.** With two or more elements
   selected, a change in the properties panel applies to every selected
   element it fits, as one undo step. Before, only the first selected element

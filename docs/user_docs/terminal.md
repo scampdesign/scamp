@@ -25,10 +25,11 @@ whether an agent is connected; its tooltip lists the agent
 configurations that Scamp registered. For the meaning of each color, see
 [Is it working?](ai-agents.md#is-it-working).
 
-The copy button beside the pill copies a connect command to your
-clipboard, for agents that Scamp can't configure automatically (VS Code
-and Codex), or for a session that was already running when you opened
-the project.
+The copy button beside the pill opens a menu of agents: Claude Code,
+Codex, OpenCode, Gemini CLI, Cursor, VS Code, and other tools. Select
+yours to copy its connect command or config to your clipboard. Use it
+for an agent that Scamp can't configure automatically, or for a session
+that was already running when you opened the project.
 
 ## Multiple tabs
 

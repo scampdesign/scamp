@@ -315,6 +315,19 @@ test.describe('MCP server, live', () => {
         await rpc(config, 'ping');
         await expect(pill).toHaveAttribute('data-agent', 'connected', { timeout: 10_000 });
     });
+    test('the copy button offers each agent its own connect command or config', async ({ window, app, project }) => {
+        await expect(pageRoot(window)).toBeVisible();
+        await window.keyboard.press('ControlOrMeta+`');
+        const config = await readConfig(project.dir);
+        await window.locator('[data-action="copy-mcp-command"]').click();
+        const menu = window.getByTestId('mcp-connect-menu');
+        await expect(menu.getByRole('menuitem')).toHaveCount(7);
+        await menu.locator('[data-agent-id="codex"]').click();
+        await expect(menu).toHaveCount(0);
+        await expect
+            .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+            .toBe(['[mcp_servers.scamp]', `url = "${config.url}"`, `http_headers = { "X-Scamp-Token" = "${config.token}" }`].join('\n'));
+    });
 });
 test.describe('checks across the project', () => {
     // A plain page that isn't open, using a token theme.css never declares.
