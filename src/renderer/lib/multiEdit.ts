@@ -75,6 +75,8 @@ const NOT_COMPARED: ReadonlySet<string> = new Set([
   'customProperties',
   'breakpointOverrides',
   'stateOverrides',
+  'variantAxes',
+  'variantOverrides',
   'customSelectorBlocks',
   'x',
   'y',

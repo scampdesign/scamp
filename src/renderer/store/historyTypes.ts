@@ -34,7 +34,9 @@ export type HistoryActionKind =
   | 'toggle-group'
   | 'external-edit'
   /** One Scamp Agent turn's edits, undone together. */
-  | 'agent-edit';
+  | 'agent-edit'
+  /** A component's variant axes or values added, renamed, or removed. */
+  | 'variants';
 
 /**
  * One entry in a page's history stack. Stores the post-action

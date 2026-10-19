@@ -56,6 +56,8 @@ const NOT_COMPARED = new Set([
     'customProperties',
     'breakpointOverrides',
     'stateOverrides',
+    'variantAxes',
+    'variantOverrides',
     'customSelectorBlocks',
     'x',
     'y',

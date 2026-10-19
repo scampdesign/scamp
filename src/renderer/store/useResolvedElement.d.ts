@@ -36,6 +36,11 @@ export declare const useBreakpointOverrideFields: (elementId: string | null) => 
  */
 export declare const useStateOverrideFields: (elementId: string | null) => ReadonlySet<keyof StateOverride>;
 /**
+ * The fields the active variant value (and the active state within it)
+ * overrides on an element. Empty outside a variant.
+ */
+export declare const useVariantOverrideFields: (elementId: string | null) => ReadonlySet<keyof BreakpointOverride>;
+/**
  * Hook returning the `groupToggle` prop for a section's
  * property-group eye button, or `undefined` when the eye should be
  * hidden. Reads the raw element's `toggledOffGroups` and exposes a

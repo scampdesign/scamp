@@ -1,4 +1,13 @@
 import { resolveElementAtBreakpoint } from './breakpointCascade';
+const layer = (el, override) => {
+    if (!override || Object.keys(override).length === 0)
+        return el;
+    return {
+        ...el,
+        ...override,
+        customProperties: { ...el.customProperties, ...(override.customProperties ?? {}) },
+    };
+};
 /**
  * Return the element rendered at the active breakpoint AND active
  * state — base styles with breakpoint overrides layered first
@@ -15,22 +24,20 @@ import { resolveElementAtBreakpoint } from './breakpointCascade';
  *
  * Pure: returns the input element unchanged when there's nothing to
  * apply. `activeState === null` short-circuits to the breakpoint
- * resolver alone.
+ * resolver alone. `activeVariantKey` (`variant=outline`) layers that
+ * value's overrides, and its own state overrides, on top.
  */
-export const resolveElementAtState = (element, activeBreakpointId, breakpoints, activeState) => {
+export const resolveElementAtState = (element, activeBreakpointId, breakpoints, activeState, activeVariantKey = null) => {
     const atBreakpoint = resolveElementAtBreakpoint(element, activeBreakpointId, breakpoints);
-    if (activeState === null)
-        return atBreakpoint;
-    const override = element.stateOverrides?.[activeState];
-    if (!override || Object.keys(override).length === 0)
-        return atBreakpoint;
-    const mergedCustom = {
-        ...atBreakpoint.customProperties,
-        ...(override.customProperties ?? {}),
-    };
-    return {
-        ...atBreakpoint,
-        ...override,
-        customProperties: mergedCustom,
-    };
+    const atState = activeState === null ? atBreakpoint : layer(atBreakpoint, element.stateOverrides?.[activeState]);
+    if (activeVariantKey === null)
+        return atState;
+    // A variant rule (`.root[data-v="x"] .el`) outranks the element's own
+    // state rule (`.el:hover`), so it layers after it, as in the browser.
+    const variant = element.variantOverrides?.[activeVariantKey];
+    if (variant === undefined)
+        return atState;
+    const { states, ...variantBase } = variant;
+    const atVariant = layer(atState, variantBase);
+    return activeState === null ? atVariant : layer(atVariant, states?.[activeState]);
 };

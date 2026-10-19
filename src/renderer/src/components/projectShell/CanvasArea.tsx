@@ -8,10 +8,12 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { useSnapshotsStore } from '@store/snapshotsSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { Viewport } from '@renderer/src/canvas/Viewport';
+import { VariantFrames } from '@renderer/src/canvas/VariantFrames';
 
 import { CanvasSizeControl } from '../CanvasSizeControl';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 import { Toolbar } from '../Toolbar';
+import { VariantBar } from '../VariantBar';
 import { SvgReloadBanner } from './SvgReloadBanner';
 import { CanvasNotice } from './CanvasNotice';
 import type { ActiveComponent } from './types';
@@ -188,6 +190,7 @@ export const CanvasArea = ({
               componentKind={component !== null ? 'component' : undefined}
             />
           </div>
+          {component !== null && <VariantBar />}
           <Viewport
             canvasWidth={frameWidth}
             canvasHeight={
@@ -221,6 +224,13 @@ export const CanvasArea = ({
                 : undefined
             }
           />
+          {component !== null && (
+            <VariantFrames
+              width={frameWidth}
+              minHeight={componentCanvasSizeFor(projectConfig, component.name, 'component').height}
+              scale={scale}
+            />
+          )}
         </div>
       </div>
       <CanvasNotice />

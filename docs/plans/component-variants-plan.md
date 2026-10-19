@@ -4,7 +4,8 @@ Status: **decided, in progress**, 2026-10-17. Option A (data attributes),
 with the answers recorded at the end. Phase 0 is done: scampjs 0.3.2
 fixes the `_scamp` reader and adds contract §1.3.1 with a Button fixture
 (`contract-2/components/Button`). Phase 1 is done (see "What phase 1
-built"). Phase 2 is next. Branch
+built"). Phase 2 is built and waiting on a manual test (see "What
+phase 2 built"). Branch
 `plan/component-variants`.
 
 ## What we want
@@ -459,7 +460,7 @@ byte-for-byte target for phase 1's drift test:
 |---|---|
 | 0. Framework (scampjs) — **done, scampjs 0.3.2** | The `_scamp` reader fix with its test. Contract §1.3.1, "Variant axes", and a Button fixture with `variant` and `size` axes in `contract-2`. Additive, no bump. |
 | 1. Model and code — **done** | `variantAxes`, `variantOverrides`, generate and parse, round-trip tests, the drift test against the new fixture. No UI yet, so files written by hand or by an agent already round-trip. |
-| 2. Design variants | The variant switcher, editing per variant (including hover within a variant), and the side-by-side artboard. |
+| 2. Design variants — **built, manual test pending** | The variant switcher, editing per variant (including hover within a variant), and the side-by-side artboard. |
 | 3. Use variants | The instance **Variant** select, instance rendering, checks, and the agent's tools. |
 | 4. Starter components and states | Demo **Button** (`variant`, `size`), **Modal** and **Menu** (`state`) components, and a walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. |
 | 5. React import | `style-varies` copies become variants. |
@@ -549,6 +550,47 @@ Plus: the modal opens and closes in the preview through a route's
   - generating from the model, including removing a value
   - a component without axes unchanged
   - `_scamp` with extra fields
+
+## What phase 2 built
+
+- **The variant bar** (`VariantBar`, `VariantAxisRow`), above the
+  component artboard rather than in the properties panel, because a
+  value is component-wide, not per element.
+  - **+ Add variant** adds a `variant` axis with `default` and a new
+    value; **+ Add axis** adds the next one (`size`, then `variant2`).
+  - **+** on an axis adds a value that starts as a copy of the look
+    being edited, and opens its name for editing.
+  - Double-click a value or an axis name to rename it. Names are checked
+    (`variantValueError`, `variantAxisError`): lowercase with hyphens for
+    values, a free identifier for axes.
+  - **Remove value** and **Remove axis** ask inline first.
+  - Disabled at other breakpoints, and a selected value falls back to
+    the base look there, as states do.
+- **One value edited at a time.** `activeVariantKey` (`variant=outline`)
+  in the store. Picking a value on one axis leaves the others at their
+  defaults, since an override is keyed by one axis value (decision 3).
+- **Routing.** `applyPatchWithAxisRouting` takes the key: style edits go
+  to `variantOverrides[key]`, or its `states[state]` with a state
+  selected. Moves and resizes go there too. At another breakpoint the
+  style edit is dropped.
+- **Drawing.** `resolveElementAtState` layers breakpoint, base state,
+  value, then the value's state: the same order CSS specificity gives.
+  The live frame draws every element in the selected value; the root
+  carries `data-<axis>` so the injected sheet matches.
+- **Side by side.** `VariantFrames` draws the base look and every other
+  value below the live frame, read only (`VariantFrameContext` turns off
+  ids, refs, selection and text editing). Clicking one edits it.
+- **Overrides in the panel.** A section's override dot and right-click
+  reset follow the selected value (`resetElementFieldsAtVariant`).
+- **Undo.** Axis edits are one history step (`variants`); undoing past a
+  value's creation leaves it.
+- **Not built:** naming the instances that use a value before removing
+  it (instances can't pick a value until phase 3), changing which value
+  is the default, removing an animation inside a value, and variants at
+  a breakpoint.
+- **Tests:** `test/variantEditing.test.ts` (28: every axis edit with a
+  generate-and-parse round trip, routing, the cascade order, resetting),
+  `test/e2e/components/variants.spec.ts` (2).
 
 ## Decisions
 

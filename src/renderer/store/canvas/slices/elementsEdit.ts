@@ -27,6 +27,7 @@ import { useHistoryStore, type HistoryCommitInput } from '../../historySlice';
 import { PRESETS_BY_NAME, isPresetName } from '@lib/animationPresets';
 import { classNameFor } from '@lib/generateCode';
 import { resolveElementAtState } from '@lib/stateCascade';
+import { isVariantKeyLive, resetVariantFields } from '@lib/variantAxes';
 import { DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from '@lib/defaults';
 import { ALL_RESIZE_AXES } from '@lib/resizeAxes';
 import { DEFAULT_BODY_FONT_FAMILY } from '@shared/agentMd';
@@ -89,6 +90,8 @@ export const createElementsEditSlice: StateCreator<
   | 'patchCustomProperties'
   | 'resetElementFieldsAtBreakpoint'
   | 'resetElementFieldsAtState'
+  | 'resetElementFieldsAtVariant'
+  | 'editVariants'
   | 'setAnimation'
   | 'removeAnimation'
   | 'togglePropertyGroup'
@@ -347,7 +350,8 @@ export const createElementsEditSlice: StateCreator<
         el,
         { x, y },
         state.activeBreakpointId,
-        null
+        null,
+        state.activeVariantKey
       );
       return { elements: { ...state.elements, [id]: next } };
     });
@@ -378,7 +382,8 @@ export const createElementsEditSlice: StateCreator<
           ...(axes.height ? { heightValue: height, heightMode: 'fixed' as const } : {}),
         },
         state.activeBreakpointId,
-        null
+        null,
+        state.activeVariantKey
       );
       return { elements: { ...state.elements, [id]: next } };
     });
@@ -408,7 +413,8 @@ export const createElementsEditSlice: StateCreator<
         el,
         patch,
         state.activeBreakpointId,
-        state.activeStateName
+        state.activeStateName,
+        state.activeVariantKey
       );
       // A panel edit on this element triggers `generateCode` to
       // rewrite its class block from typed state, which collapses any
@@ -464,7 +470,8 @@ export const createElementsEditSlice: StateCreator<
       el,
       state.activeBreakpointId,
       state.breakpoints,
-      state.activeStateName
+      state.activeStateName,
+      state.activeVariantKey
     );
     const next: Record<string, string> = { ...resolved.customProperties };
     for (const [key, value] of Object.entries(patch)) {
@@ -551,6 +558,30 @@ export const createElementsEditSlice: StateCreator<
     });
   },
 
+  resetElementFieldsAtVariant: (id, key, fields) => {
+    if (useCanvasStore.getState().snapshotPreview !== null) return;
+    set((state) => {
+      const el = state.elements[id];
+      if (!el) return state;
+      const next = resetVariantFields(el, key, state.activeStateName, fields);
+      return next === el ? state : { elements: { ...state.elements, [id]: next } };
+    });
+    commitElementsToHistory({ kind: 'patch', elementIds: [id], propertyKeys: fields });
+  },
+
+  editVariants: (edit, nextKey) => {
+    if (useCanvasStore.getState().snapshotPreview !== null) return;
+    set((state) => {
+      const elements = edit(state.elements);
+      const key = nextKey === undefined ? state.activeVariantKey : nextKey;
+      return {
+        elements,
+        activeVariantKey: key !== null && isVariantKeyLive(elements, key) ? key : null,
+      };
+    });
+    commitElementsToHistory({ kind: 'variants' });
+  },
+
   setAnimation: (id, animation) => {
     set((state) => {
       const el = state.elements[id];
@@ -562,7 +593,8 @@ export const createElementsEditSlice: StateCreator<
         el,
         { animation },
         state.activeBreakpointId,
-        state.activeStateName
+        state.activeStateName,
+        state.activeVariantKey
       );
       // Ensure a `KeyframesBlock` exists for the chosen name. If the
       // page already has one with this name (preset or agent-edited),
@@ -598,6 +630,8 @@ export const createElementsEditSlice: StateCreator<
       if (!el) return state;
       // Two cases: clear the base animation, or clear the active
       // state's animation override.
+      // shortcut: no removal inside a variant yet, add with the variant animation UI.
+      if (state.activeVariantKey !== null) return state;
       if (state.activeStateName === null) {
         const { animation: _drop, ...rest } = el;
         const nextEl: ScampElement =

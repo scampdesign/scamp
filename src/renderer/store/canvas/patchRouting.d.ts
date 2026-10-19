@@ -16,6 +16,10 @@ export declare const BASE_ONLY_PATCH_FIELDS: Set<keyof ScampElement>;
  *     `stateOverrides[activeStateName]`.
  *   - Non-desktop + default state → style fields route to
  *     `breakpointOverrides[activeBreakpointId]`.
+ *   - A variant (`activeVariantKey`, desktop only) → style fields route
+ *     to `variantOverrides[key]`, or to its `states[activeStateName]`.
+ *     A variant at a non-desktop breakpoint drops the style patch, as
+ *     state × breakpoint does.
  *   - Non-desktop + non-default state → state×breakpoint matrix is
  *     out of scope in this version; the patch is dropped to avoid
  *     silently writing the wrong place. The properties panel UI
@@ -37,4 +41,4 @@ export declare const BASE_ONLY_PATCH_FIELDS: Set<keyof ScampElement>;
  * it.
  */
 export declare const assignPatchKey: <K extends keyof ScampElement>(target: Partial<ScampElement>, source: Partial<ScampElement>, key: K) => void;
-export declare const applyPatchWithAxisRouting: (el: ScampElement, patch: Partial<ScampElement>, activeBreakpointId: string, activeStateName: ElementStateName | null) => ScampElement;
+export declare const applyPatchWithAxisRouting: (el: ScampElement, patch: Partial<ScampElement>, activeBreakpointId: string, activeStateName: ElementStateName | null, activeVariantKey?: string | null) => ScampElement;

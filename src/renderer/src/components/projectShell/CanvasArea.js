@@ -6,9 +6,11 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { useSnapshotsStore } from '@store/snapshotsSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { Viewport } from '@renderer/src/canvas/Viewport';
+import { VariantFrames } from '@renderer/src/canvas/VariantFrames';
 import { CanvasSizeControl } from '../CanvasSizeControl';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 import { Toolbar } from '../Toolbar';
+import { VariantBar } from '../VariantBar';
 import { SvgReloadBanner } from './SvgReloadBanner';
 import { CanvasNotice } from './CanvasNotice';
 import styles from '../ProjectShell.module.css';
@@ -59,7 +61,7 @@ export const CanvasArea = ({ activeComponent, activePageName, projectConfig, art
                                         .getState()
                                         .selectElement(ROOT_ELEMENT_ID), title: "Select page root", children: activeComponent !== null
                                         ? viewSlugFor(activeComponent.name)
-                                        : activePageName ?? 'Page' })), _jsx("span", { className: styles.canvasHeaderSpacer }), _jsx(ThemeSwitcher, {}), _jsx(CanvasSizeControl, { config: projectConfig, onChange: onProjectConfigChange, componentName: component !== null ? component.name : undefined, componentKind: component !== null ? 'component' : undefined })] }), _jsx(Viewport, { canvasWidth: frameWidth, canvasHeight: component !== null
+                                        : activePageName ?? 'Page' })), _jsx("span", { className: styles.canvasHeaderSpacer }), _jsx(ThemeSwitcher, {}), _jsx(CanvasSizeControl, { config: projectConfig, onChange: onProjectConfigChange, componentName: component !== null ? component.name : undefined, componentKind: component !== null ? 'component' : undefined })] }), component !== null && _jsx(VariantBar, {}), _jsx(Viewport, { canvasWidth: frameWidth, canvasHeight: component !== null
                                 ? componentCanvasSizeFor(projectConfig, component.name, 'component').height
                                 : pageHeightIsFixed
                                     ? projectConfig.canvasHeight
@@ -81,5 +83,5 @@ export const CanvasArea = ({ activeComponent, activePageName, projectConfig, art
                                         componentCanvas: nextMap,
                                     });
                                 }
-                                : undefined })] }) }), _jsx(CanvasNotice, {}), _jsx("div", { className: styles.elementToolbar, children: _jsx(Toolbar, {}) })] }));
+                                : undefined }), component !== null && (_jsx(VariantFrames, { width: frameWidth, minHeight: componentCanvasSizeFor(projectConfig, component.name, 'component').height, scale: scale }))] }) }), _jsx(CanvasNotice, {}), _jsx("div", { className: styles.elementToolbar, children: _jsx(Toolbar, {}) })] }));
 };

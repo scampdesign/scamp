@@ -3,6 +3,7 @@ import { LIGHT_THEME, deriveThemeTokens, themeDefsFromParsed, } from '@lib/parse
 export const createDesignSystemSlice = (set) => ({
     activeBreakpointId: 'desktop',
     activeStateName: null,
+    activeVariantKey: null,
     breakpoints: [...DEFAULT_BREAKPOINTS],
     themeTokens: [],
     themeBaseTokens: [],
@@ -13,6 +14,7 @@ export const createDesignSystemSlice = (set) => ({
     designProse: { sections: {} },
     setActiveBreakpoint: (id) => set({ activeBreakpointId: id }),
     setActiveState: (activeStateName) => set({ activeStateName }),
+    setActiveVariant: (activeVariantKey) => set({ activeVariantKey }),
     setBreakpoints: (breakpoints) => set({ breakpoints }),
     // Raw theme.css text, kept for the read-only Code panel. Set alongside
     // setThemeData at both parse sites (project open + chokidar change).

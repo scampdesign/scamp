@@ -1,6 +1,8 @@
+import { useShallow } from 'zustand/react/shallow';
 import { useCanvasStore } from './canvasSlice';
 import { resolveElementAtState } from '@lib/stateCascade';
 import { SECTION_FITS } from '@lib/multiEdit';
+import { variantOverrideFields } from '@lib/variantAxes';
 import { forSelection } from './selectionPatch';
 import type {
   BreakpointOverride,
@@ -30,13 +32,15 @@ export const useResolvedElement = (
   );
   const activeBreakpointId = useCanvasStore((s) => s.activeBreakpointId);
   const activeStateName = useCanvasStore((s) => s.activeStateName);
+  const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
   const breakpoints = useCanvasStore((s) => s.breakpoints);
   if (!element) return undefined;
   return resolveElementAtState(
     element,
     activeBreakpointId,
     breakpoints,
-    activeStateName
+    activeStateName,
+    activeVariantKey
   );
 };
 
@@ -90,6 +94,24 @@ export const useStateOverrideFields = (
     return Object.keys(override) as Array<keyof StateOverride>;
   });
   if (keys.length === 0) return EMPTY_STATE_SET;
+  return new Set(keys);
+};
+
+/**
+ * The fields the active variant value (and the active state within it)
+ * overrides on an element. Empty outside a variant.
+ */
+export const useVariantOverrideFields = (
+  elementId: string | null
+): ReadonlySet<keyof BreakpointOverride> => {
+  const keys = useCanvasStore(
+    useShallow((s) =>
+      s.activeVariantKey === null || !elementId
+        ? EMPTY_KEYS
+        : variantOverrideFields(s.elements[elementId], s.activeVariantKey, s.activeStateName)
+    )
+  );
+  if (keys.length === 0) return EMPTY_SET;
   return new Set(keys);
 };
 

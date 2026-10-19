@@ -1,5 +1,5 @@
 import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
-import { createElement, useEffect, useMemo, useRef, cloneElement } from 'react';
+import { createElement, useContext, useEffect, useMemo, useRef, cloneElement } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { childBindingKey, expandChildren, resolveAttr, resolveInstanceOverrides, resolveText, } from '@lib/bindingEval';
@@ -17,12 +17,14 @@ import { CANVAS_SKIP_ATTRS_BY_TAG, canvasRenderTag, elementToStyle, } from '@lib
 import { DEFAULT_ROOT_STYLES } from '@lib/defaults';
 import { instanceStretchStyle } from '@lib/instanceStretch';
 import { resolveElementAtBreakpoint } from '@lib/breakpointCascade';
+import { parseVariantKey } from '@lib/variantAxes';
 import { resolveElementAtState } from '@lib/stateCascade';
 import { formatAnimationShorthand } from '@lib/parsers';
 import { effectiveDisplay } from '@lib/effectiveDisplay';
 import { sanitizeSvgInner } from '../lib/svg';
 import { sanitizeInlineMarkup } from '../lib/inlineMarkup';
 import { EMPTY_FRAME_MIN_HEIGHT } from './Viewport';
+import { VariantFrameContext } from './variantFrame';
 import styles from './ElementRenderer.module.css';
 /** HTML void elements — React throws if createElement receives children for these. */
 const VOID_TAGS = new Set([
@@ -396,10 +398,15 @@ export const ElementRenderer = ({ elementId, row }) => {
     // carries no hit-test id or ref, so selection and measurement land on
     // the first copy.
     const isRepeatCopy = row !== undefined && row.index > 0;
+    // A read-only variant frame draws its value and owns no selection.
+    const variantFrame = useContext(VariantFrameContext);
+    const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
+    const variantKey = variantFrame !== null ? variantFrame.variantKey : activeVariantKey;
+    const displayOnly = isRepeatCopy || variantFrame !== null;
     const activeBreakpointId = useCanvasStore((s) => s.activeBreakpointId);
     const activeStateName = useCanvasStore((s) => s.activeStateName);
     const breakpoints = useCanvasStore((s) => s.breakpoints);
-    const isSelected = useCanvasStore((s) => s.selectedElementIds.includes(elementId));
+    const isSelected = useCanvasStore((s) => s.selectedElementIds.includes(elementId)) && variantFrame === null;
     // Resolve overrides at render time. Selected elements get the
     // active state's overrides layered in (the state switcher *is* the
     // canvas preview); non-selected elements always render their
@@ -407,7 +414,7 @@ export const ElementRenderer = ({ elementId, row }) => {
     // return.
     const previewState = isSelected && activeStateName !== null ? activeStateName : null;
     const element = rawElement
-        ? resolveElementAtState(rawElement, activeBreakpointId, breakpoints, previewState)
+        ? resolveElementAtState(rawElement, activeBreakpointId, breakpoints, previewState, variantKey)
         : undefined;
     // Parent resolution doesn't carry a state preview — only the
     // selected element previews its hover/active/focus styles. The
@@ -420,7 +427,7 @@ export const ElementRenderer = ({ elementId, row }) => {
         const parent = s.elements[el.parentId];
         if (!parent)
             return undefined;
-        return resolveElementAtBreakpoint(parent, s.activeBreakpointId, s.breakpoints);
+        return resolveElementAtState(parent, s.activeBreakpointId, s.breakpoints, null, variantKey);
     });
     // Slot content (an element whose parent is a component-instance) flows
     // inside the slot rather than being absolutely positioned by its page
@@ -453,7 +460,7 @@ export const ElementRenderer = ({ elementId, row }) => {
     // editing — too distracting.
     const previewAnimation = useCanvasStore((s) => s.previewAnimation?.elementId === elementId ? s.previewAnimation : null);
     const projectPath = useCanvasStore((s) => s.projectPath);
-    const isEditing = useCanvasStore((s) => s.editingElementId === elementId);
+    const isEditing = useCanvasStore((s) => s.editingElementId === elementId) && !displayOnly;
     const setEditingElement = useCanvasStore((s) => s.setEditingElement);
     const setTextSelection = useCanvasStore((s) => s.setTextSelection);
     const setElementText = useCanvasStore((s) => s.setElementText);
@@ -831,7 +838,9 @@ export const ElementRenderer = ({ elementId, row }) => {
         'data-scamp-id': classNameFor(element),
         ...(isRepeatCopy && row !== undefined
             ? { 'data-scamp-repeat-copy': row.index }
-            : { 'data-element-id': element.id }),
+            : displayOnly
+                ? {}
+                : { 'data-element-id': element.id }),
         onContextMenu: handleContextMenu,
         // Animation preview: increment the React key on each Play click
         // so React remounts the element and the CSS animation plays from
@@ -842,7 +851,7 @@ export const ElementRenderer = ({ elementId, row }) => {
             : {}),
         className: `${styles.element} ${classNameFor(element)} ${isSelected ? styles.selected : ''} ${isText && isEditing && !isComposed ? styles.textEditing : ''} ${element.visibilityMode === 'none' ? styles.hiddenNone : ''}`.trim(),
         style,
-        ...(isRepeatCopy ? {} : { ref: elementRef }),
+        ...(displayOnly ? {} : { ref: elementRef }),
     };
     // Forward tag-specific attributes from the element's attribute bag
     // to the canvas DOM so the preview reflects them (e.g. input
@@ -858,6 +867,10 @@ export const ElementRenderer = ({ elementId, row }) => {
             props[name] = value === '' ? true : value;
         }
     }
+    // The root carries the value drawn, so the injected sheet's variant rules match.
+    const drawnVariant = variantKey !== null && element.id === ROOT_ELEMENT_ID ? parseVariantKey(variantKey) : null;
+    if (drawnVariant !== null)
+        props[`data-${drawnVariant.axis}`] = drawnVariant.value;
     // Interaction side-effects prevention for tags that would otherwise
     // navigate or submit. The canvas is a design surface, not a runtime.
     if (storedTag === 'a' || storedTag === 'button') {

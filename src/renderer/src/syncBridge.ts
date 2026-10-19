@@ -19,6 +19,7 @@
 import { useCanvasStore } from '@store/canvasSlice';
 import { useHistoryStore } from '@store/historySlice';
 import { useTerminalActivityStore } from '@store/terminalActivitySlice';
+import { isVariantKeyLive } from '@lib/variantAxes';
 
 import { createQuietWindow } from './lib/quietWindow';
 import { handleAck } from './syncBridge/pendingSaves';
@@ -149,7 +150,12 @@ export const initSyncBridge = (): (() => void) => {
   // the typed `reloadElements` mutator so it doesn't toggle `isLoading`
   // or push another history entry — restoration is not an external edit.
   useHistoryStore.getState().setRestoreSnapshot((snapshot) => {
-    useCanvasStore.setState({ elements: snapshot });
+    // Undoing past a variant's creation leaves nothing to edit there.
+    const key = useCanvasStore.getState().activeVariantKey;
+    useCanvasStore.setState({
+      elements: snapshot,
+      activeVariantKey: key !== null && isVariantKeyLive(snapshot, key) ? key : null,
+    });
   });
 
   // Wire the cross-referencing handlers onto the context. Order is

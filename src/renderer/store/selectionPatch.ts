@@ -16,7 +16,7 @@ export type PatchInput = Partial<ScampElement> | ((resolved: ScampElement) => Pa
 const resolvedOf = (id: string): ScampElement | undefined => {
   const s = useCanvasStore.getState();
   const el = s.elements[id];
-  return el === undefined ? undefined : resolveElementAtState(el, s.activeBreakpointId, s.breakpoints, s.activeStateName);
+  return el === undefined ? undefined : resolveElementAtState(el, s.activeBreakpointId, s.breakpoints, s.activeStateName, s.activeVariantKey);
 };
 
 const build = (input: PatchInput, id: string): Partial<ScampElement> | null => {

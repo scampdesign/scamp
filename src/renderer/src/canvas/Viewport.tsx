@@ -10,9 +10,6 @@ import {
 import { useCanvasStore } from '@store/canvasSlice';
 import { nextZoomFromWheel } from '@lib/zoom';
 import {
-  DEFAULT_BODY_FONT_FAMILY,
-} from '@shared/agentMd';
-import {
   MAX_COMPONENT_CANVAS_DIM,
   MIN_COMPONENT_CANVAS_DIM,
 } from '@shared/types';
@@ -25,6 +22,7 @@ import { collectExpandedInstances } from '@lib/generateHtml';
 import { assemblePageCss } from '@lib/htmlExportCss';
 import { CanvasInteractionLayer } from './CanvasInteractionLayer';
 import { CanvasBoundaryOverlay } from './CanvasBoundaryOverlay';
+import { useCanvasTheme } from './useCanvasTheme';
 import styles from './Viewport.module.css';
 
 // Padding subtracted from the scroll container's inner width when
@@ -138,37 +136,7 @@ export const Viewport = ({
   const activeTool = useCanvasStore((s) => s.activeTool);
   const userZoom = useCanvasStore((s) => s.userZoom);
   const setFitScale = useCanvasStore((s) => s.setFitScale);
-  const themeTokens = useCanvasStore((s) => s.themeTokens);
-  // Resolve the body-level default font from the project's theme.css
-  // tokens. Mirrors what the preview / `next dev` would inherit from
-  // the `body { font-family: var(--font-sans) }` rule in theme.css —
-  // so the canvas and the deployed page render the same default font.
-  // Falls back to the constant when the project hasn't defined a
-  // `--font-sans` token (e.g. older projects pre-dating this default).
-  const themeFontFamily =
-    themeTokens.find((t) => t.name === '--font-sans')?.value ??
-    DEFAULT_BODY_FONT_FAMILY;
-  // Inject every project theme token as a CSS custom property on the
-  // canvas frame so `var(--…)` references inside both typed style and
-  // unmapped customProperties resolve natively (same scope rules as
-  // the preview, where `theme.css` lives in the page's `<head>`).
-  // Without this, only the typed-property path gets `resolveTokenColor`
-  // / `resolveTokenValue` substitution; raw shorthand declarations
-  // routed through `customProperties` (e.g. `border-bottom: 1px solid
-  // var(--color-border)`) silently fall back to currentColor or
-  // browser defaults because the Scamp app's `:root` doesn't carry
-  // the project tokens.
-  const themeCssVars = useMemo(() => {
-    const vars: Record<string, string> = {};
-    for (const token of themeTokens) {
-      // Skip Scamp chrome variables — only project-declared tokens
-      // (the parser only surfaces declarations from theme.css's
-      // `:root` so this filter is mostly defensive).
-      if (!token.name.startsWith('--')) continue;
-      vars[token.name] = token.value;
-    }
-    return vars;
-  }, [themeTokens]);
+  const { themeCssVars, themeFontFamily } = useCanvasTheme();
 
   const frameW = canvasWidth;
 
@@ -662,7 +630,7 @@ export const Viewport = ({
  *
  * see docs/plans/canvas-preview-parity-plan.md
  */
-const CanvasPageStylesheet = (): JSX.Element | null => {
+export const CanvasPageStylesheet = (): JSX.Element | null => {
   const elements = useCanvasStore((s) => s.elements);
   const rootElementId = useCanvasStore((s) => s.rootElementId);
   const breakpoints = useCanvasStore((s) => s.breakpoints);

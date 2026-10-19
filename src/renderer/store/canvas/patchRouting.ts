@@ -3,6 +3,7 @@ import type {
   BreakpointOverride,
   ElementStateName,
   ScampElement,
+  VariantOverride,
 } from '@lib/element';
 
 /**
@@ -19,6 +20,8 @@ export const BASE_ONLY_PATCH_FIELDS = new Set<keyof ScampElement>([
   'childIds',
   'breakpointOverrides',
   'stateOverrides',
+  'variantAxes',
+  'variantOverrides',
   'customSelectorBlocks',
   'tableStyle',
   'tag',
@@ -38,6 +41,10 @@ export const BASE_ONLY_PATCH_FIELDS = new Set<keyof ScampElement>([
  *     `stateOverrides[activeStateName]`.
  *   - Non-desktop + default state → style fields route to
  *     `breakpointOverrides[activeBreakpointId]`.
+ *   - A variant (`activeVariantKey`, desktop only) → style fields route
+ *     to `variantOverrides[key]`, or to its `states[activeStateName]`.
+ *     A variant at a non-desktop breakpoint drops the style patch, as
+ *     state × breakpoint does.
  *   - Non-desktop + non-default state → state×breakpoint matrix is
  *     out of scope in this version; the patch is dropped to avoid
  *     silently writing the wrong place. The properties panel UI
@@ -70,9 +77,53 @@ export const applyPatchWithAxisRouting = (
   el: ScampElement,
   patch: Partial<ScampElement>,
   activeBreakpointId: string,
-  activeStateName: ElementStateName | null
+  activeStateName: ElementStateName | null,
+  activeVariantKey: string | null = null
 ): ScampElement =>
-  dropKeptOffsets(routePatch(el, patch, activeBreakpointId, activeStateName), patch, activeBreakpointId, activeStateName);
+  activeVariantKey !== null
+    ? routeVariantPatch(el, patch, activeBreakpointId, activeStateName, activeVariantKey)
+    : dropKeptOffsets(routePatch(el, patch, activeBreakpointId, activeStateName), patch, activeBreakpointId, activeStateName);
+
+/** `{ ...existing, ...patch }`, with `customProperties` merged by key. */
+const mergeOverride = <T extends BreakpointOverride>(existing: T, stylePatch: BreakpointOverride): T => {
+  const mergedCustom =
+    'customProperties' in stylePatch && stylePatch.customProperties
+      ? { ...(existing.customProperties ?? {}), ...stylePatch.customProperties }
+      : existing.customProperties;
+  return { ...existing, ...stylePatch, ...(mergedCustom !== undefined ? { customProperties: mergedCustom } : {}) };
+};
+
+const splitPatch = (patch: Partial<ScampElement>): { basePatch: Partial<ScampElement>; stylePatch: BreakpointOverride } => {
+  const basePatch: Partial<ScampElement> = {};
+  const stylePatch: BreakpointOverride = {};
+  for (const key of Object.keys(patch) as Array<keyof ScampElement>) {
+    if (BASE_ONLY_PATCH_FIELDS.has(key)) {
+      assignPatchKey(basePatch, patch, key);
+    } else {
+      assignPatchKey(stylePatch, patch, key);
+    }
+  }
+  return { basePatch, stylePatch };
+};
+
+// shortcut: an offset kept verbatim (`left: 50%`) isn't dropped inside a variant, add when one shows up there.
+const routeVariantPatch = (
+  el: ScampElement,
+  patch: Partial<ScampElement>,
+  activeBreakpointId: string,
+  activeStateName: ElementStateName | null,
+  key: string
+): ScampElement => {
+  const { basePatch, stylePatch } = splitPatch(patch);
+  const mergedBase = Object.keys(basePatch).length > 0 ? { ...el, ...basePatch } : el;
+  if (Object.keys(stylePatch).length === 0 || activeBreakpointId !== 'desktop') return mergedBase;
+  const existing: VariantOverride = mergedBase.variantOverrides?.[key] ?? {};
+  const next: VariantOverride =
+    activeStateName === null
+      ? mergeOverride(existing, stylePatch)
+      : { ...existing, states: { ...existing.states, [activeStateName]: mergeOverride(existing.states?.[activeStateName] ?? {}, stylePatch) } };
+  return { ...mergedBase, variantOverrides: { ...mergedBase.variantOverrides, [key]: next } };
+};
 
 const without = (
   custom: Record<string, string> | undefined,
@@ -125,15 +176,7 @@ const routePatch = (
 ): ScampElement => {
   // Split the patch into base (always-top-level) and style (goes to
   // override when an axis is active).
-  const basePatch: Partial<ScampElement> = {};
-  const stylePatch: BreakpointOverride = {};
-  for (const key of Object.keys(patch) as Array<keyof ScampElement>) {
-    if (BASE_ONLY_PATCH_FIELDS.has(key)) {
-      assignPatchKey(basePatch, patch, key);
-    } else {
-      assignPatchKey(stylePatch, patch, key);
-    }
-  }
+  const { basePatch, stylePatch } = splitPatch(patch);
 
   const mergedBase =
     Object.keys(basePatch).length > 0 ? { ...el, ...basePatch } : el;
@@ -149,20 +192,7 @@ const routePatch = (
 
   // Desktop + non-default state — route to stateOverrides.
   if (activeBreakpointId === 'desktop' && activeStateName !== null) {
-    const existingOverride =
-      mergedBase.stateOverrides?.[activeStateName] ?? {};
-    const mergedCustom =
-      'customProperties' in stylePatch && stylePatch.customProperties
-        ? {
-            ...(existingOverride.customProperties ?? {}),
-            ...stylePatch.customProperties,
-          }
-        : existingOverride.customProperties;
-    const nextOverride: BreakpointOverride = {
-      ...existingOverride,
-      ...stylePatch,
-      ...(mergedCustom !== undefined ? { customProperties: mergedCustom } : {}),
-    };
+    const nextOverride = mergeOverride(mergedBase.stateOverrides?.[activeStateName] ?? {}, stylePatch);
     return {
       ...mergedBase,
       stateOverrides: {
@@ -179,19 +209,7 @@ const routePatch = (
   if (activeStateName !== null) return mergedBase;
 
   // Non-desktop + default state — route to breakpointOverrides.
-  const existingOverride = mergedBase.breakpointOverrides?.[activeBreakpointId] ?? {};
-  const mergedCustom =
-    'customProperties' in stylePatch && stylePatch.customProperties
-      ? {
-          ...(existingOverride.customProperties ?? {}),
-          ...stylePatch.customProperties,
-        }
-      : existingOverride.customProperties;
-  const nextOverride: BreakpointOverride = {
-    ...existingOverride,
-    ...stylePatch,
-    ...(mergedCustom !== undefined ? { customProperties: mergedCustom } : {}),
-  };
+  const nextOverride = mergeOverride(mergedBase.breakpointOverrides?.[activeBreakpointId] ?? {}, stylePatch);
   return {
     ...mergedBase,
     breakpointOverrides: {

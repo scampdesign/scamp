@@ -20,6 +20,7 @@ import { useHistoryStore, type HistoryCommitInput } from '../../historySlice';
 import { PRESETS_BY_NAME, isPresetName } from '@lib/animationPresets';
 import { classNameFor } from '@lib/generateCode';
 import { resolveElementAtState } from '@lib/stateCascade';
+import { isVariantKeyLive } from '@lib/variantAxes';
 import { DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from '@lib/defaults';
 import { DEFAULT_BODY_FONT_FAMILY } from '@shared/agentMd';
 import {
@@ -183,6 +184,7 @@ export const createDocumentSlice: StateCreator<
       // bug in itself. see docs/archive/2026-08-11-tree-collapse-plan.md
       collapsedIds:
         state.activePage?.tsxPath === page.tsxPath ? state.collapsedIds : {},
+      activeVariantKey: null,
     }));
     useHistoryStore.getState().setActivePageId(page.tsxPath);
     // Seed the history bucket so Cmd+Z can return to this state.
@@ -219,6 +221,12 @@ export const createDocumentSlice: StateCreator<
         state.activeComponent?.tsxPath === component.tsxPath
           ? state.collapsedIds
           : {},
+      activeVariantKey:
+        state.activeComponent?.tsxPath === component.tsxPath &&
+        state.activeVariantKey !== null &&
+        isVariantKeyLive(elements, state.activeVariantKey)
+          ? state.activeVariantKey
+          : null,
     }));
     // Components get their own per-target history bucket keyed by
     // their tsxPath — same shape as pages so the history slice
@@ -243,6 +251,11 @@ export const createDocumentSlice: StateCreator<
       // Drop any selection that no longer exists in the new tree (the file
       // could have been edited externally to remove an element).
       selectedElementIds: state.selectedElementIds.filter((id) => id in elements),
+      // An external edit can remove the value being edited.
+      activeVariantKey:
+        state.activeVariantKey !== null && isVariantKeyLive(elements, state.activeVariantKey)
+          ? state.activeVariantKey
+          : null,
       isLoading: true,
       lastLoadKind: 'external',
       // An external edit replacing the canvas voids any snapshot-preview

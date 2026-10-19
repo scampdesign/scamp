@@ -238,7 +238,8 @@ export const createUiSlice: StateCreator<
                 heightCustom: undefined,
               },
               s.activeBreakpointId,
-              null
+              null,
+              s.activeVariantKey
             ),
           }
         : s.elements;

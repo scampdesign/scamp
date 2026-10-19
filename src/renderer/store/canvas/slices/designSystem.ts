@@ -75,6 +75,7 @@ export const createDesignSystemSlice: StateCreator<
   CanvasState,
   | 'activeBreakpointId'
   | 'activeStateName'
+  | 'activeVariantKey'
   | 'breakpoints'
   | 'themeTokens'
   | 'themeBaseTokens'
@@ -85,6 +86,7 @@ export const createDesignSystemSlice: StateCreator<
   | 'designProse'
   | 'setActiveBreakpoint'
   | 'setActiveState'
+  | 'setActiveVariant'
   | 'setBreakpoints'
   | 'setThemeTokens'
   | 'setThemeData'
@@ -95,6 +97,7 @@ export const createDesignSystemSlice: StateCreator<
 > = (set) => ({
   activeBreakpointId: 'desktop',
   activeStateName: null,
+  activeVariantKey: null,
   breakpoints: [...DEFAULT_BREAKPOINTS],
   themeTokens: [],
   themeBaseTokens: [],
@@ -106,6 +109,8 @@ export const createDesignSystemSlice: StateCreator<
   setActiveBreakpoint: (id) => set({ activeBreakpointId: id }),
 
   setActiveState: (activeStateName) => set({ activeStateName }),
+
+  setActiveVariant: (activeVariantKey) => set({ activeVariantKey }),
 
   setBreakpoints: (breakpoints) => set({ breakpoints }),
 
