@@ -5,7 +5,9 @@ with the answers recorded at the end. Phase 0 is done: scampjs 0.3.2
 fixes the `_scamp` reader and adds contract §1.3.1 with a Button fixture
 (`contract-2/components/Button`). Phase 1 is done (see "What phase 1
 built"). Phases 2 to 5 are built and waiting on a manual test (see
-each "What phase N built"). Branch
+each "What phase N built"). Phases 6 and 7 were
+**proposed** (2026-10-19); phase 6 is decided and in progress. See "Phase 6"
+and "Phase 7" below. Branch
 `plan/component-variants`.
 
 ## What we want
@@ -464,6 +466,8 @@ byte-for-byte target for phase 1's drift test:
 | 3. Use variants — **built, manual test pending** | The instance **Variant** select, instance rendering, checks, and the agent's tools. |
 | 4. Starter components and states — **built, manual test pending** | Demo **Button** (`variant`, `size`), **Modal** and **Menu** (`state`) components, and a walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. |
 | 5. React import — **built, manual test pending** | `style-varies` copies become variants. |
+| 6. The variant set — **decided, in progress** | The component editor shows every variant as a frame in a labelled grid, Figma's component set. Click any frame to edit it in place; a frame that combines two axes edits that combination. Variant properties move to a panel section. |
+| 7. Interactive variants — **proposed** | An instance changes to another variant while hovered, while pressed, while focused, or on click. Hover, press, and focus are CSS; click needs a small framework runtime. |
 
 Native popovers were planned as a phase and are dropped for now (decision 4).
 
@@ -510,6 +514,294 @@ Plus: the modal opens and closes in the preview through a route's
 - **The React import** has to name values well. A captured
   `variant="outline"` is easy; unnamed differences get `variant-2` and
   a note.
+
+## Phase 6: the variant set
+
+**The story.** Editing variants should feel like Figma's component sets:
+every variant is on the canvas at once, in a grid you can read by
+property, and you edit any of them by clicking it. Today one value is
+live at the top and the others are a read-only list below it that
+reorders as you switch.
+
+### How Figma does it
+
+From Figma's help ([Create and use variants](https://help.figma.com/hc/en-us/articles/360056440594-Create-and-use-variants),
+[Create and manage component properties](https://help.figma.com/hc/en-us/articles/8883756012823-Create-and-manage-component-properties)):
+
+- **The set.** Variants sit inside a component set drawn with "a
+  dashed-purple stroke and no fill". You arrange them in rows, columns,
+  or a grid, and the variant in the top-left corner is the default.
+- **Every variant is a combination.** Each one has a value for every
+  property (`Size=Small, Type=Outline`). Two variants with the same
+  combination is a conflict Figma flags.
+- **The Properties section.** With the set selected, the right sidebar
+  lists its variant properties: **Add property**, double-click to
+  rename, manage and reorder values.
+- **One variant selected.** The sidebar shows "fields underneath the
+  component name to configure the properties and values": dropdowns
+  that set this variant's combination.
+- **Instances** pick a combination with the same dropdowns. Phase 3
+  built that already.
+
+### What changes in Scamp
+
+**1. The set on the artboard.**
+- The component editor draws one frame per variant inside a set: a
+  dashed accent border, the component's name above it, and each frame's
+  values above the frame (`variant: outline · size: small`).
+- **A grid by property.** With one axis, the values in a row. With two,
+  the first axis down the rows and the second across the columns, so a
+  row reads as one look in every size. With three or more, one grid per
+  value of the third axis, stacked, each with its value as a heading.
+- **Fixed places.** A frame stays where it is when you edit it. Order
+  follows each axis's value order, and the default is the top-left
+  frame, as in Figma.
+- **Each frame hugs its content** (decision 1 below). A root that fills
+  its container takes the component's artboard width.
+
+**2. Edit any frame in place.**
+- Clicking an element in any frame makes that frame the live one and
+  selects the element, in one gesture. This is the workspace plan's
+  decision 1 ("one live frame; the rest are read-only renders") within
+  one component. It's cheaper here: every frame is the same element
+  tree, so switching is `setActiveVariant` plus a selection, with no
+  file load.
+- Clicking a frame's label selects the frame itself. The panel then
+  shows its values (see 4).
+
+**3. Combinations.** This is the one real model change.
+- A frame's **key** is its non-default values. That decides where an
+  edit in it goes:
+
+  | Frame | Key | An edit writes |
+  |---|---|---|
+  | `default · medium` | none | the elements' own rules |
+  | `outline · medium` | `variant=outline` | `.root[data-variant="outline"] …`, as today |
+  | `outline · small` | `variant=outline` and `size=small` | `.root[data-variant="outline"][data-size="small"] …` |
+
+- So the frames along the top row and left column edit one value for
+  every combination, and only a frame inside the grid writes a rule
+  just for that combination. CSS stays as small as what you designed,
+  and nothing has to ask which axis you meant.
+- **The model:** `variantOverrides` keys may name several values,
+  sorted by axis order: `variant=outline&size=small`.
+- **The cascade:** single-value rules first, then combinations, which
+  outrank them in CSS (one more attribute). The canvas layers them in
+  that order, for instances too.
+- **The contract:** §1.3.1 says a rule that combines two axes "is
+  outside this grammar". It joins the grammar: the root part may carry
+  one attribute per axis, in axis order. Like phase 0, that's a scampjs
+  release with the contract text and a fixture (a Button combination
+  rule), and no framework code.
+- **Figma's conflicts can't happen.** Frames are derived from the axes,
+  so no two share a combination.
+
+**4. Variant properties in the panel.** The variant bar above the
+artboard (phase 2) is replaced by a **Variants** section in the
+properties panel.
+- **With the root or nothing selected** (Figma's set selected): each
+  axis with its values, **+ Add property**, double-click to rename,
+  drag to reorder values (which reorders the grid and the CSS),
+  **Remove**, and **Make default** on a value.
+- **With a frame selected** (Figma's one variant): a list per axis with
+  that frame's values. Changing one selects the frame with that
+  combination, since frames in Scamp are combinations, not
+  free-standing nodes.
+- **Make default** is new. Today the default can't change because the
+  base rules are the default's look. Making `outline` the default moves
+  its overrides into the base rules, and gives the old default an
+  override holding the values it replaced. Pure, tested like the other
+  axis edits in `lib/variantAxes.ts`.
+
+**5. What stays.** Hover and the other element states, variants at
+desktop only, and the instance's lists (phase 3).
+
+### What it builds on
+
+- **The workspace plan's phase 1, the Viewport split.** The live frame
+  has to sit anywhere in a grid, not only at the top-left of the
+  artboard, and `toFrame` and `measureElementInFrame` have to measure
+  against the frame's container. That's exactly the split. Build it
+  first, as its own change: the existing canvas end-to-end specs guard
+  it.
+- **The read-only frames** are `VariantFrames` from phase 2, laid out
+  as a grid, and the workspace's `WorkspaceFrame` later.
+
+### Tests
+
+- **Unit:** combination keys (parse, generate, round trip, the
+  cascade order, instances layering combinations); "Make default"
+  (moves overrides into the base rules and back, byte-identical after a
+  round trip); the grid layout as a pure function (axes in, rows,
+  columns and blocks out).
+- **Contract:** the new Button fixture through the drift tests, in
+  scampjs and in Scamp.
+- **End to end:** click a label in a frame, edit it, and the right rule
+  is written for a top-row, a left-column, and an inner frame; Make
+  default; reorder values.
+
+### Decisions for phase 6
+
+Answered 2026-10-19.
+
+1. **Each frame hugs its content,** as in Figma: you think about the
+   component, not its frame. A root that fills its container (width
+   `100%`) has nothing to hug across, so it takes the component's
+   artboard width; its height still hugs.
+2. **Every combination is shown,** up to 36. Adding a value or an axis
+   that would make more than 36 is refused, with a message saying so.
+3. **The variant bar is removed** when the panel section lands.
+
+## Phase 7: interactive variants (proposed)
+
+**The story.** An instance changes to another variant by itself: a
+button shows its `hover` look while the pointer is on it and its
+`pressed` look while pressed; a menu opens when its trigger is clicked.
+This is Figma's interactive components
+([Create interactive components with variants](https://help.figma.com/hc/en-us/articles/360061175334-Create-interactive-components-with-variants)):
+a **Change to** interaction between two variants of the same set, with a
+trigger. Figma's own button tutorial uses **While hovering**, **Mouse
+down**, **Mouse leave**, and **Mouse up**
+([Design an interactive button component](https://help.figma.com/hc/en-us/articles/20953528101783-Design-an-interactive-button-component)).
+Every instance gets the component's interactions.
+
+### How it differs from element states
+
+Element states (`:hover` on one element) already exist. An interaction
+changes the **whole component** to another variant: the label, the
+icon, and the background change together when you hover anywhere on
+the button. And it reuses a look you designed as a variant, rather than
+restyling each element in a state.
+
+### The model
+
+On the component's root, beside `variantAxes`:
+
+```ts
+variantInteractions?: Array<{
+  axis: string;          // 'state'
+  from: string | null;   // 'default', or null for any value
+  trigger: 'hover' | 'press' | 'focus' | 'click';
+  to: string;            // 'hover'
+  /** Click only: the element that's clicked. The root when absent. */
+  target?: string;
+}>;
+```
+
+### Hover, press, and focus: CSS, with no JavaScript
+
+Each rule for the `to` value gains a second selector: the `from` value
+with the trigger's pseudo-class on the root.
+
+```css
+.root[data-state="hover"] .label_c1a1,
+.root[data-state="default"]:hover .label_c1a1 {
+  color: #1d4ed8;
+}
+```
+
+| Trigger | Figma | CSS on the root |
+|---|---|---|
+| hover | While hovering | `:hover` |
+| press | While pressing / Mouse down | `:active` |
+| focus | (keyboard) | `:focus-visible`, or `:focus-within` when a child takes focus |
+
+- It works in every project format, static pages included, because
+  it's only CSS. A selector list is plain CSS, so this is a contract
+  addition (§1.3.2, "Variant interactions"), released with a fixture
+  like phase 0.
+- **Press wins over hover** because both match while pressing, and the
+  later rule wins a tie. Scamp writes interaction rules in value order,
+  so `pressed` must come after `hover`; a check says so when it
+  doesn't.
+- **Parse:** a rule whose extra selectors are exactly the interactions
+  for its value reads back into `variantInteractions`; anything else
+  stays verbatim, as today.
+- **Transitions** you set on the elements animate the change, as they
+  do for element states.
+
+### Click: a small runtime in the framework
+
+Hover is a CSS state; a click that opens a menu has to be remembered.
+Views and components have no expressions, so no state (contract §1.3:
+"anything a view cannot say with these is computed in the route file").
+CSS can't remember a click, so today only a route can (phase 4's
+`useState` walkthrough).
+
+**Proposed:**
+- The clicked element carries the interaction as a literal attribute,
+  which the contract allows today:
+  `data-scamp-click="state:closed=open,open=closed"`.
+- scampjs adds a tiny delegated click handler (about 20 lines, no
+  framework code in the component). On a click inside an element with
+  that attribute, it sets `data-state` on the component's root to the
+  next value, and keeps `aria-expanded` in step when the clicked element
+  has it.
+- **The build ships it** to any route whose views use a component with
+  a click interaction, static routes included, the same way event props
+  ship JavaScript today (`shipsJavaScript` in `build/plan.ts`).
+- **The route still wins.** A route that passes `state` sets the value
+  whenever it renders; the runtime changes it in between. Using both on
+  one instance is a check note.
+
+This is a framework change (contract §1.3.2, the runtime, and a build
+test), released before the Scamp side, like phase 0.
+
+### In the editor
+
+- **Add an interaction:** in the Variants panel section (phase 6), on a
+  frame: **+ Interaction**, then the trigger and the value to change to.
+  For click, the element it's on is the selected element, or the root.
+- **See it:** the frames show an arrow from each `from` frame to its
+  `to` frame, labelled with the trigger, like Figma's prototype
+  connections. If arrows are too much for this phase, a list under each
+  frame's values does the job first.
+- **Try it:** a **Preview interactions** toggle in the component editor
+  makes the live frame react to the pointer: hover, press, and click
+  swap the drawn value. The canvas draws with inline styles, so CSS
+  `:hover` can't do it there; the renderer swaps `activeVariantKey`
+  instead. The Preview window needs nothing: it's a real browser.
+- **Instances on a page** get the same toggle on the page canvas,
+  through the instance renderer's picked keys (phase 3).
+
+### Agents and checks
+
+- `agent.md`: the selector list form and the click attribute.
+  `scamp_list_components` lists each component's interactions.
+- **Checks:** an interaction to a value the axis lacks; `pressed`
+  written before `hover`; a click interaction on an element that can't
+  take focus (it needs to be a `button`, or get `role` and
+  `tabindex`); a click interaction in a project format with no runtime
+  (see the open questions).
+
+### Tests
+
+- **Unit:** generating and parsing the selector lists, each trigger,
+  `from` any, the press-after-hover order, verbatim fallbacks, and the
+  click attribute round trip.
+- **Framework:** the runtime toggles the root's attribute and
+  `aria-expanded`, and a static route with a click interaction ships
+  the script and one without doesn't.
+- **End to end:** add a hover interaction to the Button starter; the
+  Preview window shows the hover look while hovered; a Menu instance
+  opens on click in a static page.
+
+### Open questions for phase 7
+
+1. **Click in Next.js projects.** The runtime lives in scampjs. A
+   Next.js project has no place for it today. Options: Scamp writes a
+   small client component it owns into the app layout, or click
+   interactions are a Scamp framework feature and Next.js projects use
+   the route `useState` pattern from phase 4. I'd start with the
+   second.
+2. **Close on Escape and on a click outside**, as a menu should. That's
+   more runtime and more model (a trigger without a target). In this
+   phase, or after?
+3. **Which comes first, 6 or 7?** You listed interactions first. The
+   CSS half of phase 7 (hover, press, focus, and the panel list) can
+   ship before phase 6. The arrows between frames and the preview
+   toggle read best on phase 6's grid. I'd build 6 first, then 7; the
+   alternative is 7's CSS half first, with the arrows waiting for 6.
 
 ## What phase 1 built
 
