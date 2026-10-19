@@ -140,7 +140,7 @@ export const lintView = (input) => {
     const findings = [];
     /** The tag an element puts on the page; an instance's is its component's root. */
     const tagOf = (el) => el?.type === 'component-instance' && el.componentName !== undefined
-        ? (input.componentRootTags?.[el.componentName] ?? el.tag)
+        ? (input.componentRoots?.[el.componentName]?.tag ?? el.tag)
         : el?.tag;
     const root = elements[rootId];
     const samples = root?.samples ?? {};
@@ -229,6 +229,38 @@ export const lintView = (input) => {
                 message: `\`${attr}={${expr}}\` has no sample, so it renders empty on the canvas.`,
                 hint: `Give \`${name}\` a default in the destructure — the default IS the sample the canvas draws.`,
             });
+        }
+        // A value the component doesn't declare fails the props type check
+        // and matches no rule. CONTRACT.md §1.3.1
+        if (el.type === 'component-instance' && el.componentName !== undefined) {
+            for (const axis of input.componentRoots?.[el.componentName]?.variantAxes ?? []) {
+                const value = el.propOverrides?.[axis.prop];
+                if (value === undefined || axis.values.includes(value))
+                    continue;
+                findings.push({
+                    ...at,
+                    kind: 'unknown-variant-value',
+                    message: `\`${axis.prop}="${value}"\` isn't one of ${el.componentName}'s ${axis.prop} values, so it fails the type check and draws as \`${axis.defaultValue}\`.`,
+                    hint: `Use one of ${axis.values.map((v) => `\`${v}\``).join(', ')}, or add \`${value}\` to the component.`,
+                });
+            }
+        }
+        // A rule for a value the axis doesn't declare is kept verbatim, and
+        // no instance can reach it.
+        if (id === rootId) {
+            for (const block of el.customSelectorBlocks ?? []) {
+                for (const axis of el.variantAxes ?? []) {
+                    const value = new RegExp(`\\[data-${axis.prop}="([^"]*)"\\]`).exec(block.selector)?.[1];
+                    if (value === undefined || axis.values.includes(value))
+                        continue;
+                    findings.push({
+                        ...at,
+                        kind: 'undeclared-variant-rule',
+                        message: `\`${block.selector}\` styles a ${axis.prop} value the props type doesn't declare, so no instance can use it.`,
+                        hint: `Add \`"${value}"\` to the \`${axis.prop}\` union, or remove the rule.`,
+                    });
+                }
+            }
         }
         // Declarations that render but leave the panel controls blank.
         for (const [prop, value] of Object.entries(el.customProperties ?? {})) {

@@ -17,8 +17,8 @@ import { CANVAS_SKIP_ATTRS_BY_TAG, canvasRenderTag, elementToStyle, } from '@lib
 import { DEFAULT_ROOT_STYLES } from '@lib/defaults';
 import { instanceStretchStyle } from '@lib/instanceStretch';
 import { resolveElementAtBreakpoint } from '@lib/breakpointCascade';
-import { parseVariantKey } from '@lib/variantAxes';
-import { resolveElementAtState } from '@lib/stateCascade';
+import { instanceVariantKeys, parseVariantKey } from '@lib/variantAxes';
+import { layerVariants, resolveElementAtState } from '@lib/stateCascade';
 import { formatAnimationShorthand } from '@lib/parsers';
 import { effectiveDisplay } from '@lib/effectiveDisplay';
 import { sanitizeSvgInner } from '../lib/svg';
@@ -484,15 +484,28 @@ export const ElementRenderer = ({ elementId, row }) => {
     // `@media` rule — the canvas showed the desktop size at Mobile while the
     // preview filled. Same cascade the page's own elements go through.
     // see docs/notes/components-data-model.md — "Instance wrapper sizing"
+    // Then the variant values the instance picks. see docs/plans/component-variants-plan.md
+    const instanceProps = rawElement?.propOverrides;
     const resolvedComponentElements = useMemo(() => {
         if (!componentTreeForInstance)
             return undefined;
+        const axes = componentTreeForInstance.elements[componentTreeForInstance.rootId]?.variantAxes ?? [];
+        const keys = instanceVariantKeys(axes, instanceProps);
         const out = {};
         for (const [id, el] of Object.entries(componentTreeForInstance.elements)) {
-            out[id] = resolveElementAtBreakpoint(el, activeBreakpointId, breakpoints);
+            out[id] = layerVariants(resolveElementAtBreakpoint(el, activeBreakpointId, breakpoints), keys);
+        }
+        // The root carries each picked value, so the injected sheet's rules match too.
+        const root = out[componentTreeForInstance.rootId];
+        if (root !== undefined && axes.length > 0) {
+            const picked = Object.fromEntries(axes.map((axis) => {
+                const value = instanceProps?.[axis.prop];
+                return [`data-${axis.prop}`, value !== undefined && axis.values.includes(value) ? value : axis.defaultValue];
+            }));
+            out[componentTreeForInstance.rootId] = { ...root, attributes: { ...root.attributes, ...picked } };
         }
         return out;
-    }, [componentTreeForInstance, activeBreakpointId, breakpoints]);
+    }, [componentTreeForInstance, activeBreakpointId, breakpoints, instanceProps]);
     const requestComponentNavigation = useCanvasStore((s) => s.requestComponentNavigation);
     // Phase 6: per-instance inline editing. The pair is non-null when
     // a prop-text inside SOME instance is in contentEditable mode.

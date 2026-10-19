@@ -24,7 +24,7 @@ export const ElementSection = ({ elementId }) => {
     // takes the component's name as its title. This is where
     // instance-level component controls will live as they're built.
     if (element.type === 'component-instance') {
-        return (_jsx(Section, { title: element.componentName ?? 'Unknown component', collapsible: true, defaultOpen: true, children: _jsx(Row, { label: "Instance", children: _jsx("code", { className: styles.instanceId, children: element.instanceId ?? '—' }) }) }));
+        return (_jsxs(Section, { title: element.componentName ?? 'Unknown component', collapsible: true, defaultOpen: true, children: [_jsx(Row, { label: "Instance", children: _jsx("code", { className: styles.instanceId, children: element.instanceId ?? '—' }) }), _jsx(InstanceVariantFields, { element: element })] }));
     }
     const baseTagOptions = TAG_OPTIONS[element.type];
     const currentTag = element.tag ?? DEFAULT_TAG[element.type];
@@ -45,6 +45,30 @@ export const ElementSection = ({ elementId }) => {
         });
     };
     return (_jsxs(Section, { title: "Element", collapsible: true, defaultOpen: true, children: [_jsx(Row, { label: "Tag", children: _jsx(EnumSelect, { value: currentTag, options: tagOptions, onChange: handleTagChange, title: "HTML tag" }) }), _jsx(LinkField, { elementId: elementId }), currentTag === 'select' ? (_jsx(SelectOptionsEditor, { elementId: elementId, element: element })) : currentTag === 'svg' ? (_jsx(SvgSourceEditor, { elementId: elementId, element: element })) : (_jsx(AttributeFields, { elementId: elementId, attributes: element.attributes ?? {}, specs: TAG_ATTRIBUTES[currentTag] ?? [] }))] }));
+};
+const EMPTY_AXES = [];
+/**
+ * One select per variant axis of the instance's component. The default
+ * clears the prop, so the file only names values that differ.
+ * see docs/plans/component-variants-plan.md
+ */
+const InstanceVariantFields = ({ element }) => {
+    const axes = useCanvasStore((s) => {
+        const tree = element.componentName === undefined ? undefined : s.componentTrees[element.componentName];
+        return tree?.elements[tree.rootId]?.variantAxes ?? EMPTY_AXES;
+    });
+    const setPropOverride = useCanvasStore((s) => s.setPropOverride);
+    const clearPropOverride = useCanvasStore((s) => s.clearPropOverride);
+    if (axes.length === 0)
+        return null;
+    return (_jsx(_Fragment, { children: axes.map((axis) => {
+            const value = element.propOverrides?.[axis.prop] ?? axis.defaultValue;
+            // A value the component lacks still shows, so the select can say so.
+            const values = axis.values.includes(value) ? axis.values : [value, ...axis.values];
+            return (_jsx(Row, { label: axis.prop, children: _jsx(EnumSelect, { value: value, options: values.map((v) => ({ value: v, label: v })), onChange: (next) => next === axis.defaultValue
+                        ? clearPropOverride(element.id, axis.prop)
+                        : setPropOverride(element.id, axis.prop, next), title: `${element.componentName ?? 'Component'} ${axis.prop}` }) }, axis.prop));
+        }) }));
 };
 const AttributeFields = ({ elementId, attributes, specs, }) => {
     const patchElement = useCanvasStore((s) => s.patchElement);

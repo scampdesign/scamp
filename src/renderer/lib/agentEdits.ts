@@ -13,7 +13,8 @@ import { DESKTOP_BREAKPOINT_ID, type Breakpoint, type ThemeToken } from '@shared
 import { validateComponentName } from '@shared/componentName';
 import { patchClassBlock } from '@shared/patchClass';
 
-import { ROOT_ELEMENT_ID, type ScampElement } from './element';
+import { ROOT_ELEMENT_ID, variantKey, type ScampElement } from './element';
+import { parseVariantKey } from './variantAxes';
 import {
   generateElementId,
   groupSiblings,
@@ -90,10 +91,10 @@ export const parseDeclarationList = (css: string): Declaration[] | string => {
 const formatDeclaration = (d: Declaration): string =>
   `${d.prop}: ${d.value}${d.important ? ' !important' : ''};`;
 
-/** The class rule's declarations as the stylesheet has them. */
+/** A rule's declarations as the stylesheet has them: `.card_a1b2`, or a variant's selector. */
 const ruleDeclarations = (
   css: string,
-  className: string,
+  selector: string,
   maxWidth: number | null
 ): Declaration[] => {
   const root = postcss.parse(css);
@@ -106,7 +107,7 @@ const ruleDeclarations = (
     }
   };
   for (const node of root.nodes) {
-    if (maxWidth === null && node.type === 'rule' && node.selector.trim() === `.${className}`) read(node);
+    if (maxWidth === null && node.type === 'rule' && node.selector.trim() === selector) read(node);
     if (
       maxWidth !== null &&
       node.type === 'atrule' &&
@@ -114,11 +115,50 @@ const ruleDeclarations = (
       node.params.replace(/\s+/g, '') === `(max-width:${maxWidth}px)`
     ) {
       for (const inner of node.nodes ?? []) {
-        if (inner.type === 'rule' && inner.selector.trim() === `.${className}`) read(inner);
+        if (inner.type === 'rule' && inner.selector.trim() === selector) read(inner);
       }
     }
   }
   return out;
+};
+
+/** Replace a top-level rule's body, adding the rule when it's missing and dropping it when empty. */
+const replaceRule = (css: string, selector: string, body: string): string => {
+  const root = postcss.parse(css);
+  const existing = root.nodes.find((n): n is postcss.Rule => n.type === 'rule' && n.selector.trim() === selector);
+  const fresh = postcss.parse(`${selector} {\n${body}\n}`).first;
+  if (existing !== undefined) {
+    if (body.trim() === '' || fresh === undefined) existing.remove();
+    else existing.replaceWith(fresh);
+  } else if (body.trim() !== '' && fresh !== undefined) {
+    root.append(fresh);
+  }
+  return root.toString();
+};
+
+/**
+ * A component variant value by `axis=value` or a bare value: null for
+ * none, or why it can't be used. CONTRACT.md §1.3.1
+ */
+const resolveVariant = (ctx: AgentEditContext, ref: unknown): string | null | { error: string } => {
+  if (ref === undefined || ref === null || ref === '') return null;
+  const axes = ctx.elements[ctx.rootId]?.variantAxes ?? [];
+  if (axes.length === 0) return { error: 'This view has no variants. Only a component with a variant axis does.' };
+  const wanted = String(ref).trim();
+  const parsed = parseVariantKey(wanted);
+  const matches = axes.flatMap((axis) =>
+    axis.values
+      .filter((value) => (parsed === null ? value === wanted : axis.prop === parsed.axis && value === parsed.value))
+      .map((value) => ({ axis, value }))
+  );
+  const all = axes.map((a) => `${a.prop}: ${a.values.join(', ')}`).join('; ');
+  const [match, second] = matches;
+  if (match === undefined) return { error: `No variant value "${wanted}". This component has ${all}.` };
+  if (second !== undefined) return { error: `"${wanted}" is a value of more than one axis. Name it as axis=value.` };
+  if (match.value === match.axis.defaultValue) {
+    return { error: `${match.value} is the default ${match.axis.prop}: its styles are the element's own rule. Omit "variant".` };
+  }
+  return variantKey(match.axis.prop, match.value);
 };
 
 /** A breakpoint by id or label; null for desktop, the base styles. */
@@ -169,7 +209,7 @@ const withIdentity = (parsed: ScampElement, original: ScampElement): ScampElemen
  */
 export const setStyles = (
   ctx: AgentEditContext,
-  args: { element: unknown; set?: unknown; remove?: unknown; breakpoint?: unknown }
+  args: { element: unknown; set?: unknown; remove?: unknown; breakpoint?: unknown; variant?: unknown }
 ): AgentEditResult => {
   const el = resolveElement(ctx, args.element);
   if (el === null) return fail(notFound(args.element));
@@ -189,16 +229,25 @@ export const setStyles = (
     const known = ctx.breakpoints.map((b) => b.label).join(', ');
     return fail(`No breakpoint "${String(args.breakpoint)}". This project has: ${known}.`);
   }
+  const variant = resolveVariant(ctx, args.variant);
+  if (variant !== null && typeof variant !== 'string') return fail(variant.error);
+  if (variant !== null && breakpoint !== null) return fail('A variant is styled at desktop only. Omit "breakpoint".');
   const maxWidth = breakpoint === null ? null : breakpoint.width;
   const className = classNameFor(el);
+  const picked = variant === null ? null : parseVariantKey(variant);
+  const selector =
+    picked === null
+      ? `.${className}`
+      : `.root[data-${picked.axis}="${picked.value}"]${el.id === ctx.rootId ? '' : ` .${className}`}`;
 
   let parsedElements: Record<string, ScampElement>;
   try {
     parsedElements = roundTrip(ctx, ctx.elements, (code) => {
-      const current = ruleDeclarations(code.css, className, maxWidth);
+      const current = ruleDeclarations(code.css, selector, maxWidth);
       const replaced = new Set(additions.map((d) => d.prop));
       const kept = current.filter((d) => !remove.includes(d.prop) && !replaced.has(d.prop));
       const body = [...kept, ...additions].map(formatDeclaration).join('\n');
+      if (variant !== null) return replaceRule(code.css, selector, body);
       return patchClassBlock(code.css, className, body, maxWidth === null ? undefined : { maxWidth });
     });
   } catch (err) {
@@ -210,9 +259,11 @@ export const setStyles = (
 
   // What rendered but didn't become a typed, panel-editable value.
   const custom =
-    breakpoint === null
-      ? next.customProperties
-      : (next.breakpointOverrides?.[breakpoint.id]?.customProperties ?? {});
+    variant !== null
+      ? (next.variantOverrides?.[variant]?.customProperties ?? {})
+      : breakpoint === null
+        ? next.customProperties
+        : (next.breakpointOverrides?.[breakpoint.id]?.customProperties ?? {});
   const untyped = additions.filter((d) => d.prop in custom).map((d) => d.prop);
   const notes =
     untyped.length > 0
@@ -226,7 +277,7 @@ export const setStyles = (
     ...additions.map(formatDeclaration),
     ...remove.map((p) => `removed ${p}`),
   ].join(' ');
-  const where = breakpoint === null ? '' : ` at ${breakpoint.label}`;
+  const where = picked !== null ? ` in ${picked.axis} ${picked.value}` : breakpoint === null ? '' : ` at ${breakpoint.label}`;
   return {
     ok: true,
     elements: { ...ctx.elements, [el.id]: next },

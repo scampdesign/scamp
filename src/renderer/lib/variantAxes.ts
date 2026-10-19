@@ -40,6 +40,21 @@ export const isVariantKeyLive = (elements: Elements, key: string): boolean => {
   return axis !== undefined && axis.values.includes(parsed.value) && axis.defaultValue !== parsed.value;
 };
 
+/**
+ * The keys an instance picks: each axis's value from its props, in axis
+ * order. The default, and a value the axis lacks, pick nothing.
+ */
+export const instanceVariantKeys = (
+  axes: ReadonlyArray<VariantAxis>,
+  propOverrides: Readonly<Record<string, string>> | undefined
+): string[] =>
+  axes.flatMap((axis) => {
+    const value = propOverrides?.[axis.prop];
+    return value !== undefined && value !== axis.defaultValue && axis.values.includes(value)
+      ? [variantKey(axis.prop, value)]
+      : [];
+  });
+
 /** Why `name` can't be a new value on `axis`, or null when it can. */
 export const variantValueError = (axis: VariantAxis, name: string, renaming: string | null = null): string | null => {
   if (!VALUE_RE.test(name)) return 'Use lowercase letters, digits, and hyphens, starting with a letter.';

@@ -56,3 +56,20 @@ export const resolveElementAtState = (
   const atVariant = layer(atState, variantBase);
   return activeState === null ? atVariant : layer(atVariant, states?.[activeState]);
 };
+
+/**
+ * An instance's component element with the values it picked layered in
+ * axis order, which is the order their rules are written, so a later
+ * axis wins a tie as in the browser. States aside: an instance isn't
+ * previewed in one.
+ */
+export const layerVariants = (element: ScampElement, keys: ReadonlyArray<string>): ScampElement => {
+  let out = element;
+  for (const key of keys) {
+    const override = element.variantOverrides?.[key];
+    if (override === undefined) continue;
+    const { states: _states, ...base } = override;
+    out = layer(out, base);
+  }
+  return out;
+};

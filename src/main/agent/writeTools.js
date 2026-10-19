@@ -21,7 +21,7 @@ const view = {
 export const WRITE_TOOLS = [
     {
         name: 'scamp_set_styles',
-        description: 'Set and remove CSS declarations on an element’s class rule, as if typed in its CSS module. "set" takes declarations ("display: flex; gap: 12px"); a property already in the rule is replaced, others are kept. "remove" deletes properties. Pass a breakpoint label (e.g. "Mobile") to style that breakpoint only. The result says which values rendered but the properties panel can’t edit — prefer shorthands Scamp types (padding, border, border-radius) over per-side longhands.',
+        description: 'Set and remove CSS declarations on an element’s class rule, as if typed in its CSS module. "set" takes declarations ("display: flex; gap: 12px"); a property already in the rule is replaced, others are kept. "remove" deletes properties. Pass a breakpoint label (e.g. "Mobile") to style that breakpoint only. In a component with variants, pass "variant" (a value, or axis=value such as "variant=outline") to style that value only: the rest of the component keeps its base styles. The result says which values rendered but the properties panel can’t edit — prefer shorthands Scamp types (padding, border, border-radius) over per-side longhands.',
         eager_input_streaming: true,
         input_schema: {
             type: 'object',
@@ -31,6 +31,7 @@ export const WRITE_TOOLS = [
                 set: { type: 'string', description: 'CSS declarations to set.' },
                 remove: { type: 'array', items: { type: 'string' }, description: 'CSS properties to remove.' },
                 breakpoint: { type: 'string', description: 'A breakpoint label or id. Omit for desktop.' },
+                variant: { type: 'string', description: 'A component variant value, e.g. "outline" or "size=small". Omit for the base styles.' },
             },
             required: ['element'],
             additionalProperties: false,

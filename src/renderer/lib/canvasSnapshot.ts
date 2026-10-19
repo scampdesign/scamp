@@ -160,6 +160,8 @@ export type FileListItem = {
   kind?: 'page' | 'view';
   /** Pages of kind `view`: the PascalCase view name; `name` is the route slug. */
   view?: string;
+  /** Components only: each variant axis, its values, and the default. CONTRACT.md §1.3.1 */
+  variants?: Array<{ prop: string; values: string[]; default: string }>;
 };
 
 export type ThemeTokensResult = {
@@ -410,24 +412,25 @@ export const getViewProps = (
       elements: tree.elements,
       rootId: tree.rootId,
       themeTokens: input.themeTokens.map((token) => token.name),
-      componentRootTags: rootTagsFrom(input),
+      componentRoots: componentRootsFrom(input),
     }).filter((f) => f.severity === 'problem'),
     samples,
   };
 };
 
-/**
- * Components by name and path.
- *
- * No `variants` field: variants aren't on `main` yet, and a field an agent is
- * told to expect but always finds empty reads as "this component has none".
- * Adding it later is additive.
- */
+/** Components by name and path, with their variant axes when they have any. */
 export const listComponents = (input: SnapshotInput): FileListItem[] =>
-  input.componentNames.map((name) => ({
-    name,
-    ...componentPathsRelative(name),
-  }));
+  input.componentNames.map((name) => {
+    const tree = input.trees?.[name];
+    const axes = tree?.elements[tree.rootId]?.variantAxes ?? [];
+    return {
+      name,
+      ...componentPathsRelative(name),
+      ...(axes.length > 0
+        ? { variants: axes.map((a) => ({ prop: a.prop, values: [...a.values], default: a.defaultValue })) }
+        : {}),
+    };
+  });
 
 /**
  * Theme tokens exactly as they sit in `theme.css` — a flat list, not grouped
@@ -451,14 +454,14 @@ export const getViewCheck = (input: SnapshotInput, name: string): ViewCheckResul
   const { findings, notes } = checkTarget(
     { name: match, kind: tree.kind, elements: tree.elements, rootId: tree.rootId },
     input.themeTokens.map((token) => token.name),
-    rootTagsFrom(input)
+    componentRootsFrom(input)
   );
   return { name: match, kind: tree.kind, findings, notes };
 };
 
-/** Each component's root tag, so an instance is checked as what it renders. */
-const rootTagsFrom = (input: SnapshotInput): Record<string, string | undefined> =>
-  Object.fromEntries(Object.entries(input.trees ?? {}).map(([name, tree]) => [name, tree.elements[tree.rootId]?.tag]));
+/** Each component's root, so an instance is checked as what it renders. */
+const componentRootsFrom = (input: SnapshotInput): Record<string, ScampElement | undefined> =>
+  Object.fromEntries(Object.entries(input.trees ?? {}).map(([name, tree]) => [name, tree.elements[tree.rootId]]));
 
 /**
  * Every view and component in the snapshot. The app answers this from

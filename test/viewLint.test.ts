@@ -386,11 +386,11 @@ describe('tables', () => {
     const tsx = `import Row from '@/components/Row/Row';\n${tableTsx(
       `<Row data-scamp-instance-id="inst_r1" /><Row data-scamp-instance-id="inst_r2" />`
     )}`;
-    const structure = (tags?: Record<string, string>): number =>
-      lintView({ elements: parseCode(tsx, GRID).elements, rootId: ROOT_ELEMENT_ID, themeTokens: [], componentRootTags: tags })
+    const structure = (roots?: Record<string, { tag: string }>): number =>
+      lintView({ elements: parseCode(tsx, GRID).elements, rootId: ROOT_ELEMENT_ID, themeTokens: [], componentRoots: roots })
         .filter((f) => f.kind === 'table-structure').length;
-    expect(structure({ Row: 'tr' })).toBe(0);
-    expect(structure({ Row: 'div' })).toBe(2);
+    expect(structure({ Row: { tag: 'tr' } })).toBe(0);
+    expect(structure({ Row: { tag: 'div' } })).toBe(2);
     expect(structure()).toBe(2);
   });
 

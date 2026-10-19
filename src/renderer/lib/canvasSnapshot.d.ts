@@ -130,6 +130,12 @@ export type FileListItem = {
     kind?: 'page' | 'view';
     /** Pages of kind `view`: the PascalCase view name; `name` is the route slug. */
     view?: string;
+    /** Components only: each variant axis, its values, and the default. CONTRACT.md §1.3.1 */
+    variants?: Array<{
+        prop: string;
+        values: string[];
+        default: string;
+    }>;
 };
 export type ThemeTokensResult = {
     tokens: Array<{
@@ -222,13 +228,7 @@ export declare const treeNameFor: (trees: Readonly<Record<string, {
     kind?: "component" | "view";
 }>>, name: string) => string | null;
 export declare const getViewProps: (input: SnapshotInput, name: string) => ViewPropsResult;
-/**
- * Components by name and path.
- *
- * No `variants` field: variants aren't on `main` yet, and a field an agent is
- * told to expect but always finds empty reads as "this component has none".
- * Adding it later is additive.
- */
+/** Components by name and path, with their variant axes when they have any. */
 export declare const listComponents: (input: SnapshotInput) => FileListItem[];
 /**
  * Theme tokens exactly as they sit in `theme.css` — a flat list, not grouped

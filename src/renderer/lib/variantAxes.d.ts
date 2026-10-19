@@ -13,6 +13,11 @@ export declare const parseVariantKey: (key: string) => {
 } | null;
 /** True when `key` names a non-default value of a declared axis. */
 export declare const isVariantKeyLive: (elements: Elements, key: string) => boolean;
+/**
+ * The keys an instance picks: each axis's value from its props, in axis
+ * order. The default, and a value the axis lacks, pick nothing.
+ */
+export declare const instanceVariantKeys: (axes: ReadonlyArray<VariantAxis>, propOverrides: Readonly<Record<string, string>> | undefined) => string[];
 /** Why `name` can't be a new value on `axis`, or null when it can. */
 export declare const variantValueError: (axis: VariantAxis, name: string, renaming?: string | null) => string | null;
 /** Why `name` can't be a new axis, or null when it can. */

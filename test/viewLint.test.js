@@ -292,10 +292,10 @@ describe('tables', () => {
         // A <Row> whose component's root is a <tr> is a row in the exported
         // page; read as a <div> it was a false alarm on every row.
         const tsx = `import Row from '@/components/Row/Row';\n${tableTsx(`<Row data-scamp-instance-id="inst_r1" /><Row data-scamp-instance-id="inst_r2" />`)}`;
-        const structure = (tags) => lintView({ elements: parseCode(tsx, GRID).elements, rootId: ROOT_ELEMENT_ID, themeTokens: [], componentRootTags: tags })
+        const structure = (roots) => lintView({ elements: parseCode(tsx, GRID).elements, rootId: ROOT_ELEMENT_ID, themeTokens: [], componentRoots: roots })
             .filter((f) => f.kind === 'table-structure').length;
-        expect(structure({ Row: 'tr' })).toBe(0);
-        expect(structure({ Row: 'div' })).toBe(2);
+        expect(structure({ Row: { tag: 'tr' } })).toBe(0);
+        expect(structure({ Row: { tag: 'div' } })).toBe(2);
         expect(structure()).toBe(2);
     });
     it('reports a row written straight inside the table, not a section', () => {

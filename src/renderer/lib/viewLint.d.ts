@@ -8,7 +8,7 @@ import { type ScampElement } from './element';
  * follows the documented "confirm it parsed" step learns nothing.
  * see docs/notes/view-lint.md
  */
-export type ViewFindingKind = 'marker-leaked' | 'binding-not-parsed' | 'not-panel-editable' | 'side-not-typed' | 'undeclared-token' | 'raw-text-fragment' | 'repeat-rows-differ' | 'missing-sample' | 'table-structure' | 'table-cell-width' | 'table-repeated-style' | 'table-rowspan';
+export type ViewFindingKind = 'marker-leaked' | 'binding-not-parsed' | 'not-panel-editable' | 'side-not-typed' | 'undeclared-token' | 'raw-text-fragment' | 'repeat-rows-differ' | 'missing-sample' | 'table-structure' | 'table-cell-width' | 'table-repeated-style' | 'table-rowspan' | 'unknown-variant-value' | 'undeclared-variant-rule';
 /**
  * A `problem` breaks the page, its export, or what can be reached. A
  * `note` renders correctly — the panel just has no control that holds
@@ -30,16 +30,19 @@ export type ViewFinding = {
     /** What to write instead. Absent when there's nothing actionable to say. */
     hint?: string;
 };
+/** What lint reads from a component an instance renders. */
+export type ComponentRoot = Pick<ScampElement, 'tag' | 'variantAxes'>;
 export type LintInput = {
     elements: Record<string, ScampElement>;
     rootId: string;
     /** Every custom property `theme.css` declares, `--name` included. */
     themeTokens: ReadonlyArray<string>;
     /**
-     * Each component's root tag, by name. An instance is checked as the tag
-     * it renders: a <tr> component inside a <tbody> is a row.
+     * Each component's root, by name. An instance is checked as the tag it
+     * renders (a <tr> component inside a <tbody> is a row), and its props
+     * against the component's variant axes.
      */
-    componentRootTags?: Readonly<Record<string, string | undefined>>;
+    componentRoots?: Readonly<Record<string, ComponentRoot | undefined>>;
 };
 /**
  * Read a parsed view and report what degraded. Pure: it reads the tree

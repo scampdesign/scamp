@@ -20,3 +20,10 @@ import type { Breakpoint } from '@shared/types';
  * value's overrides, and its own state overrides, on top.
  */
 export declare const resolveElementAtState: (element: ScampElement, activeBreakpointId: string, breakpoints: ReadonlyArray<Breakpoint>, activeState: ElementStateName | null, activeVariantKey?: string | null) => ScampElement;
+/**
+ * An instance's component element with the values it picked layered in
+ * axis order, which is the order their rules are written, so a later
+ * axis wins a tie as in the browser. States aside: an instance isn't
+ * previewed in one.
+ */
+export declare const layerVariants: (element: ScampElement, keys: ReadonlyArray<string>) => ScampElement;

@@ -36,6 +36,8 @@ const KIND_ORDER: ReadonlyArray<ViewFinding['kind']> = [
   'table-rowspan',
   'table-cell-width',
   'table-repeated-style',
+  'unknown-variant-value',
+  'undeclared-variant-rule',
   // Notes, after every problem. see docs/archive/2026-10-13-checks-cleanup-plan.md
   'not-panel-editable',
   'side-not-typed',
@@ -55,6 +57,8 @@ const KIND_LABEL: Readonly<Record<ViewFinding['kind'], string>> = {
   'table-rowspan': 'Cells that span rows',
   'table-cell-width': 'Cells with their own width',
   'table-repeated-style': 'Styles repeated on every row or cell',
+  'unknown-variant-value': 'Instances set to a value their component lacks',
+  'undeclared-variant-rule': 'Variant rules for values the props type lacks',
 };
 
 /** How many of each kind to list before saying "and N more". */
@@ -71,10 +75,10 @@ export const ChecksSection = (): JSX.Element | null => {
   const findings = useMemo(() => {
     const names = themeTokens.map((token) => token.name);
     try {
-      const componentRootTags = Object.fromEntries(
-        Object.entries(componentTrees).map(([name, tree]) => [name, tree.elements[tree.rootId]?.tag])
+      const componentRoots = Object.fromEntries(
+        Object.entries(componentTrees).map(([name, tree]) => [name, tree.elements[tree.rootId]])
       );
-      return lintView({ elements, rootId: ROOT_ELEMENT_ID, themeTokens: names, componentRootTags });
+      return lintView({ elements, rootId: ROOT_ELEMENT_ID, themeTokens: names, componentRoots });
     } catch {
       // A findings panel must never be the thing that breaks the panel.
       return [];

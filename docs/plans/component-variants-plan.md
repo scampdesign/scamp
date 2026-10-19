@@ -4,8 +4,8 @@ Status: **decided, in progress**, 2026-10-17. Option A (data attributes),
 with the answers recorded at the end. Phase 0 is done: scampjs 0.3.2
 fixes the `_scamp` reader and adds contract §1.3.1 with a Button fixture
 (`contract-2/components/Button`). Phase 1 is done (see "What phase 1
-built"). Phase 2 is built and waiting on a manual test (see "What
-phase 2 built"). Branch
+built"). Phases 2 and 3 are built and waiting on a manual test (see
+"What phase 2 built" and "What phase 3 built"). Branch
 `plan/component-variants`.
 
 ## What we want
@@ -461,7 +461,7 @@ byte-for-byte target for phase 1's drift test:
 | 0. Framework (scampjs) — **done, scampjs 0.3.2** | The `_scamp` reader fix with its test. Contract §1.3.1, "Variant axes", and a Button fixture with `variant` and `size` axes in `contract-2`. Additive, no bump. |
 | 1. Model and code — **done** | `variantAxes`, `variantOverrides`, generate and parse, round-trip tests, the drift test against the new fixture. No UI yet, so files written by hand or by an agent already round-trip. |
 | 2. Design variants — **built, manual test pending** | The variant switcher, editing per variant (including hover within a variant), and the side-by-side artboard. |
-| 3. Use variants | The instance **Variant** select, instance rendering, checks, and the agent's tools. |
+| 3. Use variants — **built, manual test pending** | The instance **Variant** select, instance rendering, checks, and the agent's tools. |
 | 4. Starter components and states | Demo **Button** (`variant`, `size`), **Modal** and **Menu** (`state`) components, and a walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. |
 | 5. React import | `style-varies` copies become variants. |
 
@@ -591,6 +591,42 @@ Plus: the modal opens and closes in the preview through a route's
 - **Tests:** `test/variantEditing.test.ts` (28: every axis edit with a
   generate-and-parse round trip, routing, the cascade order, resetting),
   `test/e2e/components/variants.spec.ts` (2).
+
+## What phase 3 built
+
+- **The instance's select.** The instance's panel section (titled with
+  the component's name) has one select per axis. Picking a value writes
+  it as a prop, `variant="outline"`, which the page file already reads
+  and writes like any other. Picking the default removes the prop. A
+  value the component lacks still shows, so the select can display it.
+- **Drawing an instance.** The canvas layers each picked value onto the
+  component's elements in axis order (`instanceVariantKeys`,
+  `layerVariants`), which is the order of their rules, so a later axis
+  wins a tie as in the browser. The inner root carries `data-<axis>`.
+  The HTML export already filled bound attributes from the instance, so
+  it needed nothing.
+- **Checks.** `unknown-variant-value`: an instance sets a value its
+  component doesn't declare. `undeclared-variant-rule`: a component
+  rule names a value its union lacks. **Both are problems, not notes**,
+  a change from this plan: notes tell an agent to leave the CSS alone,
+  and a rule no instance can reach is worth fixing. Lint now takes each
+  component's root (`componentRoots`) instead of its tag, to read the
+  axes.
+- **The agent.**
+  - The built-in agent's `scamp_set_styles` takes `variant` (`outline`
+    or `size=small`) and writes that value's rule. The MCP server is
+    read-only, so this is the only edit tool.
+  - `scamp_list_components` lists each component's `variants` (prop,
+    values, default), and its description says how an instance picks
+    one. The test that kept variants out of it is flipped.
+  - The components section of `agent.md` (nextjs and scamp formats)
+    has a **Variants** section: the union prop, the `data-` binding,
+    the rule shapes, and what stays verbatim.
+- **Not built:** naming the instances that use a value before it's
+  removed. Pages aren't loaded in the component editor, so this needs a
+  disk scan; the check reports the instances afterwards instead.
+- **Tests:** `test/variantInstances.test.ts` (14),
+  `test/e2e/components/instance-variants.spec.ts` (1).
 
 ## Decisions
 

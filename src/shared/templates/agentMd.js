@@ -1833,12 +1833,62 @@ A view imports nothing from \`scampjs\`: it is plain TSX plus a CSS
 module and renders unchanged in any React or Preact project. Scamp
 regenerates only the view's own two files.
 
+### Variants
+
+A component with several looks (an outline button, a small size, an
+open menu) declares each **axis** as a prop typed as a union of string
+literals, defaults it, and binds it on the root as \`data-<prop>\`:
+
+\`\`\`tsx
+type ButtonProps = {
+  variant?: "default" | "outline";
+  size?: "small" | "medium" | "large";
+  className?: string;
+};
+
+export default function Button({ variant = "default", size = "medium", className }: ButtonProps) {
+  return (
+    <button data-scamp-id="root" className={\`\${styles.root} \${className ?? ''}\`} type="button" data-variant={variant} data-size={size}>
+      …
+\`\`\`
+
+Each non-default value is styled after every element's own rules, one
+rule per element it changes. The root's is \`.root[data-<prop>="<value>"]\`;
+any other element's is \`.root[data-<prop>="<value>"] .<class>\`.
+\`:hover\`, \`:active\`, or \`:focus\` go on the last part:
+
+\`\`\`css
+.root[data-variant="outline"] {
+  background: transparent;
+}
+
+.root[data-variant="outline"]:hover {
+  background: var(--color-surface);
+}
+
+.root[data-size="small"] .label_c1a1 {
+  font-size: 12px;
+}
+\`\`\`
+
+- The default value has no rules: its look is the elements' own rules.
+- Order the rules by axis, then value, as the union lists them.
+- One axis per rule. A rule that combines two
+  (\`[data-variant="outline"][data-size="small"]\`), or a variant rule
+  inside \`@media\`, is kept verbatim but can't be edited in Scamp.
+- An element only some values show is hidden with \`display: none\` in
+  the others. The structure is the same in every value.
+- Values are lowercase, with hyphens. Every value a rule names must be
+  in the union.
+- A variant rule outranks the element's own \`:hover\` rule.
+
 ### Instancing on a page
 
 Import the component (after the \`styles\` import; component imports
 sorted alphabetically) and place a self-closing tag carrying
 \`data-scamp-instance-id\`. The id is \`inst_\` plus a hex suffix, and prop
-overrides are plain JSX attributes:
+overrides are plain JSX attributes. A variant is picked the same way,
+\`variant="outline"\`; leave it out for the default:
 
 \`\`\`tsx
 import styles from '${v.exampleCssImport}';
