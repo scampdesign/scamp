@@ -37,6 +37,10 @@ release time.
 - **Starter Button, Modal, and Menu components.** Add one from
   **Starters** in the Components list to reuse, restyle, or learn from.
   The Modal and Menu open and close through a route's state.
+- **A React import keeps each component's looks as variants.** Where
+  copies of a component differ only in paint, such as the current item
+  in a navigation menu, each look becomes a variant the page's instance
+  picks, instead of every page showing the most common look.
 - **Checks find variant mistakes.** An instance set to a value its
   component lacks, and a rule for a value the component doesn't
   declare, are both listed.

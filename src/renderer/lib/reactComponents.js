@@ -10,7 +10,9 @@
 // Pure. The app window runs it when a multi-page import finishes.
 // see docs/plans/react-import-plan.md
 import { makeInstanceElement } from './componentInstance';
-import { ROOT_ELEMENT_ID } from './element';
+import { ROOT_ELEMENT_ID, variantKey } from './element';
+import { PAINT_CSS, PAINT_FIELDS, planReactVariants } from './reactVariants';
+import { addVariantAxis } from './variantAxes';
 /**
  * An instance's elements, preorder, and the places holding children it
  * doesn't own. At a position in `absorbAt`, those children are taken in
@@ -78,28 +80,9 @@ const styleKey = (el) => {
     }
     return JSON.stringify(out);
 };
-/** Fields that only paint: they change how an element looks, not where anything goes. */
-const PAINT_FIELDS = new Set(['backgroundColor', 'borderColor', 'color', 'opacity', 'fontWeight', 'fill', 'stroke', 'boxShadows', 'boxShadowToken']);
+const PAINT_FIELD_SET = new Set(PAINT_FIELDS);
 /** Attributes you can see: a different one is a different look, not a different state. */
 const VISIBLE_ATTRIBUTES = new Set(['src', 'srcset', 'alt', 'placeholder', 'value']);
-const PAINT_CSS = new Set([
-    'color',
-    'background',
-    'background-color',
-    'background-image',
-    'border-color',
-    'box-shadow',
-    'opacity',
-    'font-weight',
-    'outline',
-    'outline-color',
-    'text-decoration-line',
-    'text-decoration-color',
-    'filter',
-    'cursor',
-    'transition',
-    '-webkit-text-fill-color',
-]);
 /**
  * Whether two looks differ only in paint — the selected nav item's
  * background and weight — and not in anything that moves or sizes.
@@ -114,7 +97,7 @@ const layoutDifferences = (a, b) => {
             continue;
         if (JSON.stringify(ra[key]) === JSON.stringify(rb[key]))
             continue;
-        if (PAINT_FIELDS.has(key))
+        if (PAINT_FIELD_SET.has(key))
             continue;
         if (key === 'customProperties') {
             const ca = a.customProperties;
@@ -333,10 +316,10 @@ export const planReactComponents = (input, options = {}) => {
             return { chosen, varying };
         };
         let { chosen, varying } = settle(resolved);
-        // A copy that differs only in paint — the selected nav item — takes the
-        // common look: that's a state, and a Scamp instance has nowhere to keep
-        // one. A copy that differs in layout is a different design under the
-        // same name, and stays as it is.
+        // A copy that differs only in paint — the selected nav item — is the
+        // same design in another look, which becomes a variant below. A copy
+        // that differs in layout is a different design under the same name,
+        // and stays as it is.
         /** What a copy differs in, element by element, beyond paint. */
         const misfits = (f) => chosen.flatMap((look, p) => {
             const el = views[f.view]?.elements[f.members[p]];
@@ -384,10 +367,18 @@ export const planReactComponents = (input, options = {}) => {
             propNames.add(name);
             propOf.set(p, { name, fallback: majority(texts, (t) => t).value });
         }
+        // Copies that paint differently become variants: the selected nav item,
+        // an outline button. see lib/reactVariants.ts
+        const instanceKey = (f) => f.key.slice(f.key.indexOf(':') + 1);
+        const looks = planReactVariants(resolved.map((f) => ({
+            view: views[f.view]?.name ?? '',
+            props: views[f.view]?.instances[instanceKey(f)]?.props ?? {},
+            elements: f.members.map((id) => views[f.view]?.elements[id]),
+        })), chosen, propNames);
         // The definition: the commonest look at each position, one copy's ids.
         const componentName = freeName(first.name, taken);
         const idMap = new Map(first.members.map((id, p) => [id, p === 0 ? ROOT_ELEMENT_ID : id]));
-        const definition = {};
+        let definition = {};
         first.members.forEach((id, p) => {
             const source = views[first.view]?.elements[id];
             const look = chosen[p];
@@ -403,9 +394,32 @@ export const planReactComponents = (input, options = {}) => {
                 ...(id === first.slotId ? { slot: 'children' } : {}),
             };
         });
+        // The axis goes on the root, under another name if its own is taken.
+        let axisProp = null;
+        if (looks?.kind === 'variants') {
+            for (const prop of [looks.axis.prop, 'variant', 'variant2']) {
+                const withAxis = addVariantAxis(definition, { ...looks.axis, prop });
+                if (withAxis === definition)
+                    continue;
+                definition = withAxis;
+                axisProp = prop;
+                break;
+            }
+        }
+        if (looks?.kind === 'variants' && axisProp !== null) {
+            for (const [value, at] of Object.entries(looks.overrides)) {
+                for (const [p, override] of Object.entries(at)) {
+                    const id = idMap.get(first.members[Number(p)]);
+                    const el = id === undefined ? undefined : definition[id];
+                    if (id === undefined || el === undefined)
+                        continue;
+                    definition[id] = { ...el, variantOverrides: { ...el.variantOverrides, [variantKey(axisProp, value)]: override } };
+                }
+            }
+        }
         // Each copy becomes an instance; the page's own content stays as its children.
         const usedIn = new Set();
-        for (const f of resolved) {
+        for (const [copyIndex, f] of resolved.entries()) {
             const view = views[f.view];
             if (view === undefined)
                 continue;
@@ -420,6 +434,11 @@ export const planReactComponents = (input, options = {}) => {
                 const text = elements[f.members[p]]?.text ?? '';
                 if (text !== prop.fallback)
                     overrides[prop.name] = text;
+            }
+            if (looks?.kind === 'variants' && axisProp !== null) {
+                const value = looks.copyValues[copyIndex];
+                if (value !== undefined && value !== looks.axis.defaultValue)
+                    overrides[axisProp] = value;
             }
             const slotted = f.slotId === null ? [] : (elements[f.slotId]?.childIds ?? []).filter((c) => !f.members.includes(c));
             for (const id of f.members)
@@ -442,7 +461,12 @@ export const planReactComponents = (input, options = {}) => {
             elements[parent.id] = { ...parent, childIds: parent.childIds.map((c) => (c === f.rootId ? instanceId : c)) };
             usedIn.add(view.name);
         }
-        if (varying.length > 0) {
+        if (looks?.kind === 'variants' && axisProp !== null) {
+            const values = looks.axis.values.join(', ');
+            const numbered = looks.named === 'number' ? ', numbered because nothing in the app names them' : '';
+            findings.push({ component: componentName, kind: 'variants', detail: `${axisProp}: ${values}${numbered}` });
+        }
+        else if (varying.length > 0) {
             findings.push({ component: componentName, kind: 'style-varies', detail: varying.join(', ') });
         }
         const definitionReact = {};
@@ -472,6 +496,8 @@ export const describeReactFinding = (finding) => {
     switch (finding.kind) {
         case 'style-varies':
             return `${finding.component} looks different on some pages (${finding.detail}); the component shows its most common look`;
+        case 'variants':
+            return `${finding.component} looks different on some pages, so each look is a variant (${finding.detail}) and each instance picks its own`;
         case 'too-different':
             return `${finding.detail} of ${finding.component} differ in layout from the rest, so they stay as separate elements`;
         case 'fragment':

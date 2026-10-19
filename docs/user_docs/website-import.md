@@ -79,9 +79,14 @@ You can edit the rows on the **Data** tab. A list whose rows look
 different from each other, such as rows with different status colors,
 stays as separate elements.
 
-**Note:** A component shows one look on every page. Where the app
-highlights something differently on each page, such as the current item
-in a navigation menu, the component shows the look most pages have.
+Where copies of a component differ only in color, weight, or shadow,
+such as the current item in a navigation menu or an outline button,
+each look becomes a [variant](components.md#variants), and each instance
+picks its own. Scamp names the variants after the app's own prop when
+one tells the looks apart, such as `variant="outline"`. Otherwise it
+names each look after the page it's on, or numbers them. Copies that
+differ in layout, or a component with more than four looks, show the
+look most pages have instead, and the list of results says so.
 
 ### Tidy up a React import with AI
 

@@ -152,9 +152,8 @@ routes' reduced trees plus their `react` annotations.
   biggest structural win on the test app: the sidebar and top bar
   appear once in the project instead of 18 times.
 - **Styles that differ by instance** (the active nav item's `is-active`)
-  have no home in Scamp's instance model. v1 takes the most common
-  form for the component and reports the rest by name. See *Open
-  problems*.
+  become variants: see `lib/reactVariants.ts` and
+  `docs/plans/component-variants-plan.md`, phase 5.
 - Built on what the agent already uses: `generateComponentFromSubtree`
   and `replaceSubtreeWithInstancePure`.
 
@@ -343,8 +342,9 @@ a finished batch's views:
   the shell is made before the buttons inside it.
 - Each element's look is the copies' majority. A copy that differs only
   in paint (the selected nav item's background, weight, shadow; an
-  invisible attribute such as `datetime`) takes the common look
-  (`style-varies`). A copy that differs in layout stays as it is
+  invisible attribute such as `datetime`) takes the common look. Each
+  distinct paint is then a variant value the copy's instance picks
+  (`variants`), up to four; past that, the common look (`style-varies`). A copy that differs in layout stays as it is
   (`too-different`, naming the fields: `placeholder on dp_search_input`).
 - A size the copies share is kept; one that differs — a shell as tall as
   its page, a breadcrumb as wide as its words — goes back to `auto`.
@@ -510,11 +510,9 @@ The route → view map and in-place update.
 
 ## Open problems
 
-- **Instance style variants.** An active nav item, a selected tab: the
-  same component styled per instance. Scamp instances override text and
-  slots, not styles. Options are a class-toggle binding (`bind` on
-  `className` from a boolean prop) or element states; either is its own
-  plan. Until then, the most common form and a named finding.
+- **Instance style variants.** Solved by component variants: copies
+  that differ only in paint are values on one axis. See
+  `docs/plans/component-variants-plan.md`, phase 5.
 - **State a URL can't reach.** Modals, a filled form, a wizard's step 4.
   **Capture this page** covers it by hand; scripted interactions per
   route are possible later.

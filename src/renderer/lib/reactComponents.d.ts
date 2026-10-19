@@ -25,6 +25,8 @@ export type ReactComponentFinding = {
     kind: 
     /** Some elements look different in different copies; the component shows the commonest look. */
     'style-varies'
+    /** The copies' looks became variants, which each instance picks. */
+     | 'variants'
     /** The copies differ too much to be one component; they stay as they are. */
      | 'too-different'
     /** The component renders more than one top-level element. */

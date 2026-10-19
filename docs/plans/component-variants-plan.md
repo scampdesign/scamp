@@ -4,9 +4,8 @@ Status: **decided, in progress**, 2026-10-17. Option A (data attributes),
 with the answers recorded at the end. Phase 0 is done: scampjs 0.3.2
 fixes the `_scamp` reader and adds contract §1.3.1 with a Button fixture
 (`contract-2/components/Button`). Phase 1 is done (see "What phase 1
-built"). Phases 2, 3, and 4 are built and waiting on a manual test
-(see "What phase 2 built", "What phase 3 built", and "What phase 4
-built"). Branch
+built"). Phases 2 to 5 are built and waiting on a manual test (see
+each "What phase N built"). Branch
 `plan/component-variants`.
 
 ## What we want
@@ -464,7 +463,7 @@ byte-for-byte target for phase 1's drift test:
 | 2. Design variants — **built, manual test pending** | The variant switcher, editing per variant (including hover within a variant), and the side-by-side artboard. |
 | 3. Use variants — **built, manual test pending** | The instance **Variant** select, instance rendering, checks, and the agent's tools. |
 | 4. Starter components and states — **built, manual test pending** | Demo **Button** (`variant`, `size`), **Modal** and **Menu** (`state`) components, and a walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. |
-| 5. React import | `style-varies` copies become variants. |
+| 5. React import — **built, manual test pending** | `style-varies` copies become variants. |
 
 Native popovers were planned as a phase and are dropped for now (decision 4).
 
@@ -664,6 +663,36 @@ Plus: the modal opens and closes in the preview through a route's
   already lists the pages that use it. That scan could name the
   instances that use a variant value before it's removed, the one
   phase 3 item left open.
+
+## What phase 5 built
+
+- **`lib/reactVariants.ts`** (pure). Given a component's copies and the
+  common look the import settled at each position, each copy's paint
+  difference (`paintOverride`: the paint fields and paint CSS that
+  differ) is its look. Copies with none are the base look.
+- **Naming, first that works:**
+  1. A captured React prop that tells the looks apart exactly. A string
+     prop names the axis and its values (`variant="Outline"` →
+     `variant: outline`); a boolean names the look it turns on
+     (`isActive` → `active`).
+  2. One look per page: each value is named after its view (`home`,
+     `pricing-plans`). This is the selected nav item.
+  3. Numbers: `variant-2`, `variant-3`, said in the finding.
+- **Up to four looks.** More is a component painted per page, not a set
+  of variants, and it keeps the common look with `style-varies`.
+- **In the plan** (`planReactComponents`): the definition gets the axis
+  (`addVariantAxis`, under `variant` or `variant2` if its name is taken)
+  and an override on each element that differs; each instance gets its
+  value as a prop; the finding is `variants`, described as "each look is
+  a variant … and each instance picks its own".
+- **Limit:** a paint only the common look has (a shadow the variant's
+  copy lacks) can't be unset by an override, so it stays on every value.
+  Marked as a shortcut in the code.
+- **Docs:** the React import section of `website-import.md`, the React
+  import plan's open problem (now solved), and the changelog.
+- **Tests:** `test/reactVariants.test.ts` (10); the nav-highlight test in
+  `test/reactComponents.test.ts` now expects variants named by page, each
+  view's instance picking its own, and files that read back the same.
 
 ## Decisions
 

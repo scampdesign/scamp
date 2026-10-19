@@ -13,7 +13,9 @@
 import type { CapturedReact, CapturedReactInstance } from '@shared/importCapture';
 
 import { makeInstanceElement } from './componentInstance';
-import { ROOT_ELEMENT_ID, type ScampElement } from './element';
+import { ROOT_ELEMENT_ID, variantKey, type ScampElement } from './element';
+import { PAINT_CSS, PAINT_FIELDS, planReactVariants } from './reactVariants';
+import { addVariantAxis } from './variantAxes';
 
 export type ReactView = {
   name: string;
@@ -42,6 +44,8 @@ export type ReactComponentFinding = {
   kind:
     /** Some elements look different in different copies; the component shows the commonest look. */
     | 'style-varies'
+    /** The copies' looks became variants, which each instance picks. */
+    | 'variants'
     /** The copies differ too much to be one component; they stay as they are. */
     | 'too-different'
     /** The component renders more than one top-level element. */
@@ -170,29 +174,10 @@ const styleKey = (el: ScampElement): string => {
   return JSON.stringify(out);
 };
 
-/** Fields that only paint: they change how an element looks, not where anything goes. */
-const PAINT_FIELDS: ReadonlySet<string> = new Set(['backgroundColor', 'borderColor', 'color', 'opacity', 'fontWeight', 'fill', 'stroke', 'boxShadows', 'boxShadowToken']);
+const PAINT_FIELD_SET: ReadonlySet<string> = new Set(PAINT_FIELDS);
 
 /** Attributes you can see: a different one is a different look, not a different state. */
 const VISIBLE_ATTRIBUTES: ReadonlySet<string> = new Set(['src', 'srcset', 'alt', 'placeholder', 'value']);
-const PAINT_CSS: ReadonlySet<string> = new Set([
-  'color',
-  'background',
-  'background-color',
-  'background-image',
-  'border-color',
-  'box-shadow',
-  'opacity',
-  'font-weight',
-  'outline',
-  'outline-color',
-  'text-decoration-line',
-  'text-decoration-color',
-  'filter',
-  'cursor',
-  'transition',
-  '-webkit-text-fill-color',
-]);
 
 /**
  * Whether two looks differ only in paint — the selected nav item's
@@ -206,7 +191,7 @@ const layoutDifferences = (a: ScampElement, b: ScampElement): string[] => {
   for (const key of new Set([...Object.keys(ra), ...Object.keys(rb)])) {
     if (FIELDS_NOT_STYLE.has(key) || ALL_SIZE_FIELDS.has(key)) continue;
     if (JSON.stringify(ra[key]) === JSON.stringify(rb[key])) continue;
-    if (PAINT_FIELDS.has(key)) continue;
+    if (PAINT_FIELD_SET.has(key)) continue;
     if (key === 'customProperties') {
       const ca = a.customProperties;
       const cb = b.customProperties;
@@ -427,10 +412,10 @@ export const planReactComponents = (
       return { chosen, varying };
     };
     let { chosen, varying } = settle(resolved);
-    // A copy that differs only in paint — the selected nav item — takes the
-    // common look: that's a state, and a Scamp instance has nowhere to keep
-    // one. A copy that differs in layout is a different design under the
-    // same name, and stays as it is.
+    // A copy that differs only in paint — the selected nav item — is the
+    // same design in another look, which becomes a variant below. A copy
+    // that differs in layout is a different design under the same name,
+    // and stays as it is.
     /** What a copy differs in, element by element, beyond paint. */
     const misfits = (f: (typeof resolved)[number]): string[] =>
       chosen.flatMap((look, p) => {
@@ -475,10 +460,23 @@ export const planReactComponents = (
       propOf.set(p, { name, fallback: majority(texts, (t) => t).value });
     }
 
+    // Copies that paint differently become variants: the selected nav item,
+    // an outline button. see lib/reactVariants.ts
+    const instanceKey = (f: Found): string => f.key.slice(f.key.indexOf(':') + 1);
+    const looks = planReactVariants(
+      resolved.map((f) => ({
+        view: views[f.view]?.name ?? '',
+        props: views[f.view]?.instances[instanceKey(f)]?.props ?? {},
+        elements: f.members.map((id) => views[f.view]?.elements[id]),
+      })),
+      chosen,
+      propNames
+    );
+
     // The definition: the commonest look at each position, one copy's ids.
     const componentName = freeName(first.name, taken);
     const idMap = new Map<string, string>(first.members.map((id, p) => [id, p === 0 ? ROOT_ELEMENT_ID : id]));
-    const definition: Record<string, ScampElement> = {};
+    let definition: Record<string, ScampElement> = {};
     first.members.forEach((id, p) => {
       const source = views[first.view]?.elements[id] as ScampElement;
       const look = chosen[p] as ScampElement;
@@ -495,9 +493,31 @@ export const planReactComponents = (
       };
     });
 
+    // The axis goes on the root, under another name if its own is taken.
+    let axisProp: string | null = null;
+    if (looks?.kind === 'variants') {
+      for (const prop of [looks.axis.prop, 'variant', 'variant2']) {
+        const withAxis = addVariantAxis(definition, { ...looks.axis, prop });
+        if (withAxis === definition) continue;
+        definition = withAxis;
+        axisProp = prop;
+        break;
+      }
+    }
+    if (looks?.kind === 'variants' && axisProp !== null) {
+      for (const [value, at] of Object.entries(looks.overrides)) {
+        for (const [p, override] of Object.entries(at)) {
+          const id = idMap.get(first.members[Number(p)] as string);
+          const el = id === undefined ? undefined : definition[id];
+          if (id === undefined || el === undefined) continue;
+          definition[id] = { ...el, variantOverrides: { ...el.variantOverrides, [variantKey(axisProp, value)]: override } };
+        }
+      }
+    }
+
     // Each copy becomes an instance; the page's own content stays as its children.
     const usedIn = new Set<string>();
-    for (const f of resolved) {
+    for (const [copyIndex, f] of resolved.entries()) {
       const view = views[f.view];
       if (view === undefined) continue;
       const elements = view.elements;
@@ -509,6 +529,10 @@ export const planReactComponents = (
       for (const [p, prop] of propOf) {
         const text = elements[f.members[p] as string]?.text ?? '';
         if (text !== prop.fallback) overrides[prop.name] = text;
+      }
+      if (looks?.kind === 'variants' && axisProp !== null) {
+        const value = looks.copyValues[copyIndex];
+        if (value !== undefined && value !== looks.axis.defaultValue) overrides[axisProp] = value;
       }
       const slotted = f.slotId === null ? [] : (elements[f.slotId]?.childIds ?? []).filter((c) => !f.members.includes(c));
       for (const id of f.members) delete elements[id];
@@ -529,7 +553,11 @@ export const planReactComponents = (
       usedIn.add(view.name);
     }
 
-    if (varying.length > 0) {
+    if (looks?.kind === 'variants' && axisProp !== null) {
+      const values = looks.axis.values.join(', ');
+      const numbered = looks.named === 'number' ? ', numbered because nothing in the app names them' : '';
+      findings.push({ component: componentName, kind: 'variants', detail: `${axisProp}: ${values}${numbered}` });
+    } else if (varying.length > 0) {
       findings.push({ component: componentName, kind: 'style-varies', detail: varying.join(', ') });
     }
     const definitionReact: Record<string, CapturedReact> = {};
@@ -560,6 +588,8 @@ export const describeReactFinding = (finding: ReactComponentFinding): string => 
   switch (finding.kind) {
     case 'style-varies':
       return `${finding.component} looks different on some pages (${finding.detail}); the component shows its most common look`;
+    case 'variants':
+      return `${finding.component} looks different on some pages, so each look is a variant (${finding.detail}) and each instance picks its own`;
     case 'too-different':
       return `${finding.detail} of ${finding.component} differ in layout from the rest, so they stay as separate elements`;
     case 'fragment':
