@@ -53,8 +53,12 @@ const instanceOf = (elements: Elements): ScampElement | undefined =>
   Object.values(elements).find((el) => el.type === 'component-instance');
 
 describe('instanceVariantKeys', () => {
-  it('picks each axis’s value in axis order', () => {
-    expect(instanceVariantKeys(AXES, { size: 'small', variant: 'outline' })).toEqual(['variant=outline', 'size=small']);
+  it('picks each axis’s value in axis order, then their combination', () => {
+    expect(instanceVariantKeys(AXES, { size: 'small', variant: 'outline' })).toEqual([
+      'variant=outline',
+      'size=small',
+      'variant=outline&size=small',
+    ]);
   });
 
   it('picks nothing for a default, a missing prop, or a value the axis lacks', () => {

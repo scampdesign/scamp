@@ -1,10 +1,13 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useState, type DragEvent, type KeyboardEvent } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
-import { variantKey, type VariantAxis } from '@lib/element';
+import type { VariantAxis } from '@lib/element';
 import {
   addVariantValue,
+  combinationLimitError,
+  keyFor,
+  makeVariantDefault,
+  moveVariantValue,
   nextValueName,
-  parseVariantKey,
   removeVariantAxis,
   removeVariantValue,
   renameVariantAxis,
@@ -12,10 +15,14 @@ import {
   variantAxisError,
   variantValueError,
 } from '@lib/variantAxes';
-import styles from './VariantBar.module.css';
+import styles from './VariantsSection.module.css';
 
 type Props = {
   axis: VariantAxis;
+  /** Every axis, for the keys an edit leaves you on. */
+  axes: ReadonlyArray<VariantAxis>;
+  /** The frame being edited: each axis's value. */
+  picks: Readonly<Record<string, string>>;
   /** Variants are desktop only, like states. */
   disabled: boolean;
   /** A value to open for renaming when the row first draws: a just-added axis's new value. */
@@ -28,13 +35,15 @@ type Target = { kind: 'axis' } | { kind: 'value'; value: string };
 const sameTarget = (a: Target | null, b: Target): boolean =>
   a !== null && a.kind === b.kind && (a.kind === 'axis' || (b.kind === 'value' && a.value === b.value));
 
+const DRAG_MIME = 'application/x-scamp-variant-value';
+
 /**
- * One variant axis: its values as segments. Click a value to edit it,
- * double-click a name to rename it, and use × to remove the selected
- * value or the axis. see docs/plans/component-variants-plan.md
+ * One variant property: its values as chips, in order. Click a value to
+ * edit that frame, drag one to reorder, double-click a name to rename
+ * it. The selected value can be made the default or removed.
+ * see docs/plans/component-variants-plan.md, phase 6
  */
-export const VariantAxisRow = ({ axis, disabled, renameOnMount }: Props): JSX.Element => {
-  const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
+export const VariantAxisRow = ({ axis, axes, picks, disabled, renameOnMount }: Props): JSX.Element => {
   const setActiveVariant = useCanvasStore((s) => s.setActiveVariant);
   const editVariants = useCanvasStore((s) => s.editVariants);
   const [renaming, setRenaming] = useState<{ target: Target; draft: string } | null>(
@@ -43,10 +52,12 @@ export const VariantAxisRow = ({ axis, disabled, renameOnMount }: Props): JSX.El
   const [confirming, setConfirming] = useState<Target | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const active = activeVariantKey === null ? null : parseVariantKey(activeVariantKey);
-  // Another axis's value leaves this one at its default.
-  const selected = active !== null && active.axis === axis.prop ? active.value : axis.defaultValue;
-  const keyFor = (value: string): string | null => (value === axis.defaultValue ? null : variantKey(axis.prop, value));
+  const selected = picks[axis.prop] ?? axis.defaultValue;
+  /** The axes after replacing this one, and the key `nextPicks` lands on with them. */
+  const keyAfter = (next: VariantAxis | null, nextPicks: Record<string, string>): string | null => {
+    const nextAxes = axes.flatMap((a) => (a.prop !== axis.prop ? [a] : next === null ? [] : [next]));
+    return keyFor(nextAxes, nextPicks);
+  };
 
   const startRename = (target: Target): void => {
     setConfirming(null);
@@ -62,14 +73,24 @@ export const VariantAxisRow = ({ axis, disabled, renameOnMount }: Props): JSX.El
       if (name !== axis.prop) {
         const problem = variantAxisError(useCanvasStore.getState().elements, name, axis.prop);
         if (problem !== null) return setError(problem);
-        const nextKey = active !== null && active.axis === axis.prop ? variantKey(name, active.value) : undefined;
-        editVariants((elements) => renameVariantAxis(elements, axis.prop, name), nextKey);
+        const { [axis.prop]: value = axis.defaultValue, ...rest } = picks;
+        editVariants(
+          (elements) => renameVariantAxis(elements, axis.prop, name),
+          keyAfter({ ...axis, prop: name }, { ...rest, [name]: value })
+        );
       }
     } else if (name !== target.value) {
       const problem = variantValueError(axis, name, target.value);
       if (problem !== null) return setError(problem);
-      const nextKey = selected === target.value && target.value !== axis.defaultValue ? variantKey(axis.prop, name) : undefined;
-      editVariants((elements) => renameVariantValue(elements, axis.prop, target.value, name), nextKey);
+      const renamed: VariantAxis = {
+        ...axis,
+        values: axis.values.map((v) => (v === target.value ? name : v)),
+        defaultValue: axis.defaultValue === target.value ? name : axis.defaultValue,
+      };
+      editVariants(
+        (elements) => renameVariantValue(elements, axis.prop, target.value, name),
+        keyAfter(renamed, { ...picks, [axis.prop]: selected === target.value ? name : selected })
+      );
     }
     setRenaming(null);
     setError(null);
@@ -85,15 +106,38 @@ export const VariantAxisRow = ({ axis, disabled, renameOnMount }: Props): JSX.El
 
   const handleAddValue = (): void => {
     const name = nextValueName(axis);
+    const grown: VariantAxis = { ...axis, values: [...axis.values, name] };
+    const problem = combinationLimitError(axes, axes.map((a) => (a.prop === axis.prop ? grown : a)));
+    if (problem !== null) return setError(problem);
     // The new value starts as a copy of the look being edited.
-    editVariants((elements) => addVariantValue(elements, axis.prop, name, selected), variantKey(axis.prop, name));
+    editVariants((elements) => addVariantValue(elements, axis.prop, name, selected), keyAfter(grown, { ...picks, [axis.prop]: name }));
     startRename({ kind: 'value', value: name });
   };
 
   const handleRemove = (target: Target): void => {
     setConfirming(null);
-    if (target.kind === 'axis') editVariants((elements) => removeVariantAxis(elements, axis.prop));
-    else editVariants((elements) => removeVariantValue(elements, axis.prop, target.value));
+    if (target.kind === 'axis') {
+      const { [axis.prop]: _dropped, ...rest } = picks;
+      editVariants((elements) => removeVariantAxis(elements, axis.prop), keyAfter(null, rest));
+      return;
+    }
+    const shrunk: VariantAxis = { ...axis, values: axis.values.filter((v) => v !== target.value) };
+    editVariants(
+      (elements) => removeVariantValue(elements, axis.prop, target.value),
+      keyAfter(shrunk, { ...picks, [axis.prop]: selected === target.value ? axis.defaultValue : selected })
+    );
+  };
+
+  const handleMakeDefault = (): void => {
+    const next: VariantAxis = { ...axis, defaultValue: selected, values: [selected, ...axis.values.filter((v) => v !== selected)] };
+    editVariants((elements) => makeVariantDefault(elements, axis.prop, selected), keyAfter(next, { ...picks }));
+  };
+
+  const handleDrop = (e: DragEvent<HTMLButtonElement>, toIndex: number): void => {
+    const value = e.dataTransfer.getData(DRAG_MIME);
+    if (value === '') return;
+    e.preventDefault();
+    editVariants((elements) => moveVariantValue(elements, axis.prop, value, toIndex));
   };
 
   const renameInput = (label: string): JSX.Element => (
@@ -123,20 +167,27 @@ export const VariantAxisRow = ({ axis, disabled, renameOnMount }: Props): JSX.El
   const axisTarget: Target = { kind: 'axis' };
 
   return (
-    <div className={styles.row} data-testid={`variant-axis-${axis.prop}`}>
-      {sameTarget(renaming?.target ?? null, axisTarget) ? (
-        renameInput('Axis name')
-      ) : (
-        <span
-          className={styles.axisName}
-          onDoubleClick={() => startRename(axisTarget)}
-          title="Double-click to rename"
+    <div className={styles.axis} data-testid={`variant-axis-${axis.prop}`}>
+      <div className={styles.axisHeader}>
+        {sameTarget(renaming?.target ?? null, axisTarget) ? (
+          renameInput('Property name')
+        ) : (
+          <span className={styles.axisName} onDoubleClick={() => startRename(axisTarget)} title="Double-click to rename">
+            {axis.prop}
+          </span>
+        )}
+        <button
+          type="button"
+          className={styles.iconButton}
+          onClick={() => setConfirming(axisTarget)}
+          aria-label={`Remove the ${axis.prop} property`}
+          title={`Remove the ${axis.prop} property`}
         >
-          {axis.prop}
-        </span>
-      )}
-      <div className={styles.segments} role="radiogroup" aria-label={`${axis.prop} value`}>
-        {axis.values.map((value) => {
+          Remove
+        </button>
+      </div>
+      <div className={styles.chips} role="radiogroup" aria-label={`${axis.prop} value`}>
+        {axis.values.map((value, index) => {
           const target: Target = { kind: 'value', value };
           if (sameTarget(renaming?.target ?? null, target)) return <span key={value}>{renameInput('Value name')}</span>;
           const isSelected = value === selected;
@@ -147,18 +198,28 @@ export const VariantAxisRow = ({ axis, disabled, renameOnMount }: Props): JSX.El
               role="radio"
               aria-checked={isSelected}
               disabled={disabled}
-              className={`${styles.segment} ${isSelected ? styles.segmentActive : ''}`}
-              onClick={() => setActiveVariant(keyFor(value))}
+              draggable={!disabled}
+              className={`${styles.chip} ${isSelected ? styles.chipActive : ''}`}
+              onClick={() => setActiveVariant(keyFor(axes, { ...picks, [axis.prop]: value }))}
               onDoubleClick={() => startRename(target)}
-              title={value === axis.defaultValue ? 'The default value. Double-click to rename' : 'Double-click to rename'}
+              onDragStart={(e) => {
+                e.dataTransfer.setData(DRAG_MIME, value);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragOver={(e) => {
+                if (e.dataTransfer.types.includes(DRAG_MIME)) e.preventDefault();
+              }}
+              onDrop={(e) => handleDrop(e, index)}
+              title={value === axis.defaultValue ? 'The default. Drag to reorder, double-click to rename' : 'Drag to reorder, double-click to rename'}
             >
               {value}
+              {value === axis.defaultValue && <span className={styles.defaultMark} aria-label="default"> ●</span>}
             </button>
           );
         })}
         <button
           type="button"
-          className={styles.segment}
+          className={styles.chip}
           disabled={disabled}
           onClick={handleAddValue}
           aria-label={`Add a ${axis.prop} value`}
@@ -171,30 +232,21 @@ export const VariantAxisRow = ({ axis, disabled, renameOnMount }: Props): JSX.El
         ? confirmRow(confirming, `Remove ${confirming.value} and its styles?`)
         : confirming !== null
           ? confirmRow(confirming, `Remove ${axis.prop}, its values, and their styles?`)
-          : (
-            <>
-              {selected !== axis.defaultValue && (
+          : selected !== axis.defaultValue && (
+              <div className={styles.valueActions}>
+                <button type="button" className={styles.iconButton} onClick={handleMakeDefault} disabled={disabled}>
+                  Make {selected} the default
+                </button>
                 <button
                   type="button"
                   className={styles.iconButton}
                   onClick={() => setConfirming({ kind: 'value', value: selected })}
                   aria-label={`Remove ${selected}`}
-                  title={`Remove ${selected}`}
                 >
-                  Remove value
+                  Remove {selected}
                 </button>
-              )}
-              <button
-                type="button"
-                className={styles.iconButton}
-                onClick={() => setConfirming(axisTarget)}
-                aria-label={`Remove the ${axis.prop} axis`}
-                title={`Remove the ${axis.prop} axis`}
-              >
-                Remove axis
-              </button>
-            </>
-          )}
+              </div>
+            )}
       {error !== null && (
         <span className={styles.error} role="alert">
           {error}

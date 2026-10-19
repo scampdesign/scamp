@@ -209,52 +209,85 @@ A variant is one look of a component: an outline button, a small one, a
 modal that's open or closed. You design every look in one component, and
 each instance picks the one it shows.
 
-Variants are grouped into **axes**. An axis is a prop with a fixed list
-of values, such as `variant` with `default`, `outline`, and `secondary`.
-A component can have several axes; a button might have `variant` and
-`size`. Each axis has a default value, which is the component's own look.
+Variants are grouped into **properties**. A property is a prop with a
+fixed list of values, such as `variant` with `default`, `outline`, and
+`secondary`. A component can have several; a button might have
+`variant` and `size`. Each property has a default value, which is the
+component's own look.
 
 ### Add a variant
 
 1. Open the component in the component editor.
-1. Above the artboard, click **+ Add variant**. Scamp adds a `variant`
-   axis with a `default` value and a new value, and selects the new one.
+1. In the breadcrumb above the canvas, click the component's name to
+   select it. The properties panel shows the **Variants** section.
+1. Click **+ Add variant**. Scamp adds a `variant` property with a
+   `default` value and a new value.
 1. Type a name for the value, such as `outline`, and press **Enter**.
 
-To add another value to an axis, click **+** at the end of its row. The
-new value starts as a copy of the look you're editing. To add a second
-axis, such as a size, click **+ Add axis**.
+To add another value, click **+** after the property's values. The new
+value starts as a copy of the look you're editing. To add a second
+property, such as a size, click **+ Add property**.
 
-Value names use lowercase letters, digits, and hyphens. To rename a
-value or an axis, double-click its name.
+Value and property names use lowercase letters and digits; values can
+also use hyphens. To rename one, double-click its name. A component can
+have up to 36 combinations of values.
+
+### The variant set
+
+A component with variants is drawn as a set, as in Figma: every
+combination of values is its own frame, inside a dashed border with the
+component's name.
+
+- The first property runs down the rows and the second across the
+  columns, so a row shows one look in every size. A third property adds
+  one grid per value, each with a heading.
+- Each frame is labelled with its values, and the default frame says
+  **default**.
+- Each frame is as big as the component. A root set to fill its
+  container takes the size from **Canvas size** in the header.
 
 ### Design a variant
 
-Select a value in the variant bar. Anything you change now applies to
-that value only: colors, borders, sizes, and the position of elements.
-The other values keep their own look.
+Click any element in any frame. That frame becomes the one you edit, and
+the element is selected, in one click. Anything you change applies to
+that frame's values only: colors, borders, sizes, and the position of
+elements.
 
-- The selected value is drawn on the artboard, where you edit it.
-- The other values are drawn below it, read-only, so you can compare
-  them. Click one to edit it.
-- To change how a value looks on hover, select the value, and then
-  select **Hover** in the state switcher. See
-  [Element states](element-states.md).
-- To hide an element in one value, select the value and the element,
-  and then, in the **Visibility** section, set **Display** to **None**.
-- A section title shows the override dot when the selected value changes
-  one of its fields. Right-click the title to reset those fields to the
-  default look.
+Where a change is written depends on the frame:
+
+| Frame | A change applies to |
+|---|---|
+| The default frame | The component's own look, in every frame |
+| A frame with one value that isn't a default, such as `outline · medium` | That value, with every other value: every outline button |
+| A frame with two or more, such as `outline · small` | Only that combination |
+
+- In the **Variants** section, **Editing** shows the frame you're
+  editing. Select another value in its lists, or click a value, to edit
+  another frame.
+- To change how a frame looks on hover, select **Hover** in the state
+  switcher. See [Element states](element-states.md).
+- To hide an element in one frame, select the element, and then, in the
+  **Visibility** section, set **Display** to **None**.
+- A section title shows the override dot when the frame changes one of
+  its fields. Right-click the title to reset those fields.
 
 Variants are designed at the desktop breakpoint. At other breakpoints,
-the variant bar is turned off and the canvas shows the default look.
+the **Variants** section is turned off and the canvas shows the default
+look.
 
-### Remove a variant
+### Reorder, change the default, and remove
 
-Select the value, click **Remove value**, and then click **Remove** to
-confirm. Scamp deletes the value and its styles. **Remove axis** removes
-a whole axis, with all its values. The default value of an axis can't be
-removed.
+In the **Variants** section, select a value, and then:
+
+- **Drag** a value to another place to reorder it. The grid and the
+  order of the rules in the file follow.
+- Click **Make [value] the default** to make it the component's own
+  look. It moves to the front, and every frame keeps its look.
+- Click **Remove [value]**, and then click **Remove** to confirm. Scamp
+  deletes the value and its styles. The default can't be removed; make
+  another value the default first.
+
+**Remove** beside a property removes it with all its values.
 
 An instance still set to a removed value shows the default look, and the
 [Checks](views.md#find-problems-in-a-view) section lists it.
@@ -343,10 +376,19 @@ Each value's styles are a rule after every element's own rules:
 }
 ```
 
+A combination's rule names each of its values, after every single
+value's rules:
+
+```css
+.root[data-variant="outline"][data-size="small"] {
+  border-width: 2px;
+}
+```
+
 A variant rule outranks the element's own rule, and its own `:hover`
-rule. Rules Scamp can't place on one value, such as one that combines
-two axes (`[data-variant="outline"][data-size="small"]`), are kept as
-they are, and you edit them in the CSS panel.
+rule; a combination outranks the values it combines. A rule whose
+values aren't in the props type's order, or that names a default, is
+kept as it is, and you edit it in the CSS panel.
 
 ## Slots
 

@@ -162,8 +162,8 @@
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
-  background: var(--accent-muted, rgba(99, 102, 241, 0.12));
-  border-bottom: 1px solid var(--accent, #6366f1);
+  background: var(--component-muted);
+  border-bottom: 1px solid var(--component);
   color: var(--text-primary);
   font-size: 12px;
   flex-shrink: 0;

@@ -92,6 +92,11 @@ font-size: 11px;
   color: var(--accent-text);
 }
 
+/* Components stay purple, selected or not. */
+.icon.componentIcon {
+  color: var(--component);
+}
+
 .label {
   flex: 1;
   min-width: 0;

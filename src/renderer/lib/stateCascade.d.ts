@@ -1,4 +1,4 @@
-import type { ElementStateName, ScampElement } from './element';
+import { type ElementStateName, type ScampElement } from './element';
 import type { Breakpoint } from '@shared/types';
 /**
  * Return the element rendered at the active breakpoint AND active
@@ -21,9 +21,9 @@ import type { Breakpoint } from '@shared/types';
  */
 export declare const resolveElementAtState: (element: ScampElement, activeBreakpointId: string, breakpoints: ReadonlyArray<Breakpoint>, activeState: ElementStateName | null, activeVariantKey?: string | null) => ScampElement;
 /**
- * An instance's component element with the values it picked layered in
- * axis order, which is the order their rules are written, so a later
- * axis wins a tie as in the browser. States aside: an instance isn't
+ * An instance's component element with the rules its picked values
+ * reach layered in (`keysCovering`), in the order they're written, so a
+ * later rule wins a tie as in the browser. States aside: an instance isn't
  * previewed in one.
  */
 export declare const layerVariants: (element: ScampElement, keys: ReadonlyArray<string>) => ScampElement;

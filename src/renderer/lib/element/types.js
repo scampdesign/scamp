@@ -11,6 +11,59 @@ export const ELEMENT_STATES = [
 ];
 /** The `variantOverrides` key for one axis value. */
 export const variantKey = (axis, value) => `${axis}=${value}`;
+/** The key for a combination, parts in axis order: `variant=outline&size=small`. */
+export const variantComboKey = (parts) => parts.map((p) => variantKey(p.axis, p.value)).join('&');
+/** A key's parts, or null when one isn't `axis=value`. */
+export const variantKeyParts = (key) => {
+    const parts = [];
+    for (const part of key.split('&')) {
+        const at = part.indexOf('=');
+        if (at <= 0 || at === part.length - 1)
+            return null;
+        parts.push({ axis: part.slice(0, at), value: part.slice(at + 1) });
+    }
+    return parts;
+};
+/** Each subset of `items` with `size` members, in index order. */
+const subsetsOf = (items, size) => {
+    if (size === 0)
+        return [[]];
+    const out = [];
+    items.forEach((item, i) => {
+        for (const rest of subsetsOf(items.slice(i + 1), size - 1))
+            out.push([item, ...rest]);
+    });
+    return out;
+};
+/**
+ * Every key whose rule applies when these values are picked (one per
+ * axis, in axis order): each single value, then each pair, and so on,
+ * in the order their rules are written. A later rule wins a tie, so
+ * layering in this order matches the browser. CONTRACT.md §1.3.1
+ */
+export const keysCovering = (picks) => {
+    const out = [];
+    for (let size = 1; size <= picks.length; size += 1) {
+        for (const subset of subsetsOf(picks, size))
+            out.push(variantComboKey(subset));
+    }
+    return out;
+};
+/** Every key the axes allow, in the order their rules are written. */
+export const orderedVariantKeys = (axes) => {
+    const choices = axes.map((axis) => axis.values.filter((v) => v !== axis.defaultValue).map((value) => ({ axis: axis.prop, value })));
+    const out = [];
+    for (let size = 1; size <= axes.length; size += 1) {
+        for (const subset of subsetsOf(choices, size)) {
+            let tuples = [[]];
+            for (const options of subset)
+                tuples = tuples.flatMap((t) => options.map((o) => [...t, o]));
+            for (const tuple of tuples)
+                out.push(variantComboKey(tuple));
+        }
+    }
+    return out;
+};
 /**
  * The id used for the implicit page-root element. Stays constant across
  * all pages so other code can rely on a known anchor.

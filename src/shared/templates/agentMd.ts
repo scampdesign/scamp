@@ -1916,9 +1916,12 @@ any other element's is \`.root[data-<prop>="<value>"] .<class>\`.
 
 - The default value has no rules: its look is the elements' own rules.
 - Order the rules by axis, then value, as the union lists them.
-- One axis per rule. A rule that combines two
-  (\`[data-variant="outline"][data-size="small"]\`), or a variant rule
-  inside \`@media\`, is kept verbatim but can't be edited in Scamp.
+- A look for two values together combines them on the root, one
+  attribute per axis in the props type's order, after every single
+  value's rules: \`.root[data-variant="outline"][data-size="small"] .label_c1a1\`.
+  None of its values is a default.
+- A variant rule inside \`@media\` is kept verbatim but can't be edited
+  in Scamp.
 - An element only some values show is hidden with \`display: none\` in
   the others. The structure is the same in every value.
 - Values are lowercase, with hyphens. Every value a rule names must be

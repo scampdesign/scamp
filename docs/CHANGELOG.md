@@ -26,11 +26,14 @@ release time.
 
 **Added**
 
-- **Design component variants.** Above the component editor's artboard,
-  the variant bar adds axes and values, such as a button's `variant` and
-  `size`. You edit one value at a time, and the others are drawn beside
-  it for comparison. Scamp writes each value as a `data-` attribute rule,
-  which runs with no JavaScript.
+- **Design component variants as a set, as in Figma.** A component's
+  variant properties, such as a button's `variant` and `size`, live in
+  the **Variants** section of the properties panel. The canvas draws
+  every combination as a frame in a grid, and you edit any frame by
+  clicking it. A frame that combines two values writes a rule for just
+  that combination, and **Make default** changes the component's own
+  look. Scamp writes each value as a `data-` attribute rule, which runs
+  with no JavaScript.
 - **Pick a variant for each instance.** An instance's section in the
   properties panel has a list for each axis, so one Button component
   gives you a primary and an outline button on the same page.

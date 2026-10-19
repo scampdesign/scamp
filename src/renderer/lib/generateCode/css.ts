@@ -2,7 +2,7 @@
 import { hasRunStyle, runClassName, runStyleDeclarations, runsOf } from '../textRuns';
 import { isGridTable, tableCaptionRule, tableSubgridRule } from '../tableGrid';
 import { tableStyleRules } from '../tableStyle';
-import { ELEMENT_STATES, variantKey, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride } from "../element";
+import { ELEMENT_STATES, orderedVariantKeys, variantKeyParts, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride } from "../element";
 import { breakpointOverrideLines, elementDeclarationLines, sizeDeclarationLines } from "./declarations";
 import { classNameFor, computeElementsNeedingPositioningContext } from "./internal";
 import { DESKTOP_BREAKPOINT_ID, type Breakpoint } from "@shared/types";
@@ -167,10 +167,10 @@ const ruleFor = (selector: string, lines: ReadonlyArray<string>): string | null 
     : `${selector} {\n${lines.map((line) => (line.length === 0 ? '' : `  ${line}`)).join('\n')}\n}`;
 
 /**
- * The variant-axis rules, after every element's own: by axis in the root's
- * order, then value in the axis's order, then element in document order,
- * each element's base before its states. CONTRACT.md §1.3.1.
- * see docs/plans/component-variants-plan.md
+ * The variant-axis rules, after every element's own: each single value
+ * (by axis, then value), then each combination of two axes, and so on
+ * (`orderedVariantKeys`); within a key, element in document order, base
+ * before states. CONTRACT.md §1.3.1. see docs/plans/component-variants-plan.md
  */
 const variantAxisBlocks = (
   elements: Record<string, ScampElement>,
@@ -180,25 +180,22 @@ const variantAxisBlocks = (
   if (root === undefined || !root.variantAxes) return [];
   const rootCls = classNameFor(root);
   const blocks: string[] = [];
-  for (const axis of root.variantAxes) {
-    for (const value of axis.values) {
-      if (value === axis.defaultValue) continue;
-      const key = variantKey(axis.prop, value);
-      const anchor = `.${rootCls}[data-${axis.prop}="${value}"]`;
-      for (const el of ordered) {
-        const override = el.variantOverrides?.[key];
-        if (!override || el.type === 'component-instance') continue;
-        const parent = el.parentId ? elements[el.parentId] ?? null : null;
-        const selector = el.id === root.id ? anchor : `${anchor} .${classNameFor(el)}`;
-        const { states, ...style } = override;
-        const base = ruleFor(selector, breakpointOverrideLines(style, el, parent));
-        if (base !== null) blocks.push(base);
-        for (const state of ELEMENT_STATES) {
-          const stateOverride = states?.[state];
-          if (!stateOverride) continue;
-          const block = ruleFor(`${selector}:${state}`, breakpointOverrideLines(stateOverride as BreakpointOverride, el, parent));
-          if (block !== null) blocks.push(block);
-        }
+  for (const key of orderedVariantKeys(root.variantAxes)) {
+    const parts = variantKeyParts(key) ?? [];
+    const anchor = `.${rootCls}${parts.map((p) => `[data-${p.axis}="${p.value}"]`).join('')}`;
+    for (const el of ordered) {
+      const override = el.variantOverrides?.[key];
+      if (!override || el.type === 'component-instance') continue;
+      const parent = el.parentId ? elements[el.parentId] ?? null : null;
+      const selector = el.id === root.id ? anchor : `${anchor} .${classNameFor(el)}`;
+      const { states, ...style } = override;
+      const base = ruleFor(selector, breakpointOverrideLines(style, el, parent));
+      if (base !== null) blocks.push(base);
+      for (const state of ELEMENT_STATES) {
+        const stateOverride = states?.[state];
+        if (!stateOverride) continue;
+        const block = ruleFor(`${selector}:${state}`, breakpointOverrideLines(stateOverride as BreakpointOverride, el, parent));
+        if (block !== null) blocks.push(block);
       }
     }
   }

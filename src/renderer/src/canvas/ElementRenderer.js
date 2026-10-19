@@ -1,7 +1,7 @@
 import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
 import { createElement, useContext, useEffect, useMemo, useRef, cloneElement } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
-import { ROOT_ELEMENT_ID } from '@lib/element';
+import { ROOT_ELEMENT_ID, variantKeyParts } from '@lib/element';
 import { childBindingKey, expandChildren, resolveAttr, resolveInstanceOverrides, resolveText, } from '@lib/bindingEval';
 import { classNameFor, tagFor } from '@lib/generateCode';
 import { isStyled, runClassName, runInlineStyle, runsOf, textFromRuns } from '@lib/textRuns';
@@ -17,7 +17,7 @@ import { CANVAS_SKIP_ATTRS_BY_TAG, canvasRenderTag, elementToStyle, } from '@lib
 import { DEFAULT_ROOT_STYLES } from '@lib/defaults';
 import { instanceStretchStyle } from '@lib/instanceStretch';
 import { resolveElementAtBreakpoint } from '@lib/breakpointCascade';
-import { instanceVariantKeys, parseVariantKey } from '@lib/variantAxes';
+import { instanceVariantKeys } from '@lib/variantAxes';
 import { layerVariants, resolveElementAtState } from '@lib/stateCascade';
 import { formatAnimationShorthand } from '@lib/parsers';
 import { effectiveDisplay } from '@lib/effectiveDisplay';
@@ -128,8 +128,8 @@ row = null) => {
     if (element.type === 'component-instance') {
         return (_jsxs("div", { style: {
                 padding: '4px 8px',
-                background: 'rgba(99, 102, 241, 0.12)',
-                border: '1px dashed var(--accent, #6366f1)',
+                background: 'var(--component-muted)',
+                border: '1px dashed var(--component)',
                 borderRadius: 4,
                 color: 'var(--text-secondary)',
                 fontSize: 12,
@@ -402,11 +402,11 @@ export const ElementRenderer = ({ elementId, row }) => {
     const variantFrame = useContext(VariantFrameContext);
     const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
     const variantKey = variantFrame !== null ? variantFrame.variantKey : activeVariantKey;
-    const displayOnly = isRepeatCopy || variantFrame !== null;
+    const displayOnly = isRepeatCopy || variantFrame?.displayOnly === true;
     const activeBreakpointId = useCanvasStore((s) => s.activeBreakpointId);
     const activeStateName = useCanvasStore((s) => s.activeStateName);
     const breakpoints = useCanvasStore((s) => s.breakpoints);
-    const isSelected = useCanvasStore((s) => s.selectedElementIds.includes(elementId)) && variantFrame === null;
+    const isSelected = useCanvasStore((s) => s.selectedElementIds.includes(elementId)) && variantFrame?.displayOnly !== true;
     // Resolve overrides at render time. Selected elements get the
     // active state's overrides layered in (the state switcher *is* the
     // canvas preview); non-selected elements always render their
@@ -582,7 +582,9 @@ export const ElementRenderer = ({ elementId, row }) => {
     const hasStyledRuns = runs.length > 1 || runs.some(isStyled);
     const isComposed = element.childIds.length > 0 || element.inlineFragments.length > 0;
     const projectDir = projectPath ? projectPath.replace(/\\/g, '/') : null;
-    const baseStyle = elementToStyle(element, parentDisplay, parentDirection, themeTokens, projectDir, projectFormat, false, canvasMinHeight, inComponentEditor);
+    const baseStyle = elementToStyle(element, parentDisplay, parentDirection, themeTokens, projectDir, projectFormat, 
+    // A frame of the variant set draws the root at its own size.
+    variantFrame !== null, canvasMinHeight, inComponentEditor);
     // When the canvas is previewing a non-default state for this
     // element, suppress transitions so the user sees the resolved end
     // state instantly rather than an animation halfway through.
@@ -756,8 +758,8 @@ export const ElementRenderer = ({ elementId, row }) => {
             return (_jsxs("div", { ...wrapperProps, style: {
                     ...style,
                     padding: '12px 16px',
-                    background: 'rgba(99, 102, 241, 0.08)',
-                    border: '1px dashed var(--accent, #6366f1)',
+                    background: 'var(--component-muted)',
+                    border: '1px dashed var(--component)',
                     borderRadius: 4,
                     color: 'var(--text-secondary)',
                     fontSize: 12,
@@ -881,9 +883,9 @@ export const ElementRenderer = ({ elementId, row }) => {
         }
     }
     // The root carries the value drawn, so the injected sheet's variant rules match.
-    const drawnVariant = variantKey !== null && element.id === ROOT_ELEMENT_ID ? parseVariantKey(variantKey) : null;
-    if (drawnVariant !== null)
-        props[`data-${drawnVariant.axis}`] = drawnVariant.value;
+    const drawnVariant = variantKey !== null && element.id === ROOT_ELEMENT_ID ? variantKeyParts(variantKey) : null;
+    for (const part of drawnVariant ?? [])
+        props[`data-${part.axis}`] = part.value;
     // Interaction side-effects prevention for tags that would otherwise
     // navigate or submit. The canvas is a design surface, not a runtime.
     if (storedTag === 'a' || storedTag === 'button') {

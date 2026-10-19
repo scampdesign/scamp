@@ -1,4 +1,4 @@
-import { type ElementStateName, type KeyframesBlock, type PropertyGroup, type RawSelectorBlock, type TableStyle } from "../element";
+import { type ElementStateName, type KeyframesBlock, type PropertyGroup, type RawSelectorBlock, type TableStyle, type VariantPick } from "../element";
 import { type Breakpoint } from "@shared/types";
 export type RawDeclaration = {
     prop: string;
@@ -62,12 +62,12 @@ export type ParsedCss = {
      */
     axisRules: AxisRule[];
 };
-/** One `[data-<axis>="<value>"]` rule, as read and as written. */
+/** One `[data-<axis>="<value>"]` rule (several, for a combination), as read and as written. */
 export type AxisRule = {
-    /** The class carrying the attribute: the component's root. */
+    /** The class carrying the attributes: the component's root. */
     anchorClass: string;
-    axis: string;
-    value: string;
+    /** Each attribute, in source order. */
+    parts: VariantPick[];
     /** The element the declarations style: the anchor, or a descendant. */
     targetClass: string;
     state: ElementStateName | null;

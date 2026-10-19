@@ -6,16 +6,26 @@ import { type BreakpointOverride, type ElementStateName, type ScampElement, type
  * docs/plans/component-variants-plan.md
  */
 type Elements = Record<string, ScampElement>;
+/** How many combinations a component's axes may make. Decided for phase 6. */
+export declare const MAX_VARIANT_COMBINATIONS = 36;
+/** Every value of every axis, multiplied: the frames the set draws. */
+export declare const variantCombinationCount: (axes: ReadonlyArray<VariantAxis>) => number;
+/** Why adding `extra` values to an axis (or an axis of `extra` values) is refused, or null. */
+export declare const combinationLimitError: (axes: ReadonlyArray<VariantAxis>, next: ReadonlyArray<VariantAxis>) => string | null;
 export declare const axesOf: (elements: Elements) => ReadonlyArray<VariantAxis>;
 export declare const parseVariantKey: (key: string) => {
     axis: string;
     value: string;
 } | null;
-/** True when `key` names a non-default value of a declared axis. */
+/**
+ * True when `key` names non-default values of declared axes, one per
+ * axis, in axis order: a single value or a combination.
+ */
 export declare const isVariantKeyLive: (elements: Elements, key: string) => boolean;
 /**
- * The keys an instance picks: each axis's value from its props, in axis
- * order. The default, and a value the axis lacks, pick nothing.
+ * The keys an instance's props reach: each picked value, then each
+ * combination of them, in the order their rules are written. The
+ * default, and a value the axis lacks, pick nothing.
  */
 export declare const instanceVariantKeys: (axes: ReadonlyArray<VariantAxis>, propOverrides: Readonly<Record<string, string>> | undefined) => string[];
 /** Why `name` can't be a new value on `axis`, or null when it can. */
@@ -41,4 +51,34 @@ export declare const removeVariantValue: (elements: Elements, prop: string, valu
 export declare const variantOverrideFields: (el: ScampElement | undefined, key: string, state: ElementStateName | null) => Array<keyof BreakpointOverride>;
 /** Drop `fields` from `el`'s override for `key` (or its `state`), pruning empty maps. */
 export declare const resetVariantFields: (el: ScampElement, key: string, state: ElementStateName | null, fields: ReadonlyArray<keyof BreakpointOverride>) => ScampElement;
+/** The key for full picks under `axes`: the values that aren't defaults, or null. */
+export declare const keyFor: (axes: ReadonlyArray<VariantAxis>, picks: Readonly<Record<string, string>>) => string | null;
+/**
+ * Make `value` the axis's default, moved to the front of its values, as
+ * Figma's top-left variant is. The base rules become that value's look,
+ * and every other value and combination is rebuilt so each look is
+ * unchanged: each element's look is computed for every combination and
+ * state under the old default, then written back as the smallest
+ * overrides under the new one.
+ */
+export declare const makeVariantDefault: (elements: Elements, prop: string, value: string) => Elements;
+/** Move a value to `toIndex` in its axis. Value order is the grid's and the CSS's. */
+export declare const moveVariantValue: (elements: Elements, prop: string, value: string, toIndex: number) => Elements;
+/** One frame of the variant set: its key (null for the default look) and what it combines. */
+export type VariantCell = {
+    key: string | null;
+    picks: Record<string, string>;
+    label: string;
+};
+/** A grid of frames, with a heading when the component has a third axis or more. */
+export type VariantBlock = {
+    heading: string | null;
+    rows: VariantCell[][];
+};
+/**
+ * The variant set's layout, Figma's component set: the first axis down
+ * the rows and the second across, in value order; one grid per value of
+ * each further axis, stacked. Every combination is a frame.
+ */
+export declare const variantGrid: (axes: ReadonlyArray<VariantAxis>) => VariantBlock[];
 export {};

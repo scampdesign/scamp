@@ -976,6 +976,62 @@ export type VariantOverride = BreakpointOverride & {
 /** The `variantOverrides` key for one axis value. */
 export const variantKey = (axis: string, value: string): string => `${axis}=${value}`;
 
+/** One axis's value in a variant key. */
+export type VariantPick = { axis: string; value: string };
+
+/** The key for a combination, parts in axis order: `variant=outline&size=small`. */
+export const variantComboKey = (parts: ReadonlyArray<VariantPick>): string =>
+  parts.map((p) => variantKey(p.axis, p.value)).join('&');
+
+/** A key's parts, or null when one isn't `axis=value`. */
+export const variantKeyParts = (key: string): VariantPick[] | null => {
+  const parts: VariantPick[] = [];
+  for (const part of key.split('&')) {
+    const at = part.indexOf('=');
+    if (at <= 0 || at === part.length - 1) return null;
+    parts.push({ axis: part.slice(0, at), value: part.slice(at + 1) });
+  }
+  return parts;
+};
+
+/** Each subset of `items` with `size` members, in index order. */
+const subsetsOf = <T>(items: ReadonlyArray<T>, size: number): T[][] => {
+  if (size === 0) return [[]];
+  const out: T[][] = [];
+  items.forEach((item, i) => {
+    for (const rest of subsetsOf(items.slice(i + 1), size - 1)) out.push([item, ...rest]);
+  });
+  return out;
+};
+
+/**
+ * Every key whose rule applies when these values are picked (one per
+ * axis, in axis order): each single value, then each pair, and so on,
+ * in the order their rules are written. A later rule wins a tie, so
+ * layering in this order matches the browser. CONTRACT.md §1.3.1
+ */
+export const keysCovering = (picks: ReadonlyArray<VariantPick>): string[] => {
+  const out: string[] = [];
+  for (let size = 1; size <= picks.length; size += 1) {
+    for (const subset of subsetsOf(picks, size)) out.push(variantComboKey(subset));
+  }
+  return out;
+};
+
+/** Every key the axes allow, in the order their rules are written. */
+export const orderedVariantKeys = (axes: ReadonlyArray<VariantAxis>): string[] => {
+  const choices = axes.map((axis) => axis.values.filter((v) => v !== axis.defaultValue).map((value) => ({ axis: axis.prop, value })));
+  const out: string[] = [];
+  for (let size = 1; size <= axes.length; size += 1) {
+    for (const subset of subsetsOf(choices, size)) {
+      let tuples: VariantPick[][] = [[]];
+      for (const options of subset) tuples = tuples.flatMap((t) => options.map((o) => [...t, o]));
+      for (const tuple of tuples) out.push(variantComboKey(tuple));
+    }
+  }
+  return out;
+};
+
 /**
  * One pseudo-class rule the parser couldn't route into a typed state
  * override — preserved verbatim so the generator can re-emit it

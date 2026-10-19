@@ -122,3 +122,26 @@ export const isResizeHandle = (
   }
   return null;
 };
+
+/**
+ * A frame of the variant set under the cursor that isn't the live one:
+ * its key (null for the default look), and the class of the element
+ * under the cursor in it, or null over its label or an empty spot.
+ * Null over the live frame, or outside the set.
+ * see docs/plans/component-variants-plan.md, phase 6
+ */
+export const inactiveVariantCellAt = (
+  clientX: number,
+  clientY: number
+): { key: string | null; className: string | null } | null => {
+  for (const node of document.elementsFromPoint(clientX, clientY)) {
+    const cell = node.closest('[data-variant-cell]');
+    if (!(cell instanceof HTMLElement)) continue;
+    if (cell.dataset['variantLive'] === 'true') return null;
+    const key = cell.dataset['variantCell'] ?? '';
+    const owner = node.closest('[data-scamp-id]');
+    const className = owner !== null && cell.contains(owner) ? owner.getAttribute('data-scamp-id') : null;
+    return { key: key === '' ? null : key, className };
+  }
+  return null;
+};

@@ -165,7 +165,9 @@ describe('names and keys', () => {
         expect(variantValueError(axis, '')).not.toBeNull();
         expect(variantAxisError(button(), 'label')).toBe('The component already has a prop named label.');
         expect(variantAxisError(button(), 'variant', 'variant')).toBeNull();
-        expect(variantAxisError(button(), 'className')).toBe('className is reserved.');
+        expect(variantAxisError(button(), 'children')).toBe('children is reserved.');
+        // CSS matches `data-` attributes lowercase, so a camelCase axis wouldn't read back.
+        expect(variantAxisError(button(), 'isOpen')).toBe('Use lowercase letters and digits, starting with a letter.');
     });
 });
 describe('routing a patch into a variant', () => {

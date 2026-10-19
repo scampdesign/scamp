@@ -2,7 +2,7 @@
 import { runStyleFromDeclarations } from '../textRuns';
 import { hoistBindingsWithMap, parsePropsDefaults } from './bindings';
 import { BOOLEAN_ATTRIBUTES, bindPropName, enclosingRepeat, isInvertedBinding, isRowPath, } from '../viewProps';
-import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, variantKey, withAttributeSample } from "../element";
+import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, variantComboKey, withAttributeSample } from "../element";
 import { DEFAULT_RECT_STYLES } from '../defaults';
 import { composeMaps } from '../sourceMap';
 import { TABLE_LAYOUT_TAGS } from '../tableGrid';
@@ -523,13 +523,18 @@ export const parseCode = (tsx, css, options) => {
     const idByClass = new Map([...classById].map(([id, cls]) => [cls, id]));
     const rootClass = classById.get(ROOT_ELEMENT_ID);
     for (const rule of parsedCss.axisRules) {
-        const axis = axes.find((a) => a.prop === rule.axis);
+        // Each attribute a declared axis's non-default value, one per axis, in
+        // axis order: the order the generator writes, so the file round-trips.
+        const axisIndexes = rule.parts.map((part) => axes.findIndex((a) => a.prop === part.axis));
+        const partsPlaceable = rule.parts.every((part, i) => {
+            const axis = axes[axisIndexes[i]];
+            const previous = i === 0 ? -1 : axisIndexes[i - 1];
+            return axis !== undefined && axisIndexes[i] > previous && axis.values.includes(part.value) && part.value !== axis.defaultValue;
+        });
         const targetId = idByClass.get(rule.targetClass);
         const target = targetId === undefined ? undefined : elements[targetId];
-        const placeable = axis !== undefined &&
+        const placeable = partsPlaceable &&
             rule.anchorClass === rootClass &&
-            axis.values.includes(rule.value) &&
-            rule.value !== axis.defaultValue &&
             target !== undefined &&
             targetId !== undefined;
         if (!placeable) {
@@ -540,7 +545,7 @@ export const parseCode = (tsx, css, options) => {
             }
             continue;
         }
-        const key = variantKey(rule.axis, rule.value);
+        const key = variantComboKey(rule.parts);
         const existing = target.variantOverrides?.[key] ?? {};
         const next = rule.state === null
             ? { ...existing, ...applyDeclarationsAsOverride(rule.decls) }

@@ -1,3 +1,4 @@
+import { keysCovering, variantKeyParts, } from './element';
 import { resolveElementAtBreakpoint } from './breakpointCascade';
 const layer = (el, override) => {
     if (!override || Object.keys(override).length === 0)
@@ -32,19 +33,26 @@ export const resolveElementAtState = (element, activeBreakpointId, breakpoints, 
     const atState = activeState === null ? atBreakpoint : layer(atBreakpoint, element.stateOverrides?.[activeState]);
     if (activeVariantKey === null)
         return atState;
-    // A variant rule (`.root[data-v="x"] .el`) outranks the element's own
-    // state rule (`.el:hover`), so it layers after it, as in the browser.
-    const variant = element.variantOverrides?.[activeVariantKey];
-    if (variant === undefined)
-        return atState;
-    const { states, ...variantBase } = variant;
-    const atVariant = layer(atState, variantBase);
-    return activeState === null ? atVariant : layer(atVariant, states?.[activeState]);
+    // Variant rules (`.root[data-v="x"] .el`) outrank the element's own state
+    // rule (`.el:hover`), so they layer after it, each key's base then its
+    // state, in the order the rules are written, as in the browser.
+    const picks = variantKeyParts(activeVariantKey);
+    let out = atState;
+    for (const key of picks === null ? [] : keysCovering(picks)) {
+        const variant = element.variantOverrides?.[key];
+        if (variant === undefined)
+            continue;
+        const { states, ...variantBase } = variant;
+        out = layer(out, variantBase);
+        if (activeState !== null)
+            out = layer(out, states?.[activeState]);
+    }
+    return out;
 };
 /**
- * An instance's component element with the values it picked layered in
- * axis order, which is the order their rules are written, so a later
- * axis wins a tie as in the browser. States aside: an instance isn't
+ * An instance's component element with the rules its picked values
+ * reach layered in (`keysCovering`), in the order they're written, so a
+ * later rule wins a tie as in the browser. States aside: an instance isn't
  * previewed in one.
  */
 export const layerVariants = (element, keys) => {

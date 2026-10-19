@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
   type RefObject,
 } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
@@ -85,6 +86,11 @@ type Props = {
    * the prop so no handle renders.
    */
   onResize?: (width: number, height: number) => void;
+  /**
+   * Drawn in the frame instead of the root, on a clear background: the
+   * component editor's variant set, which draws the root in each frame.
+   */
+  frameContent?: ReactNode;
 };
 
 /**
@@ -112,6 +118,7 @@ export const Viewport = ({
   clipContent,
   scrollContainerRef,
   onResize,
+  frameContent,
 }: Props): JSX.Element => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -552,11 +559,12 @@ export const Viewport = ({
           // macOS, etc.) and visually disagrees with the preview.
           fontFamily: themeFontFamily,
           position: 'relative',
+          ...(frameContent !== undefined ? { background: 'transparent' } : {}),
         }}
       >
         <CanvasKeyframes />
         <CanvasPageStylesheet />
-        <ElementRenderer elementId={rootElementId} />
+        {frameContent ?? <ElementRenderer elementId={rootElementId} />}
         <CanvasInteractionLayer frameRef={frameRef} scale={scale} />
         {/* Component-editor artboard handles: `onResize` is only supplied in
             component mode, so these are always present there (the artboard IS

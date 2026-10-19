@@ -1,0 +1,164 @@
+.editing {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.axes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.axis {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.axisHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.axisName {
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: default;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.chip:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.chipActive {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.defaultMark {
+  color: var(--accent);
+  font-size: 8px;
+}
+
+.valueActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.renameInput {
+  height: var(--control-h);
+  width: 96px;
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.iconButton,
+.addAxis,
+.confirmCancel {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.addAxis {
+  margin-top: 10px;
+  padding-left: 0;
+}
+
+.iconButton:hover:not(:disabled),
+.addAxis:hover:not(:disabled),
+.confirmCancel:hover {
+  color: var(--text-primary);
+}
+
+.addAxis:disabled,
+.iconButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+.confirmRemove {
+  background: var(--error-bg);
+  border: none;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--error-text);
+  cursor: pointer;
+}
+
+.error {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--error-text);
+}
+
+.editingTitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.pick {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.pickName {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

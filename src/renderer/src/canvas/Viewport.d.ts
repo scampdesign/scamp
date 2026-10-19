@@ -1,4 +1,4 @@
-import { type RefObject } from 'react';
+import { type ReactNode, type RefObject } from 'react';
 /**
  * Floor on the canvas frame's rendered height. Purely a design-tool
  * convenience — the frame grows past this as content is added, but
@@ -50,8 +50,13 @@ type Props = {
      * the prop so no handle renders.
      */
     onResize?: (width: number, height: number) => void;
+    /**
+     * Drawn in the frame instead of the root, on a clear background: the
+     * component editor's variant set, which draws the root in each frame.
+     */
+    frameContent?: ReactNode;
 };
-export declare const Viewport: ({ canvasWidth, canvasHeight, heightIsFixed, clipContent, scrollContainerRef, onResize, }: Props) => JSX.Element;
+export declare const Viewport: ({ canvasWidth, canvasHeight, heightIsFixed, clipContent, scrollContainerRef, onResize, frameContent, }: Props) => JSX.Element;
 /**
  * Mounts a `<style>` element inside the canvas frame containing the
  * page's `@keyframes` blocks. Without this, the inline `animation`

@@ -42,3 +42,14 @@ export declare const propTextHitTest: (clientX: number, clientY: number) => {
     propName: string;
 } | null;
 export declare const isResizeHandle: (clientX: number, clientY: number) => ResizeHandle | null;
+/**
+ * A frame of the variant set under the cursor that isn't the live one:
+ * its key (null for the default look), and the class of the element
+ * under the cursor in it, or null over its label or an empty spot.
+ * Null over the live frame, or outside the set.
+ * see docs/plans/component-variants-plan.md, phase 6
+ */
+export declare const inactiveVariantCellAt: (clientX: number, clientY: number) => {
+    key: string | null;
+    className: string | null;
+} | null;

@@ -1,6 +1,6 @@
 // parseCode/css.ts — split out of parseCode.ts (4.4).
 import postcss from 'postcss';
-import { ELEMENT_STATES, type ElementStateName, type KeyframesBlock, type PropertyGroup, type RawSelectorBlock, type TableStyle } from "../element";
+import { ELEMENT_STATES, type ElementStateName, type KeyframesBlock, type PropertyGroup, type RawSelectorBlock, type TableStyle, type VariantPick } from "../element";
 import { matchesPreset } from "../keyframesMatch";
 import { canonicalizeGroupList, isPropertyGroup } from "../propertyGroups";
 import { matchTableRule } from "../tableStyle";
@@ -165,12 +165,12 @@ export type ParsedCss = {
   axisRules: AxisRule[];
 };
 
-/** One `[data-<axis>="<value>"]` rule, as read and as written. */
+/** One `[data-<axis>="<value>"]` rule (several, for a combination), as read and as written. */
 export type AxisRule = {
-  /** The class carrying the attribute: the component's root. */
+  /** The class carrying the attributes: the component's root. */
   anchorClass: string;
-  axis: string;
-  value: string;
+  /** Each attribute, in source order. */
+  parts: VariantPick[];
   /** The element the declarations style: the anchor, or a descendant. */
   targetClass: string;
   state: ElementStateName | null;
@@ -180,9 +180,11 @@ export type AxisRule = {
 };
 
 const STATE_GROUP = ELEMENT_STATES.join('|');
+const AXIS_ATTR = '\\[data-[a-z][a-z0-9]*="[^"]*"\\]';
 const AXIS_RULE_RE = new RegExp(
-  `^\\.([A-Za-z_][\\w-]*)\\[data-([a-z][a-z0-9]*)="([^"]*)"\\](?::(${STATE_GROUP}))?(?:\\s+\\.([A-Za-z_][\\w-]*)(?::(${STATE_GROUP}))?)?$`
+  `^\\.([A-Za-z_][\\w-]*)((?:${AXIS_ATTR})+)(?::(${STATE_GROUP}))?(?:\\s+\\.([A-Za-z_][\\w-]*)(?::(${STATE_GROUP}))?)?$`
 );
+const AXIS_ATTR_PARTS_RE = /\[data-([a-z][a-z0-9]*)="([^"]*)"\]/g;
 
 /**
  * Read an axis rule's selector: the root's attribute, then optionally a
@@ -194,13 +196,12 @@ export const matchAxisSelector = (
 ): Omit<AxisRule, 'decls' | 'raw'> | null => {
   const m = AXIS_RULE_RE.exec(selector);
   if (m === null) return null;
-  const [, anchorClass = '', axis = '', value = '', anchorState, targetClass, targetState] = m;
+  const [, anchorClass = '', attrs = '', anchorState, targetClass, targetState] = m;
   if (targetClass !== undefined && anchorState !== undefined) return null;
   const state = (targetClass !== undefined ? targetState : anchorState) ?? null;
   return {
     anchorClass,
-    axis,
-    value,
+    parts: [...attrs.matchAll(AXIS_ATTR_PARTS_RE)].map((a) => ({ axis: a[1] ?? '', value: a[2] ?? '' })),
     targetClass: targetClass ?? anchorClass,
     state: state === null ? null : (state as ElementStateName),
   };

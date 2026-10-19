@@ -31,8 +31,12 @@ const PAGE_CSS = `.root {\n  width: 100%;\n  min-height: 100vh;\n  position: rel
 const page = (attrs) => parseCode(PAGE_TSX(attrs), PAGE_CSS, { breakpoints: DEFAULT_BREAKPOINTS }).elements;
 const instanceOf = (elements) => Object.values(elements).find((el) => el.type === 'component-instance');
 describe('instanceVariantKeys', () => {
-    it('picks each axis’s value in axis order', () => {
-        expect(instanceVariantKeys(AXES, { size: 'small', variant: 'outline' })).toEqual(['variant=outline', 'size=small']);
+    it('picks each axis’s value in axis order, then their combination', () => {
+        expect(instanceVariantKeys(AXES, { size: 'small', variant: 'outline' })).toEqual([
+            'variant=outline',
+            'size=small',
+            'variant=outline&size=small',
+        ]);
     });
     it('picks nothing for a default, a missing prop, or a value the axis lacks', () => {
         expect(instanceVariantKeys(AXES, { variant: 'default', size: 'huge' })).toEqual([]);

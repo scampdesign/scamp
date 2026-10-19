@@ -804,6 +804,24 @@ export type VariantOverride = BreakpointOverride & {
 };
 /** The `variantOverrides` key for one axis value. */
 export declare const variantKey: (axis: string, value: string) => string;
+/** One axis's value in a variant key. */
+export type VariantPick = {
+    axis: string;
+    value: string;
+};
+/** The key for a combination, parts in axis order: `variant=outline&size=small`. */
+export declare const variantComboKey: (parts: ReadonlyArray<VariantPick>) => string;
+/** A key's parts, or null when one isn't `axis=value`. */
+export declare const variantKeyParts: (key: string) => VariantPick[] | null;
+/**
+ * Every key whose rule applies when these values are picked (one per
+ * axis, in axis order): each single value, then each pair, and so on,
+ * in the order their rules are written. A later rule wins a tie, so
+ * layering in this order matches the browser. CONTRACT.md §1.3.1
+ */
+export declare const keysCovering: (picks: ReadonlyArray<VariantPick>) => string[];
+/** Every key the axes allow, in the order their rules are written. */
+export declare const orderedVariantKeys: (axes: ReadonlyArray<VariantAxis>) => string[];
 /**
  * One pseudo-class rule the parser couldn't route into a typed state
  * override — preserved verbatim so the generator can re-emit it

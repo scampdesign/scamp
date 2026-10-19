@@ -6,7 +6,7 @@ fixes the `_scamp` reader and adds contract §1.3.1 with a Button fixture
 (`contract-2/components/Button`). Phase 1 is done (see "What phase 1
 built"). Phases 2 to 5 are built and waiting on a manual test (see
 each "What phase N built"). Phases 6 and 7 were
-**proposed** (2026-10-19); phase 6 is decided and in progress. See "Phase 6"
+**proposed** (2026-10-19); phase 6 is built and waiting on a manual test. See "Phase 6"
 and "Phase 7" below. Branch
 `plan/component-variants`.
 
@@ -466,7 +466,7 @@ byte-for-byte target for phase 1's drift test:
 | 3. Use variants — **built, manual test pending** | The instance **Variant** select, instance rendering, checks, and the agent's tools. |
 | 4. Starter components and states — **built, manual test pending** | Demo **Button** (`variant`, `size`), **Modal** and **Menu** (`state`) components, and a walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. |
 | 5. React import — **built, manual test pending** | `style-varies` copies become variants. |
-| 6. The variant set — **decided, in progress** | The component editor shows every variant as a frame in a labelled grid, Figma's component set. Click any frame to edit it in place; a frame that combines two axes edits that combination. Variant properties move to a panel section. |
+| 6. The variant set — **built, manual test pending** | The component editor shows every variant as a frame in a labelled grid, Figma's component set. Click any frame to edit it in place; a frame that combines two axes edits that combination. Variant properties move to a panel section. |
 | 7. Interactive variants — **proposed** | An instance changes to another variant while hovered, while pressed, while focused, or on click. Hover, press, and focus are CSS; click needs a small framework runtime. |
 
 Native popovers were planned as a phase and are dropped for now (decision 4).
@@ -985,6 +985,67 @@ test), released before the Scamp side, like phase 0.
 - **Tests:** `test/reactVariants.test.ts` (10); the nav-highlight test in
   `test/reactComponents.test.ts` now expects variants named by page, each
   view's instance picking its own, and files that read back the same.
+
+## What phase 6 built
+
+- **Combinations** (`element/types.ts`): `variantComboKey`,
+  `variantKeyParts`, `keysCovering` (the keys a set of picks reaches,
+  in written order), `orderedVariantKeys` (every key, singles first).
+  - Generated after every single value; parsed when each attribute is
+    a declared, non-default value in axis order, otherwise verbatim.
+  - The canvas, patch routing, instances (`instanceVariantKeys`), and
+    every axis edit (rename and remove a value or an axis) handle them.
+  - Contract §1.3.1 says so, with a combination rule in the Button
+    fixture: committed in scampjs (`b431b4b`), **not pushed or released
+    yet**. Scamp doesn't need the release to work; the drift test picks
+    up the new fixture once it's published.
+- **Make default** (`makeVariantDefault`): computes every element's look
+  for every combination and state under the old default, then writes
+  them back as the smallest overrides under the new one, which moves to
+  the front of the values. Tested by comparing every look before and
+  after, and after a save and reload.
+- **Reorder** (`moveVariantValue`) and the **36-combination limit**
+  (`combinationLimitError`), which refuses an add past it.
+- **Axis names are lowercase letters and digits.** The parser only
+  matches lowercase `data-` attributes, so a camelCase axis the old bar
+  allowed (`isOpen`) wouldn't have read back.
+- **The variant set** (`canvas/VariantSet.tsx`, `variantGrid`): drawn
+  inside the one live canvas frame, which takes the set's width. So no
+  Viewport split was needed: selection, drawing, and moving measure
+  against the frame, wherever the live root sits in it.
+  - The live frame renders the editable root; the others are
+    read-only (`VariantFrameContext`, now with `displayOnly`).
+  - **Click any frame** (`inactiveVariantCellAt` in the interaction
+    layer): it becomes live and the element under the pointer is
+    selected. Its label makes it live with nothing selected.
+  - **Frames hug** the component (`isInstanceInner` for the root), and
+    each is sized after render to reach its furthest element, since a
+    root with only absolute children is 0 tall. A root that fills its
+    container takes the artboard size on that axis. Each frame
+    contains fixed descendants, so the Modal's backdrop stays in its
+    frame.
+  - The artboard's resize handles are off in a set; **Canvas size**
+    still sets the size a filling root takes.
+- **The Variants section** (`VariantsSection`, `VariantAxisRow`) in the
+  properties panel, with nothing or the root selected: **Editing** (a
+  list per property, the frame you're on), each property's values as
+  chips (click to go to that frame, drag to reorder, double-click to
+  rename), **Make … the default**, **Remove …**, and **+ Add property**.
+  The variant bar and `VariantFrames` are removed.
+- **Docs:** `components.md` (the set, editing frames, reorder, default,
+  remove, the combination rule), `agent.md`, and the changelog.
+- **Tests:** `test/variantCombinations.test.ts` (30), the variant tests
+  updated for combination keys, and `test/e2e/components/variants.spec.ts`
+  rewritten (5): edit in place, remove, a combination rule, Make
+  default, and a starter's set.
+- **Different from the plan:**
+  - **The default isn't always top-left.** The grid follows each
+    property's value order, so the Button's `medium` sits in the middle
+    column; the default frame is labelled **default** instead. **Make
+    default** moves a value to the front, so a component you set up
+    that way does read from the top-left.
+  - **No separate "frame selected" state.** **Editing** always shows the
+    frame you're on, so clicking a label only makes the frame live.
 
 ## Decisions
 

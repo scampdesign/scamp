@@ -1,4 +1,4 @@
-import { type RefObject } from 'react';
+import { useCallback, useState, type RefObject } from 'react';
 import { viewSlugFor } from '@shared/templates';
 
 import type { ProjectConfig } from '@shared/types';
@@ -8,12 +8,11 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { useSnapshotsStore } from '@store/snapshotsSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { Viewport } from '@renderer/src/canvas/Viewport';
-import { VariantFrames } from '@renderer/src/canvas/VariantFrames';
+import { VariantSet } from '@renderer/src/canvas/VariantSet';
 
 import { CanvasSizeControl } from '../CanvasSizeControl';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 import { Toolbar } from '../Toolbar';
-import { VariantBar } from '../VariantBar';
 import { SvgReloadBanner } from './SvgReloadBanner';
 import { CanvasNotice } from './CanvasNotice';
 import type { ActiveComponent } from './types';
@@ -55,9 +54,18 @@ export const CanvasArea = ({
     ? projectConfig.canvasOverflowHidden
     : resolveClip(projectConfig, activeBreakpointId);
   const pageHeightIsFixed = !isComponent && projectConfig.canvasFixedHeight === true;
-  const frameWidth = component !== null
-    ? componentCanvasSizeFor(projectConfig, component.name, 'component').width
-    : projectConfig.canvasWidth;
+  const artboard = component !== null ? componentCanvasSizeFor(projectConfig, component.name, 'component') : null;
+  // A component with variants is drawn as its variant set, which sizes
+  // the frame to itself. see docs/plans/component-variants-plan.md, phase 6
+  const hasVariants = useCanvasStore((s) => (s.elements[ROOT_ELEMENT_ID]?.variantAxes?.length ?? 0) > 0);
+  const setMode = component !== null && hasVariants;
+  const [setWidth, setSetWidth] = useState(0);
+  const handleSetWidth = useCallback((width: number): void => setSetWidth(width), []);
+  const frameWidth = setMode
+    ? Math.max(setWidth, 1)
+    : artboard !== null
+      ? artboard.width
+      : projectConfig.canvasWidth;
   // The header spans the frame as drawn, so the size control sits at the
   // frame's right edge. Fit zooms to the content, overflow included, so a
   // page with a wide marquee draws its frame well short of the canvas area.
@@ -190,18 +198,29 @@ export const CanvasArea = ({
               componentKind={component !== null ? 'component' : undefined}
             />
           </div>
-          {component !== null && <VariantBar />}
           <Viewport
             canvasWidth={frameWidth}
             canvasHeight={
-              component !== null
-                ? componentCanvasSizeFor(projectConfig, component.name, 'component').height
-                : pageHeightIsFixed
-                  ? projectConfig.canvasHeight
-                  : undefined
+              setMode
+                ? 0
+                : artboard !== null
+                  ? artboard.height
+                  : pageHeightIsFixed
+                    ? projectConfig.canvasHeight
+                    : undefined
             }
             heightIsFixed={pageHeightIsFixed}
-            clipContent={clipContent}
+            clipContent={setMode ? false : clipContent}
+            frameContent={
+              setMode && component !== null && artboard !== null ? (
+                <VariantSet
+                  componentName={component.name}
+                  artboardWidth={artboard.width}
+                  artboardHeight={artboard.height}
+                  onWidth={handleSetWidth}
+                />
+              ) : undefined
+            }
             scrollContainerRef={artboardScrollRef}
             // Drag-handle resize is enabled only in component
             // mode; the page canvas uses the project-wide
@@ -209,7 +228,7 @@ export const CanvasArea = ({
             // explicit height — page canvases grow with
             // content).
             onResize={
-              component !== null
+              component !== null && !setMode
                 ? (width, height) => {
                     const name = component.name;
                     const nextMap = {
@@ -224,13 +243,6 @@ export const CanvasArea = ({
                 : undefined
             }
           />
-          {component !== null && (
-            <VariantFrames
-              width={frameWidth}
-              minHeight={componentCanvasSizeFor(projectConfig, component.name, 'component').height}
-              scale={scale}
-            />
-          )}
         </div>
       </div>
       <CanvasNotice />

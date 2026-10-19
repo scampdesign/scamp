@@ -1,0 +1,89 @@
+/* Figma's component set: a dashed border around the variants, the
+   component's name above it. Lives inside the canvas frame, so sizes
+   are in the design's own pixels and scale with the zoom. */
+.set {
+  position: relative;
+  width: max-content;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 24px;
+  margin-top: 28px;
+  border: 1.5px dashed var(--component);
+  border-radius: 6px;
+}
+
+/* The set's own words are Scamp's, not the design's; the frames keep the
+   project's font. */
+.name,
+.heading,
+.label {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.name {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--component);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.cellLive .label {
+  color: var(--component);
+}
+
+.defaultTag {
+  font-size: 10px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.frame {
+  position: relative;
+  /* Each frame is its own containing block, so a fixed root (a modal's
+     backdrop) covers its frame, not the whole set. */
+  contain: layout;
+  background: #ffffff;
+  color: #000;
+  outline: 1px solid var(--border);
+}
+
+.cellLive .frame {
+  outline: 1.5px solid var(--component);
+}

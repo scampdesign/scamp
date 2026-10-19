@@ -9,7 +9,7 @@ import {
   isInvertedBinding,
   isRowPath,
 } from '../viewProps';
-import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, variantKey, withAttributeSample, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride, type VariantOverride } from "../element";
+import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, variantComboKey, withAttributeSample, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride, type VariantOverride } from "../element";
 import { DEFAULT_RECT_STYLES } from '../defaults';
 import { composeMaps } from '../sourceMap';
 import { TABLE_LAYOUT_TAGS } from '../tableGrid';
@@ -656,14 +656,19 @@ export const parseCode = (
   const idByClass = new Map([...classById].map(([id, cls]) => [cls, id]));
   const rootClass = classById.get(ROOT_ELEMENT_ID);
   for (const rule of parsedCss.axisRules) {
-    const axis = axes.find((a) => a.prop === rule.axis);
+    // Each attribute a declared axis's non-default value, one per axis, in
+    // axis order: the order the generator writes, so the file round-trips.
+    const axisIndexes = rule.parts.map((part) => axes.findIndex((a) => a.prop === part.axis));
+    const partsPlaceable = rule.parts.every((part, i) => {
+      const axis = axes[axisIndexes[i] as number];
+      const previous = i === 0 ? -1 : (axisIndexes[i - 1] as number);
+      return axis !== undefined && (axisIndexes[i] as number) > previous && axis.values.includes(part.value) && part.value !== axis.defaultValue;
+    });
     const targetId = idByClass.get(rule.targetClass);
     const target = targetId === undefined ? undefined : elements[targetId];
     const placeable =
-      axis !== undefined &&
+      partsPlaceable &&
       rule.anchorClass === rootClass &&
-      axis.values.includes(rule.value) &&
-      rule.value !== axis.defaultValue &&
       target !== undefined &&
       targetId !== undefined;
     if (!placeable) {
@@ -674,7 +679,7 @@ export const parseCode = (
       }
       continue;
     }
-    const key = variantKey(rule.axis, rule.value);
+    const key = variantComboKey(rule.parts);
     const existing: VariantOverride = target.variantOverrides?.[key] ?? {};
     const next: VariantOverride =
       rule.state === null

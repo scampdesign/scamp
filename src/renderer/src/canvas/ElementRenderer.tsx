@@ -11,7 +11,7 @@ import {
   useMemo,
   useRef, cloneElement } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
-import { type FlexDirection, type ScampElement, ROOT_ELEMENT_ID } from '@lib/element';
+import { type FlexDirection, type ScampElement, ROOT_ELEMENT_ID, variantKeyParts } from '@lib/element';
 import {
   childBindingKey,
   expandChildren,
@@ -39,7 +39,7 @@ import {
 import { DEFAULT_ROOT_STYLES } from '@lib/defaults';
 import { instanceStretchStyle } from '@lib/instanceStretch';
 import { resolveElementAtBreakpoint } from '@lib/breakpointCascade';
-import { instanceVariantKeys, parseVariantKey } from '@lib/variantAxes';
+import { instanceVariantKeys } from '@lib/variantAxes';
 import { layerVariants, resolveElementAtState } from '@lib/stateCascade';
 import { formatAnimationShorthand } from '@lib/parsers';
 import type { ThemeToken,
@@ -184,8 +184,8 @@ const renderComponentSubtree = (
         key={element.id}
         style={{
           padding: '4px 8px',
-          background: 'rgba(99, 102, 241, 0.12)',
-          border: '1px dashed var(--accent, #6366f1)',
+          background: 'var(--component-muted)',
+          border: '1px dashed var(--component)',
           borderRadius: 4,
           color: 'var(--text-secondary)',
           fontSize: 12,
@@ -517,11 +517,11 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
   const variantFrame = useContext(VariantFrameContext);
   const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
   const variantKey = variantFrame !== null ? variantFrame.variantKey : activeVariantKey;
-  const displayOnly = isRepeatCopy || variantFrame !== null;
+  const displayOnly = isRepeatCopy || variantFrame?.displayOnly === true;
   const activeBreakpointId = useCanvasStore((s) => s.activeBreakpointId);
   const activeStateName = useCanvasStore((s) => s.activeStateName);
   const breakpoints = useCanvasStore((s) => s.breakpoints);
-  const isSelected = useCanvasStore((s) => s.selectedElementIds.includes(elementId)) && variantFrame === null;
+  const isSelected = useCanvasStore((s) => s.selectedElementIds.includes(elementId)) && variantFrame?.displayOnly !== true;
   // Resolve overrides at render time. Selected elements get the
   // active state's overrides layered in (the state switcher *is* the
   // canvas preview); non-selected elements always render their
@@ -713,7 +713,8 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
     themeTokens,
     projectDir,
     projectFormat,
-    false,
+    // A frame of the variant set draws the root at its own size.
+    variantFrame !== null,
     canvasMinHeight,
     inComponentEditor
   );
@@ -945,8 +946,8 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
           style={{
             ...style,
             padding: '12px 16px',
-            background: 'rgba(99, 102, 241, 0.08)',
-            border: '1px dashed var(--accent, #6366f1)',
+            background: 'var(--component-muted)',
+            border: '1px dashed var(--component)',
             borderRadius: 4,
             color: 'var(--text-secondary)',
             fontSize: 12,
@@ -1092,8 +1093,8 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
     }
   }
   // The root carries the value drawn, so the injected sheet's variant rules match.
-  const drawnVariant = variantKey !== null && element.id === ROOT_ELEMENT_ID ? parseVariantKey(variantKey) : null;
-  if (drawnVariant !== null) props[`data-${drawnVariant.axis}`] = drawnVariant.value;
+  const drawnVariant = variantKey !== null && element.id === ROOT_ELEMENT_ID ? variantKeyParts(variantKey) : null;
+  for (const part of drawnVariant ?? []) props[`data-${part.axis}`] = part.value;
 
   // Interaction side-effects prevention for tags that would otherwise
   // navigate or submit. The canvas is a design surface, not a runtime.
