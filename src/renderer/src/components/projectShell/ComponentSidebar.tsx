@@ -2,6 +2,7 @@ import { type Dispatch, type MouseEvent as ReactMouseEvent, type SetStateAction 
 
 import type { ComponentFile, ComponentKind } from '@shared/types';
 import { componentKindOf } from '@shared/types';
+import { STARTERS, freeStarterName, starterFiles } from '@lib/starterComponents';
 
 import { COMPONENT_DRAG_MIME } from '../../canvas/interactions/useComponentDrop';
 
@@ -21,7 +22,7 @@ type Props = {
   activeComponent: ActiveComponent | null;
   setComponentEdit: Dispatch<SetStateAction<ComponentEdit>>;
   setComponentEditError: Dispatch<SetStateAction<string | null>>;
-  handleAddComponent: (name: string, kind: ComponentKind) => Promise<void>;
+  handleAddComponent: (name: string, kind: ComponentKind, files?: { tsx: string; css: string }) => Promise<void>;
   handleRenameComponent: (oldName: string, newName: string) => Promise<boolean>;
   openComponent: (name: string, fromPage: string | null) => void;
   openComponentMenu: (e: ReactMouseEvent, componentName: string) => void;
@@ -127,6 +128,31 @@ export const ComponentSidebar = ({
         >
           + Add Component
         </button>
+      )}
+      {componentEdit === null && (
+        <div className={styles.starterRow} role="group" aria-label="Add a starter component">
+          <span>Starters:</span>
+          {STARTERS.map((starter) => (
+            <button
+              key={starter.name}
+              type="button"
+              className={styles.starterButton}
+              title={starter.description}
+              disabled={creatingComponent}
+              onClick={() => {
+                const name = freeStarterName(starter.name, allNames);
+                void handleAddComponent(name, kind, starterFiles(starter.name, name));
+              }}
+            >
+              {starter.name}
+            </button>
+          ))}
+        </div>
+      )}
+      {componentEdit === null && componentEditError !== null && (
+        <div className={styles.starterError} role="alert">
+          {componentEditError}
+        </div>
       )}
     </div>
   );

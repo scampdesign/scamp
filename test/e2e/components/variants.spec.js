@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/app';
 import { drawAndSelectRect, panelSection } from '../fixtures/panel';
-import { createComponentFromSidebar } from '../fixtures/components';
+import { createComponentFromSidebar, openComponentsSection } from '../fixtures/components';
 import { canvasFrame, pageRoot } from '../fixtures/selectors';
 import { waitForSaved } from '../fixtures/assertions';
 test.use({ projectOptions: { format: 'nextjs' } });
@@ -66,5 +66,22 @@ test.describe('components: variants', () => {
         expect(css).not.toContain('data-variant');
         expect(tsx).toContain('variant?: "default";');
         await expect(bar.getByRole('radio', { name: 'default' })).toHaveAttribute('aria-checked', 'true');
+    });
+    test('a starter adds a ready component with its variants, numbered when the name is taken', async ({ window, project }) => {
+        await expect(pageRoot(window)).toBeVisible();
+        await openComponentsSection(window);
+        const starters = window.getByRole('group', { name: 'Add a starter component' });
+        await starters.getByRole('button', { name: 'Button', exact: true }).click();
+        const bar = window.getByTestId('variant-bar');
+        await expect(bar.getByTestId('variant-axis-variant')).toBeVisible();
+        await expect(bar.getByTestId('variant-axis-size')).toBeVisible();
+        // The base look is being edited; the other four values are drawn beside it.
+        await expect(window.locator('[data-variant-frame]')).toHaveCount(4);
+        const { tsx } = await project.readComponent('Button');
+        expect(tsx).toContain('variant?: "default" | "outline" | "secondary";');
+        expect(tsx).toContain('export default function Button(');
+        await starters.getByRole('button', { name: 'Button', exact: true }).click();
+        await expect(window.getByTestId('component-editor-banner')).toContainText('Button2');
+        expect((await project.readComponent('Button2')).tsx).toContain('export default function Button2(');
     });
 });

@@ -22,6 +22,25 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Added**
+
+- **Design component variants.** Above the component editor's artboard,
+  the variant bar adds axes and values, such as a button's `variant` and
+  `size`. You edit one value at a time, and the others are drawn beside
+  it for comparison. Scamp writes each value as a `data-` attribute rule,
+  which runs with no JavaScript.
+- **Pick a variant for each instance.** An instance's section in the
+  properties panel has a list for each axis, so one Button component
+  gives you a primary and an outline button on the same page.
+- **Starter Button, Modal, and Menu components.** Add one from
+  **Starters** in the Components list to reuse, restyle, or learn from.
+  The Modal and Menu open and close through a route's state.
+- **Checks find variant mistakes.** An instance set to a value its
+  component lacks, and a rule for a value the component doesn't
+  declare, are both listed.
+
 ### 0.10.0 (2026-10-17)
 
 **Added**

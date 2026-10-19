@@ -16,7 +16,7 @@ Scamp is a local-first design tool that generates real code as you design. Draw 
 - [Flex layout](flex-layout.md)—Flex containers (direction, wrap, alignment, and gaps) and flex-child controls (grow, shrink, basis, align self, and order)
 - [Grid layout](grid-layout.md)—CSS Grid containers, columns, rows, and grid-item placement
 - [Tables](tables.md)—Table tags, columns set once on the table, and row and cell styling
-- [Components](components.md)—Reusable components across pages, the component editor, the Data tab, and per-instance text overrides
+- [Components](components.md)—Reusable components across pages, the component editor, the Data tab, per-instance text overrides, variants, and starter components
 - [The Scamp framework](scamp-framework.md)—What a project is made of, which files Scamp owns, and how design, routes, and agents fit together
 - [Views](views.md)—A page's design as a component-shaped file, data bindings in the Data tab, and Scamp framework projects
 - [Import a page from the web](website-import.md)—Read a live web page or a React app's pages into views, what comes across, and what doesn't

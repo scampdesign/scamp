@@ -63,6 +63,25 @@ At the bottom of the Components list, click **+ Add component**, and
 then type a name. Scamp scaffolds an empty component and opens the
 component editor so you can start designing.
 
+### From a starter
+
+Below **+ Add component**, click one of the **Starters**: **Button**,
+**Modal**, or **Menu**. Scamp adds a ready-made component and opens it
+in the component editor. Each one shows [variants](#variants) at work,
+so you can use it as it is, restyle it, or read it to learn how to
+build your own.
+
+| Starter | Variants | Event |
+|---|---|---|
+| Button | `variant`: `default`, `outline`, `secondary`; `size`: `small`, `medium`, `large` | `onClick` |
+| Modal | `state`: `open`, `closed` | `onClose` |
+| Menu | `state`: `open`, `closed` | `onToggle` |
+
+If the project already has a component with that name, Scamp numbers
+the new one: `Button2`, `Button3`, and so on. The starters use plain
+colors rather than your theme's tokens; swap in tokens once you've added
+one.
+
 ### From an agent
 
 An [AI agent](ai-agents.md) working in your project can create
@@ -183,6 +202,151 @@ The generated JSX picks up overrides as JSX attributes:
 
 Locked text in the component renders the same across every instance and
 never appears in the Instance section.
+
+## Variants
+
+A variant is one look of a component: an outline button, a small one, a
+modal that's open or closed. You design every look in one component, and
+each instance picks the one it shows.
+
+Variants are grouped into **axes**. An axis is a prop with a fixed list
+of values, such as `variant` with `default`, `outline`, and `secondary`.
+A component can have several axes; a button might have `variant` and
+`size`. Each axis has a default value, which is the component's own look.
+
+### Add a variant
+
+1. Open the component in the component editor.
+1. Above the artboard, click **+ Add variant**. Scamp adds a `variant`
+   axis with a `default` value and a new value, and selects the new one.
+1. Type a name for the value, such as `outline`, and press **Enter**.
+
+To add another value to an axis, click **+** at the end of its row. The
+new value starts as a copy of the look you're editing. To add a second
+axis, such as a size, click **+ Add axis**.
+
+Value names use lowercase letters, digits, and hyphens. To rename a
+value or an axis, double-click its name.
+
+### Design a variant
+
+Select a value in the variant bar. Anything you change now applies to
+that value only: colors, borders, sizes, and the position of elements.
+The other values keep their own look.
+
+- The selected value is drawn on the artboard, where you edit it.
+- The other values are drawn below it, read-only, so you can compare
+  them. Click one to edit it.
+- To change how a value looks on hover, select the value, and then
+  select **Hover** in the state switcher. See
+  [Element states](element-states.md).
+- To hide an element in one value, select the value and the element,
+  and then, in the **Visibility** section, set **Display** to **None**.
+- A section title shows the override dot when the selected value changes
+  one of its fields. Right-click the title to reset those fields to the
+  default look.
+
+Variants are designed at the desktop breakpoint. At other breakpoints,
+the variant bar is turned off and the canvas shows the default look.
+
+### Remove a variant
+
+Select the value, click **Remove value**, and then click **Remove** to
+confirm. Scamp deletes the value and its styles. **Remove axis** removes
+a whole axis, with all its values. The default value of an axis can't be
+removed.
+
+An instance still set to a removed value shows the default look, and the
+[Checks](views.md#find-problems-in-a-view) section lists it.
+
+### Pick a variant for an instance
+
+Select an instance on a page. In the properties panel, the section named
+after the component has one list for each axis. Select a value, and the
+instance shows that look.
+
+The page's file names the value as a plain attribute:
+
+```tsx
+<Button data-scamp-instance-id="inst_a1b2" variant="outline" size="small" />
+```
+
+Selecting the default value removes the attribute.
+
+### Open a modal from a route
+
+A modal or menu changes its look while the page runs: it opens on a
+click and closes again. The page's route holds whether it's open, and
+passes it to the component's `state` axis. This works in a
+[Scamp framework project](scamp-framework.md).
+
+1. Under **Starters**, click **Modal**.
+1. Open the view the modal belongs to, select the button that opens it,
+   and then, in the **Data** tab, bind the button's `onClick` to a new
+   event, such as `onOpenModal`.
+1. With nothing selected, under **Routes**, click **Generate route**.
+   Because the view has an event, the route renders in the browser.
+1. Edit the route so it keeps the modal's state and renders the modal
+   beside the view:
+
+   ```tsx
+   import { useState } from 'preact/hooks';
+   import Lobby from '@/views/Lobby/Lobby';
+   import Modal from '@/components/Modal/Modal';
+
+   export const render = 'client';
+
+   export default function LobbyRoute() {
+     const [open, setOpen] = useState(false);
+     return (
+       <>
+         <Lobby onOpenModal={() => setOpen(true)} />
+         <Modal state={open ? 'open' : 'closed'} onClose={() => setOpen(false)} />
+       </>
+     );
+   }
+   ```
+
+The modal's root is fixed to the window, so it covers the page wherever
+the route places it. The **Menu** starter works the same way, with
+`onToggle` on its trigger: `onToggle={() => setOpen(!open)}`.
+
+**Note:** On the canvas, a Modal instance with no `state` shows open,
+because `open` is its default. To design the page under it, set the
+instance's **state** to `closed`.
+
+### How variants are written
+
+Each axis is a prop typed as a union of its values, and the component's
+root carries it as a `data-` attribute:
+
+```tsx
+type ButtonProps = {
+  variant?: "default" | "outline" | "secondary";
+  className?: string;
+};
+
+export default function Button({ variant = "default", className }: ButtonProps) {
+  return (
+    <button data-scamp-id="root" className={`${styles.root} ${className ?? ''}`} type="button" data-variant={variant}>
+```
+
+Each value's styles are a rule after every element's own rules:
+
+```css
+.root[data-variant="outline"] {
+  background: transparent;
+}
+
+.root[data-variant="outline"] .label_c1a1 {
+  color: #2563eb;
+}
+```
+
+A variant rule outranks the element's own rule, and its own `:hover`
+rule. Rules Scamp can't place on one value, such as one that combines
+two axes (`[data-variant="outline"][data-size="small"]`), are kept as
+they are, and you edit them in the CSS panel.
 
 ## Slots
 

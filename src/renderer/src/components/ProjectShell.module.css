@@ -649,3 +649,35 @@ font-size: 13px;
   border-radius: var(--radius-sm);
 font-size: 12px;
 }
+
+.starterRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.starterButton {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.starterButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.starterError {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--error-text);
+}

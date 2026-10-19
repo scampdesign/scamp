@@ -4,8 +4,9 @@ Status: **decided, in progress**, 2026-10-17. Option A (data attributes),
 with the answers recorded at the end. Phase 0 is done: scampjs 0.3.2
 fixes the `_scamp` reader and adds contract §1.3.1 with a Button fixture
 (`contract-2/components/Button`). Phase 1 is done (see "What phase 1
-built"). Phases 2 and 3 are built and waiting on a manual test (see
-"What phase 2 built" and "What phase 3 built"). Branch
+built"). Phases 2, 3, and 4 are built and waiting on a manual test
+(see "What phase 2 built", "What phase 3 built", and "What phase 4
+built"). Branch
 `plan/component-variants`.
 
 ## What we want
@@ -462,7 +463,7 @@ byte-for-byte target for phase 1's drift test:
 | 1. Model and code — **done** | `variantAxes`, `variantOverrides`, generate and parse, round-trip tests, the drift test against the new fixture. No UI yet, so files written by hand or by an agent already round-trip. |
 | 2. Design variants — **built, manual test pending** | The variant switcher, editing per variant (including hover within a variant), and the side-by-side artboard. |
 | 3. Use variants — **built, manual test pending** | The instance **Variant** select, instance rendering, checks, and the agent's tools. |
-| 4. Starter components and states | Demo **Button** (`variant`, `size`), **Modal** and **Menu** (`state`) components, and a walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. |
+| 4. Starter components and states — **built, manual test pending** | Demo **Button** (`variant`, `size`), **Modal** and **Menu** (`state`) components, and a walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. |
 | 5. React import | `style-varies` copies become variants. |
 
 Native popovers were planned as a phase and are dropped for now (decision 4).
@@ -627,6 +628,42 @@ Plus: the modal opens and closes in the preview through a route's
   disk scan; the check reports the instances afterwards instead.
 - **Tests:** `test/variantInstances.test.ts` (14),
   `test/e2e/components/instance-variants.spec.ts` (1).
+
+## What phase 4 built
+
+- **Starters** (`lib/starterComponents.ts`): **Button** (`variant`,
+  `size`, `onClick`), **Modal** (`state`, `onClose`), and **Menu**
+  (`state`, `onToggle`). They're added from a **Starters** row under
+  **+ Add Component**, named `Button`, then `Button2` and so on
+  (case-insensitive, for macOS disks), and opened in the editor.
+- **Canonical files.** Each template is Scamp's own generated output,
+  so adding one causes no rewrite on load. The tests round-trip each
+  starter byte for byte under its own name and a new one, and check
+  that it lints clean.
+- **`state` defaults to `open`.** The component's own rules are the
+  open look, so editing it edits what you see; `closed` only hides
+  (`display: none` on the Modal's root, or on the Menu's panel). An
+  instance with no `state` therefore shows open on the canvas; the
+  docs say to set `closed` there.
+- **Plain colors, not theme tokens.** An imported project may not
+  declare `--color-primary`, and a missing token draws as nothing.
+- **The Button has a fixed height per size** (32, 40, 48px). A
+  content-height component root fills the editor's artboard, which
+  made a stretched blue column of the button.
+- **The route walkthrough** renders the Modal beside the view, in the
+  route, rather than inside the view. A view prop bound to an
+  instance's `state` would be typed `string` and fail the Modal's union,
+  so the route, which can hold `useState`, passes the value directly.
+- **User docs:** `components.md` gains "From a starter" and a
+  "Variants" section (add, design, remove, pick per instance, open a
+  modal from a route, the file shape). The index and changelog
+  (Unreleased) list variants and starters.
+- **Tests:** `test/starterComponents.test.ts` (15), and a third test in
+  `test/e2e/components/variants.spec.ts`.
+- **Found while writing the docs:** removing a Prop-mode text element
+  already lists the pages that use it. That scan could name the
+  instances that use a variant value before it's removed, the one
+  phase 3 item left open.
 
 ## Decisions
 

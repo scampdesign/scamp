@@ -12,7 +12,10 @@ type Props = {
     activeComponent: ActiveComponent | null;
     setComponentEdit: Dispatch<SetStateAction<ComponentEdit>>;
     setComponentEditError: Dispatch<SetStateAction<string | null>>;
-    handleAddComponent: (name: string, kind: ComponentKind) => Promise<void>;
+    handleAddComponent: (name: string, kind: ComponentKind, files?: {
+        tsx: string;
+        css: string;
+    }) => Promise<void>;
     handleRenameComponent: (oldName: string, newName: string) => Promise<boolean>;
     openComponent: (name: string, fromPage: string | null) => void;
     openComponentMenu: (e: ReactMouseEvent, componentName: string) => void;

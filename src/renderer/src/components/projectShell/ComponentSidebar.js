@@ -1,5 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { componentKindOf } from '@shared/types';
+import { STARTERS, freeStarterName, starterFiles } from '@lib/starterComponents';
 import { COMPONENT_DRAG_MIME } from '../../canvas/interactions/useComponentDrop';
 import { ComponentNameInput } from '../ComponentNameInput';
 import { ComponentSidebarItem } from '../ComponentSidebarItem';
@@ -40,5 +41,8 @@ export const ComponentSidebar = ({ components: allComponents, projectPath, compo
                             }, error: componentEditError, busy: creatingComponent }) }))] }), componentEdit === null && (_jsx("button", { className: styles.addPageButton, onClick: () => {
                     setComponentEditError(null);
                     setComponentEdit({ new: kind });
-                }, type: "button", children: "+ Add Component" }))] }));
+                }, type: "button", children: "+ Add Component" })), componentEdit === null && (_jsxs("div", { className: styles.starterRow, role: "group", "aria-label": "Add a starter component", children: [_jsx("span", { children: "Starters:" }), STARTERS.map((starter) => (_jsx("button", { type: "button", className: styles.starterButton, title: starter.description, disabled: creatingComponent, onClick: () => {
+                            const name = freeStarterName(starter.name, allNames);
+                            void handleAddComponent(name, kind, starterFiles(starter.name, name));
+                        }, children: starter.name }, starter.name)))] })), componentEdit === null && componentEditError !== null && (_jsx("div", { className: styles.starterError, role: "alert", children: componentEditError }))] }));
 };

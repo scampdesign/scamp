@@ -74,7 +74,8 @@ export type UseComponentManagement = {
   setComponentEditError: Dispatch<SetStateAction<string | null>>;
   creatingComponent: boolean;
   renamingComponent: boolean;
-  handleAddComponent: (name: string, kind: ComponentKind) => Promise<void>;
+  /** `files` starts the component from given files, such as a starter; omitted, it's blank. */
+  handleAddComponent: (name: string, kind: ComponentKind, files?: { tsx: string; css: string }) => Promise<void>;
   handleRenameComponent: (oldName: string, newName: string) => Promise<boolean>;
   openComponentMenu: (e: ReactMouseEvent, componentName: string) => void;
   componentMenu: ComponentMenuState | null;
@@ -182,7 +183,8 @@ export const useComponentManagement = ({
 
   const handleAddComponent = async (
     name: string,
-    kind: ComponentKind
+    kind: ComponentKind,
+    files?: { tsx: string; css: string }
   ): Promise<void> => {
     setCreatingComponent(true);
     setComponentEditError(null);
@@ -192,6 +194,7 @@ export const useComponentManagement = ({
         componentName: name,
         kind,
         wrapperSlug: kind === 'view' ? wrapperSlugFor(name) : null,
+        ...(files !== undefined ? { tsxContent: files.tsx, cssContent: files.css } : {}),
       });
       // Functional updater so this composes with `openComponent`'s
       // follow-on `persistActiveSource` if the outgoing page has

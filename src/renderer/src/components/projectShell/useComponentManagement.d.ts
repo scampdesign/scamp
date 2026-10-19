@@ -32,7 +32,11 @@ export type UseComponentManagement = {
     setComponentEditError: Dispatch<SetStateAction<string | null>>;
     creatingComponent: boolean;
     renamingComponent: boolean;
-    handleAddComponent: (name: string, kind: ComponentKind) => Promise<void>;
+    /** `files` starts the component from given files, such as a starter; omitted, it's blank. */
+    handleAddComponent: (name: string, kind: ComponentKind, files?: {
+        tsx: string;
+        css: string;
+    }) => Promise<void>;
     handleRenameComponent: (oldName: string, newName: string) => Promise<boolean>;
     openComponentMenu: (e: ReactMouseEvent, componentName: string) => void;
     componentMenu: ComponentMenuState | null;

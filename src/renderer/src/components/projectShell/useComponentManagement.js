@@ -70,7 +70,7 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
         const file = project.components.find((c) => c.name === componentName);
         return file ? componentKindOf(file) : 'component';
     };
-    const handleAddComponent = async (name, kind) => {
+    const handleAddComponent = async (name, kind, files) => {
         setCreatingComponent(true);
         setComponentEditError(null);
         try {
@@ -79,6 +79,7 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
                 componentName: name,
                 kind,
                 wrapperSlug: kind === 'view' ? wrapperSlugFor(name) : null,
+                ...(files !== undefined ? { tsxContent: files.tsx, cssContent: files.css } : {}),
             });
             // Functional updater so this composes with `openComponent`'s
             // follow-on `persistActiveSource` if the outgoing page has
