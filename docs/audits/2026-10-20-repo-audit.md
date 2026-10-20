@@ -1,6 +1,6 @@
 # Repo audit, 2026-10-20
 
-**Fixed:** 1 to 19 (2026-10-20).
+**Fixed:** 1 to 20, and the lean items (2026-10-20). The 11 smaller items left out of the list are not done.
 
 **What this repo does:** Scamp is a desktop design app built on Electron. You draw on a canvas and it saves real TSX and CSS files to your project, and when an AI agent or another editor changes those files, the canvas reloads. It also runs a local server that AI agents connect to (MCP), a sign-in flow, a built-in AI agent, and imports from websites and React apps.
 
@@ -149,7 +149,7 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
 
 ## Nice to have
 
-20. **The variant set re-renders far more than it needs to** (`src/renderer/src/canvas/ElementRenderer.tsx:545-551`)
+20. **Fixed in `8752ed6e`.** **The variant set re-renders far more than it needs to** (`src/renderer/src/canvas/ElementRenderer.tsx:545-551`)
     - **What this is:** each element looks up its parent's resolved styles.
     - **Problem:** the lookup builds a new object every time, so elements re-render on every store change. With 36 frames, a drag re-renders every element in every frame on every mouse move.
     - **Fix:** look up the raw parent and work out its styles with `useMemo`.
@@ -165,7 +165,7 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
 
 **Verdict:** fix 1, 2 and 3 first: they lose your work silently. Then 4 to 8, which make variants save or display wrong.
 
-**Lean:** about -60 lines, -0 dependencies possible:
+**Lean** (done in `8752ed6e`; it came to about even in lines, not -60, since the shared rules and their comments take space, but each rule now has one copy):
 - **Shared grammar:** keep one copy of the property-name and value rules instead of five.
 - **Duplicate helpers:**
   - `variantGrid` should call `keyFor`.
