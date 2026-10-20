@@ -11,6 +11,7 @@ import { viewNameForPage, viewSlugFor } from '@shared/templates';
 import { errorMessage } from '@shared/errorMessage';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useAppLogStore } from '@store/appLogSlice';
+import { useHistoryStore } from '@store/historySlice';
 import type { ScampElement } from '@lib/element';
 import { parseCode } from '@lib/parseCode';
 import { generateCode } from '@lib/generateCode';
@@ -317,6 +318,9 @@ export const useComponentManagement = ({
         componentName,
         kind: deletingComponent.kind,
       });
+      // A new component with this name mustn't inherit its undo history.
+      const deletedFile = fresh.components.find((c) => c.name === componentName);
+      if (deletedFile !== undefined) useHistoryStore.getState().forgetPage(deletedFile.tsxPath);
       const wasEditingDeleted =
         activeComponent !== null && activeComponent.name === componentName;
       if (wasEditingDeleted) {
@@ -417,6 +421,8 @@ export const useComponentManagement = ({
         componentName: oldName,
         kind,
       });
+      // The history follows the component to its new name, as a page's does.
+      useHistoryStore.getState().rekeyPage(sourceComponent.tsxPath, newComponentFile.tsxPath);
 
       const nextComponents = fresh.components.map((c) =>
         c.name === oldName ? newComponentFile : c

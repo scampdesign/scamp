@@ -122,6 +122,11 @@ type HistoryState = {
     clearAllHistory: () => void;
     /** Rekey a page's history (page rename). */
     rekeyPage: (oldId: string, newId: string) => void;
+    /**
+     * Drop a deleted page's or component's history. Kept, a new one with
+     * the same name inherits it, and undo writes the deleted content back.
+     */
+    forgetPage: (id: string) => void;
 };
 export declare const useHistoryStore: import("zustand").UseBoundStore<import("zustand").StoreApi<HistoryState>>;
 /** Read the active page's history. Returns an empty stack when no page is active. */

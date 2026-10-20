@@ -351,11 +351,32 @@ export const restoreSnapshot = async (projectPath, format, snapshotId, opts = {}
         if (safety === null) {
             return { ok: false, error: "Couldn't save the current state first, so nothing was restored." };
         }
-        for (const abs of files) {
-            const dest = join(projectPath, relative(dir, abs));
-            await fs.mkdir(dirname(dest), { recursive: true });
-            opts.beforeWrite?.(dest);
-            await fs.copyFile(abs, dest);
+        const written = [];
+        try {
+            for (const abs of files) {
+                const dest = join(projectPath, relative(dir, abs));
+                await fs.mkdir(dirname(dest), { recursive: true });
+                opts.beforeWrite?.(dest);
+                await fs.copyFile(abs, dest);
+                written.push(dest);
+            }
+        }
+        catch (err) {
+            // Partway through, the project is part snapshot, part current work,
+            // and the canvas still shows the current work. Put back what was
+            // replaced from the safety copy just taken, so it's all current again.
+            const safetyDir = snapshotDirFor(projectPath, safety.id);
+            for (const dest of written) {
+                const saved = join(safetyDir, relative(projectPath, dest));
+                // Not in the safety copy means it didn't exist before the restore.
+                const existed = await fs.access(saved).then(() => true, () => false);
+                if (existed)
+                    await fs.copyFile(saved, dest).catch(() => undefined);
+                else
+                    await fs.rm(dest, { force: true });
+            }
+            const reason = err instanceof Error ? err.message : String(err);
+            return { ok: false, error: `The restore failed partway (${reason}), so the project was left as it was.` };
         }
         return { ok: true };
     }

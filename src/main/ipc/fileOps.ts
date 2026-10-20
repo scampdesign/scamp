@@ -55,6 +55,29 @@ export const atomicWrite = async (
   await renameWithRetry(tmp, path);
 };
 
+/**
+ * Write a page's TSX then its CSS, as one change: if the CSS can't be
+ * written (a full disk, a permissions error), the TSX goes back to what it
+ * was, or away if it's new, before the error is rethrown. A new TSX beside
+ * the old CSS would load with its new elements unstyled.
+ */
+export const writePagePair = async (
+  tsxPath: string,
+  tsxContent: string,
+  cssPath: string,
+  cssContent: string
+): Promise<void> => {
+  const previousTsx = await fs.readFile(tsxPath, 'utf-8').catch(() => null);
+  await atomicWrite(tsxPath, tsxContent);
+  try {
+    await atomicWrite(cssPath, cssContent);
+  } catch (err) {
+    if (previousTsx === null) await fs.rm(tsxPath, { force: true }).catch(() => {});
+    else await atomicWrite(tsxPath, previousTsx).catch(() => {});
+    throw err;
+  }
+};
+
 const queues = new Map<string, Promise<void>>();
 
 /**

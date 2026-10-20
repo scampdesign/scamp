@@ -14,6 +14,13 @@
  */
 export declare const atomicWrite: (path: string, content: string) => Promise<void>;
 /**
+ * Write a page's TSX then its CSS, as one change: if the CSS can't be
+ * written (a full disk, a permissions error), the TSX goes back to what it
+ * was, or away if it's new, before the error is rethrown. A new TSX beside
+ * the old CSS would load with its new elements unstyled.
+ */
+export declare const writePagePair: (tsxPath: string, tsxContent: string, cssPath: string, cssContent: string) => Promise<void>;
+/**
  * Run `job` once every earlier job with the same `key` has settled, so two
  * read-modify-writes of one file (or one index) can't interleave and drop
  * each other's change. Keys are usually absolute paths.

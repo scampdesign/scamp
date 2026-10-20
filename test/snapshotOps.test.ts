@@ -443,6 +443,33 @@ describe('restoreSnapshot', () => {
     expect(list.some((s) => s.id === oldest!.id)).toBe(true);
   });
 
+  it('puts the project back as it was when a copy fails partway', async () => {
+    // It used to stop with some files restored and the rest not, while the
+    // canvas showed neither. see docs/audits/2026-10-20-repo-audit.md, finding 13
+    const root = await makeNextjsProject();
+    const snap = await createSnapshot(root, 'nextjs', 'manual', 'good state', now);
+    const files = await enumerateProjectFiles(root, 'nextjs');
+    const before = await Promise.all(files.map(async (f) => {
+      await fs.writeFile(f, `current ${path.basename(f)}`);
+      return [f, `current ${path.basename(f)}`] as const;
+    }));
+    // A file only the snapshot has would be new to the project.
+    await fs.writeFile(path.join(root, '.scamp', 'snapshots', snap!.id, 'app', 'extra.tsx'), 'extra');
+
+    let copies = 0;
+    const res = await restoreSnapshot(root, 'nextjs', snap!.id, {
+      nowMs: now + 60000,
+      beforeWrite: () => {
+        copies += 1;
+        if (copies === 4) throw new Error('disk full');
+      },
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error).toContain('disk full');
+    for (const [file, content] of before) expect(await fs.readFile(file, 'utf-8')).toBe(content);
+    await expect(fs.access(path.join(root, 'app', 'extra.tsx'))).rejects.toThrow();
+  });
+
   it('fails, rather than reporting success, when the snapshot has no files', async () => {
     const root = await makeNextjsProject();
     const snap = await createSnapshot(root, 'nextjs', 'manual', 'gone', now);

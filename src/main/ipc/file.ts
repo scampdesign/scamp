@@ -11,7 +11,7 @@ import type {
 import { patchClassBlock } from '@shared/patchClass';
 import { cancelPendingWrite, registerPendingWrite } from '../watcher';
 import { checkWriteConflict } from './fileConflict';
-import { atomicWrite, serializeByKey } from './fileOps';
+import { atomicWrite, serializeByKey, writePagePair } from './fileOps';
 import { assertInsideActiveProject } from './pathContainment';
 
 const inFlight = new Set<Promise<unknown>>();
@@ -45,8 +45,8 @@ const handleWrite = async (args: FileWriteArgs): Promise<FileWriteResult> => {
   registerPendingWrite(args.tsxPath, writeId, true);
   registerPendingWrite(args.cssPath, writeId, true);
   try {
-    await atomicWrite(args.tsxPath, args.tsxContent);
-    await atomicWrite(args.cssPath, args.cssContent);
+    // On a failure the TSX is put back, so neither file changed.
+    await writePagePair(args.tsxPath, args.tsxContent, args.cssPath, args.cssContent);
   } catch (err) {
     cancelPendingWrite(args.tsxPath);
     cancelPendingWrite(args.cssPath);
