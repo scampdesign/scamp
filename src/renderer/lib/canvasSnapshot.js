@@ -215,12 +215,17 @@ export const getViewProps = (input, name) => {
 /** Components by name and path, with their variant axes when they have any. */
 export const listComponents = (input) => input.componentNames.map((name) => {
     const tree = input.trees?.[name];
-    const axes = tree?.elements[tree.rootId]?.variantAxes ?? [];
+    const root = tree?.elements[tree.rootId];
+    const axes = root?.variantAxes ?? [];
+    const interactions = root?.variantInteractions ?? [];
     return {
         name,
         ...componentPathsRelative(name),
         ...(axes.length > 0
             ? { variants: axes.map((a) => ({ prop: a.prop, values: [...a.values], default: a.defaultValue })) }
+            : {}),
+        ...(interactions.length > 0
+            ? { interactions: interactions.map((i) => ({ trigger: i.trigger, prop: i.axis, from: i.from, to: i.to })) }
             : {}),
     };
 });

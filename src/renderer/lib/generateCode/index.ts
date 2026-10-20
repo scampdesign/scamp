@@ -2,6 +2,7 @@
 import { type KeyframesBlock, type ScampElement } from "../element";
 import { generateCss } from "./css";
 import { generateTsx } from "./tsx";
+import { withInteractionAttributes } from "../variantInteractions";
 import { type Breakpoint } from "@shared/types";
 
 /**
@@ -71,7 +72,8 @@ export type GeneratedCode = {
 export const generateCode = (args: GenerateCodeArgs): GeneratedCode => {
   return {
     tsx: generateTsx(
-      args.elements,
+      // Click, outside, and Escape interactions are attributes in the TSX.
+      withInteractionAttributes(args.elements),
       args.rootId,
       args.pageName,
       args.cssModuleImportName ?? args.pageName,

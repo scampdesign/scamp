@@ -12,6 +12,7 @@ import {
 import { EnumSelect } from './controls/EnumSelect';
 import { Section } from './sections/Section';
 import { VariantAxisRow } from './VariantAxisRow';
+import { VariantInteractions } from './VariantInteractions';
 import styles from './VariantsSection.module.css';
 
 const EMPTY_AXES: ReadonlyArray<VariantAxis> = [];
@@ -93,6 +94,7 @@ export const VariantsSection = (): JSX.Element => {
             />
           ))}
         </div>
+        {axes.length > 0 && <VariantInteractions axes={axes} picks={picks} disabled={nonDesktop} />}
         <button
           type="button"
           className={styles.addAxis}

@@ -136,6 +136,13 @@ export type FileListItem = {
         values: string[];
         default: string;
     }>;
+    /** Components only: what changes a value by itself. CONTRACT.md §1.3.2 */
+    interactions?: Array<{
+        trigger: string;
+        prop: string;
+        from: string | null;
+        to: string;
+    }>;
 };
 export type ThemeTokensResult = {
     tokens: Array<{

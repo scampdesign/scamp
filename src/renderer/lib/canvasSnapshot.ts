@@ -162,6 +162,8 @@ export type FileListItem = {
   view?: string;
   /** Components only: each variant axis, its values, and the default. CONTRACT.md §1.3.1 */
   variants?: Array<{ prop: string; values: string[]; default: string }>;
+  /** Components only: what changes a value by itself. CONTRACT.md §1.3.2 */
+  interactions?: Array<{ trigger: string; prop: string; from: string | null; to: string }>;
 };
 
 export type ThemeTokensResult = {
@@ -422,12 +424,17 @@ export const getViewProps = (
 export const listComponents = (input: SnapshotInput): FileListItem[] =>
   input.componentNames.map((name) => {
     const tree = input.trees?.[name];
-    const axes = tree?.elements[tree.rootId]?.variantAxes ?? [];
+    const root = tree?.elements[tree.rootId];
+    const axes = root?.variantAxes ?? [];
+    const interactions = root?.variantInteractions ?? [];
     return {
       name,
       ...componentPathsRelative(name),
       ...(axes.length > 0
         ? { variants: axes.map((a) => ({ prop: a.prop, values: [...a.values], default: a.defaultValue })) }
+        : {}),
+      ...(interactions.length > 0
+        ? { interactions: interactions.map((i) => ({ trigger: i.trigger, prop: i.axis, from: i.from, to: i.to })) }
         : {}),
     };
   });

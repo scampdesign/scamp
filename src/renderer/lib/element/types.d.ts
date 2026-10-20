@@ -733,6 +733,14 @@ export type ScampElement = {
      */
     variantOverrides?: Record<string, VariantOverride>;
     /**
+     * A component root's interactions: an axis that changes value on
+     * hover, press, focus, a click, a click outside, or Escape. Hover,
+     * press, and focus are written as second selectors on the target
+     * value's rules; the others as `data-scamp-*` attributes the scampjs
+     * handler reads. CONTRACT.md §1.3.2, docs/plans/component-variants-plan.md
+     */
+    variantInteractions?: ReadonlyArray<VariantInteraction>;
+    /**
      * Row and cell styling a `<table>` sets once for all of them. Not
      * overridable per breakpoint or state.
      */
@@ -751,7 +759,7 @@ export type ScampElement = {
  * (the matrix is deferred — see the element-states plan), and the
  * raw-selector passthrough lives only at the top level.
  */
-export type BreakpointOverride = Partial<Omit<ScampElement, 'id' | 'type' | 'parentId' | 'childIds' | 'breakpointOverrides' | 'stateOverrides' | 'customSelectorBlocks' | 'variantAxes' | 'variantOverrides' | 'tableStyle' | 'tag' | 'attributes' | 'selectOptions' | 'svgSource' | 'text' | 'runs' | 'name'>>;
+export type BreakpointOverride = Partial<Omit<ScampElement, 'id' | 'type' | 'parentId' | 'childIds' | 'breakpointOverrides' | 'stateOverrides' | 'customSelectorBlocks' | 'variantAxes' | 'variantOverrides' | 'variantInteractions' | 'tableStyle' | 'tag' | 'attributes' | 'selectOptions' | 'svgSource' | 'text' | 'runs' | 'name'>>;
 /**
  * The fixed set of CSS pseudo-classes Scamp models as first-class
  * "states" with typed per-field overrides. Other pseudo-classes
@@ -801,6 +809,17 @@ export type VariantAxis = {
 /** An element's styles under one axis value, with its states under that value. */
 export type VariantOverride = BreakpointOverride & {
     states?: Partial<Record<ElementStateName, StateOverride>>;
+};
+/** What changes a component's variant by itself. */
+export type VariantTrigger = 'hover' | 'press' | 'focus' | 'click' | 'outside' | 'escape';
+/** One interaction: on `trigger`, `axis` goes from `from` (null for any value) to `to`. */
+export type VariantInteraction = {
+    axis: string;
+    from: string | null;
+    trigger: VariantTrigger;
+    to: string;
+    /** Click only: the element clicked. The root when absent. */
+    target?: string;
 };
 /** The `variantOverrides` key for one axis value. */
 export declare const variantKey: (axis: string, value: string) => string;

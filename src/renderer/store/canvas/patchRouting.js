@@ -14,6 +14,7 @@ export const BASE_ONLY_PATCH_FIELDS = new Set([
     'stateOverrides',
     'variantAxes',
     'variantOverrides',
+    'variantInteractions',
     'customSelectorBlocks',
     'tableStyle',
     'tag',

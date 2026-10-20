@@ -1,6 +1,7 @@
 import { ROOT_ELEMENT_ID, keysCovering, orderedVariantKeys as orderedKeys, variantComboKey, variantKey, variantKeyParts, } from './element';
 import { collectViewProps } from './viewProps';
 import { resolveElementAtState } from './stateCascade';
+import { interactionError, mapInteractions } from './variantInteractions';
 /** A value is written as a CSS attribute value and a TS string literal. */
 const VALUE_RE = /^[a-z][a-z0-9-]*$/;
 /** An axis is a prop name and a `data-` attribute suffix, which CSS matches lowercase. */
@@ -164,7 +165,8 @@ export const removeVariantAxis = (elements, prop) => {
         const dropped = replaceAxis(root, prop, null);
         return setOptional(setOptional(dropped, 'bind', withoutKey(dropped.bind, attr)), 'attributes', withoutKey(dropped.attributes, attr));
     });
-    return mapOverrides(cleared, (o) => renameKeys(o, (k) => mapKeyParts(k, (axis, value) => (axis === prop ? null : { axis, value }))));
+    const withoutAxis = mapInteractions(cleared, (i) => (i.axis === prop ? null : i));
+    return mapOverrides(withoutAxis, (o) => renameKeys(o, (k) => mapKeyParts(k, (axis, value) => (axis === prop ? null : { axis, value }))));
 };
 export const renameVariantAxis = (elements, from, to) => {
     const axis = axesOf(elements).find((a) => a.prop === from);
@@ -178,7 +180,8 @@ export const renameVariantAxis = (elements, from, to) => {
         const { [fromAttr]: _attr, ...attributes } = next.attributes ?? {};
         return { ...next, bind: { ...bind, [toAttr]: to }, attributes: { ...attributes, [toAttr]: axis.defaultValue } };
     });
-    return mapOverrides(renamed, (o) => renameKeys(o, (k) => mapKeyParts(k, (axis, value) => ({ axis: axis === from ? to : axis, value }))));
+    const withAxis = mapInteractions(renamed, (i) => (i.axis === from ? { ...i, axis: to } : i));
+    return mapOverrides(withAxis, (o) => renameKeys(o, (k) => mapKeyParts(k, (axis, value) => ({ axis: axis === from ? to : axis, value }))));
 };
 /**
  * Add a value. With `copyFrom`, the new value starts as a copy of that
@@ -214,7 +217,8 @@ export const renameVariantValue = (elements, prop, from, to) => {
         });
         return isDefault ? { ...next, attributes: { ...next.attributes, [`data-${prop}`]: to } } : next;
     });
-    return mapOverrides(renamed, (o) => renameKeys(o, (k) => mapKeyParts(k, (axis, value) => ({ axis, value: axis === prop && value === from ? to : value }))));
+    const withValue = mapInteractions(renamed, (i) => i.axis !== prop ? i : { ...i, from: i.from === from ? to : i.from, to: i.to === from ? to : i.to });
+    return mapOverrides(withValue, (o) => renameKeys(o, (k) => mapKeyParts(k, (axis, value) => ({ axis, value: axis === prop && value === from ? to : value }))));
 };
 /** Remove a non-default value and its overrides. The default can't be removed. */
 export const removeVariantValue = (elements, prop, value) => {
@@ -222,7 +226,8 @@ export const removeVariantValue = (elements, prop, value) => {
     if (axis === undefined || axis.defaultValue === value || !axis.values.includes(value))
         return elements;
     const removed = withRoot(elements, (root) => replaceAxis(root, prop, { ...axis, values: axis.values.filter((v) => v !== value) }));
-    return mapOverrides(removed, (o) => renameKeys(o, (k) => mapKeyParts(k, (axis, v) => (axis === prop && v === value ? null : { axis, value: v }))));
+    const withoutValue = mapInteractions(removed, (i) => (i.axis === prop && (i.from === value || i.to === value) ? null : i));
+    return mapOverrides(withoutValue, (o) => renameKeys(o, (k) => mapKeyParts(k, (axis, v) => (axis === prop && v === value ? null : { axis, value: v }))));
 };
 /** The fields `key` (and `state` within it) overrides on `el`. */
 export const variantOverrideFields = (el, key, state) => {
@@ -358,10 +363,13 @@ export const makeVariantDefault = (elements, prop, value) => {
         }
         next[id] = Object.keys(overrides).length > 0 ? { ...rebuilt, variantOverrides: overrides } : rebuilt;
     }
-    return withRoot(next, (root) => ({
+    const rebased = withRoot(next, (root) => ({
         ...replaceAxis(root, prop, newAxes.find((a) => a.prop === prop) ?? axis),
         attributes: { ...root.attributes, [`data-${prop}`]: value },
     }));
+    // A hover, press, or focus into the new default has no rule left to
+    // carry it, so it goes; the others are unchanged.
+    return mapInteractions(rebased, (i) => (interactionError(newAxes, i) === null ? i : null));
 };
 /** Move a value to `toIndex` in its axis. Value order is the grid's and the CSS's. */
 export const moveVariantValue = (elements, prop, value, toIndex) => {

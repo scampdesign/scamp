@@ -2,6 +2,7 @@
 import { hasRunStyle, runClassName, runStyleDeclarations, runsOf } from '../textRuns';
 import { isGridTable, tableCaptionRule, tableSubgridRule } from '../tableGrid';
 import { tableStyleRules } from '../tableStyle';
+import { aliasSelectors } from "../variantInteractions";
 import { ELEMENT_STATES, orderedVariantKeys, variantKeyParts, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride } from "../element";
 import { breakpointOverrideLines, elementDeclarationLines, sizeDeclarationLines } from "./declarations";
 import { classNameFor, computeElementsNeedingPositioningContext } from "./internal";
@@ -180,21 +181,26 @@ const variantAxisBlocks = (
   if (root === undefined || !root.variantAxes) return [];
   const rootCls = classNameFor(root);
   const blocks: string[] = [];
+  const interactions = root.variantInteractions ?? [];
   for (const key of orderedVariantKeys(root.variantAxes)) {
     const parts = variantKeyParts(key) ?? [];
     const anchor = `.${rootCls}${parts.map((p) => `[data-${p.axis}="${p.value}"]`).join('')}`;
+    // Each rule, with a second selector per hover, press, or focus
+    // interaction into its value. CONTRACT.md §1.3.2
+    const selectorFor = (rest: string): string =>
+      [`${anchor}${rest}`, ...aliasSelectors(rootCls, parts, rest, interactions)].join(',\n');
     for (const el of ordered) {
       const override = el.variantOverrides?.[key];
       if (!override || el.type === 'component-instance') continue;
       const parent = el.parentId ? elements[el.parentId] ?? null : null;
-      const selector = el.id === root.id ? anchor : `${anchor} .${classNameFor(el)}`;
+      const rest = el.id === root.id ? '' : ` .${classNameFor(el)}`;
       const { states, ...style } = override;
-      const base = ruleFor(selector, breakpointOverrideLines(style, el, parent));
+      const base = ruleFor(selectorFor(rest), breakpointOverrideLines(style, el, parent));
       if (base !== null) blocks.push(base);
       for (const state of ELEMENT_STATES) {
         const stateOverride = states?.[state];
         if (!stateOverride) continue;
-        const block = ruleFor(`${selector}:${state}`, breakpointOverrideLines(stateOverride as BreakpointOverride, el, parent));
+        const block = ruleFor(selectorFor(`${rest}:${state}`), breakpointOverrideLines(stateOverride as BreakpointOverride, el, parent));
         if (block !== null) blocks.push(block);
       }
     }

@@ -1,4 +1,5 @@
 import { isMappedProperty } from './cssPropertyMap';
+import { TRIGGER_LABEL, interactionError } from './variantInteractions';
 import { BIND_MARK } from './parseCode/bindings';
 import { ROOT_ELEMENT_ID, type ScampElement } from './element';
 import { classNameFor } from './generateCode/internal';
@@ -29,7 +30,8 @@ export type ViewFindingKind =
   | 'table-repeated-style'
   | 'table-rowspan'
   | 'unknown-variant-value'
-  | 'undeclared-variant-rule';
+  | 'undeclared-variant-rule'
+  | 'variant-interaction';
 
 /**
  * A `problem` breaks the page, its export, or what can be reached. A
@@ -56,6 +58,9 @@ export type ViewFinding = {
   /** What to write instead. Absent when there's nothing actionable to say. */
   hint?: string;
 };
+
+/** Tags the keyboard reaches on its own, so a click on one works without a mouse. */
+const FOCUSABLE_TAGS: ReadonlySet<string> = new Set(['button', 'a', 'input', 'select', 'textarea', 'summary']);
 
 /** What lint reads from a component an instance renders. */
 export type ComponentRoot = Pick<ScampElement, 'tag' | 'variantAxes'>;
@@ -314,6 +319,45 @@ export const lintView = (input: LintInput): ViewFinding[] => {
           message: `\`${axis.prop}="${value}"\` isn't one of ${el.componentName}'s ${axis.prop} values, so it fails the type check and draws as \`${axis.defaultValue}\`.`,
           hint: `Use one of ${axis.values.map((v) => `\`${v}\``).join(', ')}, or add \`${value}\` to the component.`,
         });
+      }
+    }
+
+    // Interactions that can't work as written. CONTRACT.md §1.3.2
+    if (id === rootId) {
+      const axes = el.variantAxes ?? [];
+      const interactions = el.variantInteractions ?? [];
+      for (const i of interactions) {
+        const problem = interactionError(axes, i);
+        if (problem !== null) {
+          findings.push({ ...at, kind: 'variant-interaction', message: `${TRIGGER_LABEL[i.trigger]}: ${problem}` });
+        }
+        if (i.trigger === 'click') {
+          const target = elements[i.target ?? rootId];
+          const tag = target === undefined ? undefined : tagOf(target);
+          const focusable = tag !== undefined && FOCUSABLE_TAGS.has(tag);
+          if (target !== undefined && !focusable && target.attributes?.['tabIndex'] === undefined) {
+            findings.push({
+              ...at,
+              kind: 'variant-interaction',
+              message: `The click on \`${target.id === rootId ? 'root' : classNameFor(target)}\` can't be reached from the keyboard.`,
+              hint: 'Make that element a <button>, or give it role="button" and tabIndex={0}.',
+            });
+          }
+        }
+      }
+      // Both match while pressing; the rule written later wins.
+      for (const press of interactions.filter((i) => i.trigger === 'press')) {
+        const values = axes.find((a) => a.prop === press.axis)?.values ?? [];
+        for (const hover of interactions.filter((i) => i.trigger === 'hover' && i.axis === press.axis && i.to !== press.to)) {
+          if (values.indexOf(press.to) < values.indexOf(hover.to)) {
+            findings.push({
+              ...at,
+              kind: 'variant-interaction',
+              message: `While pressing shows ${press.to}, but ${hover.to} comes after it, so the hover look wins while pressing.`,
+              hint: `Move ${press.to} after ${hover.to} in the ${press.axis} values.`,
+            });
+          }
+        }
       }
     }
 

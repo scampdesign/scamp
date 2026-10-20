@@ -1885,6 +1885,24 @@ any other element's is \`.root[data-<prop>="<value>"] .<class>\`.
   in the union.
 - A variant rule outranks the element's own \`:hover\` rule.
 
+**Interactions.** A component can change a value by itself. Hover,
+press, and focus give each rule of the value changed to a second
+selector: the value changed from, with \`:hover\`, \`:active\`, or
+\`:focus-visible\` on the root (drop the attribute for "from any value"):
+
+\`\`\`css
+.root[data-state="hover"] .label_c1a1,
+.root[data-state="default"]:hover .label_c1a1 {
+  color: #1d4ed8;
+}
+\`\`\`
+
+In a Scamp framework project, a click, a click outside, and Escape are
+literal attributes the framework's handler reads, one
+\`<axis>:<from>=<to>,…\` group per axis (\`*\` for any value):
+\`data-scamp-click\` on the element clicked, \`data-scamp-outside\` and
+\`data-scamp-escape\` on the root. Put a click on a \`<button>\`.
+
 ### Instancing on a page
 
 Import the component (after the \`styles\` import; component imports

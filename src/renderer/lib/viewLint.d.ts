@@ -8,7 +8,7 @@ import { type ScampElement } from './element';
  * follows the documented "confirm it parsed" step learns nothing.
  * see docs/notes/view-lint.md
  */
-export type ViewFindingKind = 'marker-leaked' | 'binding-not-parsed' | 'not-panel-editable' | 'side-not-typed' | 'undeclared-token' | 'raw-text-fragment' | 'repeat-rows-differ' | 'missing-sample' | 'table-structure' | 'table-cell-width' | 'table-repeated-style' | 'table-rowspan' | 'unknown-variant-value' | 'undeclared-variant-rule';
+export type ViewFindingKind = 'marker-leaked' | 'binding-not-parsed' | 'not-panel-editable' | 'side-not-typed' | 'undeclared-token' | 'raw-text-fragment' | 'repeat-rows-differ' | 'missing-sample' | 'table-structure' | 'table-cell-width' | 'table-repeated-style' | 'table-rowspan' | 'unknown-variant-value' | 'undeclared-variant-rule' | 'variant-interaction';
 /**
  * A `problem` breaks the page, its export, or what can be reached. A
  * `note` renders correctly — the panel just has no control that holds

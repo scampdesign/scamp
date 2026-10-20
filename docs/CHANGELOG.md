@@ -44,6 +44,12 @@ release time.
   copies of a component differ only in paint, such as the current item
   in a navigation menu, each look becomes a variant the page's instance
   picks, instead of every page showing the most common look.
+- **Change a variant on hover, press, focus, or click.** A component's
+  **Interactions** change its own variant while it's used, like Figma's
+  **Change to**: a button's hover look, a menu that opens on a click and
+  closes on a click outside or Escape. Hover, press, and focus are CSS;
+  clicks run through the Scamp framework. **Try interactions** shows them
+  on the canvas.
 - **Checks find variant mistakes.** An instance set to a value its
   component lacks, and a rule for a value the component doesn't
   declare, are both listed.

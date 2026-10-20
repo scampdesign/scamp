@@ -71,6 +71,16 @@ export type AxisRule = {
     /** The element the declarations style: the anchor, or a descendant. */
     targetClass: string;
     state: ElementStateName | null;
+    /**
+     * Hover, press, and focus interactions into this rule's value, read
+     * from its second selectors. CONTRACT.md §1.3.2
+     */
+    aliases: Array<{
+        axis: string;
+        from: string | null;
+        trigger: 'hover' | 'press' | 'focus';
+        to: string;
+    }>;
     decls: RawDeclaration[];
     /** Verbatim, for when the axis isn't one the props type declares. */
     raw: RawSelectorBlock;
@@ -81,5 +91,13 @@ export type AxisRule = {
  * root followed by a descendant is outside the grammar.
  */
 export declare const matchAxisSelector: (selector: string) => Omit<AxisRule, "decls" | "raw"> | null;
+/**
+ * A variant rule with second selectors for its interactions: the first
+ * is the rule; each other is the same rule with one of its values swapped
+ * for the value it changes from (or dropped, for any value) and a
+ * trigger's pseudo-class on the root. Null when the first isn't a variant
+ * rule or another isn't such a selector. CONTRACT.md §1.3.2
+ */
+export declare const matchAxisSelectorList: (selector: string) => Omit<AxisRule, "decls" | "raw"> | null;
 export declare const parseCssDeclarations: (css: string, breakpoints: ReadonlyArray<Breakpoint>) => ParsedCss;
 export {};

@@ -119,9 +119,52 @@ export const matchAxisSelector = (selector) => {
     return {
         anchorClass,
         parts: [...attrs.matchAll(AXIS_ATTR_PARTS_RE)].map((a) => ({ axis: a[1] ?? '', value: a[2] ?? '' })),
+        aliases: [],
         targetClass: targetClass ?? anchorClass,
         state: state === null ? null : state,
     };
+};
+const PSEUDO_TRIGGER = {
+    ':hover': 'hover',
+    ':active': 'press',
+    ':focus-visible': 'focus',
+};
+const ALIAS_RE = new RegExp(`^\\.([A-Za-z_][\\w-]*)((?:${AXIS_ATTR})*)(:hover|:active|:focus-visible)(.*)$`);
+/**
+ * A variant rule with second selectors for its interactions: the first
+ * is the rule; each other is the same rule with one of its values swapped
+ * for the value it changes from (or dropped, for any value) and a
+ * trigger's pseudo-class on the root. Null when the first isn't a variant
+ * rule or another isn't such a selector. CONTRACT.md §1.3.2
+ */
+export const matchAxisSelectorList = (selector) => {
+    const [first = '', ...others] = selector.split(',').map((part) => part.trim());
+    const main = matchAxisSelector(first);
+    if (main === null)
+        return null;
+    const attrs = main.parts.map((p) => `[data-${p.axis}="${p.value}"]`).join('');
+    const rest = first.slice(`.${main.anchorClass}${attrs}`.length);
+    const aliases = [];
+    for (const other of others) {
+        const m = ALIAS_RE.exec(other);
+        if (m === null || m[1] !== main.anchorClass || m[4] !== rest)
+            return null;
+        const theirs = [...(m[2] ?? '').matchAll(AXIS_ATTR_PARTS_RE)].map((a) => ({ axis: a[1] ?? '', value: a[2] ?? '' }));
+        // Exactly one of the rule's values swapped, or dropped; the rest as they are.
+        const changed = main.parts.filter((p) => !theirs.some((t) => t.axis === p.axis && t.value === p.value));
+        const target = changed[0];
+        if (changed.length !== 1 || target === undefined)
+            return null;
+        const swapped = theirs.find((t) => t.axis === target.axis);
+        const expected = main.parts.flatMap((p) => (p !== target ? [p] : swapped === undefined ? [] : [swapped]));
+        if (theirs.length !== expected.length || theirs.some((t, i) => t.axis !== expected[i]?.axis || t.value !== expected[i]?.value))
+            return null;
+        const trigger = PSEUDO_TRIGGER[m[3] ?? ''];
+        if (trigger === undefined)
+            return null;
+        aliases.push({ axis: target.axis, from: swapped?.value ?? null, trigger, to: target.value });
+    }
+    return { ...main, aliases };
 };
 const SUPPORTED_STATES = new Map(ELEMENT_STATES.map((s) => [`:${s}`, s]));
 const classifyClassSelector = (selector) => {
@@ -291,7 +334,7 @@ export const parseCssDeclarations = (css, breakpoints) => {
             }
             continue;
         }
-        const axisMatch = matchAxisSelector(selector);
+        const axisMatch = matchAxisSelectorList(selector);
         if (axisMatch !== null) {
             axisRules.push({ ...axisMatch, decls: collectRuleNodes(node).decls, raw: rawBlockOf(node) });
             continue;

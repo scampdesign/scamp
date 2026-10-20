@@ -6,7 +6,7 @@ fixes the `_scamp` reader and adds contract §1.3.1 with a Button fixture
 (`contract-2/components/Button`). Phase 1 is done (see "What phase 1
 built"). Phases 2 to 5 are built and waiting on a manual test (see
 each "What phase N built"). Phases 6 and 7 were
-**proposed** (2026-10-19); phase 6 is built and waiting on a manual test. See "Phase 6"
+**proposed** (2026-10-19); phases 6 and 7 are built and waiting on a manual test. See "Phase 6"
 and "Phase 7" below. Branch
 `plan/component-variants`.
 
@@ -467,7 +467,7 @@ byte-for-byte target for phase 1's drift test:
 | 4. Starter components and states — **built, manual test pending** | Demo **Button** (`variant`, `size`), **Modal** and **Menu** (`state`) components, and a walkthrough in the user docs: the `state` axis, the route's `useState`, and the event props. |
 | 5. React import — **built, manual test pending** | `style-varies` copies become variants. |
 | 6. The variant set — **built, manual test pending** | The component editor shows every variant as a frame in a labelled grid, Figma's component set. Click any frame to edit it in place; a frame that combines two axes edits that combination. Variant properties move to a panel section. |
-| 7. Interactive variants — **proposed** | An instance changes to another variant while hovered, while pressed, while focused, or on click. Hover, press, and focus are CSS; click needs a small framework runtime. |
+| 7. Interactive variants — **built, manual test pending** | An instance changes to another variant while hovered, while pressed, while focused, or on click. Hover, press, and focus are CSS; click needs a small framework runtime. |
 
 Native popovers were planned as a phase and are dropped for now (decision 4).
 
@@ -786,22 +786,17 @@ test), released before the Scamp side, like phase 0.
   Preview window shows the hover look while hovered; a Menu instance
   opens on click in a static page.
 
-### Open questions for phase 7
+### Decisions for phase 7
 
-1. **Click in Next.js projects.** The runtime lives in scampjs. A
-   Next.js project has no place for it today. Options: Scamp writes a
-   small client component it owns into the app layout, or click
-   interactions are a Scamp framework feature and Next.js projects use
-   the route `useState` pattern from phase 4. I'd start with the
-   second.
-2. **Close on Escape and on a click outside**, as a menu should. That's
-   more runtime and more model (a trigger without a target). In this
-   phase, or after?
-3. **Which comes first, 6 or 7?** You listed interactions first. The
-   CSS half of phase 7 (hover, press, focus, and the panel list) can
-   ship before phase 6. The arrows between frames and the preview
-   toggle read best on phase 6's grid. I'd build 6 first, then 7; the
-   alternative is 7's CSS half first, with the arrows waiting for 6.
+Answered 2026-10-19.
+
+1. **Click is a Scamp framework feature.** Only its projects offer click,
+   click outside, and Escape; Next.js projects keep the route
+   `useState` pattern from phase 4.
+2. **Closing is the designer's choice.** Click outside and Escape are
+   triggers you add like any other, so a menu closes those ways only if
+   you say so.
+3. **Phase 6 came first**, so phase 7 builds on its grid and panel.
 
 ## What phase 1 built
 
@@ -1046,6 +1041,60 @@ test), released before the Scamp side, like phase 0.
     that way does read from the top-left.
   - **No separate "frame selected" state.** **Editing** always shows the
     frame you're on, so clicking a label only makes the frame live.
+
+## What phase 7 built
+
+- **The framework** (scampjs `f4876a1`, **not pushed or released**):
+  contract §1.3.2; `runtime/interactions.ts`, a delegated handler for
+  `data-scamp-click`, `data-scamp-outside`, and `data-scamp-escape`,
+  exported from `scampjs/runtime`; the build counts a file declaring
+  one like an event view, so its route ships the hydration entry, which
+  installs the handler; the dev server loads it on every page that
+  doesn't hydrate, so the Preview window runs it on static pages. Tests:
+  the parser and transitions, and a static route with a click shipping
+  the handler.
+- **The model:** `variantInteractions` on the root (`axis`, `from` or
+  null for any, `trigger`, `to`, and `target` for a click).
+- **Code** (`lib/variantInteractions.ts`):
+  - hover, press, and focus are second selectors on every rule of the
+    `to` value (`aliasSelectors`), read back by
+    `matchAxisSelectorList`; a list that isn't exactly that stays
+    verbatim
+  - click, outside, and Escape are attributes added before the TSX is
+    written (`withInteractionAttributes`) and taken off after it's read
+    (`readInteractionAttributes`); a malformed one stays an ordinary
+    attribute
+  - renaming or removing a value or a property carries the interactions
+    with it; **Make default** drops a hover, press, or focus into the
+    new default, since no rule is left to carry it
+- **The panel:** an **Interactions** list in the Variants section, and a
+  form: trigger, property, from (or any value), to, and for a click the
+  element clicked, picked from a list (selecting an element hides the
+  section, so it can't come from the selection).
+- **Try interactions** (`canvas/TryInteractions.tsx`): under the set, a
+  read-only copy that tracks hover, press, focus, clicks, a click
+  outside, and Escape itself (`shownPicks`, `afterTrigger`), since the
+  canvas's inline styles can't respond to CSS `:hover`.
+- **Checks** (`variant-interaction`): a value the property lacks, a
+  pressed look written before a hover look that would win, and a click
+  on an element the keyboard can't reach.
+- **Agents:** `agent.md` describes both forms; `scamp_list_components`
+  lists `interactions`.
+- **Docs:** `components.md` ("Change a variant on hover or click", and
+  the file shapes), `view-lint.md`, and the changelog.
+- **Tests:** `test/variantInteractions.test.ts` (22) and
+  `test/e2e/components/variant-interactions.spec.ts` (2: a hover in a
+  Next.js project, a menu's clicks in a Scamp framework project).
+- **Not built, from the plan:**
+  - **Arrows between frames.** The panel's list does the job for now,
+    as the plan allowed.
+  - **Trying interactions on a page's instances.** The component
+    editor's **Try interactions** and the Preview window cover it.
+  - **`aria-expanded`.** A generic handler can't tell which value means
+    expanded, so it doesn't guess.
+  - **A contract fixture for §1.3.2.** The contract's examples aren't
+    tagged yet; add a fixture when the framework is released, so both
+    sides' drift tests check it.
 
 ## Decisions
 

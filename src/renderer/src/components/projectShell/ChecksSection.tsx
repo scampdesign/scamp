@@ -38,6 +38,7 @@ const KIND_ORDER: ReadonlyArray<ViewFinding['kind']> = [
   'table-repeated-style',
   'unknown-variant-value',
   'undeclared-variant-rule',
+  'variant-interaction',
   // Notes, after every problem. see docs/archive/2026-10-13-checks-cleanup-plan.md
   'not-panel-editable',
   'side-not-typed',
@@ -58,6 +59,7 @@ const KIND_LABEL: Readonly<Record<ViewFinding['kind'], string>> = {
   'table-cell-width': 'Cells with their own width',
   'table-repeated-style': 'Styles repeated on every row or cell',
   'unknown-variant-value': 'Instances set to a value their component lacks',
+  'variant-interaction': 'Interactions that can’t work as written',
   'undeclared-variant-rule': 'Variant rules for values the props type lacks',
 };
 

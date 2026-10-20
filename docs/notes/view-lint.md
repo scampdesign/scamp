@@ -55,6 +55,7 @@ its hint says so.
 | `table-repeated-style` | Every row repeats one `border-bottom`, or every cell one `padding` | The per-row duplication tables exist to remove; the hint gives the one derived rule Scamp reads as the table's setting |
 | `unknown-variant-value` | An instance sets a variant axis prop to a value its component doesn't declare | Fails the props type check, and matches no rule, so it draws the default look |
 | `undeclared-variant-rule` | A component's verbatim rule targets `[data-<axis>="v"]` for a value the axis lacks | No instance can reach it; the author meant a value the union doesn't have |
+| `variant-interaction` | An interaction names a value the property lacks; a pressed look comes before a hover look that would win; a click sits on an element the keyboard can't reach | It silently does nothing, shows the wrong look, or can't be used without a mouse |
 
 A row's `border-bottom` is exempt from `side-not-typed`. Its advice —
 "write `border` with all four sides" — is wrong for a table row, whose

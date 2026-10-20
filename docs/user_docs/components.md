@@ -348,6 +348,38 @@ the route places it. The **Menu** starter works the same way, with
 because `open` is its default. To design the page under it, set the
 instance's **state** to `closed`.
 
+### Change a variant on hover or click
+
+A component can change its own variant while it's used: a button shows
+its `hover` look while the pointer is on it, or a menu opens when its
+trigger is clicked. This is Figma's **Change to** interaction.
+
+1. Select the component's name in the breadcrumb.
+1. In the **Variants** section, under **Interactions**, click
+   **+ Add interaction**.
+1. Select the trigger, the value it changes from, and the value it
+   changes to. For a click, also select the element that's clicked.
+1. Click **Add**.
+
+| Trigger | Runs as | Projects |
+|---|---|---|
+| **While hovering**, **While pressing**, **While focused** | CSS, with no JavaScript | All |
+| **On click**, **On click outside**, **On Escape** | The Scamp framework's click handler | Scamp framework projects |
+
+A click is remembered until the next one, so a menu needs two: **On
+click** from `closed` to `open`, and from `open` to `closed`. Add **On
+click outside** and **On Escape** from `open` to `closed` if the menu
+should also close those ways; leave them out if it shouldn't.
+
+To see the interactions on the canvas, click **Try interactions** under
+the variant set. A copy of the component appears that reacts to the
+pointer, clicks, and Escape. The Preview window runs them as the
+browser will.
+
+**Note:** Hover, press, and focus can't change to the default value,
+because the default's look is the component's own rules. Make another
+value the default, or use a click.
+
 ### How variants are written
 
 Each axis is a prop typed as a union of its values, and the component's
@@ -383,6 +415,22 @@ value's rules:
 .root[data-variant="outline"][data-size="small"] {
   border-width: 2px;
 }
+```
+
+An interaction on hover, press, or focus adds a second selector to each
+rule of the value it changes to:
+
+```css
+.root[data-state="hover"] .label_b7e1,
+.root[data-state="default"]:hover .label_b7e1 {
+  color: #1d4ed8;
+}
+```
+
+A click, a click outside, and Escape are attributes the framework reads:
+
+```tsx
+<button data-scamp-id="trigger_e51a" className={styles.trigger_e51a} type="button" data-scamp-click="state:closed=open,open=closed">{trigger}</button>
 ```
 
 A variant rule outranks the element's own rule, and its own `:hover`
