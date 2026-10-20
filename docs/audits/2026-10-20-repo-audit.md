@@ -1,6 +1,6 @@
 # Repo audit, 2026-10-20
 
-**Fixed:** 1 to 10 (2026-10-20).
+**Fixed:** 1 to 13 (2026-10-20).
 
 **What this repo does:** Scamp is a desktop design app built on Electron. You draw on a canvas and it saves real TSX and CSS files to your project, and when an AI agent or another editor changes those files, the canvas reloads. It also runs a local server that AI agents connect to (MCP), a sign-in flow, a built-in AI agent, and imports from websites and React apps.
 
@@ -85,22 +85,22 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
 
 ## Should fix
 
-11. **Undo can restore a deleted page into a new page with the same name** (`src/renderer/store/historySlice.ts`, `usePageManagement.ts:226`)
+11. **Fixed in `2688ab25`.** **Undo can restore a deleted page into a new page with the same name** (`src/renderer/store/historySlice.ts`, `usePageManagement.ts:226`)
     - **What this is:** undo history is kept per page file path.
     - **Problem:** deleting a page never clears its history. Delete "about", create a new "about", draw something, and press undo: you get the old page back, and it's saved to disk.
-    - **Fix:** clear that page's history when you delete it, and do the same for components.
+    - **Fix:** clear that page's history when you delete it, and do the same for components. (Done, and a component rename now moves its history to the new name.)
     - **If we skip it:** undo writes back content you deleted.
 
-12. **A failed save can leave a page half-written** (`src/main/ipc/file.ts:47-54`)
+12. **Fixed in `2688ab25`.** **A failed save can leave a page half-written** (`src/main/ipc/file.ts:47-54`)
     - **What this is:** saving a page writes the TSX file, then the CSS file.
     - **Problem:** if the CSS write fails (a full disk, say), the new TSX stays on disk with the old CSS. The canvas then reloads that mix, and your new elements lose their styles.
     - **Fix:** if the CSS write fails, write the old TSX back before reporting the error.
     - **If we skip it:** a disk error damages a page instead of just failing to save.
 
-13. **A snapshot restore that fails partway leaves the project mixed** (`src/main/ipc/snapshotOps.ts:417-422`)
+13. **Fixed in `2688ab25`.** **A snapshot restore that fails partway leaves the project mixed** (`src/main/ipc/snapshotOps.ts:417-422`)
     - **What this is:** files are copied back one at a time.
     - **Problem:** if file 5 fails, files 1 to 4 are already replaced. The canvas isn't told, so it still shows the state from before the restore.
-    - **Fix:** on failure, copy the safety snapshot back and tell the canvas the pages changed.
+    - **Fix:** on failure, copy the safety snapshot back and tell the canvas the pages changed. (Done by copying back only what was replaced, so the canvas needs no telling. Not done: queueing the restore behind an in-flight page write.)
     - **If we skip it:** disk and canvas disagree, and the next save overwrites part of the restore.
 
 14. **MCP tokens are written in files other users may be able to read** (`src/main/mcp/mcpOps.ts:72`, `src/main/mcp/agentConfig.ts:272`)
