@@ -35,7 +35,9 @@ export const updateFramework = async (projectPath, version) => {
     await stopDevServer(projectPath);
     await new Promise((resolve, reject) => {
         let output = '';
-        const proc = spawn('npm', ['install', `scampjs@${version}`], {
+        // --prefer-online: the version offered came from the registry just now,
+        // and npm's cached metadata can predate it, failing with ETARGET.
+        const proc = spawn('npm', ['install', `scampjs@${version}`, '--prefer-online'], {
             cwd: projectPath,
             env: process.env,
             stdio: ['ignore', 'pipe', 'pipe'],
