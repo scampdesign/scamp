@@ -1,6 +1,6 @@
 # Repo audit, 2026-10-20
 
-**Fixed:** 1 to 13 (2026-10-20).
+**Fixed:** 1 to 19 (2026-10-20).
 
 **What this repo does:** Scamp is a desktop design app built on Electron. You draw on a canvas and it saves real TSX and CSS files to your project, and when an AI agent or another editor changes those files, the canvas reloads. It also runs a local server that AI agents connect to (MCP), a sign-in flow, a built-in AI agent, and imports from websites and React apps.
 
@@ -103,7 +103,7 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
     - **Fix:** on failure, copy the safety snapshot back and tell the canvas the pages changed. (Done by copying back only what was replaced, so the canvas needs no telling. Not done: queueing the restore behind an in-flight page write.)
     - **If we skip it:** disk and canvas disagree, and the next save overwrites part of the restore.
 
-14. **MCP tokens are written in files other users may be able to read** (`src/main/mcp/mcpOps.ts:72`, `src/main/mcp/agentConfig.ts:272`)
+14. **Fixed in `4ad4a0b5`.** **MCP tokens are written in files other users may be able to read** (`src/main/mcp/mcpOps.ts:72`, `src/main/mcp/agentConfig.ts:272`)
     - **What this is:** the token agents use to call Scamp is saved in project files such as `.scamp/mcp.json` and `.mcp.json`.
     - **Problem:**
       - **Readable files:** they're written with default permissions, usually readable by everyone on the machine.
@@ -113,19 +113,19 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
     - **Fix:** write these files with `{ mode: 0o600 }`, and issue a new token when an opened project brings its own.
     - **If we skip it:** it's a small leak on shared machines.
 
-15. **One agent can open any number of hidden render windows** (`src/main/canvasQueries.ts:132`, `src/main/agent/overflowRender.ts:64`)
+15. **Fixed in `4ad4a0b5`.** **One agent can open any number of hidden render windows** (`src/main/canvasQueries.ts:132`, `src/main/agent/overflowRender.ts:64`)
     - **What this is:** every `scamp_find_overflow` call opens a hidden browser window.
     - **Problem:** there's no limit on how many run at once. An agent stuck in a loop can start dozens and stall the app.
     - **Fix:** run these one at a time, behind a single-slot lock.
     - **If we skip it:** one misbehaving agent can freeze Scamp.
 
-16. **Deleting a clicked element leaves a broken click interaction** (`src/renderer/lib/variantInteractions.ts:109`)
+16. **Fixed in `4ad4a0b5`.** **Deleting a clicked element leaves a broken click interaction** (`src/renderer/lib/variantInteractions.ts:109`)
     - **What this is:** a click interaction remembers which element is clicked.
     - **Problem:** deleting that element doesn't remove the interaction. The panel lists it as "On click on the component", but it isn't saved, and it disappears on reload.
     - **Fix:** when an element is deleted, drop the interactions that point at it.
     - **If we skip it:** the panel shows an interaction that doesn't exist in the files.
 
-17. **Variant property names that JavaScript or React reserve are allowed** (`src/renderer/lib/variantAxes.ts:115`)
+17. **Fixed in `4ad4a0b5`.** **Variant property names that JavaScript or React reserve are allowed** (`src/renderer/lib/variantAxes.ts:115`)
     - **What this is:** the check for a new property name only blocks `children`.
     - **Problem:**
       - **JavaScript keywords:** `class`, `for` or `default` write a component that doesn't compile.
@@ -133,7 +133,7 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
     - **Fix:** reuse `RESERVED_PROP_NAMES` from `agentEdits.ts:669` and add JavaScript's reserved words.
     - **If we skip it:** one rename produces a component that won't build.
 
-18. **The variant set can keep resizing itself until React gives up** (`src/renderer/src/canvas/VariantSet.tsx:44-63`)
+18. **Fixed in `4ad4a0b5`.** **The variant set can keep resizing itself until React gives up** (`src/renderer/src/canvas/VariantSet.tsx:44-63`)
     - **What this is:** each frame grows to reach its furthest element.
     - **Problem:** the trigger is a root that fills its container with a child sticking out on the right, like a corner badge at `right: -8px`.
       - Growing the frame widens the root, which moves the child further out.
@@ -141,7 +141,7 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
     - **Fix:** don't grow a frame along a side where the root fills the artboard.
     - **If we skip it:** that component's editor can crash.
 
-19. **Project code in the preview can open unlimited browser tabs** (`src/renderer/preview/PreviewApp.tsx:216`, `src/main/previewWindow.ts:147-152`)
+19. **Fixed in `4ad4a0b5`.** **Project code in the preview can open unlimited browser tabs** (`src/renderer/preview/PreviewApp.tsx:216`, `src/main/previewWindow.ts:147-152`)
     - **What this is:** the preview allows pop-ups and sends each one to your default browser.
     - **Problem:** no click is needed. Agent-written code running `window.open` on a timer floods the browser.
     - **Fix:** only open pop-ups that come from a user click, or remove `allowpopups`.
