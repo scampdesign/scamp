@@ -31,31 +31,31 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
    - **Fix:** call `flushPendingPageWrite()` and `persistActiveSource()` before navigating, as `openComponent` does.
    - **If we skip it:** edits disappear when you follow a link right after an agent edit.
 
-4. **Fixed (next commit after `170895da`).** **A variant property left with one value disappears on reload** (`src/renderer/lib/parseCode/tsx.ts:243`)
+4. **Fixed in `68bc546d`.** **A variant property left with one value disappears on reload** (`src/renderer/lib/parseCode/tsx.ts:243`)
    - **What this is:** this pattern reads a component's union-typed props (like `"a" | "b"`) back as variant properties.
    - **Problem:** it requires at least two values. The panel lets you remove values down to just the default, which saves as `variant?: "default";`. On reload, that's no longer read as a variant property, and its rules are kept as raw CSS.
    - **Fix:** change the pattern's `+` to `*` so one value still counts.
    - **If we skip it:** a component quietly loses its variant property after a reload.
 
-5. **Fixed (next commit after `170895da`).** **A hover, press or focus interaction is lost if its target value has no styles yet** (`src/renderer/lib/generateCode/css.ts:190-205`)
+5. **Fixed in `68bc546d`.** **A hover, press or focus interaction is lost if its target value has no styles yet** (`src/renderer/lib/generateCode/css.ts:190-205`)
    - **What this is:** these interactions are saved only as a second selector on the target value's CSS rules.
    - **Problem:** with no rule to attach to, nothing is written. For example, add a value `open`, add "While hovering: default → open", save before styling it, and reload: the interaction is gone.
    - **Fix:** write an empty root rule for that value carrying the second selector, and have the parser accept it.
    - **If we skip it:** interactions vanish in an order of work that's natural to follow.
 
-6. **Fixed (next commit after `170895da`).** **"From any value" interactions lose in the browser** (`src/renderer/lib/variantInteractions.ts:64`)
+6. **Fixed in `68bc546d`.** **"From any value" interactions lose in the browser** (`src/renderer/lib/variantInteractions.ts:64`)
    - **What this is:** "From any value" is written without the property's attribute, for example `.root:hover .x`.
    - **Problem:** that has the same specificity as `.root[data-state="closed"] .x`, which is written later, so the later rule wins. A hovered `closed` instance stays closed in the browser, while Try interactions shows `open`.
    - **Fix:** write `.root[data-state]:hover .x` (attribute present, any value) and read that form back.
    - **If we skip it:** the canvas preview and the real page disagree.
 
-7. **Fixed (next commit after `170895da`).** **The canvas layers variant states in a different order than the browser** (`src/renderer/lib/stateCascade.ts:58-64`)
+7. **Fixed in `68bc546d`.** **The canvas layers variant states in a different order than the browser** (`src/renderer/lib/stateCascade.ts:58-64`)
    - **What this is:** this decides how one frame of the variant set looks on the canvas.
    - **Problem:** it applies `outline`, then `outline:hover`, then `small`. In CSS, `outline:hover` (`.root[data-variant="outline"] .el:hover`) outranks `small` (`.root[data-size="small"] .el`). If both set the background, the browser shows outline's hover colour and the canvas shows small's. **Make default** uses this same function, so it rebuilds styles against the wrong order.
    - **Fix:** apply all single values' base styles, then all their states, then the combinations' base styles, then their states.
    - **If we skip it:** the canvas shows a look the real page never has.
 
-8. **Fixed (next commit after `170895da`).** **Variant styles on a nested component instance are never saved** (`src/renderer/store/canvas/patchRouting.ts:111-125`)
+8. **Fixed in `68bc546d`.** **Variant styles on a nested component instance are never saved** (`src/renderer/store/canvas/patchRouting.ts:111-125`)
    - **What this is:** in a variant frame, edits go into that value's styles.
    - **Problem:** for an instance inside the component, the edit is stored, but the code generator skips instances (`css.ts:194`). It shows on the canvas, then disappears on reload.
    - **Fix:** in `routeVariantPatch`, don't route style edits on a component instance into the variant. (Done: the edit lands on the instance's own styles, so it shows in every frame.)
