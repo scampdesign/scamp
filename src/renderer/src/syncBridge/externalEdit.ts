@@ -12,6 +12,7 @@ import type { FileChangedPayload } from '@shared/types';
 import { externalEditTracker } from '../lib/externalEditTracker';
 import { importNameForTarget, toEditTarget } from './editTarget';
 import type { SaveContext } from './saveContext';
+import { serializeCanvas } from './writeIfDirty';
 
 export const makeFileChangedHandler =
   (ctx: SaveContext) =>
@@ -54,6 +55,10 @@ export const makeFileChangedHandler =
     // which read as "nothing was saved". Main tags it; reload only.
     // see docs/notes/save-status-machine.md
     const isOwnWrite = payload.ownWriteId !== undefined;
+    // Canvas edits not yet on disk: a save waiting on its debounce, or one
+    // the quiet window or a pause deferred. Read before they're cleared
+    // below, so the edit can be merged with this one instead of replaced.
+    const hadUnsavedEdit = ctx.writeTimer !== null || ctx.canvasChangedDuringQuiet;
     if (!isOwnWrite) {
       // Phase 3.2: open / extend the quiet window. Agents typically
       // write the same file multiple times in a burst; the window
@@ -191,6 +196,31 @@ export const makeFileChangedHandler =
         // The page source still needs to update so the bottom code
         // panel reflects the disk content; we update the source but
         // leave the canvas elements alone until the drag ends.
+        return;
+      }
+      // The canvas has edits the file doesn't: merge the two, as a refused
+      // save does, rather than reload over them. Overlapping edits still
+      // adopt the file, and say so. see docs/notes/agent-coexistence.md
+      if (!isOwnWrite && hadUnsavedEdit && ctx.lastSerializedTsx !== null && ctx.lastSerializedCss !== null) {
+        const ours = serializeCanvas(
+          ctx,
+          state.elements,
+          state.rootElementId,
+          target,
+          state.pageCustomMediaBlocks,
+          state.pageKeyframesBlocks
+        );
+        ctx.onWriteConflict(
+          target,
+          { actualTsxContent: payload.tsxContent, actualCssContent: payload.cssContent },
+          false,
+          {
+            baseTsx: ctx.lastSerializedTsx,
+            baseCss: ctx.lastSerializedCss,
+            oursTsx: ours.tsxOut.tsx,
+            oursCss: ours.cssOut.css,
+          }
+        );
         return;
       }
       state.reloadElements(

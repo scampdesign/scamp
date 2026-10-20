@@ -71,12 +71,15 @@ export const shouldCollapseAgentEdit = (snapshots, trigger, nowMs, windowMs = AG
  * remove. Pure — the caller deletes the removed folders + rewrites the
  * index. Pruning is purely by age, no trigger is exempt.
  */
-export const pruneToLimit = (snapshots, limit = SNAPSHOT_LIMIT) => {
+export const pruneToLimit = (snapshots, limit = SNAPSHOT_LIMIT, 
+/** Never removed: the snapshot a restore is about to copy back. */
+keepId) => {
     const sorted = [...snapshots].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
     if (sorted.length <= limit)
         return { kept: sorted, removed: [] };
     const overBy = sorted.length - limit;
-    return { removed: sorted.slice(0, overBy), kept: sorted.slice(overBy) };
+    const removed = sorted.filter((s) => s.id !== keepId).slice(0, overBy);
+    return { removed, kept: sorted.filter((s) => !removed.includes(s)) };
 };
 // ---- Index read/write ----
 const readIndex = async (projectPath) => {
@@ -254,7 +257,7 @@ const countPages = (projectPath, files) => files.filter((f) => {
  * `agent_edit` is collapsed into a recent one. `nowMs` is injectable for
  * deterministic tests.
  */
-export const createSnapshot = async (projectPath, format, trigger, detail, nowMs = Date.now()) => {
+export const createSnapshot = async (projectPath, format, trigger, detail, nowMs = Date.now(), keepId) => {
     try {
         const existing = await readIndex(projectPath);
         if (shouldCollapseAgentEdit(existing, trigger, nowMs))
@@ -275,7 +278,7 @@ export const createSnapshot = async (projectPath, format, trigger, detail, nowMs
             pageCount: countPages(projectPath, files),
         };
         await updateIndex(projectPath, async (current) => {
-            const { kept, removed } = pruneToLimit([...current, meta]);
+            const { kept, removed } = pruneToLimit([...current, meta], SNAPSHOT_LIMIT, keepId);
             for (const r of removed) {
                 await fs
                     .rm(snapshotDirFor(projectPath, r.id), { recursive: true, force: true })
@@ -336,13 +339,18 @@ export const restoreSnapshot = async (projectPath, format, snapshotId, opts = {}
         if (!existing.some((s) => s.id === snapshotId)) {
             return { ok: false, error: 'Snapshot not found.' };
         }
+        const dir = snapshotDirFor(projectPath, snapshotId);
+        const files = await walkFiles(dir);
+        if (files.length === 0) {
+            return { ok: false, error: 'That snapshot has no files to restore.' };
+        }
         // No safety copy, no restore: it would overwrite work with no way back.
-        const safety = await createSnapshot(projectPath, format, 'before_restore', undefined, opts.nowMs);
+        // The safety copy can push the count past the limit, which prunes the
+        // oldest snapshot; that must not be the one being restored.
+        const safety = await createSnapshot(projectPath, format, 'before_restore', undefined, opts.nowMs, snapshotId);
         if (safety === null) {
             return { ok: false, error: "Couldn't save the current state first, so nothing was restored." };
         }
-        const dir = snapshotDirFor(projectPath, snapshotId);
-        const files = await walkFiles(dir);
         for (const abs of files) {
             const dest = join(projectPath, relative(dir, abs));
             await fs.mkdir(dirname(dest), { recursive: true });

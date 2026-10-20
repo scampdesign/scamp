@@ -307,7 +307,7 @@ export const useActiveTarget = ({ project, onProjectChange, projectConfig, handl
     };
     // Latest refs for the one-shot canvas→component-editor navigation
     // effect, which binds before these are defined (see useLatest).
-    const componentNav = useLatest({ openComponent, activePageName, activeComponent });
+    const componentNav = useLatest({ openComponent, activePageName, activeComponent, persistActiveSource });
     // Consume the canvas's one-shot page / component navigation requests
     // (link indicator jump, double-click into an instance editor). Lives
     // here because it reads `openComponent` via the `componentNav` ref.

@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import type { ComponentKind, ProjectData } from '@shared/types';
 import { useCanvasStore } from '@store/canvasSlice';
 
+import { flushPendingPageWrite } from '../../syncBridge';
 import type { ActiveComponent } from './types';
 
 type ComponentNavRef = {
@@ -15,6 +16,7 @@ type ComponentNavRef = {
     ) => void;
     activePageName: string | null;
     activeComponent: ActiveComponent | null;
+    persistActiveSource: () => void;
   };
 };
 
@@ -37,10 +39,14 @@ export const useNavigationRequests = (
   useEffect(() => {
     if (pendingPageNavigation === null) return;
     if (project.pages.some((p) => p.name === pendingPageNavigation)) {
+      // Save the page being left first, as the sidebar does: a write the
+      // quiet window or a pause deferred would otherwise be dropped.
+      flushPendingPageWrite();
+      componentNav.current.persistActiveSource();
       setActivePageName(pendingPageNavigation);
     }
     useCanvasStore.getState().requestPageNavigation(null);
-  }, [pendingPageNavigation, project.pages, setActivePageName]);
+  }, [pendingPageNavigation, project.pages, setActivePageName, componentNav]);
 
   const pendingComponentNavigation = useCanvasStore(
     (s) => s.pendingComponentNavigation

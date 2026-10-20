@@ -22,7 +22,9 @@ export declare const shouldCollapseAgentEdit: (snapshots: ReadonlyArray<Snapshot
  * remove. Pure — the caller deletes the removed folders + rewrites the
  * index. Pruning is purely by age, no trigger is exempt.
  */
-export declare const pruneToLimit: (snapshots: ReadonlyArray<SnapshotMeta>, limit?: number) => {
+export declare const pruneToLimit: (snapshots: ReadonlyArray<SnapshotMeta>, limit?: number, 
+/** Never removed: the snapshot a restore is about to copy back. */
+keepId?: string) => {
     kept: SnapshotMeta[];
     removed: SnapshotMeta[];
 };
@@ -34,7 +36,7 @@ export declare const enumerateProjectFiles: (projectPath: string, format: Projec
  * `agent_edit` is collapsed into a recent one. `nowMs` is injectable for
  * deterministic tests.
  */
-export declare const createSnapshot: (projectPath: string, format: ProjectFormat, trigger: SnapshotTrigger, detail?: string, nowMs?: number) => Promise<SnapshotMeta | null>;
+export declare const createSnapshot: (projectPath: string, format: ProjectFormat, trigger: SnapshotTrigger, detail?: string, nowMs?: number, keepId?: string) => Promise<SnapshotMeta | null>;
 export declare const listSnapshots: (projectPath: string) => Promise<SnapshotMeta[]>;
 /**
  * Read a single page's `.tsx` + `.css` from a snapshot WITHOUT restoring —
