@@ -51,20 +51,39 @@ describe('starterFiles', () => {
         ]);
         expect(parseScampMeta(files.tsx)?.events).toEqual(['onClick']);
     });
-    it('Modal hides itself when closed, and is designed open', () => {
-        const files = starterFiles('Modal', 'Modal');
-        const root = parse(files)[ROOT_ELEMENT_ID];
-        expect(root?.variantAxes).toEqual([{ prop: 'state', values: ['open', 'closed'], defaultValue: 'open' }]);
-        expect(root?.variantOverrides?.['state=closed']?.visibilityMode).toBe('none');
-        expect(parseScampMeta(files.tsx)?.events).toEqual(['onClose']);
+    it('Modal starts closed, and its own button, Close, backdrop, and Escape open and close it', () => {
+        const elements = parse(starterFiles('Modal', 'Modal'));
+        const root = elements[ROOT_ELEMENT_ID];
+        expect(root?.variantAxes).toEqual([{ prop: 'state', values: ['closed', 'open'], defaultValue: 'closed' }]);
+        expect(root?.variantInteractions?.map((i) => [i.trigger, i.from, i.to, i.target ?? 'root'])).toEqual(expect.arrayContaining([
+            ['escape', 'open', 'closed', 'root'],
+            ['click', 'closed', 'open', 'd41f'],
+            ['click', 'open', 'closed', 'd419'],
+            ['click', 'open', 'closed', 'd41e'],
+        ]));
+        expect(parseScampMeta(starterFiles('Modal', 'Modal').tsx)?.events).toEqual(['onClose']);
     });
-    it('Menu hides only its panel when closed', () => {
-        const files = starterFiles('Menu', 'Menu');
-        const elements = parse(files);
-        expect(elements[ROOT_ELEMENT_ID]?.variantOverrides).toBeUndefined();
-        const panel = Object.values(elements).find((el) => el.id.endsWith('e51b'));
-        expect(panel?.variantOverrides?.['state=closed']?.visibilityMode).toBe('none');
-        expect(parseScampMeta(files.tsx)?.events).toEqual(['onToggle']);
+    it('Menu starts closed, toggles from its trigger, and closes on a click outside or Escape', () => {
+        const elements = parse(starterFiles('Menu', 'Menu'));
+        expect(elements[ROOT_ELEMENT_ID]?.variantInteractions?.map((i) => [i.trigger, i.from, i.to])).toEqual(expect.arrayContaining([
+            ['outside', 'open', 'closed'],
+            ['escape', 'open', 'closed'],
+            ['click', 'closed', 'open'],
+            ['click', 'open', 'closed'],
+        ]));
+        expect(parseScampMeta(starterFiles('Menu', 'Menu').tsx)?.events).toEqual(['onToggle']);
+    });
+    it.each(['Modal', 'Menu'])('%s fades: hidden at opacity 0 when closed, with a transition, so it fades out too', (starter) => {
+        const { css } = starterFiles(starter, starter);
+        expect(css).toContain('visibility: hidden;');
+        expect(css).toContain('transition: all 200ms ease;');
+        expect(css).toMatch(/\.root\[data-state="open"\] \.[a-z]+_[0-9a-f]{4} \{\n  opacity: 1;\n  visibility: visible;\n\}/);
+        expect(css).not.toContain('display: none');
+    });
+    it.each(['Modal', 'Menu'])('%s leaves the click attributes out of a Next.js project, and still round-trips', (starter) => {
+        const files = starterFiles(starter, starter, 'nextjs');
+        expect(files.tsx).not.toMatch(/data-scamp-(click|outside|escape)/);
+        expect(regenerate(files, starter)).toEqual(files);
     });
 });
 describe('freeStarterName', () => {

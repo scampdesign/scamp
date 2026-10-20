@@ -39,7 +39,8 @@ release time.
   gives you a primary and an outline button on the same page.
 - **Starter Button, Modal, and Menu components.** Add one from
   **Starters** in the Components list to reuse, restyle, or learn from.
-  The Modal and Menu open and close through a route's state.
+  In a Scamp framework project, the Modal and Menu open and close by
+  themselves, and fade in and out.
 - **A React import keeps each component's looks as variants.** Where
   copies of a component differ only in paint, such as the current item
   in a navigation menu, each look becomes a variant the page's instance

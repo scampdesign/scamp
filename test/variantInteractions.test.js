@@ -57,7 +57,8 @@ describe('hover, press, and focus as second selectors', () => {
         expect(generate(parsed)).toEqual(once);
     });
     it('an interaction into a value nothing styles yet is kept, on an empty rule', () => {
-        const files = starterFiles('Modal', 'Modal');
+        // The Next.js Modal: no click interactions of its own to read back.
+        const files = starterFiles('Modal', 'Modal', 'nextjs');
         const modal = parse(files.tsx, files.css);
         const withValue = addVariantValue(modal, 'state', 'peek', null);
         const hover = { axis: 'state', from: 'open', trigger: 'hover', to: 'peek' };
@@ -87,7 +88,7 @@ describe('hover, press, and focus as second selectors', () => {
 });
 describe('click, outside, and Escape as attributes', () => {
     const menu = () => {
-        const files = starterFiles('Menu', 'Menu');
+        const files = starterFiles('Menu', 'Menu', 'nextjs');
         return parse(files.tsx, files.css);
     };
     const OPEN = { axis: 'state', from: 'closed', trigger: 'click', to: 'open', target: 'e51a' };
@@ -176,7 +177,7 @@ describe('checks', () => {
         expect(findings(withInteractions([list[1], { ...list[0], to: 'outline' }]))).toEqual([]);
     });
     it('says when a click is on an element the keyboard can’t reach', () => {
-        const files = starterFiles('Menu', 'Menu');
+        const files = starterFiles('Menu', 'Menu', 'nextjs');
         const menu = parse(files.tsx, files.css);
         const onButton = { axis: 'state', from: 'closed', trigger: 'click', to: 'open', target: 'e51a' };
         expect(findings(withInteractions([onButton], menu))).toEqual([]);

@@ -335,7 +335,17 @@ export const lintView = (input: LintInput): ViewFinding[] => {
           const target = elements[i.target ?? rootId];
           const tag = target === undefined ? undefined : tagOf(target);
           const focusable = tag !== undefined && FOCUSABLE_TAGS.has(tag);
-          if (target !== undefined && !focusable && target.attributes?.['tabIndex'] === undefined) {
+          // Fine when the keyboard can make the same change another way: a
+          // modal's backdrop click, when Escape closes it too.
+          const reachable = interactions.some(
+            (o) =>
+              o !== i &&
+              o.axis === i.axis &&
+              o.to === i.to &&
+              (o.from === null || o.from === i.from) &&
+              (o.trigger === 'escape' || (o.trigger === 'click' && FOCUSABLE_TAGS.has(tagOf(elements[o.target ?? rootId]) ?? '')))
+          );
+          if (target !== undefined && !focusable && !reachable && target.attributes?.['tabIndex'] === undefined) {
             findings.push({
               ...at,
               kind: 'variant-interaction',

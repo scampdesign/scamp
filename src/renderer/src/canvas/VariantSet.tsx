@@ -51,6 +51,8 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
       for (const node of frame.querySelectorAll('[data-scamp-id]')) {
         const r = node.getBoundingClientRect();
         if (r.width === 0 && r.height === 0) continue;
+        // A closed menu's panel is there but hidden: the frame hugs what shows.
+        if (getComputedStyle(node).visibility === 'hidden') continue;
         w = Math.max(w, Math.ceil((r.right - rect.left) / scale));
         h = Math.max(h, Math.ceil((r.bottom - rect.top) / scale));
       }

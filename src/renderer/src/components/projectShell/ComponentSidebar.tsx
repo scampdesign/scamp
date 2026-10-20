@@ -3,6 +3,7 @@ import { type Dispatch, type MouseEvent as ReactMouseEvent, type SetStateAction 
 import type { ComponentFile, ComponentKind } from '@shared/types';
 import { componentKindOf } from '@shared/types';
 import { STARTERS, freeStarterName, starterFiles } from '@lib/starterComponents';
+import { useCanvasStore } from '@store/canvasSlice';
 
 import { COMPONENT_DRAG_MIME } from '../../canvas/interactions/useComponentDrop';
 
@@ -45,6 +46,7 @@ export const ComponentSidebar = ({
   openComponentMenu,
 }: Props): JSX.Element => {
   const kind: ComponentKind = 'component';
+  const projectFormat = useCanvasStore((s) => s.projectFormat);
   // Views (a page's design) live in the Pages list; they share this
   // namespace (see componentOps), so the inline input rejects a name
   // either list already uses.
@@ -141,7 +143,7 @@ export const ComponentSidebar = ({
               disabled={creatingComponent}
               onClick={() => {
                 const name = freeStarterName(starter.name, allNames);
-                void handleAddComponent(name, kind, starterFiles(starter.name, name));
+                void handleAddComponent(name, kind, starterFiles(starter.name, name, projectFormat));
               }}
             >
               {starter.name}

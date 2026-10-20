@@ -71,11 +71,18 @@ in the component editor. Each one shows [variants](#variants) at work,
 so you can use it as it is, restyle it, or read it to learn how to
 build your own.
 
-| Starter | Variants | Event |
+| Starter | Variants | Opens and closes |
 |---|---|---|
-| Button | `variant`: `default`, `outline`, `secondary`; `size`: `small`, `medium`, `large` | `onClick` |
-| Modal | `state`: `open`, `closed` | `onClose` |
-| Menu | `state`: `open`, `closed` | `onToggle` |
+| Button | `variant`: `default`, `outline`, `secondary`; `size`: `small`, `medium`, `large` | Not applicable |
+| Modal | `state`: `closed`, `open` | Its **Open dialog** button opens it; **Close**, a click on the backdrop, and Escape close it |
+| Menu | `state`: `closed`, `open` | Its trigger opens and closes it; a click outside and Escape close it |
+
+In a Scamp framework project, the Modal and Menu open and close by
+themselves, through [interactions](#change-a-variant-on-hover-or-click):
+drop one on a page and it works. They fade in and out with a transition
+on `opacity` and `visibility`, so the fade plays both ways. In a Next.js
+project they come without the interactions; a page's own code opens
+them (see [Open a modal from a route](#open-a-modal-from-a-route)).
 
 If the project already has a component with that name, Scamp numbers
 the new one: `Button2`, `Button3`, and so on. The starters use plain
@@ -308,9 +315,10 @@ Selecting the default value removes the attribute.
 
 ### Open a modal from a route
 
-A modal or menu changes its look while the page runs: it opens on a
-click and closes again. The page's route holds whether it's open, and
-passes it to the component's `state` axis. This works in a
+The Modal and Menu starters open and close themselves. When a page's
+own code needs to decide instead, for example to open a modal after a
+save, the page's route holds whether it's open and passes it to the
+component's `state` axis. This works in a
 [Scamp framework project](scamp-framework.md).
 
 1. Under **Starters**, click **Modal**.
@@ -344,9 +352,6 @@ The modal's root is fixed to the window, so it covers the page wherever
 the route places it. The **Menu** starter works the same way, with
 `onToggle` on its trigger: `onToggle={() => setOpen(!open)}`.
 
-**Note:** On the canvas, a Modal instance with no `state` shows open,
-because `open` is its default. To design the page under it, set the
-instance's **state** to `closed`.
 
 ### Change a variant on hover or click
 
@@ -377,7 +382,7 @@ component on its own, with its default values, and runs its
 interactions as a page will. The canvas doesn't: it's for designing
 each look, and every look is already on it.
 
-**Note:** Clicks need scampjs 0.3.3 or later. If **Preview** shows "Not
+**Note:** Clicks need scampjs 0.3.4 or later. If **Preview** shows "Not
 found" for a component, update scampjs from the project's settings.
 
 **Note:** Hover, press, and focus can't change to the default value,

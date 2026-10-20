@@ -926,11 +926,15 @@ Answered 2026-10-19.
   so adding one causes no rewrite on load. The tests round-trip each
   starter byte for byte under its own name and a new one, and check
   that it lints clean.
-- **`state` defaults to `open`.** The component's own rules are the
-  open look, so editing it edits what you see; `closed` only hides
-  (`display: none` on the Modal's root, or on the Menu's panel). An
-  instance with no `state` therefore shows open on the canvas; the
-  docs say to set `closed` there.
+- **`state` defaults to `closed`** (changed 2026-10-20, from `open`).
+  Since phase 7 the Modal and Menu open themselves: the Modal has its
+  own **Open dialog** button, closed by **Close**, its backdrop, and
+  Escape; the Menu's trigger toggles it, and a click outside or Escape
+  closes it. So a page shows them closed, and nothing has to set it.
+  The closed look hides with `opacity: 0; visibility: hidden` and a
+  `transition: all 200ms ease`, not `display: none`, so the fade plays
+  both ways. Outside a Scamp framework project the starters come
+  without the click attributes (`starterFiles(…, format)`).
 - **Plain colors, not theme tokens.** An imported project may not
   declare `--color-primary`, and a missing token draws as nothing.
 - **The Button has a fixed height per size** (32, 40, 48px). A

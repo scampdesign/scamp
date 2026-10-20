@@ -1,8 +1,8 @@
 import { WRITTEN_CONTRACT } from '@shared/projectConfig';
 export const STARTERS = [
     { name: 'Button', description: 'A button with variant and size axes' },
-    { name: 'Modal', description: 'A dialog with an open and a closed state' },
-    { name: 'Menu', description: 'A menu with an open and a closed state' },
+    { name: 'Modal', description: 'A button that opens a dialog, which fades in and out' },
+    { name: 'Menu', description: 'A menu its trigger opens, which fades in and out' },
 ];
 const TEMPLATES = {
     Button: {
@@ -94,7 +94,8 @@ export const _scamp = { contract: ${WRITTEN_CONTRACT}, events: ['onClick'] } as 
         tsx: `import styles from './Modal.module.css';
 
 type ModalProps = {
-  state?: "open" | "closed";
+  state?: "closed" | "open";
+  trigger?: string;
   title?: string;
   body?: string;
   closeLabel?: string;
@@ -102,14 +103,16 @@ type ModalProps = {
   className?: string;
 };
 
-export default function Modal({ state = "open", title = "Modal title", body = "Say what this dialog is for in a sentence or two.", closeLabel = "Close", onClose, className }: ModalProps) {
+export default function Modal({ state = "closed", trigger = "Open dialog", title = "Modal title", body = "Say what this dialog is for in a sentence or two.", closeLabel = "Close", onClose, className }: ModalProps) {
   return (
-    <div data-scamp-id="root" className={\`\${styles.root} \${className ?? ''}\`} data-state={state}>
+    <div data-scamp-id="root" className={\`\${styles.root} \${className ?? ''}\`} data-scamp-escape="state:open=closed" data-state={state}>
+      <button data-scamp-id="trigger_d41f" className={styles.trigger_d41f} type="button" data-scamp-click="state:closed=open">{trigger}</button>
+      <div data-scamp-id="backdrop_d419" className={styles.backdrop_d419} data-scamp-click="state:open=closed" />
       <div data-scamp-id="dialog_d41a" className={styles.dialog_d41a} role="dialog" aria-modal="true">
         <h2 data-scamp-id="title_d41b" className={styles.title_d41b}>{title}</h2>
         <p data-scamp-id="body_d41c" className={styles.body_d41c}>{body}</p>
         <div data-scamp-id="actions_d41d" className={styles.actions_d41d}>
-          <button data-scamp-id="close_d41e" className={styles.close_d41e} type="button" onClick={onClose}>{closeLabel}</button>
+          <button data-scamp-id="close_d41e" className={styles.close_d41e} type="button" data-scamp-click="state:open=closed" onClick={onClose}>{closeLabel}</button>
         </div>
       </div>
     </div>
@@ -119,15 +122,32 @@ export default function Modal({ state = "open", title = "Modal title", body = "S
 export const _scamp = { contract: ${WRITTEN_CONTRACT}, events: ['onClose'] } as const;
 `,
         css: `.root {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: fit-content;
+  position: relative;
+  display: inline-flex;
+}
+
+.trigger_d41f {
+  padding: 10px 18px;
+  background: #2563eb;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.backdrop_d419 {
   background: rgba(15, 23, 42, 0.5);
+  visibility: hidden;
+  opacity: 0;
+  transition: all 200ms ease;
   position: fixed;
   left: 0px;
   top: 0px;
+  right: 0px;
+  bottom: 0px;
 }
 
 .dialog_d41a {
@@ -138,7 +158,14 @@ export const _scamp = { contract: ${WRITTEN_CONTRACT}, events: ['onClose'] } as 
   padding: 24px;
   background: #ffffff;
   border-radius: 12px;
+  visibility: hidden;
+  opacity: 0;
   box-shadow: 0px 20px 40px rgba(15, 23, 42, 0.2);
+  transform: translate(-50%, -50%);
+  transition: all 200ms ease;
+  position: fixed;
+  left: 50%;
+  top: 50%;
 }
 
 .title_d41b {
@@ -168,8 +195,14 @@ export const _scamp = { contract: ${WRITTEN_CONTRACT}, events: ['onClose'] } as 
   cursor: pointer;
 }
 
-.root[data-state="closed"] {
-  display: none;
+.root[data-state="open"] .backdrop_d419 {
+  opacity: 1;
+  visibility: visible;
+}
+
+.root[data-state="open"] .dialog_d41a {
+  opacity: 1;
+  visibility: visible;
 }
 `,
     },
@@ -177,7 +210,7 @@ export const _scamp = { contract: ${WRITTEN_CONTRACT}, events: ['onClose'] } as 
         tsx: `import styles from './Menu.module.css';
 
 type MenuProps = {
-  state?: "open" | "closed";
+  state?: "closed" | "open";
   trigger?: string;
   first?: string;
   second?: string;
@@ -186,10 +219,10 @@ type MenuProps = {
   className?: string;
 };
 
-export default function Menu({ state = "open", trigger = "Options", first = "Edit", second = "Duplicate", third = "Delete", onToggle, className }: MenuProps) {
+export default function Menu({ state = "closed", trigger = "Options", first = "Edit", second = "Duplicate", third = "Delete", onToggle, className }: MenuProps) {
   return (
-    <div data-scamp-id="root" className={\`\${styles.root} \${className ?? ''}\`} data-state={state}>
-      <button data-scamp-id="trigger_e51a" className={styles.trigger_e51a} type="button" onClick={onToggle}>{trigger}</button>
+    <div data-scamp-id="root" className={\`\${styles.root} \${className ?? ''}\`} data-scamp-outside="state:open=closed" data-scamp-escape="state:open=closed" data-state={state}>
+      <button data-scamp-id="trigger_e51a" className={styles.trigger_e51a} type="button" data-scamp-click="state:closed=open,open=closed" onClick={onToggle}>{trigger}</button>
       <div data-scamp-id="panel_e51b" className={styles.panel_e51b} role="menu">
         <button data-scamp-id="item_e51c" className={styles.item_e51c} type="button" role="menuitem">{first}</button>
         <button data-scamp-id="item_e51d" className={styles.item_e51d} type="button" role="menuitem">{second}</button>
@@ -230,7 +263,10 @@ export const _scamp = { contract: ${WRITTEN_CONTRACT}, events: ['onToggle'] } as
   border-width: 1px;
   border-style: solid;
   border-color: #e2e8f0;
+  visibility: hidden;
+  opacity: 0;
   box-shadow: 0px 8px 24px rgba(15, 23, 42, 0.12);
+  transition: all 200ms ease;
   position: absolute;
   left: 0px;
   top: 44px;
@@ -275,15 +311,22 @@ export const _scamp = { contract: ${WRITTEN_CONTRACT}, events: ['onToggle'] } as
   background: #fef2f2;
 }
 
-.root[data-state="closed"] .panel_e51b {
-  display: none;
+.root[data-state="open"] .panel_e51b {
+  opacity: 1;
+  visibility: visible;
 }
 `,
     },
 };
-/** The starter's files, renamed: the name is in the import, the props type, and the function. */
-export const starterFiles = (starter, componentName) => {
-    const { tsx, css } = TEMPLATES[starter];
+/**
+ * The starter's files, renamed: the name is in the import, the props
+ * type, and the function. Outside a Scamp framework project the click,
+ * outside, and Escape attributes are left out: only its handler runs
+ * them, and a route opens the Modal and Menu instead. CONTRACT.md §1.3.2
+ */
+export const starterFiles = (starter, componentName, format = 'scamp') => {
+    const { tsx: template, css } = TEMPLATES[starter];
+    const tsx = format === 'scamp' ? template : template.replace(/ data-scamp-(?:click|outside|escape)="[^"]*"/g, '');
     return {
         tsx: tsx
             .replace(`./${starter}.module.css`, `./${componentName}.module.css`)
