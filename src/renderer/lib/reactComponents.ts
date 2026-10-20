@@ -16,6 +16,7 @@ import { makeInstanceElement } from './componentInstance';
 import { ROOT_ELEMENT_ID, variantKey, type ScampElement } from './element';
 import { PAINT_CSS, PAINT_FIELDS, planReactVariants } from './reactVariants';
 import { addVariantAxis } from './variantAxes';
+import { RESERVED_PROP_NAMES } from './viewProps';
 
 export type ReactView = {
   name: string;
@@ -233,7 +234,6 @@ const majority = <T>(values: ReadonlyArray<T>, keyOf: (v: T) => string): { value
 };
 
 const IDENTIFIER = /^[a-z][A-Za-z0-9]*$/;
-const RESERVED_PROPS: ReadonlySet<string> = new Set(['className', 'children', 'key', 'ref', 'style']);
 
 const freeName = (base: string, taken: Set<string>): string => {
   const clean = /^[A-Z][A-Za-z0-9]*$/.test(base) ? base : 'Component';
@@ -450,7 +450,7 @@ export const planReactComponents = (
       resolved.forEach((f, i) => {
         const props = views[f.view]?.instances[f.key.slice(f.key.indexOf(':') + 1)]?.props ?? {};
         for (const [name, value] of Object.entries(props)) {
-          if (value === texts[i] && IDENTIFIER.test(name) && !RESERVED_PROPS.has(name)) votes.set(name, (votes.get(name) ?? 0) + 1);
+          if (value === texts[i] && IDENTIFIER.test(name) && !RESERVED_PROP_NAMES.has(name)) votes.set(name, (votes.get(name) ?? 0) + 1);
         }
       });
       const voted = [...votes.entries()].sort((a, b) => b[1] - a[1]).find(([name]) => !propNames.has(name))?.[0];

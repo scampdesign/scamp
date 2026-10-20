@@ -1,5 +1,5 @@
 import { ROOT_ELEMENT_ID, keysCovering, orderedVariantKeys as orderedKeys, variantComboKey, variantKey, variantKeyParts, } from './element';
-import { collectViewProps } from './viewProps';
+import { RESERVED_PROP_NAMES, collectViewProps } from './viewProps';
 import { resolveElementAtState } from './stateCascade';
 import { interactionError, mapInteractions } from './variantInteractions';
 /** A value is written as a CSS attribute value and a TS string literal. */
@@ -82,8 +82,8 @@ export const variantAxisError = (elements, name, renaming = null) => {
         return 'Use lowercase letters and digits, starting with a letter.';
     if (name === renaming)
         return null;
-    if (name === 'children')
-        return 'children is reserved.';
+    if (RESERVED_PROP_NAMES.has(name))
+        return `${name} is reserved by React or JavaScript.`;
     if (collectViewProps(elements, ROOT_ELEMENT_ID).some((p) => p.name === name))
         return `The component already has a prop named ${name}.`;
     return null;

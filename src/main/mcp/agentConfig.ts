@@ -1,6 +1,8 @@
 import { promises as fs } from 'fs';
 import { dirname, join, sep } from 'path';
 
+import { writePrivate } from './mcpOps';
+
 /**
  * Registers the running MCP server in each installed agent's own config, so
  * the user connects by doing nothing.
@@ -269,7 +271,7 @@ export const writeAgentConfigs = async (args: {
 
     try {
       await fs.mkdir(dirname(absolute), { recursive: true });
-      await fs.writeFile(absolute, merged.content, 'utf-8');
+      await writePrivate(absolute, merged.content);
       report.written.push(target.configPath);
     } catch (err) {
       report.skipped.push({

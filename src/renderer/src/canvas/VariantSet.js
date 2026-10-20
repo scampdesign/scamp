@@ -71,8 +71,10 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
                     }, className: styles.frame, style: {
                         width: fillsWidth ? `${artboardWidth}px` : 'max-content',
                         height: fillsHeight ? `${artboardHeight}px` : undefined,
-                        minWidth: reach[id] !== undefined ? `${reach[id].w}px` : undefined,
-                        minHeight: reach[id] !== undefined ? `${reach[id].h}px` : undefined,
+                        // Not along a side the root fills: growing the frame would grow
+                        // the root, move what hangs past it, and grow the frame again.
+                        minWidth: reach[id] !== undefined && !fillsWidth ? `${reach[id].w}px` : undefined,
+                        minHeight: reach[id] !== undefined && !fillsHeight ? `${reach[id].h}px` : undefined,
                     }, children: _jsx(VariantFrameContext.Provider, { value: { variantKey: cell.key, displayOnly: !live }, children: _jsx(ElementRenderer, { elementId: ROOT_ELEMENT_ID }) }) })] }, cell.key ?? 'default'));
     };
     return (_jsxs("div", { ref: setRef, className: styles.set, "data-testid": "variant-set", children: [_jsx("div", { className: styles.name, children: componentName }), blocks.map((block, b) => (_jsxs("div", { className: styles.block, children: [block.heading !== null && _jsx("div", { className: styles.heading, children: block.heading }), block.rows.map((row, r) => (_jsx("div", { className: styles.row, children: row.map(renderCell) }, r)))] }, block.heading ?? b)))] }));

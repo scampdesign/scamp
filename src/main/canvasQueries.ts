@@ -7,6 +7,7 @@ import { listImportSources, readImportSource } from './importSourceStore';
 import { readRecord, sourceFor } from './reactImport/record';
 import { listRoutes } from './ipc/routeOps';
 import { getProjectFormat } from './ipc/projectFormatCache';
+import { serializeByKey } from './ipc/fileOps';
 import { createQueryRegistry, type QueryRegistry } from './mcp/pendingQueries';
 import { createToolInvoker, IMPORT_SOURCE_REPLY_LIMIT } from './mcp/tools';
 import type { ToolInvoker } from './mcp/protocol';
@@ -107,6 +108,9 @@ export const rejectCanvasQueries = (reason: string): void => {
   editRegistry.rejectAll(reason);
 };
 
+/** The queue the queries that open windows or read the whole project wait in. */
+const HEAVY_QUERIES = 'mcp:heavy-queries';
+
 /**
  * The read tools, answered about `projectPath`. Most go to the renderer;
  * routes and imported originals are read from disk here.
@@ -128,8 +132,10 @@ export const canvasToolInvoker = (projectPath: string): ToolInvoker =>
     },
     reactSource: async (target, element) => sourceFor(await readRecord(projectPath), target, element),
     // The renderer builds the view's export and main lays it out; no turn,
-    // so an omitted `view` is the one open on the canvas.
-    findOverflow: (args) => runAgentEdit('scamp_find_overflow', args, ''),
+    // so an omitted `view` is the one open on the canvas. Each opens a
+    // hidden window, so they run one at a time: an agent looping on this
+    // would otherwise start dozens at once and stall the app.
+    findOverflow: (args) => serializeByKey(HEAVY_QUERIES, () => runAgentEdit('scamp_find_overflow', args, '')),
     // Every page, view, and component, read fresh: more than a 2s read.
-    checks: (tool, args) => runAgentEdit(tool, args, ''),
+    checks: (tool, args) => serializeByKey(HEAVY_QUERIES, () => runAgentEdit(tool, args, '')),
   });

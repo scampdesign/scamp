@@ -17,6 +17,7 @@ import { TAG_OPTIONS } from './elementTags';
 import { classNameFor, generateCode } from './generateCode';
 import { parseCode } from './parseCode';
 import { lintView } from './viewLint';
+import { RESERVED_PROP_NAMES } from './viewProps';
 const fail = (error) => ({ ok: false, error });
 /** Find an element by its Scamp id or by its class name. */
 export const resolveElement = (ctx, ref) => {
@@ -602,7 +603,6 @@ export const editFeedback = (result, rootId, themeTokenNames) => {
     };
 };
 const PROP_NAME = /^[a-z][A-Za-z0-9]*$/;
-const RESERVED_PROP_NAMES = new Set(['className', 'children', 'key', 'ref', 'style']);
 /**
  * Show an element only when a boolean prop is true — the `{flag && …}` a
  * React app writes. The sample on the root decides what the canvas shows.

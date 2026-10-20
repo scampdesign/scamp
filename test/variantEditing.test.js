@@ -173,7 +173,12 @@ describe('names and keys', () => {
         expect(variantValueError(axis, '')).not.toBeNull();
         expect(variantAxisError(button(), 'label')).toBe('The component already has a prop named label.');
         expect(variantAxisError(button(), 'variant', 'variant')).toBeNull();
-        expect(variantAxisError(button(), 'children')).toBe('children is reserved.');
+        expect(variantAxisError(button(), 'children')).toBe('children is reserved by React or JavaScript.');
+        // A keyword can't be a destructured binding, and React strips `key` and `ref`.
+        // see docs/audits/2026-10-20-repo-audit.md, finding 17
+        for (const name of ['class', 'for', 'default', 'key', 'ref', 'style']) {
+            expect(variantAxisError(button(), name)).toBe(`${name} is reserved by React or JavaScript.`);
+        }
         // CSS matches `data-` attributes lowercase, so a camelCase axis wouldn't read back.
         expect(variantAxisError(button(), 'isOpen')).toBe('Use lowercase letters and digits, starting with a letter.');
     });

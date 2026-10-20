@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { generateCode } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
-import { ROOT_ELEMENT_ID } from '@lib/element';
+import { ROOT_ELEMENT_ID, removeSubtree } from '@lib/element';
 import { addVariantInteraction, afterTrigger, aliasSelectors, interactionError, readInteractionAttributes, removeVariantInteraction, shownPicks, withInteractionAttributes, } from '@lib/variantInteractions';
 import { addVariantValue, makeVariantDefault, removeVariantValue, renameVariantAxis, renameVariantValue } from '@lib/variantAxes';
 import { starterFiles } from '@lib/starterComponents';
@@ -116,6 +116,11 @@ describe('click, outside, and Escape as attributes', () => {
         const read = readInteractionAttributes(elements);
         expect(read.interactions).toEqual([]);
         expect(read.elements[ROOT_ELEMENT_ID]?.attributes?.['data-scamp-outside']).toBe('not a spec');
+    });
+    it('removing the element clicked removes its click, and nothing else', () => {
+        // see docs/audits/2026-10-20-repo-audit.md, finding 16
+        const removed = removeSubtree(interactive(), 'e51a');
+        expect(root(removed?.elements ?? {})?.variantInteractions).toEqual([OUTSIDE, ESCAPE]);
     });
     it('skips a click whose element is gone', () => {
         const gone = addVariantInteraction(menu(), { ...OPEN, target: 'nope' });

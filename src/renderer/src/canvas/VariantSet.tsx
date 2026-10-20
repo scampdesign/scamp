@@ -95,8 +95,10 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
           style={{
             width: fillsWidth ? `${artboardWidth}px` : 'max-content',
             height: fillsHeight ? `${artboardHeight}px` : undefined,
-            minWidth: reach[id] !== undefined ? `${reach[id].w}px` : undefined,
-            minHeight: reach[id] !== undefined ? `${reach[id].h}px` : undefined,
+            // Not along a side the root fills: growing the frame would grow
+            // the root, move what hangs past it, and grow the frame again.
+            minWidth: reach[id] !== undefined && !fillsWidth ? `${reach[id].w}px` : undefined,
+            minHeight: reach[id] !== undefined && !fillsHeight ? `${reach[id].h}px` : undefined,
           }}
         >
           <VariantFrameContext.Provider value={{ variantKey: cell.key, displayOnly: !live }}>

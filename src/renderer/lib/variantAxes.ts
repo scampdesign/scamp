@@ -11,7 +11,7 @@ import {
   type VariantAxis,
   type VariantOverride,
 } from './element';
-import { collectViewProps } from './viewProps';
+import { RESERVED_PROP_NAMES, collectViewProps } from './viewProps';
 import { resolveElementAtState } from './stateCascade';
 import { interactionError, mapInteractions } from './variantInteractions';
 
@@ -112,7 +112,7 @@ export const variantValueError = (axis: VariantAxis, name: string, renaming: str
 export const variantAxisError = (elements: Elements, name: string, renaming: string | null = null): string | null => {
   if (!PROP_RE.test(name)) return 'Use lowercase letters and digits, starting with a letter.';
   if (name === renaming) return null;
-  if (name === 'children') return 'children is reserved.';
+  if (RESERVED_PROP_NAMES.has(name)) return `${name} is reserved by React or JavaScript.`;
   if (collectViewProps(elements, ROOT_ELEMENT_ID).some((p) => p.name === name)) return `The component already has a prop named ${name}.`;
   return null;
 };

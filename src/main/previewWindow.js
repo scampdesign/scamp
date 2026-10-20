@@ -2,6 +2,7 @@ import { BrowserWindow, shell } from 'electron';
 import { join } from 'path';
 import { IPC } from '@shared/ipcChannels';
 import { getDevServerStatus, subscribeDevServer, } from './devServer/devServerManager';
+import { createPopupGate } from './popupGate';
 /**
  * One preview window per project (by absolute path). Reopen reuses
  * the existing window and just navigates it; close removes the entry
@@ -122,8 +123,10 @@ export const openPreviewWindow = async (args) => {
     // in a new tab — rare) are also denied to keep behaviour simple;
     // users navigate via the toolbar's URL handling.
     win.webContents.on('did-attach-webview', (_e, webContents) => {
+        const gate = createPopupGate();
+        webContents.on('input-event', (_event, input) => gate.noteInput(input.type));
         webContents.setWindowOpenHandler((details) => {
-            if (details.url.startsWith('http://') || details.url.startsWith('https://')) {
+            if ((details.url.startsWith('http://') || details.url.startsWith('https://')) && gate.allow()) {
                 void shell.openExternal(details.url);
             }
             return { action: 'deny' };

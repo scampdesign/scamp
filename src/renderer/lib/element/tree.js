@@ -66,6 +66,15 @@ export const removeSubtree = (elements, id) => {
             next[target.parentId] = { ...parent, childIds: parent.childIds.filter((childId) => childId !== id) };
         }
     }
+    // A click interaction on a removed element would list in the panel but
+    // never be written, so it goes with the element.
+    const root = next[ROOT_ELEMENT_ID];
+    const interactions = root?.variantInteractions;
+    if (root !== undefined && interactions?.some((i) => i.target !== undefined && removed.has(i.target))) {
+        const kept = interactions.filter((i) => i.target === undefined || !removed.has(i.target));
+        const { variantInteractions: _dropped, ...rest } = root;
+        next[ROOT_ELEMENT_ID] = kept.length > 0 ? { ...rest, variantInteractions: kept } : rest;
+    }
     return { elements: next, removed };
 };
 /**

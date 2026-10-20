@@ -324,6 +324,19 @@ describe('mcp.json', () => {
         });
         expect(await ensureToken(dir)).toBe('stable-token');
     });
+    it('generates a new token for a config copied from another folder', async () => {
+        // A project from someone else carries their token, which they know.
+        // see docs/audits/2026-10-20-repo-audit.md, finding 14
+        await fs.mkdir(join(dir, '.scamp'), { recursive: true });
+        await fs.writeFile(mcpConfigPath(dir), JSON.stringify({ url: 'http://127.0.0.1:39841/mcp', token: 'their-token', running: false, started_at: '', project: 'demo', path: '/home/someone/demo' }), 'utf-8');
+        expect(await ensureToken(dir)).not.toBe('their-token');
+    });
+    it('writes the config readable only by its owner', async () => {
+        if (process.platform === 'win32')
+            return;
+        await writeMcpConfig(dir, { url: 'u', token: 't', running: true, started_at: '', project: 'demo' });
+        expect((await fs.stat(mcpConfigPath(dir))).mode & 0o777).toBe(0o600);
+    });
     it('generates a token when there is no config yet', async () => {
         const token = await ensureToken(dir);
         expect(token).toMatch(/^[0-9a-f]{48}$/);

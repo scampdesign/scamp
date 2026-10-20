@@ -10,7 +10,7 @@ export const readMcpConfig = async (projectPath) => {
         const parsed = JSON.parse(raw);
         if (!isRecord(parsed))
             return null;
-        const { url, token, running, started_at, project } = parsed;
+        const { url, token, running, started_at, project, path } = parsed;
         if (typeof url !== 'string' || typeof token !== 'string')
             return null;
         return {
@@ -19,6 +19,7 @@ export const readMcpConfig = async (projectPath) => {
             running: running === true,
             started_at: typeof started_at === 'string' ? started_at : '',
             project: typeof project === 'string' ? project : basename(projectPath),
+            ...(typeof path === 'string' ? { path } : {}),
         };
     }
     catch {
@@ -35,14 +36,27 @@ export const readMcpConfig = async (projectPath) => {
  */
 export const ensureToken = async (projectPath) => {
     const existing = await readMcpConfig(projectPath);
-    if (existing !== null && existing.token.length > 0)
+    // Only a token this folder's own file holds: one that arrived with a
+    // copied project is someone else's. Agent configs are rewritten with the
+    // token on every open, so a new one breaks no registration.
+    if (existing !== null && existing.token.length > 0 && existing.path === projectPath)
         return existing.token;
     return randomBytes(24).toString('hex');
 };
 export const writeMcpConfig = async (projectPath, config) => {
     const path = mcpConfigPath(projectPath);
     await fs.mkdir(dirname(path), { recursive: true });
-    await fs.writeFile(path, `${JSON.stringify(config, null, 2)}\n`, 'utf-8');
+    await writePrivate(path, `${JSON.stringify({ ...config, path: projectPath }, null, 2)}\n`);
+};
+/**
+ * Write a file only its owner can read: it holds the token that lets a
+ * caller read the canvas. `mode` only applies to a new file, so an
+ * existing one is narrowed too. (No effect on Windows, whose files
+ * aren't shared through modes.)
+ */
+export const writePrivate = async (path, content) => {
+    await fs.writeFile(path, content, { encoding: 'utf-8', mode: 0o600 });
+    await fs.chmod(path, 0o600).catch(() => undefined);
 };
 /**
  * Mark the server stopped WITHOUT deleting the file.

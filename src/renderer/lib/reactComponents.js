@@ -13,6 +13,7 @@ import { makeInstanceElement } from './componentInstance';
 import { ROOT_ELEMENT_ID, variantKey } from './element';
 import { PAINT_CSS, PAINT_FIELDS, planReactVariants } from './reactVariants';
 import { addVariantAxis } from './variantAxes';
+import { RESERVED_PROP_NAMES } from './viewProps';
 /**
  * An instance's elements, preorder, and the places holding children it
  * doesn't own. At a position in `absorbAt`, those children are taken in
@@ -144,7 +145,6 @@ const majority = (values, keyOf) => {
     return best;
 };
 const IDENTIFIER = /^[a-z][A-Za-z0-9]*$/;
-const RESERVED_PROPS = new Set(['className', 'children', 'key', 'ref', 'style']);
 const freeName = (base, taken) => {
     const clean = /^[A-Z][A-Za-z0-9]*$/.test(base) ? base : 'Component';
     let name = clean;
@@ -356,7 +356,7 @@ export const planReactComponents = (input, options = {}) => {
             resolved.forEach((f, i) => {
                 const props = views[f.view]?.instances[f.key.slice(f.key.indexOf(':') + 1)]?.props ?? {};
                 for (const [name, value] of Object.entries(props)) {
-                    if (value === texts[i] && IDENTIFIER.test(name) && !RESERVED_PROPS.has(name))
+                    if (value === texts[i] && IDENTIFIER.test(name) && !RESERVED_PROP_NAMES.has(name))
                         votes.set(name, (votes.get(name) ?? 0) + 1);
                 }
             });
