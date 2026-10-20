@@ -14,31 +14,43 @@ const addStarter = async (window, name) => {
     await window.getByTitle('Select component root').click();
 };
 const interactions = (window) => window.getByTestId('variant-interactions');
-/** Fill the new-interaction form: its lists in order are trigger, (property,) from, to, (element). */
+const panel = (window) => window.getByRole('dialog', { name: 'New interaction' });
+/** The frame being edited, which a new interaction starts from. */
+const editFrame = async (window, value) => {
+    await window.getByRole('group', { name: 'Editing' }).locator('select').first().selectOption(value);
+};
+/** Open the panel from the header's +, pick a trigger, (an element,) and the value to change to, then Add. Its lists are in that order. */
 const addInteraction = async (window, picks) => {
-    await interactions(window).getByRole('button', { name: '+ Add interaction' }).click();
-    const form = interactions(window).getByRole('group', { name: 'New interaction' });
-    const selects = form.locator('select');
-    for (const [i, label] of picks.entries())
-        await selects.nth(i).selectOption({ label });
-    await form.getByRole('button', { name: 'Add' }).click();
+    await interactions(window).getByRole('button', { name: 'Add interaction' }).click();
+    const selects = panel(window).locator('select');
+    await selects.first().selectOption({ label: picks.trigger });
+    if (picks.on !== undefined)
+        await selects.nth(1).selectOption({ label: picks.on });
+    await selects.last().selectOption({ label: picks.to });
+    await panel(window).getByRole('button', { name: 'Add', exact: true }).click();
+    await expect(panel(window)).toBeHidden();
 };
 test.describe('components: variant interactions', () => {
     test.describe('in a Next.js project', () => {
         test.use({ projectOptions: { format: 'nextjs' } });
-        test('a hover interaction writes a second selector, and Try shows the hover look', async ({ window, project }) => {
+        test('a hover interaction from the edited frame writes a second selector, shown as one line', async ({ window, project }) => {
             await expect(pageRoot(window)).toBeVisible();
             await addStarter(window, 'Button');
             // Only CSS triggers outside the framework.
-            await interactions(window).getByRole('button', { name: '+ Add interaction' }).click();
-            const triggers = await interactions(window).locator('select').first().locator('option').allTextContents();
+            await interactions(window).getByRole('button', { name: 'Add interaction' }).click();
+            const triggers = await panel(window).locator('select').first().locator('option').allTextContents();
             expect(triggers).toEqual(['While hovering', 'While pressing', 'While focused']);
-            await interactions(window).getByRole('button', { name: 'Cancel' }).click();
-            await addInteraction(window, ['While hovering', 'variant', 'From default', 'Change to outline']);
+            await window.keyboard.press('Escape');
+            await expect(panel(window)).toBeHidden();
+            await addInteraction(window, { trigger: 'While hovering', to: 'outline' });
             await waitForSaved(window);
             const { css } = await project.readComponent('Button');
             expect(css).toContain('.root[data-variant="outline"],\n.root[data-variant="default"]:hover {');
-            await expect(interactions(window)).toContainText('While hovering: variant default → outline');
+            const row = interactions(window).getByRole('listitem');
+            await expect(row).toHaveText('While hovering · default → outline');
+            // One line, however narrow the panel.
+            const box = await row.boundingBox();
+            expect(box?.height ?? 0).toBeLessThan(30);
         });
     });
     test.describe('in a Scamp framework project', () => {
@@ -46,13 +58,19 @@ test.describe('components: variant interactions', () => {
         test('a click opens a menu and a click outside closes it, as attributes the framework reads', async ({ window, project }) => {
             await expect(pageRoot(window)).toBeVisible();
             await addStarter(window, 'Menu');
-            await addInteraction(window, ['On click', 'From closed', 'Change to open', 'On trigger_e51a']);
-            await addInteraction(window, ['On click', 'From open', 'Change to closed', 'On trigger_e51a']);
-            await addInteraction(window, ['On click outside', 'From open', 'Change to closed']);
+            // The starter brings its own; start from none.
+            const remove = interactions(window).getByRole('button', { name: /^Remove / });
+            while ((await remove.count()) > 0)
+                await remove.first().click();
+            await addInteraction(window, { trigger: 'On click', on: 'trigger_e51a', to: 'open' });
+            await editFrame(window, 'open');
+            await addInteraction(window, { trigger: 'On click', on: 'trigger_e51a', to: 'closed' });
+            await addInteraction(window, { trigger: 'On click outside', to: 'closed' });
             await waitForSaved(window);
             const { tsx } = await project.readComponent('Menu');
             expect(tsx).toContain('data-scamp-click="state:closed=open,open=closed"');
             expect(tsx).toContain('data-scamp-outside="state:open=closed"');
+            await expect(interactions(window).getByRole('listitem')).toHaveCount(3);
         });
     });
 });

@@ -1,68 +1,85 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from 'react';
+import { IconMinus, IconPlus } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { classNameFor } from '@lib/generateCode';
 import { TRIGGER_LABEL, addVariantInteraction, interactionError, isCssTrigger, removeVariantInteraction, } from '@lib/variantInteractions';
+import { usePopover } from '../hooks/usePopover';
 import { EnumSelect } from './controls/EnumSelect';
+import { Section } from './sections/Section';
 import styles from './VariantsSection.module.css';
 const CSS_TRIGGERS = ['hover', 'press', 'focus'];
 const RUNTIME_TRIGGERS = ['click', 'outside', 'escape'];
-const ANY = '*';
 const NONE = [];
+const POPOVER = { width: 240, desiredMaxHeight: 320, align: 'right' };
 /**
- * The component's interactions, Figma's **Change to**: on a trigger, a
- * property goes from one value to another by itself. Hover, press, and
- * focus are CSS; click, a click outside, and Escape need the Scamp
- * framework's handler, so only its projects offer them.
- * see docs/plans/component-variants-plan.md, phase 7
+ * The component's interactions, as Figma has them: **+** on the header
+ * opens a panel with a **Trigger** and an **Action** (Change to), and
+ * each interaction is one line. A new one starts from the frame being
+ * edited. Hover, press, and focus are CSS; click, a click outside, and
+ * Escape need the Scamp framework's handler, so only its projects offer
+ * them. see docs/plans/component-variants-plan.md, phase 7
  */
 export const VariantInteractions = ({ axes, picks, disabled }) => {
     const interactions = useCanvasStore((s) => s.elements[ROOT_ELEMENT_ID]?.variantInteractions ?? NONE);
     const elements = useCanvasStore((s) => s.elements);
     const isFramework = useCanvasStore((s) => s.projectFormat === 'scamp');
     const editVariants = useCanvasStore((s) => s.editVariants);
-    const [draft, setDraft] = useState(null);
+    const [trigger, setTrigger] = useState('hover');
+    const [target, setTarget] = useState(ROOT_ELEMENT_ID);
+    // `axis=value`, the value the action changes to.
+    const [destination, setDestination] = useState('');
     const [error, setError] = useState(null);
+    const popover = usePopover({ position: POPOVER });
     const triggers = isFramework ? [...CSS_TRIGGERS, ...RUNTIME_TRIGGERS] : CSS_TRIGGERS;
+    const destinations = axes.flatMap((a) => a.values
+        .filter((v) => v !== picks[a.prop])
+        .map((v) => ({ value: `${a.prop}=${v}`, label: axes.length > 1 ? `${a.prop}: ${v}` : v })));
     const nameOf = (id) => {
         const el = elements[id ?? ROOT_ELEMENT_ID];
-        return el === undefined || el.id === ROOT_ELEMENT_ID ? 'the component' : classNameFor(el);
+        return el === undefined || el.id === ROOT_ELEMENT_ID ? 'component' : classNameFor(el);
     };
-    const startDraft = () => {
-        const axis = axes[0];
-        if (axis === undefined)
+    const describe = (i) => `${TRIGGER_LABEL[i.trigger]}${i.trigger === 'click' ? ` ${nameOf(i.target)}` : ''} · ${i.from ?? 'any'} → ${i.to}`;
+    const handleOpen = () => {
+        if (popover.open) {
+            popover.setOpen(false);
             return;
-        const from = picks[axis.prop] ?? axis.defaultValue;
-        const to = axis.values.find((v) => v !== from && v !== axis.defaultValue) ?? axis.values.find((v) => v !== from) ?? from;
+        }
+        setTrigger('hover');
+        setTarget(ROOT_ELEMENT_ID);
+        setDestination(destinations[0]?.value ?? '');
         setError(null);
-        setDraft({ axis: axis.prop, from, trigger: 'hover', to });
+        popover.setOpen(true);
     };
     const handleAdd = () => {
-        if (draft === null)
-            return;
-        // Only a click has an element; the root is the whole component.
-        const { target, ...rest } = draft;
-        const interaction = draft.trigger === 'click' && target !== undefined && target !== ROOT_ELEMENT_ID ? { ...rest, target } : rest;
+        const at = destination.indexOf('=');
+        const axis = destination.slice(0, at);
+        const interaction = {
+            axis,
+            from: picks[axis] ?? null,
+            trigger,
+            to: destination.slice(at + 1),
+            ...(trigger === 'click' && target !== ROOT_ELEMENT_ID ? { target } : {}),
+        };
         const problem = interactionError(axes, interaction);
         if (problem !== null) {
             setError(problem);
             return;
         }
         editVariants((current) => addVariantInteraction(current, interaction));
-        setDraft(null);
-        setError(null);
+        popover.setOpen(false);
     };
-    const draftAxis = draft === null ? undefined : axes.find((a) => a.prop === draft.axis);
-    return (_jsxs("div", { className: styles.interactions, "data-testid": "variant-interactions", children: [_jsx("span", { className: styles.axisName, children: "Interactions" }), interactions.length > 0 && (_jsx("ul", { className: styles.interactionList, children: interactions.map((i, index) => (_jsxs("li", { className: styles.interaction, children: [_jsxs("span", { children: [TRIGGER_LABEL[i.trigger], i.trigger === 'click' ? ` on ${nameOf(i.target)}` : '', ": ", i.axis, " ", i.from ?? 'any', " \u2192 ", i.to] }), _jsx("button", { type: "button", className: styles.iconButton, onClick: () => editVariants((current) => removeVariantInteraction(current, i)), "aria-label": `Remove ${TRIGGER_LABEL[i.trigger].toLowerCase()} ${i.from ?? 'any'} to ${i.to}`, disabled: disabled, children: "Remove" })] }, `${i.trigger}-${i.axis}-${i.from ?? ANY}-${i.target ?? ''}`))) })), draft === null ? (_jsx("button", { type: "button", className: styles.addAxis, onClick: startDraft, disabled: disabled, children: "+ Add interaction" })) : (_jsxs("div", { className: styles.interactionForm, role: "group", "aria-label": "New interaction", children: [_jsx(EnumSelect, { value: draft.trigger, options: triggers.map((t) => ({ value: t, label: TRIGGER_LABEL[t] })), onChange: (trigger) => setDraft({ ...draft, trigger }), title: "Trigger" }), axes.length > 1 && (_jsx(EnumSelect, { value: draft.axis, options: axes.map((a) => ({ value: a.prop, label: a.prop })), onChange: (axis) => {
-                            const next = axes.find((a) => a.prop === axis);
-                            if (next === undefined)
-                                return;
-                            setDraft({ ...draft, axis, from: next.defaultValue, to: next.values.find((v) => v !== next.defaultValue) ?? next.defaultValue });
-                        }, title: "Property" })), _jsx(EnumSelect, { value: draft.from ?? ANY, options: [{ value: ANY, label: 'From any value' }, ...(draftAxis?.values ?? []).map((v) => ({ value: v, label: `From ${v}` }))], onChange: (from) => setDraft({ ...draft, from: from === ANY ? null : from }), title: "Changes from" }), _jsx(EnumSelect, { value: draft.to, options: (draftAxis?.values ?? []).map((v) => ({ value: v, label: `Change to ${v}` })), onChange: (to) => setDraft({ ...draft, to }), title: "Changes to" }), draft.trigger === 'click' && (_jsx(EnumSelect, { value: draft.target ?? ROOT_ELEMENT_ID, options: [
-                            { value: ROOT_ELEMENT_ID, label: 'On the component' },
-                            ...Object.values(elements)
-                                .filter((el) => el.id !== ROOT_ELEMENT_ID)
-                                .map((el) => ({ value: el.id, label: `On ${classNameFor(el)}` })),
-                        ], onChange: (target) => setDraft({ ...draft, target }), title: "The element clicked" })), isCssTrigger(draft.trigger) ? null : (_jsx("span", { className: styles.interactionNote, children: "Runs in the browser through the Scamp framework." })), _jsxs("div", { className: styles.valueActions, children: [_jsx("button", { type: "button", className: styles.confirmCancel, onClick: handleAdd, children: "Add" }), _jsx("button", { type: "button", className: styles.confirmCancel, onClick: () => setDraft(null), children: "Cancel" })] })] })), error !== null && (_jsx("span", { className: styles.error, role: "alert", children: error }))] }));
+    const plus = (_jsx("button", { ref: popover.triggerRef, type: "button", className: styles.headerButton, onClick: handleOpen, disabled: disabled, "aria-label": "Add interaction", "aria-expanded": popover.open, title: "Add interaction", children: _jsx(IconPlus, { size: 14 }) }));
+    return (_jsxs("div", { "data-testid": "variant-interactions", children: [_jsx(Section, { title: "Interactions", titleAccessory: plus, children: interactions.length > 0 && (_jsx("ul", { className: styles.interactionList, children: interactions.map((i) => (_jsxs("li", { className: styles.interaction, children: [_jsx("span", { className: styles.interactionText, title: describe(i), children: describe(i) }), _jsx("button", { type: "button", className: styles.headerButton, onClick: () => editVariants((current) => removeVariantInteraction(current, i)), "aria-label": `Remove ${describe(i)}`, title: "Remove interaction", disabled: disabled, children: _jsx(IconMinus, { size: 14 }) })] }, describe(i)))) })) }), popover.open && popover.position !== null && (_jsxs("div", { ref: popover.popoverRef, className: styles.interactionPopover, role: "dialog", "aria-label": "New interaction", style: {
+                    left: popover.position.left,
+                    top: popover.position.top,
+                    bottom: popover.position.bottom,
+                    maxHeight: popover.position.maxHeight,
+                }, children: [_jsxs("div", { className: styles.popoverRow, children: [_jsx("span", { className: styles.popoverLabel, children: "Trigger" }), _jsx(EnumSelect, { value: trigger, options: triggers.map((t) => ({ value: t, label: TRIGGER_LABEL[t] })), onChange: setTrigger, title: "Trigger" })] }), trigger === 'click' && (_jsxs("div", { className: styles.popoverRow, children: [_jsx("span", { className: styles.popoverLabel, children: "On" }), _jsx(EnumSelect, { value: target, options: [
+                                    { value: ROOT_ELEMENT_ID, label: 'The component' },
+                                    ...Object.values(elements)
+                                        .filter((el) => el.id !== ROOT_ELEMENT_ID)
+                                        .map((el) => ({ value: el.id, label: classNameFor(el) })),
+                                ], onChange: setTarget, title: "The element clicked" })] })), _jsxs("div", { className: styles.popoverRow, children: [_jsx("span", { className: styles.popoverLabel, children: "Action" }), _jsx(EnumSelect, { value: destination, options: destinations, onChange: setDestination, title: "Change to" })] }), _jsxs("span", { className: styles.interactionNote, children: ["From ", picks[destination.slice(0, destination.indexOf('='))] ?? 'this frame', ", the frame you're editing.", isCssTrigger(trigger) ? '' : ' Runs in the browser through the Scamp framework.'] }), error !== null && (_jsx("span", { className: styles.error, role: "alert", children: error })), _jsx("button", { type: "button", className: styles.popoverAdd, onClick: handleAdd, disabled: destination === '', children: "Add" })] }))] }));
 };

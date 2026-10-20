@@ -95,7 +95,6 @@ export const VariantsSection = (): JSX.Element => {
             />
           ))}
         </div>
-        {axes.length > 0 && <VariantInteractions axes={axes} picks={picks} disabled={nonDesktop} />}
         <button
           type="button"
           className={styles.addAxis}
@@ -111,6 +110,7 @@ export const VariantsSection = (): JSX.Element => {
           </span>
         )}
       </Section>
+      {axes.length > 0 && <VariantInteractions axes={axes} picks={picks} disabled={nonDesktop} />}
     </div>
   );
 };

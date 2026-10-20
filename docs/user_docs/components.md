@@ -360,11 +360,17 @@ its `hover` look while the pointer is on it, or a menu opens when its
 trigger is clicked. This is Figma's **Change to** interaction.
 
 1. Select the component's name in the breadcrumb.
-1. In the **Variants** section, under **Interactions**, click
-   **+ Add interaction**.
-1. Select the trigger, the value it changes from, and the value it
-   changes to. For a click, also select the element that's clicked.
+1. In the **Variants** section, under **Editing**, select the frame the
+   interaction starts from—for example, `closed`.
+1. In the **Interactions** section header, click **+**.
+1. In the panel, select a **Trigger**. For **On click**, also select the
+   element that's clicked.
+1. Under **Action**, select the value to change to.
 1. Click **Add**.
+
+Each interaction is one line in the **Interactions** section. To see the
+whole line, hold the pointer over it. To remove one, click **−** beside
+it.
 
 | Trigger | Runs as | Projects |
 |---|---|---|
@@ -372,7 +378,8 @@ trigger is clicked. This is Figma's **Change to** interaction.
 | **On click**, **On click outside**, **On Escape** | The Scamp framework's click handler | Scamp framework projects |
 
 A click is remembered until the next one, so a menu needs two: **On
-click** from `closed` to `open`, and from `open` to `closed`. Add **On
+click** while editing `closed`, changing to `open`, and while editing
+`open`, changing to `closed`. Add **On
 click outside** and **On Escape** from `open` to `closed` if the menu
 should also close those ways; leave them out if it shouldn't.
 

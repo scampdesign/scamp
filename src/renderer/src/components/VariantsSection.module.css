@@ -163,40 +163,111 @@
   text-overflow: ellipsis;
 }
 
-.interactions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-  font-size: 12px;
-}
-
 .interactionList {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .interaction {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
+  min-height: 24px;
+  font-size: 12px;
   color: var(--text-primary);
 }
 
-.interactionForm {
+/* One line per interaction; the full text is in its title. */
+.interactionText {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Matches the section header's other icon buttons (Section.module.css .groupToggleButton). */
+.headerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.headerButton:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.headerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Laid out like the colour picker's popover (Controls.module.css .colorPopover). */
+.interactionPopover {
+  position: fixed;
+  z-index: 100;
+  width: 240px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  padding: 12px;
+  overflow-y: auto;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  font-size: 12px;
+}
+
+.popoverRow {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.popoverLabel {
+  color: var(--text-secondary);
 }
 
 .interactionNote {
   font-size: 11px;
   color: var(--text-secondary);
+}
+
+.popoverAdd {
+  align-self: flex-end;
+  height: var(--control-h);
+  padding: 0 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-inverse);
+  cursor: pointer;
+}
+
+.popoverAdd:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.popoverAdd:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
