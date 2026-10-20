@@ -87,7 +87,7 @@ export const VariantInteractions = ({ axes, picks, disabled }: Props): JSX.Eleme
               <button
                 type="button"
                 className={styles.iconButton}
-                onClick={() => editVariants((current) => removeVariantInteraction(current, index))}
+                onClick={() => editVariants((current) => removeVariantInteraction(current, i))}
                 aria-label={`Remove ${TRIGGER_LABEL[i.trigger].toLowerCase()} ${i.from ?? 'any'} to ${i.to}`}
                 disabled={disabled}
               >

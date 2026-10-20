@@ -6,6 +6,7 @@
 // distinct paint becomes a value on one variant axis, named from the React
 // prop that tells the copies apart when one does, and each instance picks
 // its own. Pure. see docs/plans/component-variants-plan.md
+import { VARIANT_VALUE_RE } from './element';
 /** Fields that only paint: they change how an element looks, not where anything goes. */
 export const PAINT_FIELDS = [
     'backgroundColor',
@@ -59,7 +60,6 @@ export const paintOverride = (el, look) => {
         out.customProperties = custom;
     return out;
 };
-const VALUE_RE = /^[a-z][a-z0-9-]*$/;
 const IDENTIFIER = /^[a-z][A-Za-z0-9]*$/;
 /** A string as a variant value: lowercase words joined by hyphens. */
 export const slugValue = (raw) => {
@@ -99,7 +99,7 @@ const namesFromProp = (groups, copies, takenProps) => {
     return null;
 };
 const rank = (prop) => (prop === 'variant' ? 0 : prop === 'state' ? 1 : 2);
-const distinctValid = (values) => new Set(values).size === values.length && values.every((v) => VALUE_RE.test(v));
+const distinctValid = (values) => new Set(values).size === values.length && values.every((v) => VARIANT_VALUE_RE.test(v));
 /**
  * Plan the variants a component's copies need, given the common look at
  * each position. Null when no copy paints differently from it.

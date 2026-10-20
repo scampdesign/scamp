@@ -1,4 +1,4 @@
-import { ROOT_ELEMENT_ID, } from './element';
+import { ROOT_ELEMENT_ID, VARIANT_AXIS_RE, VARIANT_VALUE_RE, } from './element';
 /** The triggers CSS expresses, and the pseudo-class each puts on the root. */
 export const TRIGGER_PSEUDO = {
     hover: ':hover',
@@ -50,21 +50,19 @@ const serialize = (interactions) => {
         groups.set(i.axis, [...(groups.get(i.axis) ?? []), `${i.from ?? '*'}=${i.to}`]);
     return [...groups].map(([axis, pairs]) => `${axis}:${pairs.join(',')}`).join(' ');
 };
-const PAIR_RE = /^(\*|[a-z][a-z0-9-]*)=([a-z][a-z0-9-]*)$/;
-const AXIS_RE = /^[a-z][a-z0-9]*$/;
 /** Read an attribute's interactions, or null when any part is malformed. */
 const deserialize = (value, trigger, target) => {
     const out = [];
     for (const group of value.trim().split(/\s+/)) {
         const at = group.indexOf(':');
         const axis = group.slice(0, at);
-        if (at <= 0 || !AXIS_RE.test(axis))
+        if (at <= 0 || !VARIANT_AXIS_RE.test(axis))
             return null;
         for (const pair of group.slice(at + 1).split(',')) {
-            const m = PAIR_RE.exec(pair);
-            if (m === null)
+            const [from = '', to = '', ...extra] = pair.split('=');
+            if (extra.length > 0 || !VARIANT_VALUE_RE.test(to) || (from !== '*' && !VARIANT_VALUE_RE.test(from)))
                 return null;
-            out.push({ axis, from: m[1] === '*' ? null : m[1], trigger, to: m[2], ...(target !== undefined ? { target } : {}) });
+            out.push({ axis, from: from === '*' ? null : from, trigger, to, ...(target !== undefined ? { target } : {}) });
         }
     }
     return out.length > 0 ? out : null;
@@ -152,19 +150,19 @@ const setInteractions = (elements, list) => {
     const { variantInteractions: _old, ...rest } = root;
     return { ...elements, [ROOT_ELEMENT_ID]: list.length > 0 ? { ...rest, variantInteractions: list } : rest };
 };
+/** The same trigger, from the same value, on the same element: one replaces the other. */
+const sameInteraction = (a, b) => a.axis === b.axis && a.from === b.from && a.trigger === b.trigger && (a.target ?? null) === (b.target ?? null);
 export const addVariantInteraction = (elements, i) => {
     const axes = elements[ROOT_ELEMENT_ID]?.variantAxes ?? [];
     if (interactionError(axes, i) !== null)
         return elements;
-    const same = (a) => a.axis === i.axis && a.from === i.from && a.trigger === i.trigger && (a.target ?? null) === (i.target ?? null);
     // One interaction per trigger and starting value: a new one replaces it.
-    return setInteractions(elements, [...interactionsOf(elements).filter((a) => !same(a)), i]);
+    return setInteractions(elements, [...interactionsOf(elements).filter((a) => !sameInteraction(a, i)), i]);
 };
-export const removeVariantInteraction = (elements, index) => {
+export const removeVariantInteraction = (elements, i) => {
     const list = interactionsOf(elements);
-    if (index < 0 || index >= list.length)
-        return elements;
-    return setInteractions(elements, list.filter((_, n) => n !== index));
+    const kept = list.filter((a) => !sameInteraction(a, i) || a.to !== i.to);
+    return kept.length === list.length ? elements : setInteractions(elements, kept);
 };
 /**
  * Keep interactions in step with an axis edit: rename a value or an

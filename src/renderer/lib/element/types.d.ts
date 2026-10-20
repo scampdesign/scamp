@@ -828,6 +828,15 @@ export type VariantPick = {
     axis: string;
     value: string;
 };
+/** A variant axis name: a prop, and a `data-` attribute suffix CSS matches lowercase. */
+export declare const VARIANT_AXIS_RE: RegExp;
+/** A variant value: a CSS attribute value and a TypeScript string literal. */
+export declare const VARIANT_VALUE_RE: RegExp;
+/**
+ * Whether `parts` are non-default values of `axes`, one per axis, in axis
+ * order: the shape of a key the generator writes and the parser places.
+ */
+export declare const variantPartsLive: (axes: ReadonlyArray<VariantAxis>, parts: ReadonlyArray<VariantPick>) => boolean;
 /** The key for a combination, parts in axis order: `variant=outline&size=small`. */
 export declare const variantComboKey: (parts: ReadonlyArray<VariantPick>) => string;
 /** A key's parts, or null when one isn't `axis=value`. */

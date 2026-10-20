@@ -420,15 +420,14 @@ export const ElementRenderer = ({ elementId, row }) => {
     // selected element previews its hover/active/focus styles. The
     // parent's layout (flex / grid behaviour) is whatever the
     // breakpoint cascade resolves.
-    const parentResolved = useCanvasStore((s) => {
+    // The raw parent from the store, resolved here: a selector returning the
+    // resolved copy is a new object whenever an override applies, which
+    // re-rendered every child on every store change.
+    const rawParent = useCanvasStore((s) => {
         const el = s.elements[elementId];
-        if (!el || !el.parentId)
-            return undefined;
-        const parent = s.elements[el.parentId];
-        if (!parent)
-            return undefined;
-        return resolveElementAtState(parent, s.activeBreakpointId, s.breakpoints, null, variantKey);
+        return el?.parentId ? s.elements[el.parentId] : undefined;
     });
+    const parentResolved = useMemo(() => (rawParent === undefined ? undefined : resolveElementAtState(rawParent, activeBreakpointId, breakpoints, null, variantKey)), [rawParent, activeBreakpointId, breakpoints, variantKey]);
     // Slot content (an element whose parent is a component-instance) flows
     // inside the slot rather than being absolutely positioned by its page
     // x/y — otherwise it renders at its old page coordinates, escaping the

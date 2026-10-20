@@ -3,7 +3,7 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID, type VariantAxis, type VariantInteraction } from '@lib/element';
 import { CANVAS_SCOPE_ATTR } from '@lib/canvasStylesheet';
 import { classNameFor } from '@lib/generateCode';
-import { keyFor } from '@lib/variantAxes';
+import { fullPicks, keyFor } from '@lib/variantAxes';
 import { afterTrigger, shownPicks } from '@lib/variantInteractions';
 
 import { ElementRenderer } from './ElementRenderer';
@@ -32,7 +32,7 @@ export const TryInteractions = ({ scale }: Props): JSX.Element => {
   const interactions = useCanvasStore((s) => s.elements[ROOT_ELEMENT_ID]?.variantInteractions ?? NONE);
   const elements = useCanvasStore((s) => s.elements);
   const { themeCssVars, themeFontFamily } = useCanvasTheme();
-  const defaults = useMemo(() => Object.fromEntries(axes.map((a) => [a.prop, a.defaultValue])), [axes]);
+  const defaults = useMemo(() => fullPicks(axes, null), [axes]);
   const [picks, setPicks] = useState<Record<string, string>>(defaults);
   const [pointer, setPointer] = useState({ hover: false, press: false, focus: false });
   const wrapRef = useRef<HTMLDivElement>(null);

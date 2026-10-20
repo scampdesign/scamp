@@ -9,7 +9,7 @@ import {
   isInvertedBinding,
   isRowPath,
 } from '../viewProps';
-import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, variantComboKey, withAttributeSample, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride, type VariantInteraction, type VariantOverride } from "../element";
+import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, variantComboKey, variantPartsLive, withAttributeSample, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride, type VariantInteraction, type VariantOverride } from "../element";
 import { DEFAULT_RECT_STYLES } from '../defaults';
 import { composeMaps } from '../sourceMap';
 import { TABLE_LAYOUT_TAGS } from '../tableGrid';
@@ -660,12 +660,7 @@ export const parseCode = (
   for (const rule of parsedCss.axisRules) {
     // Each attribute a declared axis's non-default value, one per axis, in
     // axis order: the order the generator writes, so the file round-trips.
-    const axisIndexes = rule.parts.map((part) => axes.findIndex((a) => a.prop === part.axis));
-    const partsPlaceable = rule.parts.every((part, i) => {
-      const axis = axes[axisIndexes[i] as number];
-      const previous = i === 0 ? -1 : (axisIndexes[i - 1] as number);
-      return axis !== undefined && (axisIndexes[i] as number) > previous && axis.values.includes(part.value) && part.value !== axis.defaultValue;
-    });
+    const partsPlaceable = variantPartsLive(axes, rule.parts);
     const targetId = idByClass.get(rule.targetClass);
     const target = targetId === undefined ? undefined : elements[targetId];
     // An interaction's starting value has to be one of the axis's too.

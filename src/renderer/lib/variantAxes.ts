@@ -5,6 +5,9 @@ import {
   variantComboKey,
   variantKey,
   variantKeyParts,
+  variantPartsLive,
+  VARIANT_AXIS_RE,
+  VARIANT_VALUE_RE,
   type BreakpointOverride,
   type ElementStateName,
   type ScampElement,
@@ -24,10 +27,6 @@ import { interactionError, mapInteractions } from './variantInteractions';
 
 type Elements = Record<string, ScampElement>;
 
-/** A value is written as a CSS attribute value and a TS string literal. */
-const VALUE_RE = /^[a-z][a-z0-9-]*$/;
-/** An axis is a prop name and a `data-` attribute suffix, which CSS matches lowercase. */
-const PROP_RE = /^[a-z][a-z0-9]*$/;
 
 /** How many combinations a component's axes may make. Decided for phase 6. */
 export const MAX_VARIANT_COMBINATIONS = 36;
@@ -46,28 +45,13 @@ export const combinationLimitError = (axes: ReadonlyArray<VariantAxis>, next: Re
 export const axesOf = (elements: Elements): ReadonlyArray<VariantAxis> =>
   elements[ROOT_ELEMENT_ID]?.variantAxes ?? [];
 
-export const parseVariantKey = (key: string): { axis: string; value: string } | null => {
-  const at = key.indexOf('=');
-  if (at <= 0 || at === key.length - 1) return null;
-  return { axis: key.slice(0, at), value: key.slice(at + 1) };
-};
-
 /**
  * True when `key` names non-default values of declared axes, one per
  * axis, in axis order: a single value or a combination.
  */
 export const isVariantKeyLive = (elements: Elements, key: string): boolean => {
   const parts = variantKeyParts(key);
-  if (parts === null) return false;
-  const axes = axesOf(elements);
-  let previous = -1;
-  for (const part of parts) {
-    const index = axes.findIndex((a) => a.prop === part.axis);
-    const axis = axes[index];
-    if (axis === undefined || index <= previous || !axis.values.includes(part.value) || axis.defaultValue === part.value) return false;
-    previous = index;
-  }
-  return true;
+  return parts !== null && variantPartsLive(axesOf(elements), parts);
 };
 
 /**
@@ -103,14 +87,14 @@ const mapKeyParts = (key: string, fn: (axis: string, value: string) => { axis: s
 
 /** Why `name` can't be a new value on `axis`, or null when it can. */
 export const variantValueError = (axis: VariantAxis, name: string, renaming: string | null = null): string | null => {
-  if (!VALUE_RE.test(name)) return 'Use lowercase letters, digits, and hyphens, starting with a letter.';
+  if (!VARIANT_VALUE_RE.test(name)) return 'Use lowercase letters, digits, and hyphens, starting with a letter.';
   if (name !== renaming && axis.values.includes(name)) return `${axis.prop} already has a value named ${name}.`;
   return null;
 };
 
 /** Why `name` can't be a new axis, or null when it can. */
 export const variantAxisError = (elements: Elements, name: string, renaming: string | null = null): string | null => {
-  if (!PROP_RE.test(name)) return 'Use lowercase letters and digits, starting with a letter.';
+  if (!VARIANT_AXIS_RE.test(name)) return 'Use lowercase letters and digits, starting with a letter.';
   if (name === renaming) return null;
   if (RESERVED_PROP_NAMES.has(name)) return `${name} is reserved by React or JavaScript.`;
   if (collectViewProps(elements, ROOT_ELEMENT_ID).some((p) => p.name === name)) return `The component already has a prop named ${name}.`;
@@ -120,7 +104,7 @@ export const variantAxisError = (elements: Elements, name: string, renaming: str
 /** A name not yet on the axis: `variant-2`, `variant-3`, … */
 export const nextValueName = (axis: VariantAxis): string => {
   for (let n = axis.values.length + 1; ; n += 1) {
-    const name = `${axis.prop.toLowerCase()}-${n}`;
+    const name = `${axis.prop}-${n}`;
     if (!axis.values.includes(name)) return name;
   }
 };
@@ -314,7 +298,7 @@ export const resetVariantFields = (
 };
 
 /** The axis picks a combination key under `axes` stands for: every axis, defaults included. */
-const fullPicks = (axes: ReadonlyArray<VariantAxis>, key: string | null): Record<string, string> => {
+export const fullPicks = (axes: ReadonlyArray<VariantAxis>, key: string | null): Record<string, string> => {
   const picks = Object.fromEntries(axes.map((a) => [a.prop, a.defaultValue]));
   for (const part of key === null ? [] : (variantKeyParts(key) ?? [])) picks[part.axis] = part.value;
   return picks;
@@ -443,14 +427,11 @@ export type VariantBlock = { heading: string | null; rows: VariantCell[][] };
 export const variantGrid = (axes: ReadonlyArray<VariantAxis>): VariantBlock[] => {
   if (axes.length === 0) return [];
   const [first, second, ...more] = axes as [VariantAxis, VariantAxis | undefined, ...VariantAxis[]];
-  const cell = (picks: Record<string, string>): VariantCell => {
-    const parts = axes.filter((a) => picks[a.prop] !== a.defaultValue).map((a) => ({ axis: a.prop, value: picks[a.prop] as string }));
-    return {
-      key: parts.length === 0 ? null : variantComboKey(parts),
-      picks,
-      label: axes.map((a) => picks[a.prop]).join(' · '),
-    };
-  };
+  const cell = (picks: Record<string, string>): VariantCell => ({
+    key: keyFor(axes, picks),
+    picks,
+    label: axes.map((a) => picks[a.prop]).join(' · '),
+  });
   let blockPicks: Array<Record<string, string>> = [{}];
   for (const axis of more) blockPicks = blockPicks.flatMap((p) => axis.values.map((v) => ({ ...p, [axis.prop]: v })));
   return blockPicks.map((extra) => ({

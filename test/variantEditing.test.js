@@ -3,9 +3,9 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { generateCode } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
-import { ROOT_ELEMENT_ID } from '@lib/element';
+import { ROOT_ELEMENT_ID, variantKeyParts } from '@lib/element';
 import { resolveElementAtState } from '@lib/stateCascade';
-import { addVariantAxis, addVariantValue, isVariantKeyLive, nextValueName, parseVariantKey, removeVariantAxis, removeVariantValue, renameVariantAxis, renameVariantValue, resetVariantFields, variantAxisError, variantOverrideFields, variantValueError, } from '@lib/variantAxes';
+import { addVariantAxis, addVariantValue, isVariantKeyLive, nextValueName, removeVariantAxis, removeVariantValue, renameVariantAxis, renameVariantValue, resetVariantFields, variantAxisError, variantOverrideFields, variantValueError, } from '@lib/variantAxes';
 import { applyPatchWithAxisRouting } from '@store/canvas/patchRouting';
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
 const BUTTON_DIR = resolve(__dirname, '../node_modules/scampjs/fixtures/contract-2/components/Button');
@@ -149,10 +149,10 @@ describe('renameVariantAxis and removeVariantAxis', () => {
 });
 describe('names and keys', () => {
     it('parses a key, and refuses one without both halves', () => {
-        expect(parseVariantKey('variant=outline')).toEqual({ axis: 'variant', value: 'outline' });
-        expect(parseVariantKey('variant=')).toBeNull();
-        expect(parseVariantKey('=outline')).toBeNull();
-        expect(parseVariantKey('variant')).toBeNull();
+        expect(variantKeyParts('variant=outline')).toEqual([{ axis: 'variant', value: 'outline' }]);
+        expect(variantKeyParts('variant=')).toBeNull();
+        expect(variantKeyParts('=outline')).toBeNull();
+        expect(variantKeyParts('variant')).toBeNull();
     });
     it('a key is live only for a non-default value of a declared axis', () => {
         const elements = button();

@@ -13,10 +13,6 @@ export declare const variantCombinationCount: (axes: ReadonlyArray<VariantAxis>)
 /** Why adding `extra` values to an axis (or an axis of `extra` values) is refused, or null. */
 export declare const combinationLimitError: (axes: ReadonlyArray<VariantAxis>, next: ReadonlyArray<VariantAxis>) => string | null;
 export declare const axesOf: (elements: Elements) => ReadonlyArray<VariantAxis>;
-export declare const parseVariantKey: (key: string) => {
-    axis: string;
-    value: string;
-} | null;
 /**
  * True when `key` names non-default values of declared axes, one per
  * axis, in axis order: a single value or a combination.
@@ -51,6 +47,8 @@ export declare const removeVariantValue: (elements: Elements, prop: string, valu
 export declare const variantOverrideFields: (el: ScampElement | undefined, key: string, state: ElementStateName | null) => Array<keyof BreakpointOverride>;
 /** Drop `fields` from `el`'s override for `key` (or its `state`), pruning empty maps. */
 export declare const resetVariantFields: (el: ScampElement, key: string, state: ElementStateName | null, fields: ReadonlyArray<keyof BreakpointOverride>) => ScampElement;
+/** The axis picks a combination key under `axes` stands for: every axis, defaults included. */
+export declare const fullPicks: (axes: ReadonlyArray<VariantAxis>, key: string | null) => Record<string, string>;
 /** The key for full picks under `axes`: the values that aren't defaults, or null. */
 export declare const keyFor: (axes: ReadonlyArray<VariantAxis>, picks: Readonly<Record<string, string>>) => string | null;
 /**

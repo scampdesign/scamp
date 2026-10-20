@@ -7,7 +7,7 @@
 // prop that tells the copies apart when one does, and each instance picks
 // its own. Pure. see docs/plans/component-variants-plan.md
 
-import type { BreakpointOverride, ScampElement, VariantAxis } from './element';
+import { VARIANT_VALUE_RE, type BreakpointOverride, type ScampElement, type VariantAxis } from './element';
 
 /** Fields that only paint: they change how an element looks, not where anything goes. */
 export const PAINT_FIELDS = [
@@ -84,7 +84,6 @@ export const paintOverride = (el: ScampElement, look: ScampElement): BreakpointO
   return out;
 };
 
-const VALUE_RE = /^[a-z][a-z0-9-]*$/;
 const IDENTIFIER = /^[a-z][A-Za-z0-9]*$/;
 
 /** A string as a variant value: lowercase words joined by hyphens. */
@@ -135,7 +134,7 @@ const namesFromProp = (
 const rank = (prop: string): number => (prop === 'variant' ? 0 : prop === 'state' ? 1 : 2);
 
 const distinctValid = (values: ReadonlyArray<string>): boolean =>
-  new Set(values).size === values.length && values.every((v) => VALUE_RE.test(v));
+  new Set(values).size === values.length && values.every((v) => VARIANT_VALUE_RE.test(v));
 
 /**
  * Plan the variants a component's copies need, given the common look at

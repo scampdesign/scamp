@@ -13,8 +13,7 @@ import { DESKTOP_BREAKPOINT_ID, type Breakpoint, type ThemeToken } from '@shared
 import { validateComponentName } from '@shared/componentName';
 import { patchClassBlock } from '@shared/patchClass';
 
-import { ROOT_ELEMENT_ID, variantKey, type ScampElement } from './element';
-import { parseVariantKey } from './variantAxes';
+import { ROOT_ELEMENT_ID, variantKey, variantKeyParts, type ScampElement } from './element';
 import {
   generateElementId,
   groupSiblings,
@@ -146,7 +145,9 @@ const resolveVariant = (ctx: AgentEditContext, ref: unknown): string | null | { 
   const axes = ctx.elements[ctx.rootId]?.variantAxes ?? [];
   if (axes.length === 0) return { error: 'This view has no variants. Only a component with a variant axis does.' };
   const wanted = String(ref).trim();
-  const parsed = parseVariantKey(wanted);
+  // `variant=outline`, or a bare value; a combination isn't one value.
+  const parts = variantKeyParts(wanted);
+  const parsed = parts?.length === 1 ? (parts[0] ?? null) : null;
   const matches = axes.flatMap((axis) =>
     axis.values
       .filter((value) => (parsed === null ? value === wanted : axis.prop === parsed.axis && value === parsed.value))
@@ -235,7 +236,7 @@ export const setStyles = (
   if (variant !== null && breakpoint !== null) return fail('A variant is styled at desktop only. Omit "breakpoint".');
   const maxWidth = breakpoint === null ? null : breakpoint.width;
   const className = classNameFor(el);
-  const picked = variant === null ? null : parseVariantKey(variant);
+  const picked = variant === null ? null : (variantKeyParts(variant)?.[0] ?? null);
   const selector =
     picked === null
       ? `.${className}`

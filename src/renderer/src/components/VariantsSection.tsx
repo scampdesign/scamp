@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { DESKTOP_BREAKPOINT_ID } from '@shared/types';
-import { ROOT_ELEMENT_ID, variantKeyParts, type VariantAxis } from '@lib/element';
+import { ROOT_ELEMENT_ID, type VariantAxis } from '@lib/element';
 import {
   addVariantAxis,
   combinationLimitError,
+  fullPicks,
   keyFor,
+  nextValueName,
   variantAxisError,
 } from '@lib/variantAxes';
 
@@ -43,15 +45,14 @@ export const VariantsSection = (): JSX.Element => {
     if (nonDesktop && activeVariantKey !== null) setActiveVariant(null);
   }, [nonDesktop, activeVariantKey, setActiveVariant]);
 
-  const picks: Record<string, string> = Object.fromEntries(axes.map((a) => [a.prop, a.defaultValue]));
-  for (const part of activeVariantKey === null ? [] : (variantKeyParts(activeVariantKey) ?? [])) picks[part.axis] = part.value;
+  const picks = fullPicks(axes, activeVariantKey);
 
   const handlePick = (prop: string, value: string): void => setActiveVariant(keyFor(axes, { ...picks, [prop]: value }));
 
   const handleAddProperty = (): void => {
     const elements = useCanvasStore.getState().elements;
     const prop = nextAxisName(elements);
-    const second = `${prop}-2`;
+    const second = nextValueName({ prop, values: ['default'], defaultValue: 'default' });
     const axis = { prop, values: ['default', second], defaultValue: 'default' };
     const problem = combinationLimitError(axes, [...axes, axis]);
     if (problem !== null) {

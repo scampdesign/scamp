@@ -2,7 +2,7 @@
 import { runStyleFromDeclarations } from '../textRuns';
 import { hoistBindingsWithMap, parsePropsDefaults } from './bindings';
 import { BOOLEAN_ATTRIBUTES, bindPropName, enclosingRepeat, isInvertedBinding, isRowPath, } from '../viewProps';
-import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, variantComboKey, withAttributeSample } from "../element";
+import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, variantComboKey, variantPartsLive, withAttributeSample } from "../element";
 import { DEFAULT_RECT_STYLES } from '../defaults';
 import { composeMaps } from '../sourceMap';
 import { TABLE_LAYOUT_TAGS } from '../tableGrid';
@@ -527,12 +527,7 @@ export const parseCode = (tsx, css, options) => {
     for (const rule of parsedCss.axisRules) {
         // Each attribute a declared axis's non-default value, one per axis, in
         // axis order: the order the generator writes, so the file round-trips.
-        const axisIndexes = rule.parts.map((part) => axes.findIndex((a) => a.prop === part.axis));
-        const partsPlaceable = rule.parts.every((part, i) => {
-            const axis = axes[axisIndexes[i]];
-            const previous = i === 0 ? -1 : axisIndexes[i - 1];
-            return axis !== undefined && axisIndexes[i] > previous && axis.values.includes(part.value) && part.value !== axis.defaultValue;
-        });
+        const partsPlaceable = variantPartsLive(axes, rule.parts);
         const targetId = idByClass.get(rule.targetClass);
         const target = targetId === undefined ? undefined : elements[targetId];
         // An interaction's starting value has to be one of the axis's too.

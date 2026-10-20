@@ -1,4 +1,4 @@
-import type { BreakpointOverride, ScampElement, VariantAxis } from './element';
+import { type BreakpointOverride, type ScampElement, type VariantAxis } from './element';
 /** Fields that only paint: they change how an element looks, not where anything goes. */
 export declare const PAINT_FIELDS: readonly ["backgroundColor", "borderColor", "color", "opacity", "fontWeight", "fill", "stroke", "boxShadows", "boxShadowToken"];
 export declare const PAINT_CSS: ReadonlySet<string>;

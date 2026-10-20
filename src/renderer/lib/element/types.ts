@@ -1002,6 +1002,26 @@ export const variantKey = (axis: string, value: string): string => `${axis}=${va
 /** One axis's value in a variant key. */
 export type VariantPick = { axis: string; value: string };
 
+/** A variant axis name: a prop, and a `data-` attribute suffix CSS matches lowercase. */
+export const VARIANT_AXIS_RE = /^[a-z][a-z0-9]*$/;
+/** A variant value: a CSS attribute value and a TypeScript string literal. */
+export const VARIANT_VALUE_RE = /^[a-z][a-z0-9-]*$/;
+
+/**
+ * Whether `parts` are non-default values of `axes`, one per axis, in axis
+ * order: the shape of a key the generator writes and the parser places.
+ */
+export const variantPartsLive = (axes: ReadonlyArray<VariantAxis>, parts: ReadonlyArray<VariantPick>): boolean => {
+  let previous = -1;
+  for (const part of parts) {
+    const index = axes.findIndex((a) => a.prop === part.axis);
+    const axis = axes[index];
+    if (axis === undefined || index <= previous || !axis.values.includes(part.value) || axis.defaultValue === part.value) return false;
+    previous = index;
+  }
+  return parts.length > 0;
+};
+
 /** The key for a combination, parts in axis order: `variant=outline&size=small`. */
 export const variantComboKey = (parts: ReadonlyArray<VariantPick>): string =>
   parts.map((p) => variantKey(p.axis, p.value)).join('&');

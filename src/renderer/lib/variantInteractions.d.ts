@@ -36,7 +36,7 @@ export declare const readInteractionAttributes: (elements: Elements) => {
 /** Why an interaction can't be added, or null. */
 export declare const interactionError: (axes: ReadonlyArray<VariantAxis>, i: VariantInteraction) => string | null;
 export declare const addVariantInteraction: (elements: Elements, i: VariantInteraction) => Elements;
-export declare const removeVariantInteraction: (elements: Elements, index: number) => Elements;
+export declare const removeVariantInteraction: (elements: Elements, i: VariantInteraction) => Elements;
 /**
  * Keep interactions in step with an axis edit: rename a value or an
  * axis, or drop the ones that name a removed value or axis.

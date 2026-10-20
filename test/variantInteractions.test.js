@@ -139,7 +139,8 @@ describe('editing interactions', () => {
     it('a second interaction for the same trigger and starting value replaces the first', () => {
         const twice = addVariantInteraction(addVariantInteraction(button(), HOVER), { ...HOVER, to: 'secondary' });
         expect(root(twice)?.variantInteractions).toEqual([{ ...HOVER, to: 'secondary' }]);
-        expect(root(removeVariantInteraction(twice, 0))?.variantInteractions).toBeUndefined();
+        expect(root(removeVariantInteraction(twice, HOVER))?.variantInteractions).toEqual([{ ...HOVER, to: 'secondary' }]);
+        expect(root(removeVariantInteraction(twice, { ...HOVER, to: 'secondary' }))?.variantInteractions).toBeUndefined();
     });
     it('follows a rename, and goes with a removed value', () => {
         const withHover = addVariantInteraction(button(), HOVER);
