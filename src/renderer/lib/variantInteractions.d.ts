@@ -42,22 +42,4 @@ export declare const removeVariantInteraction: (elements: Elements, i: VariantIn
  * axis, or drop the ones that name a removed value or axis.
  */
 export declare const mapInteractions: (elements: Elements, fn: (i: VariantInteraction) => VariantInteraction | null) => Elements;
-/** What the pointer and focus are doing to a component being tried. */
-export type TryPointer = {
-    hover: boolean;
-    press: boolean;
-    focus: boolean;
-};
-/**
- * The values drawn while trying a component: the values it holds, with
- * each hover, press, or focus interaction that applies on top. Press
- * after hover, as a pressed rule comes after a hover one.
- */
-export declare const shownPicks: (picks: Readonly<Record<string, string>>, interactions: ReadonlyArray<VariantInteraction>, pointer: TryPointer) => Record<string, string>;
-/**
- * The values a component holds after a click (on `target`, the root
- * when the click wasn't on one with its own interaction), a click
- * outside it, or Escape. What the scampjs handler does in the browser.
- */
-export declare const afterTrigger: (picks: Readonly<Record<string, string>>, interactions: ReadonlyArray<VariantInteraction>, trigger: "click" | "outside" | "escape", target?: string) => Record<string, string>;
 export {};

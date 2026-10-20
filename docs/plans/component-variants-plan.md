@@ -1071,10 +1071,12 @@ Answered 2026-10-19.
   form: trigger, property, from (or any value), to, and for a click the
   element clicked, picked from a list (selecting an element hides the
   section, so it can't come from the selection).
-- **Try interactions** (`canvas/TryInteractions.tsx`): under the set, a
-  read-only copy that tracks hover, press, focus, clicks, a click
-  outside, and Escape itself (`shownPicks`, `afterTrigger`), since the
-  canvas's inline styles can't respond to CSS `:hover`.
+- **Trying them:** in the Preview window, not on the canvas (changed
+  2026-10-20). In a Scamp framework project, **Preview** while editing a
+  component opens `/_components/<Name>` (scampjs's dev server, CONTRACT.md
+  §2.2), the component alone with its defaults, where the handler runs
+  as on a page (`lib/previewTarget.ts`). The canvas copy that tracked the
+  pointer itself (`TryInteractions`) was removed.
 - **Checks** (`variant-interaction`): a value the property lacks, a
   pressed look written before a hover look that would win, and a click
   on an element the keyboard can't reach.
@@ -1089,7 +1091,7 @@ Answered 2026-10-19.
   - **Arrows between frames.** The panel's list does the job for now,
     as the plan allowed.
   - **Trying interactions on a page's instances.** The component
-    editor's **Try interactions** and the Preview window cover it.
+    editor's **Preview** covers it.
   - **`aria-expanded`.** A generic handler can't tell which value means
     expanded, so it doesn't guess.
   - **A contract fixture for §1.3.2.** The contract's examples aren't

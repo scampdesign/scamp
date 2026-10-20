@@ -6,8 +6,8 @@ import type { Locator, Page } from '@playwright/test';
 
 /**
  * Variant interactions: a component changes its own variant on hover or
- * click, written as CSS or as the framework's attributes, and tried on
- * the canvas. see docs/plans/component-variants-plan.md, phase 7
+ * click, written as CSS or as the framework's attributes. They're tried
+ * in the Preview window (`/_components/<Name>`), not on the canvas. see docs/plans/component-variants-plan.md, phase 7
  */
 
 const addStarter = async (window: Page, name: string): Promise<void> => {
@@ -46,12 +46,6 @@ test.describe('components: variant interactions', () => {
       const { css } = await project.readComponent('Button');
       expect(css).toContain('.root[data-variant="outline"],\n.root[data-variant="default"]:hover {');
       await expect(interactions(window)).toContainText('While hovering: variant default → outline');
-
-      await window.getByRole('button', { name: 'Try interactions' }).click();
-      const tried = window.getByTestId('try-interactions');
-      await expect(tried).toContainText('Try it: default · medium');
-      await tried.locator('[data-scamp-id="root"]').hover();
-      await expect(tried).toContainText('Try it: outline · medium');
     });
   });
 
@@ -69,16 +63,6 @@ test.describe('components: variant interactions', () => {
       const { tsx } = await project.readComponent('Menu');
       expect(tsx).toContain('data-scamp-click="state:closed=open,open=closed"');
       expect(tsx).toContain('data-scamp-outside="state:open=closed"');
-
-      await window.getByRole('button', { name: 'Try interactions' }).click();
-      const tried = window.getByTestId('try-interactions');
-      await expect(tried).toContainText('Try it: open');
-      await tried.locator('[data-scamp-id="trigger_e51a"]').click();
-      await expect(tried).toContainText('Try it: closed');
-      await tried.locator('[data-scamp-id="trigger_e51a"]').click();
-      await expect(tried).toContainText('Try it: open');
-      await window.getByTestId('variant-set').click({ position: { x: 4, y: 4 }, force: true });
-      await expect(tried).toContainText('Try it: closed');
     });
   });
 });

@@ -7,12 +7,10 @@ import { parseCode } from '@lib/parseCode';
 import { ROOT_ELEMENT_ID, removeSubtree, type ScampElement, type VariantInteraction } from '@lib/element';
 import {
   addVariantInteraction,
-  afterTrigger,
   aliasSelectors,
   interactionError,
   readInteractionAttributes,
   removeVariantInteraction,
-  shownPicks,
   withInteractionAttributes,
 } from '@lib/variantInteractions';
 import { addVariantValue, makeVariantDefault, removeVariantValue, renameVariantAxis, renameVariantValue } from '@lib/variantAxes';
@@ -195,40 +193,6 @@ describe('editing interactions', () => {
     const withHover = addVariantInteraction(button(), HOVER);
     expect(root(makeVariantDefault(withHover, 'variant', 'outline'))?.variantInteractions).toBeUndefined();
     expect(root(makeVariantDefault(withHover, 'variant', 'secondary'))?.variantInteractions).toEqual([HOVER]);
-  });
-});
-
-describe('trying a component', () => {
-  const MENU: VariantInteraction[] = [
-    { axis: 'state', from: 'closed', trigger: 'click', to: 'open', target: 'e51a' },
-    { axis: 'state', from: 'open', trigger: 'click', to: 'closed', target: 'e51a' },
-    { axis: 'state', from: 'open', trigger: 'outside', to: 'closed' },
-    { axis: 'state', from: null, trigger: 'escape', to: 'closed' },
-  ];
-
-  it('a click on its element toggles, and a click elsewhere in it does nothing', () => {
-    const open = afterTrigger({ state: 'closed' }, MENU, 'click', 'e51a');
-    expect(open).toEqual({ state: 'open' });
-    expect(afterTrigger(open, MENU, 'click', 'e51a')).toEqual({ state: 'closed' });
-    expect(afterTrigger(open, MENU, 'click')).toEqual({ state: 'open' });
-  });
-
-  it('a click outside and Escape close it', () => {
-    expect(afterTrigger({ state: 'open' }, MENU, 'outside')).toEqual({ state: 'closed' });
-    expect(afterTrigger({ state: 'open' }, MENU, 'escape')).toEqual({ state: 'closed' });
-    expect(afterTrigger({ state: 'closed' }, MENU, 'outside')).toEqual({ state: 'closed' });
-  });
-
-  it('draws hover, then press on top, only from the value they start at', () => {
-    const button: VariantInteraction[] = [
-      { axis: 'state', from: 'default', trigger: 'hover', to: 'hover' },
-      { axis: 'state', from: 'default', trigger: 'press', to: 'pressed' },
-    ];
-    const none = { hover: false, press: false, focus: false };
-    expect(shownPicks({ state: 'default' }, button, none)).toEqual({ state: 'default' });
-    expect(shownPicks({ state: 'default' }, button, { ...none, hover: true })).toEqual({ state: 'hover' });
-    expect(shownPicks({ state: 'default' }, button, { ...none, hover: true, press: true })).toEqual({ state: 'pressed' });
-    expect(shownPicks({ state: 'disabled' }, button, { ...none, hover: true })).toEqual({ state: 'disabled' });
   });
 });
 

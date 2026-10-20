@@ -371,10 +371,14 @@ click** from `closed` to `open`, and from `open` to `closed`. Add **On
 click outside** and **On Escape** from `open` to `closed` if the menu
 should also close those ways; leave them out if it shouldn't.
 
-To see the interactions on the canvas, click **Try interactions** under
-the variant set. A copy of the component appears that reacts to the
-pointer, clicks, and Escape. The Preview window runs them as the
-browser will.
+To try the interactions, click **Preview** while you're editing the
+component. In a Scamp framework project, the Preview window shows the
+component on its own, with its default values, and runs its
+interactions as a page will. The canvas doesn't: it's for designing
+each look, and every look is already on it.
+
+**Note:** Clicks need scampjs 0.3.3 or later. If **Preview** shows "Not
+found" for a component, update scampjs from the project's settings.
 
 **Note:** Hover, press, and focus can't change to the default value,
 because the default's look is the component's own rules. Make another

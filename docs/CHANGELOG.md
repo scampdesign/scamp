@@ -48,8 +48,8 @@ release time.
   **Interactions** change its own variant while it's used, like Figma's
   **Change to**: a button's hover look, a menu that opens on a click and
   closes on a click outside or Escape. Hover, press, and focus are CSS;
-  clicks run through the Scamp framework. **Try interactions** shows them
-  on the canvas.
+  clicks run through the Scamp framework. **Preview** on a component
+  opens it alone in the Preview window to try them.
 - **Checks find variant mistakes.** An instance set to a value its
   component lacks, and a rule for a value the component doesn't
   declare, are both listed.

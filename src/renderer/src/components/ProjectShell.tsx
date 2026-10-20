@@ -19,10 +19,11 @@
 // CanvasArea, and ProjectModals; only the panel toggles and a thin layout
 // frame stay here.
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import type { PreviewOpenArgs, ProjectData } from '@shared/types';
+import type { ProjectData } from '@shared/types';
 import { viewSlugFor } from '@shared/templates';
 import { componentKindOf } from '@shared/types';
 import { movePageToGroup, moveTargets, reconcileLayout } from '@lib/pageLayout';
+import { previewTargetFor } from '@lib/previewTarget';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useIsSignedIn } from '@store/authSlice';
 import { PropertiesPanel } from './PropertiesPanel';
@@ -347,41 +348,24 @@ export const ProjectShell = ({
   const toggleCodePanel = (): void => toggleBottomPanel('code');
   const toggleTerminalPanel = (): void => toggleBottomPanel('terminal');
 
-  // A Next.js project previews a page at its route through `next dev`;
-  // a view previews at its wrapper page's route. A Scamp-framework
-  // project has no wrapper pages: each view previews at `/_views/<Name>`
-  // through `scamp dev`, listed by its slug. Legacy projects can't
-  // preview at all — the button stays visible but disabled with a
-  // tooltip pointing at the migration banner.
+  // Where Preview goes: a page, a view, or in a Scamp framework project a
+  // component alone, to try its interactions. see lib/previewTarget.ts
   const projectFormatForPreview = useCanvasStore((s) => s.projectFormat);
   const projectPathForPreview = useCanvasStore((s) => s.projectPath);
-  const activeViewName =
-    activeComponent !== null && activeComponent.kind === 'view' ? activeComponent.name : null;
-  const previewTarget = useMemo((): Omit<PreviewOpenArgs, 'projectPath'> | null => {
-    if (projectFormatForPreview === 'nextjs') {
-      const pageName = activeViewName !== null ? viewSlugFor(activeViewName) : activePageName;
-      if (pageName === null) return null;
-      return { pageName, pageNames: project.pages.map((p) => p.name) };
-    }
-    if (projectFormatForPreview === 'scamp') {
-      if (activeViewName === null) return null;
-      const views = project.components.filter((c) => c.kind === 'view').map((c) => c.name);
-      // A view a page route renders previews at that route, which runs its
-      // load(); a view without one previews with its defaults at /_views/.
-      const routeFor = (view: string): string => {
-        const route = (project.routes ?? []).find(
-          (r) => r.kind === 'page' && r.view === view && !r.path.includes(':')
-        );
-        return route?.path ?? `/_views/${view}`;
-      };
-      return {
-        pageName: viewSlugFor(activeViewName),
-        pageNames: views.map((v) => viewSlugFor(v)),
-        routes: Object.fromEntries(views.map((v) => [viewSlugFor(v), routeFor(v)])),
-      };
-    }
-    return null;
-  }, [projectFormatForPreview, activeViewName, activePageName, project.pages, project.components, project.routes]);
+  const activeViewName = activeComponent?.kind === 'view' ? activeComponent.name : null;
+  const previewTarget = useMemo(
+    () =>
+      previewTargetFor(
+        projectFormatForPreview,
+        {
+          page: activePageName,
+          view: activeViewName,
+          component: activeComponent?.kind === 'component' ? activeComponent.name : null,
+        },
+        project
+      ),
+    [projectFormatForPreview, activePageName, activeComponent, project]
+  );
   const canPreview = previewTarget !== null && projectPathForPreview.length > 0;
   const openPreview = useCallback((): void => {
     if (!canPreview || previewTarget === null) return;

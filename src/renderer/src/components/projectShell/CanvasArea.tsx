@@ -9,7 +9,6 @@ import { useSnapshotsStore } from '@store/snapshotsSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { Viewport } from '@renderer/src/canvas/Viewport';
 import { VariantSet } from '@renderer/src/canvas/VariantSet';
-import { TryInteractions } from '@renderer/src/canvas/TryInteractions';
 
 import { CanvasSizeControl } from '../CanvasSizeControl';
 import { ThemeSwitcher } from '../ThemeSwitcher';
@@ -62,8 +61,6 @@ export const CanvasArea = ({
   const setMode = component !== null && hasVariants;
   const [setWidth, setSetWidth] = useState(0);
   const handleSetWidth = useCallback((width: number): void => setSetWidth(width), []);
-  const hasInteractions = useCanvasStore((s) => (s.elements[ROOT_ELEMENT_ID]?.variantInteractions?.length ?? 0) > 0);
-  const [trying, setTrying] = useState(false);
   const frameWidth = setMode
     ? Math.max(setWidth, 1)
     : artboard !== null
@@ -246,14 +243,6 @@ export const CanvasArea = ({
                 : undefined
             }
           />
-          {setMode && hasInteractions && (
-            <div className={styles.tryBar}>
-              <button type="button" className={styles.tryButton} onClick={() => setTrying((t) => !t)} aria-pressed={trying}>
-                {trying ? 'Stop trying interactions' : 'Try interactions'}
-              </button>
-              {trying && <TryInteractions scale={scale} />}
-            </div>
-          )}
         </div>
       </div>
       <CanvasNotice />

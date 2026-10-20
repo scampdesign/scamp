@@ -177,38 +177,3 @@ export const mapInteractions = (elements, fn) => {
         return next === null ? [] : [next];
     }));
 };
-/**
- * The values drawn while trying a component: the values it holds, with
- * each hover, press, or focus interaction that applies on top. Press
- * after hover, as a pressed rule comes after a hover one.
- */
-export const shownPicks = (picks, interactions, pointer) => {
-    const shown = { ...picks };
-    for (const trigger of ['hover', 'press', 'focus']) {
-        if (!pointer[trigger])
-            continue;
-        for (const i of interactions) {
-            if (i.trigger === trigger && (i.from === null || picks[i.axis] === i.from))
-                shown[i.axis] = i.to;
-        }
-    }
-    return shown;
-};
-/**
- * The values a component holds after a click (on `target`, the root
- * when the click wasn't on one with its own interaction), a click
- * outside it, or Escape. What the scampjs handler does in the browser.
- */
-export const afterTrigger = (picks, interactions, trigger, target = ROOT_ELEMENT_ID) => {
-    const next = { ...picks };
-    for (const i of interactions) {
-        if (i.trigger !== trigger)
-            continue;
-        if (trigger === 'click' && (i.target ?? ROOT_ELEMENT_ID) !== target)
-            continue;
-        // Each axis moves once per trigger, from the value it held before.
-        if (i.from === null || picks[i.axis] === i.from)
-            next[i.axis] = i.to;
-    }
-    return next;
-};

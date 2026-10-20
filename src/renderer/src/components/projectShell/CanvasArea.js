@@ -8,7 +8,6 @@ import { useSnapshotsStore } from '@store/snapshotsSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { Viewport } from '@renderer/src/canvas/Viewport';
 import { VariantSet } from '@renderer/src/canvas/VariantSet';
-import { TryInteractions } from '@renderer/src/canvas/TryInteractions';
 import { CanvasSizeControl } from '../CanvasSizeControl';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 import { Toolbar } from '../Toolbar';
@@ -42,8 +41,6 @@ export const CanvasArea = ({ activeComponent, activePageName, projectConfig, art
     const setMode = component !== null && hasVariants;
     const [setWidth, setSetWidth] = useState(0);
     const handleSetWidth = useCallback((width) => setSetWidth(width), []);
-    const hasInteractions = useCanvasStore((s) => (s.elements[ROOT_ELEMENT_ID]?.variantInteractions?.length ?? 0) > 0);
-    const [trying, setTrying] = useState(false);
     const frameWidth = setMode
         ? Math.max(setWidth, 1)
         : artboard !== null
@@ -97,5 +94,5 @@ export const CanvasArea = ({ activeComponent, activePageName, projectConfig, art
                                         componentCanvas: nextMap,
                                     });
                                 }
-                                : undefined }), setMode && hasInteractions && (_jsxs("div", { className: styles.tryBar, children: [_jsx("button", { type: "button", className: styles.tryButton, onClick: () => setTrying((t) => !t), "aria-pressed": trying, children: trying ? 'Stop trying interactions' : 'Try interactions' }), trying && _jsx(TryInteractions, { scale: scale })] }))] }) }), _jsx(CanvasNotice, {}), _jsx("div", { className: styles.elementToolbar, children: _jsx(Toolbar, {}) })] }));
+                                : undefined })] }) }), _jsx(CanvasNotice, {}), _jsx("div", { className: styles.elementToolbar, children: _jsx(Toolbar, {}) })] }));
 };
