@@ -1,6 +1,6 @@
 # Repo audit, 2026-10-20
 
-**Fixed:** 1 to 8 (2026-10-20).
+**Fixed:** 1 to 10 (2026-10-20).
 
 **What this repo does:** Scamp is a desktop design app built on Electron. You draw on a canvas and it saves real TSX and CSS files to your project, and when an AI agent or another editor changes those files, the canvas reloads. It also runs a local server that AI agents connect to (MCP), a sign-in flow, a built-in AI agent, and imports from websites and React apps.
 
@@ -61,7 +61,7 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
    - **Fix:** in `routeVariantPatch`, don't route style edits on a component instance into the variant. (Done: the edit lands on the instance's own styles, so it shows in every frame.)
    - **If we skip it:** resizing an icon instance in the `outline` frame looks saved but isn't.
 
-9. **An imported page can crash or hang the app through an image download** (`src/main/ipc/image.ts:112-122`)
+9. **Fixed in `8e7d7fba`.** **An imported page can crash or hang the app through an image download** (`src/main/ipc/image.ts:112-122`)
    - **What this is:** website import downloads every image the page uses.
    - **Problem:**
      - **Memory:** the whole response is read into memory before the size limit is checked.
@@ -73,9 +73,11 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
      - Refuse an oversized `content-length` up front.
      - Read the body in chunks, stopping at the limit.
      - Add `AbortSignal.timeout(30_000)`.
+
+     Done, except blocking `localhost` and private addresses: a React import fetches its images from a local dev server.
    - **If we skip it:** importing a hostile or broken site can crash Scamp.
 
-10. **On Linux, the sign-in token and API key can be stored with a publicly known key** (`src/main/auth/tokenStore.ts:72, 95`)
+10. **Fixed in `8e7d7fba`.** **On Linux, the sign-in token and API key can be stored with a publicly known key** (`src/main/auth/tokenStore.ts:72, 95`)
     - **What this is:** the token and key are encrypted with Electron's `safeStorage` before being written to disk.
     - **Problem:** it only checks that encryption is "available". On Linux without a keyring, Electron's fallback "available" mode encrypts with a fixed key anyone can look up. A backup or another program could then read the 30-day token and your Anthropic key. The missing check was confirmed; the fallback behaviour wasn't tested on a real machine.
     - **Fix:** on Linux, also require `safeStorage.getSelectedStorageBackend() !== 'basic_text'`. Otherwise keep them in memory only.
