@@ -12,8 +12,10 @@ export declare const TRIGGER_LABEL: Readonly<Record<VariantTrigger, string>>;
 export declare const interactionsOf: (elements: Elements) => ReadonlyArray<VariantInteraction>;
 /**
  * The second selectors a variant rule gains, one per CSS interaction
- * whose `to` is one of its values: that value swapped for `from` (or
- * dropped, for any value), with the trigger's pseudo-class on the root.
+ * whose `to` is one of its values: that value swapped for `from`, or for
+ * any value (`[data-state]`, which keeps the selector as specific as the
+ * other values' rules it has to beat), with the trigger's pseudo-class on
+ * the root.
  * `rest` is everything after the root's attributes (` .label_c1a1:hover`).
  */
 export declare const aliasSelectors: (rootClass: string, parts: ReadonlyArray<VariantPick>, rest: string, interactions: ReadonlyArray<VariantInteraction>) => string[];

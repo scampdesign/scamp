@@ -81,7 +81,9 @@ export const applyPatchWithAxisRouting = (
   activeStateName: ElementStateName | null,
   activeVariantKey: string | null = null
 ): ScampElement =>
-  activeVariantKey !== null
+  // Variant rules aren't written for an instance inside a component, so
+  // its styles are its own in every frame.
+  activeVariantKey !== null && el.type !== 'component-instance'
     ? routeVariantPatch(el, patch, activeBreakpointId, activeStateName, activeVariantKey)
     : dropKeptOffsets(routePatch(el, patch, activeBreakpointId, activeStateName), patch, activeBreakpointId, activeStateName);
 

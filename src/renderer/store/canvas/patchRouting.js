@@ -60,7 +60,10 @@ export const BASE_ONLY_PATCH_FIELDS = new Set([
 export const assignPatchKey = (target, source, key) => {
     target[key] = source[key];
 };
-export const applyPatchWithAxisRouting = (el, patch, activeBreakpointId, activeStateName, activeVariantKey = null) => activeVariantKey !== null
+export const applyPatchWithAxisRouting = (el, patch, activeBreakpointId, activeStateName, activeVariantKey = null) => 
+// Variant rules aren't written for an instance inside a component, so
+// its styles are its own in every frame.
+activeVariantKey !== null && el.type !== 'component-instance'
     ? routeVariantPatch(el, patch, activeBreakpointId, activeStateName, activeVariantKey)
     : dropKeptOffsets(routePatch(el, patch, activeBreakpointId, activeStateName), patch, activeBreakpointId, activeStateName);
 /** `{ ...existing, ...patch }`, with `customProperties` merged by key. */

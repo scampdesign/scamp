@@ -34,18 +34,23 @@ export const resolveElementAtState = (element, activeBreakpointId, breakpoints, 
     if (activeVariantKey === null)
         return atState;
     // Variant rules (`.root[data-v="x"] .el`) outrank the element's own state
-    // rule (`.el:hover`), so they layer after it, each key's base then its
-    // state, in the order the rules are written, as in the browser.
+    // rule (`.el:hover`), so they layer after it. Within them, specificity
+    // first: a rule naming n values ties with one naming n + 1 only once a
+    // state is added, so each size's bases, then its states, then the next
+    // size, each in the order the rules are written.
     const picks = variantKeyParts(activeVariantKey);
+    const keys = picks === null ? [] : keysCovering(picks);
     let out = atState;
-    for (const key of picks === null ? [] : keysCovering(picks)) {
-        const variant = element.variantOverrides?.[key];
-        if (variant === undefined)
+    for (let size = 1; size <= (picks?.length ?? 0); size += 1) {
+        const tier = keys.filter((k) => k.split('&').length === size);
+        for (const key of tier) {
+            const { states: _states, ...variantBase } = element.variantOverrides?.[key] ?? {};
+            out = layer(out, variantBase);
+        }
+        if (activeState === null)
             continue;
-        const { states, ...variantBase } = variant;
-        out = layer(out, variantBase);
-        if (activeState !== null)
-            out = layer(out, states?.[activeState]);
+        for (const key of tier)
+            out = layer(out, element.variantOverrides?.[key]?.states?.[activeState]);
     }
     return out;
 };

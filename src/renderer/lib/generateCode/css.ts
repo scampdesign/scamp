@@ -189,13 +189,19 @@ const variantAxisBlocks = (
     // interaction into its value. CONTRACT.md §1.3.2
     const selectorFor = (rest: string): string =>
       [`${anchor}${rest}`, ...aliasSelectors(rootCls, parts, rest, interactions)].join(',\n');
+    // An interaction into a value nothing styles yet still needs a rule to
+    // carry its second selector, or it's gone on the next read.
+    const needsCarrier = parts.length === 1 && aliasSelectors(rootCls, parts, '', interactions).length > 0;
     for (const el of ordered) {
       const override = el.variantOverrides?.[key];
-      if (!override || el.type === 'component-instance') continue;
+      const carrier = el.id === root.id && needsCarrier;
+      if ((!override && !carrier) || el.type === 'component-instance') continue;
       const parent = el.parentId ? elements[el.parentId] ?? null : null;
       const rest = el.id === root.id ? '' : ` .${classNameFor(el)}`;
-      const { states, ...style } = override;
-      const base = ruleFor(selectorFor(rest), breakpointOverrideLines(style, el, parent));
+      const { states, ...style } = override ?? {};
+      const base =
+        ruleFor(selectorFor(rest), breakpointOverrideLines(style, el, parent)) ??
+        (carrier ? `${selectorFor(rest)} {\n}` : null);
       if (base !== null) blocks.push(base);
       for (const state of ELEMENT_STATES) {
         const stateOverride = states?.[state];

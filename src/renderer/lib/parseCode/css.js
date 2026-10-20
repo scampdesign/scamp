@@ -129,7 +129,10 @@ const PSEUDO_TRIGGER = {
     ':active': 'press',
     ':focus-visible': 'focus',
 };
-const ALIAS_RE = new RegExp(`^\\.([A-Za-z_][\\w-]*)((?:${AXIS_ATTR})*)(:hover|:active|:focus-visible)(.*)$`);
+/** An alias may name an axis with no value: any value. */
+const ALIAS_ATTR = '\\[data-[a-z][a-z0-9]*(?:="[^"]*")?\\]';
+const ALIAS_ATTR_PARTS_RE = /\[data-([a-z][a-z0-9]*)(?:="([^"]*)")?\]/g;
+const ALIAS_RE = new RegExp(`^\\.([A-Za-z_][\\w-]*)((?:${ALIAS_ATTR})*)(:hover|:active|:focus-visible)(.*)$`);
 /**
  * A variant rule with second selectors for its interactions: the first
  * is the rule; each other is the same rule with one of its values swapped
@@ -149,20 +152,23 @@ export const matchAxisSelectorList = (selector) => {
         const m = ALIAS_RE.exec(other);
         if (m === null || m[1] !== main.anchorClass || m[4] !== rest)
             return null;
-        const theirs = [...(m[2] ?? '').matchAll(AXIS_ATTR_PARTS_RE)].map((a) => ({ axis: a[1] ?? '', value: a[2] ?? '' }));
-        // Exactly one of the rule's values swapped, or dropped; the rest as they are.
+        // A value of null is the axis with no value: any value.
+        const theirs = [...(m[2] ?? '').matchAll(ALIAS_ATTR_PARTS_RE)].map((a) => ({ axis: a[1] ?? '', value: a[2] ?? null }));
+        // Exactly one of the rule's values swapped (for another, or any); the
+        // rest as they are, in the same order.
         const changed = main.parts.filter((p) => !theirs.some((t) => t.axis === p.axis && t.value === p.value));
         const target = changed[0];
-        if (changed.length !== 1 || target === undefined)
+        if (changed.length !== 1 || target === undefined || theirs.length !== main.parts.length)
+            return null;
+        if (theirs.some((t, i) => t.axis !== main.parts[i]?.axis))
             return null;
         const swapped = theirs.find((t) => t.axis === target.axis);
-        const expected = main.parts.flatMap((p) => (p !== target ? [p] : swapped === undefined ? [] : [swapped]));
-        if (theirs.length !== expected.length || theirs.some((t, i) => t.axis !== expected[i]?.axis || t.value !== expected[i]?.value))
+        if (swapped === undefined || swapped.value === target.value)
             return null;
         const trigger = PSEUDO_TRIGGER[m[3] ?? ''];
         if (trigger === undefined)
             return null;
-        aliases.push({ axis: target.axis, from: swapped?.value ?? null, trigger, to: target.value });
+        aliases.push({ axis: target.axis, from: swapped.value, trigger, to: target.value });
     }
     return { ...main, aliases };
 };

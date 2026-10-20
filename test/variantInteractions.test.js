@@ -5,7 +5,7 @@ import { generateCode } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { addVariantInteraction, afterTrigger, aliasSelectors, interactionError, readInteractionAttributes, removeVariantInteraction, shownPicks, withInteractionAttributes, } from '@lib/variantInteractions';
-import { makeVariantDefault, removeVariantValue, renameVariantAxis, renameVariantValue } from '@lib/variantAxes';
+import { addVariantValue, makeVariantDefault, removeVariantValue, renameVariantAxis, renameVariantValue } from '@lib/variantAxes';
 import { starterFiles } from '@lib/starterComponents';
 import { lintView } from '@lib/viewLint';
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
@@ -39,10 +39,12 @@ describe('hover, press, and focus as second selectors', () => {
         const { css } = generate(addVariantInteraction(withCombo, HOVER));
         expect(css).toContain('.root[data-variant="outline"][data-size="small"],\n.root[data-variant="default"][data-size="small"]:hover {');
     });
-    it('from any value drops the axis from the second selector', () => {
+    it('from any value keeps the axis with no value, as specific as the rules it has to beat', () => {
+        // `.root:active .x` would tie with `.root[data-state="closed"] .x`,
+        // written later, and lose to it in the browser.
         expect(aliasSelectors('root', [{ axis: 'state', value: 'pressed' }], ' .label_c1a1', [
             { axis: 'state', from: null, trigger: 'press', to: 'pressed' },
-        ])).toEqual(['.root:active .label_c1a1']);
+        ])).toEqual(['.root[data-state]:active .label_c1a1']);
         expect(aliasSelectors('root', [{ axis: 'state', value: 'on' }], '', [{ axis: 'state', from: 'off', trigger: 'focus', to: 'on' }])).toEqual([
             '.root[data-state="off"]:focus-visible',
         ]);
@@ -53,6 +55,24 @@ describe('hover, press, and focus as second selectors', () => {
         expect(root(parsed)?.variantInteractions).toEqual([HOVER, { axis: 'size', from: null, trigger: 'press', to: 'large' }]);
         expect(root(parsed)?.customSelectorBlocks ?? []).toEqual([]);
         expect(generate(parsed)).toEqual(once);
+    });
+    it('an interaction into a value nothing styles yet is kept, on an empty rule', () => {
+        const files = starterFiles('Modal', 'Modal');
+        const modal = parse(files.tsx, files.css);
+        const withValue = addVariantValue(modal, 'state', 'peek', null);
+        const hover = { axis: 'state', from: 'open', trigger: 'hover', to: 'peek' };
+        const once = generate(addVariantInteraction(withValue, hover), 'Modal');
+        expect(once.css).toContain('.root[data-state="peek"],\n.root[data-state="open"]:hover {\n}');
+        const parsed = parse(once.tsx, once.css);
+        expect(root(parsed)?.variantInteractions).toEqual([hover]);
+        expect(root(parsed)?.variantOverrides?.['state=peek']).toBeUndefined();
+        expect(generate(parsed, 'Modal')).toEqual(once);
+    });
+    it('reads any value back from the second selector', () => {
+        const anyHover = { axis: 'variant', from: null, trigger: 'hover', to: 'outline' };
+        const once = generate(addVariantInteraction(button(), anyHover));
+        expect(once.css).toContain('.root[data-variant="outline"],\n.root[data-variant]:hover {');
+        expect(root(parse(once.tsx, once.css))?.variantInteractions).toEqual([anyHover]);
     });
     it.each([
         ['a different rest', '.root[data-variant="outline"],\n.root[data-variant="default"]:hover .label_c1a1'],

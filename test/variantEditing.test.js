@@ -115,6 +115,14 @@ describe('removeVariantValue', () => {
         expect(removeVariantValue(elements, 'variant', 'default')).toBe(elements);
     });
 });
+describe('an axis down to one value', () => {
+    it('still reads back as an axis', () => {
+        const one = removeVariantValue(removeVariantValue(button(), 'variant', 'outline'), 'variant', 'secondary');
+        const { tsx } = generate(one);
+        expect(tsx).toContain('variant?: "default";');
+        expect(root(roundTrip(one))?.variantAxes?.[0]).toEqual({ prop: 'variant', values: ['default'], defaultValue: 'default' });
+    });
+});
 describe('renameVariantAxis and removeVariantAxis', () => {
     it('renames the prop, the attribute, and the keys', () => {
         const renamed = renameVariantAxis(button(), 'size', 'scale');
@@ -198,6 +206,12 @@ describe('routing a patch into a variant', () => {
         const next = applyPatchWithAxisRouting(el(), { name: 'cta', opacity: 0.5 }, 'desktop', null, 'variant=outline');
         expect(next.name).toBe('cta');
         expect(next.variantOverrides?.['variant=outline']?.opacity).toBe(0.5);
+    });
+    it('an instance inside the component keeps the edit on its own styles, which are written', () => {
+        const instance = { ...el(), id: 'i1', type: 'component-instance', componentName: 'Icon', opacity: 1 };
+        const next = applyPatchWithAxisRouting(instance, { opacity: 0.5 }, 'desktop', null, 'variant=outline');
+        expect(next.opacity).toBe(0.5);
+        expect(next.variantOverrides).toEqual(instance.variantOverrides);
     });
     it('a variant at another breakpoint drops the style edit', () => {
         const base = el();

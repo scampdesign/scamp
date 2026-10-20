@@ -1,6 +1,6 @@
 # Repo audit, 2026-10-20
 
-**Fixed:** 1, 2, and 3 (2026-10-20).
+**Fixed:** 1 to 8 (2026-10-20).
 
 **What this repo does:** Scamp is a desktop design app built on Electron. You draw on a canvas and it saves real TSX and CSS files to your project, and when an AI agent or another editor changes those files, the canvas reloads. It also runs a local server that AI agents connect to (MCP), a sign-in flow, a built-in AI agent, and imports from websites and React apps.
 
@@ -10,7 +10,7 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
 
 ## Must fix
 
-1. **An agent's edit wipes canvas changes that haven't been saved yet** (`src/renderer/src/syncBridge/externalEdit.ts:64-69, 196`)
+1. **Fixed in `170895da`.** **An agent's edit wipes canvas changes that haven't been saved yet** (`src/renderer/src/syncBridge/externalEdit.ts:64-69, 196`)
    - **What this is:** when a file changes on disk, this handler reloads the canvas from the file.
    - **Problem:** it cancels the canvas's pending save and replaces the canvas with the file. It never merges.
      - The agent writes the CSS, and you change a colour 150 ms later.
@@ -19,46 +19,46 @@ Four parallel read-only audits covered the save and sync pipeline, the main-proc
    - **Fix:** if a save is pending or the canvas changed during the pause, send it through the existing merge path (`onWriteConflict`) instead of `reloadElements`.
    - **If we skip it:** edits made while an agent works vanish silently; only undo brings them back.
 
-2. **Restoring the oldest snapshot restores nothing and deletes it** (`src/main/ipc/snapshotOps.ts:411-417`)
+2. **Fixed in `170895da`.** **Restoring the oldest snapshot restores nothing and deletes it** (`src/main/ipc/snapshotOps.ts:411-417`)
    - **What this is:** before restoring, Scamp saves a safety snapshot of the current state.
    - **Problem:** with 50 snapshots, saving the safety copy deletes the oldest one (the limit is 50). If that's the one you're restoring, nothing gets copied, but the restore still says it worked. "Undo AI session" uses the same path.
    - **Fix:** don't delete the snapshot being restored when trimming to 50. Return a failure when there are no files to copy.
    - **If we skip it:** the restore point you reached for is gone for good, and the app says it succeeded.
 
-3. **Following a link to another page drops recent edits** (`src/renderer/src/components/projectShell/useNavigationRequests.ts:40`)
+3. **Fixed in `170895da`.** **Following a link to another page drops recent edits** (`src/renderer/src/components/projectShell/useNavigationRequests.ts:40`)
    - **What this is:** clicking a link indicator on the canvas opens the linked page.
    - **Problem:** unlike opening a component, this doesn't save first. During an agent pause, the pending save is skipped, the new page loads, and the old page's edit is lost.
    - **Fix:** call `flushPendingPageWrite()` and `persistActiveSource()` before navigating, as `openComponent` does.
    - **If we skip it:** edits disappear when you follow a link right after an agent edit.
 
-4. **A variant property left with one value disappears on reload** (`src/renderer/lib/parseCode/tsx.ts:243`)
+4. **Fixed (next commit after `170895da`).** **A variant property left with one value disappears on reload** (`src/renderer/lib/parseCode/tsx.ts:243`)
    - **What this is:** this pattern reads a component's union-typed props (like `"a" | "b"`) back as variant properties.
    - **Problem:** it requires at least two values. The panel lets you remove values down to just the default, which saves as `variant?: "default";`. On reload, that's no longer read as a variant property, and its rules are kept as raw CSS.
    - **Fix:** change the pattern's `+` to `*` so one value still counts.
    - **If we skip it:** a component quietly loses its variant property after a reload.
 
-5. **A hover, press or focus interaction is lost if its target value has no styles yet** (`src/renderer/lib/generateCode/css.ts:190-205`)
+5. **Fixed (next commit after `170895da`).** **A hover, press or focus interaction is lost if its target value has no styles yet** (`src/renderer/lib/generateCode/css.ts:190-205`)
    - **What this is:** these interactions are saved only as a second selector on the target value's CSS rules.
    - **Problem:** with no rule to attach to, nothing is written. For example, add a value `open`, add "While hovering: default → open", save before styling it, and reload: the interaction is gone.
    - **Fix:** write an empty root rule for that value carrying the second selector, and have the parser accept it.
    - **If we skip it:** interactions vanish in an order of work that's natural to follow.
 
-6. **"From any value" interactions lose in the browser** (`src/renderer/lib/variantInteractions.ts:64`)
+6. **Fixed (next commit after `170895da`).** **"From any value" interactions lose in the browser** (`src/renderer/lib/variantInteractions.ts:64`)
    - **What this is:** "From any value" is written without the property's attribute, for example `.root:hover .x`.
    - **Problem:** that has the same specificity as `.root[data-state="closed"] .x`, which is written later, so the later rule wins. A hovered `closed` instance stays closed in the browser, while Try interactions shows `open`.
    - **Fix:** write `.root[data-state]:hover .x` (attribute present, any value) and read that form back.
    - **If we skip it:** the canvas preview and the real page disagree.
 
-7. **The canvas layers variant states in a different order than the browser** (`src/renderer/lib/stateCascade.ts:58-64`)
+7. **Fixed (next commit after `170895da`).** **The canvas layers variant states in a different order than the browser** (`src/renderer/lib/stateCascade.ts:58-64`)
    - **What this is:** this decides how one frame of the variant set looks on the canvas.
    - **Problem:** it applies `outline`, then `outline:hover`, then `small`. In CSS, `outline:hover` (`.root[data-variant="outline"] .el:hover`) outranks `small` (`.root[data-size="small"] .el`). If both set the background, the browser shows outline's hover colour and the canvas shows small's. **Make default** uses this same function, so it rebuilds styles against the wrong order.
    - **Fix:** apply all single values' base styles, then all their states, then the combinations' base styles, then their states.
    - **If we skip it:** the canvas shows a look the real page never has.
 
-8. **Variant styles on a nested component instance are never saved** (`src/renderer/store/canvas/patchRouting.ts:111-125`)
+8. **Fixed (next commit after `170895da`).** **Variant styles on a nested component instance are never saved** (`src/renderer/store/canvas/patchRouting.ts:111-125`)
    - **What this is:** in a variant frame, edits go into that value's styles.
    - **Problem:** for an instance inside the component, the edit is stored, but the code generator skips instances (`css.ts:194`). It shows on the canvas, then disappears on reload.
-   - **Fix:** in `routeVariantPatch`, don't route style edits on a component instance into the variant.
+   - **Fix:** in `routeVariantPatch`, don't route style edits on a component instance into the variant. (Done: the edit lands on the instance's own styles, so it shows in every frame.)
    - **If we skip it:** resizing an icon instance in the `outline` frame looks saved but isn't.
 
 9. **An imported page can crash or hang the app through an image download** (`src/main/ipc/image.ts:112-122`)

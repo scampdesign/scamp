@@ -1931,7 +1931,9 @@ any other element's is \`.root[data-<prop>="<value>"] .<class>\`.
 **Interactions.** A component can change a value by itself. Hover,
 press, and focus give each rule of the value changed to a second
 selector: the value changed from, with \`:hover\`, \`:active\`, or
-\`:focus-visible\` on the root (drop the attribute for "from any value"):
+\`:focus-visible\` on the root. For "from any value", keep the attribute
+with no value (\`.root[data-state]:hover\`), so it outranks the other
+values' rules:
 
 \`\`\`css
 .root[data-state="hover"] .label_c1a1,

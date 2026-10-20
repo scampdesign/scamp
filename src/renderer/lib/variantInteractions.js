@@ -23,8 +23,10 @@ export const TRIGGER_LABEL = {
 export const interactionsOf = (elements) => elements[ROOT_ELEMENT_ID]?.variantInteractions ?? [];
 /**
  * The second selectors a variant rule gains, one per CSS interaction
- * whose `to` is one of its values: that value swapped for `from` (or
- * dropped, for any value), with the trigger's pseudo-class on the root.
+ * whose `to` is one of its values: that value swapped for `from`, or for
+ * any value (`[data-state]`, which keeps the selector as specific as the
+ * other values' rules it has to beat), with the trigger's pseudo-class on
+ * the root.
  * `rest` is everything after the root's attributes (` .label_c1a1:hover`).
  */
 export const aliasSelectors = (rootClass, parts, rest, interactions) => {
@@ -35,8 +37,7 @@ export const aliasSelectors = (rootClass, parts, rest, interactions) => {
         if (!parts.some((p) => p.axis === i.axis && p.value === i.to))
             continue;
         const attrs = parts
-            .flatMap((p) => (p.axis !== i.axis ? [p] : i.from === null ? [] : [{ axis: p.axis, value: i.from }]))
-            .map((p) => `[data-${p.axis}="${p.value}"]`)
+            .map((p) => p.axis !== i.axis ? `[data-${p.axis}="${p.value}"]` : i.from === null ? `[data-${p.axis}]` : `[data-${p.axis}="${i.from}"]`)
             .join('');
         out.push(`.${rootClass}${attrs}${TRIGGER_PSEUDO[i.trigger]}${rest}`);
     }

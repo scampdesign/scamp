@@ -156,6 +156,19 @@ describe('drawing a combination', () => {
     expect(resolveElementAtState(el(), 'desktop', DEFAULT_BREAKPOINTS, 'hover', 'variant=outline').opacity).toBe(0.6);
   });
 
+  it('a value’s state outranks another value’s base, as its selector is more specific', () => {
+    // `.root[data-variant="outline"] .el:hover` beats `.root[data-size="small"] .el`
+    // in the browser, though the second is written later.
+    const both: ScampElement = {
+      ...(root(parse(CSS)) as ScampElement),
+      variantOverrides: {
+        'variant=outline': { states: { hover: { opacity: 0.3 } } },
+        'size=small': { opacity: 0.8 },
+      },
+    };
+    expect(resolveElementAtState(both, 'desktop', DEFAULT_BREAKPOINTS, 'hover', 'variant=outline&size=small').opacity).toBe(0.3);
+  });
+
   it('an instance picking both values reaches the combination', () => {
     const keys = instanceVariantKeys(AXES, { variant: 'outline', size: 'small' });
     expect(layerVariants(el(), keys).opacity).toBe(0.7);

@@ -240,7 +240,7 @@ const decodeTsStringLiteral = (raw: string): string =>
 /** A double-quoted string literal, raw. */
 const QUOTED = '"(?:\\\\.|[^"\\\\])*"';
 /** `name?: "a" | "b";` in a props type: a prop typed as a union of string literals. */
-const UNION_PROP_RE = new RegExp(`^\\s*([a-z][a-z0-9]*)\\?\\s*:\\s*(${QUOTED}(?:\\s*\\|\\s*${QUOTED})+)\\s*;`, 'gm');
+const UNION_PROP_RE = new RegExp(`^\\s*([a-z][a-z0-9]*)\\?\\s*:\\s*(${QUOTED}(?:\\s*\\|\\s*${QUOTED})*)\\s*;`, 'gm');
 
 /**
  * The variant axes a component declares: each prop typed as a union of

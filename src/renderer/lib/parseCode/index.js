@@ -555,6 +555,9 @@ export const parseCode = (tsx, css, options) => {
             if (!known)
                 cssInteractions.push(alias);
         }
+        // An empty rule only carries its interactions' second selectors.
+        if (rule.decls.length === 0 && rule.state === null)
+            continue;
         const key = variantComboKey(rule.parts);
         const existing = target.variantOverrides?.[key] ?? {};
         const next = rule.state === null
