@@ -113,3 +113,24 @@ describe('clearing', () => {
         await expect(clearToken({ userDataDir: dir })).resolves.toBeUndefined();
     });
 });
+describe('a Linux keyring fallback with a fixed key', () => {
+    // Electron reports encryption as available, but `basic_text` encrypts
+    // with a key anyone can look up. see docs/audits/2026-10-20-repo-audit.md, finding 10
+    const basicText = () => ({
+        ...workingSafeStorage(),
+        getSelectedStorageBackend: () => 'basic_text',
+    });
+    it('keeps the token in memory only, writing nothing', async () => {
+        expect(await saveToken('secret-token', { safeStorage: basicText(), userDataDir: dir })).toEqual({ status: 'memory-only' });
+        expect(await fs.readdir(dir)).toEqual([]);
+    });
+    it('removes a token written under it before, and reads nothing', async () => {
+        await saveToken('secret-token', { safeStorage: workingSafeStorage(), userDataDir: dir });
+        expect(await loadToken({ safeStorage: basicText(), userDataDir: dir })).toEqual({ status: 'unavailable' });
+        expect(await fs.readdir(dir)).toEqual([]);
+    });
+    it('saves as before with a real keyring', async () => {
+        const keyring = { ...workingSafeStorage(), getSelectedStorageBackend: () => 'gnome_libsecret' };
+        expect(await saveToken('secret-token', { safeStorage: keyring, userDataDir: dir })).toEqual({ status: 'saved' });
+    });
+});

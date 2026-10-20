@@ -17,6 +17,7 @@ import { join } from 'path';
 import { copyImage, assetsDirFor } from './imageOps';
 import { getProjectFormat } from './projectFormatCache';
 import { assertInsideActiveProject } from './pathContainment';
+import { readBodyCapped } from './readCapped';
 import { suppressNextChange } from '../watcher';
 
 const IMAGE_FILTERS = [
@@ -56,6 +57,7 @@ const FETCHABLE = /^image\/(png|jpeg|webp|gif|svg\+xml|avif)$/;
 
 /** 20MB. A hero image is under a megabyte; anything past this is a mistake. */
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+const FETCH_TIMEOUT_MS = 30_000;
 
 /**
  * Download one remote image into the project's assets.
@@ -109,7 +111,12 @@ const fetchImage = async (args: FetchImageArgs): Promise<FetchImageResult> => {
     if (isData && fromData === null) {
       return { ok: false, error: 'Could not read that data: URL.' };
     }
-    const response = fromData === null ? await net.fetch(parsed.href, { redirect: 'follow' }) : null;
+    // A host that accepts the connection and never finishes would hold the
+    // import, which fetches one image at a time, forever.
+    const response =
+      fromData === null
+        ? await net.fetch(parsed.href, { redirect: 'follow', signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+        : null;
     if (response !== null && !response.ok) {
       return { ok: false, error: `${response.status} from ${parsed.host}` };
     }
@@ -119,9 +126,9 @@ const fetchImage = async (args: FetchImageArgs): Promise<FetchImageResult> => {
     if (!FETCHABLE.test(type)) {
       return { ok: false, error: `${parsed.pathname} is ${type || 'an unknown type'}` };
     }
-    const bytes = fromData?.bytes ?? Buffer.from(await response!.arrayBuffer());
-    if (bytes.byteLength > MAX_IMAGE_BYTES) {
-      return { ok: false, error: `${parsed.pathname} is ${Math.round(bytes.byteLength / 1e6)}MB` };
+    const bytes = fromData?.bytes ?? (response === null ? null : await readBodyCapped(response, MAX_IMAGE_BYTES));
+    if (bytes === null || bytes.byteLength > MAX_IMAGE_BYTES) {
+      return { ok: false, error: `${parsed.pathname} is over ${MAX_IMAGE_BYTES / 1e6}MB` };
     }
 
     // `copyImage` reads from a path, so the bytes land in a temp file

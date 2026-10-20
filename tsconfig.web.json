@@ -65,6 +65,7 @@
     "src/main/mcp/mcpOps.ts",
     "src/main/mcp/agentConfig.ts",
     "src/main/ipc/snapshotOps.ts",
+    "src/main/ipc/readCapped.ts",
     "src/main/ipc/fileConflict.ts",
     "src/main/ipc/file.ts",
     "src/main/ipc/imageOps.ts",
