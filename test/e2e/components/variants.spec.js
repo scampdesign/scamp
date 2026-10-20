@@ -31,7 +31,7 @@ const selectComponent = async (window) => {
 };
 const addOutlineVariant = async (window) => {
     await selectComponent(window);
-    await variants(window).getByRole('button', { name: '+ Add variant' }).click();
+    await variants(window).getByRole('button', { name: 'Add variant' }).click();
     const rename = variants(window).getByRole('textbox', { name: 'Value name' });
     await rename.fill('outline');
     await rename.press('Enter');
@@ -112,7 +112,7 @@ test.describe('components: variants', () => {
         await starters.getByRole('button', { name: 'Button', exact: true }).click();
         await expect(window.getByTestId('variant-set')).toBeVisible();
         await starters.getByRole('button', { name: 'Button', exact: true }).click();
-        await expect(window.getByTestId('component-editor-banner')).toContainText('Button2');
+        await expect(window.getByRole('navigation', { name: 'Component editor breadcrumb' })).toContainText('Button2');
         expect((await project.readComponent('Button2')).tsx).toContain('export default function Button2(');
     });
 });

@@ -1,12 +1,3 @@
-.editing {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-bottom: 8px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
 .axes {
   display: flex;
   flex-direction: column;
@@ -90,7 +81,6 @@
 }
 
 .iconButton,
-.addAxis,
 .confirmCancel {
   background: none;
   border: none;
@@ -101,18 +91,11 @@
   cursor: pointer;
 }
 
-.addAxis {
-  margin-top: 10px;
-  padding-left: 0;
-}
-
 .iconButton:hover:not(:disabled),
-.addAxis:hover:not(:disabled),
 .confirmCancel:hover {
   color: var(--text-primary);
 }
 
-.addAxis:disabled,
 .iconButton:disabled {
   cursor: not-allowed;
   opacity: 0.5;
@@ -142,25 +125,6 @@
   margin-top: 6px;
   font-size: 12px;
   color: var(--error-text);
-}
-
-.editingTitle {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.pick {
-  display: grid;
-  grid-template-columns: 64px 1fr;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.pickName {
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .interactionList {

@@ -116,50 +116,25 @@ export const CanvasArea = ({
               </div>
             </div>
           )}
-          {activeComponent !== null && activeComponent.kind === 'component' && (
-            <div
-              className={styles.componentEditorBanner}
-              data-testid="component-editor-banner"
-            >
-              <span>
-                Editing component:{' '}
-                <strong>{activeComponent.name}</strong>. Changes
-                affect all instances.
-              </span>
-              <button
-                type="button"
-                className={styles.componentEditorExit}
-                onClick={onExitComponentEditor}
-              >
-                Exit
-              </button>
-            </div>
-          )}
           <div className={styles.canvasHeader} style={{ maxWidth: headerWidth }}>
             {activeComponent !== null && activeComponent.kind === 'component' ? (
-              // Breadcrumb: "<return page> > <component>" when
-              // entered from a page, otherwise just the
-              // component name. Clicking a non-current segment
-              // navigates back to it; clicking the current
-              // segment selects the root element same as the
-              // page badge.
+              // Breadcrumb: "<return page> > <component>". The first
+              // segment is the way out of the component editor;
+              // clicking the current one selects the root.
               <div
                 className={styles.canvasHeaderBadge}
                 role="navigation"
                 aria-label="Component editor breadcrumb"
               >
-                {(activeComponent.returnTo !== undefined || activeComponent.returnToPage !== null) && (
-                  <>
-                    <button
-                      type="button"
-                      className={styles.canvasBreadcrumbLink}
-                      onClick={onExitComponentEditor}
-                    >
-                      {activeComponent.returnTo?.name ?? activeComponent.returnToPage}
-                    </button>
-                    <span aria-hidden="true">{' › '}</span>
-                  </>
-                )}
+                <button
+                  type="button"
+                  className={styles.canvasBreadcrumbLink}
+                  onClick={onExitComponentEditor}
+                  title="Exit the component"
+                >
+                  {activeComponent.returnTo?.name ?? activeComponent.returnToPage ?? activePageName ?? 'Pages'}
+                </button>
+                <span aria-hidden="true">{' › '}</span>
                 <button
                   type="button"
                   className={styles.canvasBreadcrumbCurrent}

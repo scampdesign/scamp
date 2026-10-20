@@ -1,5 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from 'react';
+import { IconMinus } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { addVariantValue, combinationLimitError, keyFor, makeVariantDefault, moveVariantValue, nextValueName, removeVariantAxis, removeVariantValue, renameVariantAxis, renameVariantValue, variantAxisError, variantValueError, } from '@lib/variantAxes';
 import styles from './VariantsSection.module.css';
@@ -98,7 +99,7 @@ export const VariantAxisRow = ({ axis, axes, picks, disabled, renameOnMount }) =
     const renameInput = (label) => (_jsx("input", { className: styles.renameInput, "aria-label": label, autoFocus: true, value: renaming?.draft ?? '', onChange: (e) => setRenaming((r) => (r === null ? r : { ...r, draft: e.target.value })), onKeyDown: handleRenameKeyDown, onBlur: commitRename }));
     const confirmRow = (target, text) => (_jsxs("span", { className: styles.confirm, role: "group", "aria-label": "Confirm removal", children: [_jsx("span", { children: text }), _jsx("button", { type: "button", className: styles.confirmRemove, onClick: () => handleRemove(target), children: "Remove" }), _jsx("button", { type: "button", className: styles.confirmCancel, onClick: () => setConfirming(null), children: "Cancel" })] }));
     const axisTarget = { kind: 'axis' };
-    return (_jsxs("div", { className: styles.axis, "data-testid": `variant-axis-${axis.prop}`, children: [_jsxs("div", { className: styles.axisHeader, children: [sameTarget(renaming?.target ?? null, axisTarget) ? (renameInput('Property name')) : (_jsx("span", { className: styles.axisName, onDoubleClick: () => startRename(axisTarget), title: "Double-click to rename", children: axis.prop })), _jsx("button", { type: "button", className: styles.iconButton, onClick: () => setConfirming(axisTarget), "aria-label": `Remove the ${axis.prop} property`, title: `Remove the ${axis.prop} property`, children: "Remove" })] }), _jsxs("div", { className: styles.chips, role: "radiogroup", "aria-label": `${axis.prop} value`, children: [axis.values.map((value, index) => {
+    return (_jsxs("div", { className: styles.axis, "data-testid": `variant-axis-${axis.prop}`, children: [_jsxs("div", { className: styles.axisHeader, children: [sameTarget(renaming?.target ?? null, axisTarget) ? (renameInput('Property name')) : (_jsx("span", { className: styles.axisName, onDoubleClick: () => startRename(axisTarget), title: "Double-click to rename", children: axis.prop })), _jsx("button", { type: "button", className: styles.headerButton, onClick: () => setConfirming(axisTarget), "aria-label": `Remove the ${axis.prop} property`, title: `Remove the ${axis.prop} property`, children: _jsx(IconMinus, { size: 14 }) })] }), _jsxs("div", { className: styles.chips, role: "radiogroup", "aria-label": `${axis.prop} value`, children: [axis.values.map((value, index) => {
                         const target = { kind: 'value', value };
                         if (sameTarget(renaming?.target ?? null, target))
                             return _jsx("span", { children: renameInput('Value name') }, value);

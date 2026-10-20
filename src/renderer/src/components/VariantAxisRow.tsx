@@ -1,4 +1,5 @@
 import { useState, type DragEvent, type KeyboardEvent } from 'react';
+import { IconMinus } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import type { VariantAxis } from '@lib/element';
 import {
@@ -178,12 +179,12 @@ export const VariantAxisRow = ({ axis, axes, picks, disabled, renameOnMount }: P
         )}
         <button
           type="button"
-          className={styles.iconButton}
+          className={styles.headerButton}
           onClick={() => setConfirming(axisTarget)}
           aria-label={`Remove the ${axis.prop} property`}
           title={`Remove the ${axis.prop} property`}
         >
-          Remove
+          <IconMinus size={14} />
         </button>
       </div>
       <div className={styles.chips} role="radiogroup" aria-label={`${axis.prop} value`}>

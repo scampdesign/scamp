@@ -13,16 +13,16 @@ import type { Locator, Page } from '@playwright/test';
 const addStarter = async (window: Page, name: string): Promise<void> => {
   await openComponentsSection(window);
   await window.getByRole('group', { name: 'Add a starter component' }).getByRole('button', { name, exact: true }).click();
-  await expect(window.getByTestId('component-editor-banner')).toContainText(name);
+  await expect(window.getByRole('navigation', { name: 'Component editor breadcrumb' })).toContainText(name);
   await window.getByTitle('Select component root').click();
 };
 
 const interactions = (window: Page): Locator => window.getByTestId('variant-interactions');
 const panel = (window: Page): Locator => window.getByRole('dialog', { name: 'New interaction' });
 
-/** The frame being edited, which a new interaction starts from. */
+/** The frame being edited, which a new interaction starts from: its value's chip. */
 const editFrame = async (window: Page, value: string): Promise<void> => {
-  await window.getByRole('group', { name: 'Editing' }).locator('select').first().selectOption(value);
+  await window.getByTestId('variants-section').getByRole('radio', { name: value, exact: true }).click();
 };
 
 /** Open the panel from the header's +, pick a trigger, (an element,) and the value to change to, then Add. Its lists are in that order. */

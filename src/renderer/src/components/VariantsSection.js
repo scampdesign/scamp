@@ -1,10 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from 'react';
+import { IconPlus } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { DESKTOP_BREAKPOINT_ID } from '@shared/types';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { addVariantAxis, combinationLimitError, fullPicks, keyFor, nextValueName, variantAxisError, } from '@lib/variantAxes';
-import { EnumSelect } from './controls/EnumSelect';
 import { Section } from './sections/Section';
 import { VariantAxisRow } from './VariantAxisRow';
 import { VariantInteractions } from './VariantInteractions';
@@ -21,8 +21,8 @@ const nextAxisName = (elements) => {
 };
 /**
  * The component's variant properties, Figma's Properties section for a
- * component set: which frame you're editing, each axis with its values,
- * and **+ Add property**. The canvas draws every combination as a frame.
+ * component set: each axis with its values (the selected chips are the
+ * frame you're editing), and **+** on the header to add one. The canvas draws every combination as a frame.
  * see docs/plans/component-variants-plan.md, phase 6
  */
 export const VariantsSection = () => {
@@ -39,7 +39,6 @@ export const VariantsSection = () => {
             setActiveVariant(null);
     }, [nonDesktop, activeVariantKey, setActiveVariant]);
     const picks = fullPicks(axes, activeVariantKey);
-    const handlePick = (prop, value) => setActiveVariant(keyFor(axes, { ...picks, [prop]: value }));
     const handleAddProperty = () => {
         const elements = useCanvasStore.getState().elements;
         const prop = nextAxisName(elements);
@@ -54,5 +53,7 @@ export const VariantsSection = () => {
         editVariants((current) => addVariantAxis(current, axis), keyFor([...axes, axis], { ...picks, [prop]: second }));
         setJustAdded({ prop, value: second });
     };
-    return (_jsxs("div", { "data-testid": "variants-section", children: [_jsxs(Section, { title: "Variants", collapsible: true, defaultOpen: true, children: [axes.length > 0 && (_jsxs("div", { className: styles.editing, role: "group", "aria-label": "Editing", children: [_jsx("span", { className: styles.editingTitle, children: "Editing" }), axes.map((axis) => (_jsxs("label", { className: styles.pick, children: [_jsx("span", { className: styles.pickName, children: axis.prop }), _jsx(EnumSelect, { value: picks[axis.prop] ?? axis.defaultValue, options: axis.values.map((v) => ({ value: v, label: v })), onChange: (value) => handlePick(axis.prop, value), title: `The ${axis.prop} of the frame you're editing` })] }, axis.prop)))] })), _jsx("div", { className: styles.axes, children: axes.map((axis) => (_jsx(VariantAxisRow, { axis: axis, axes: axes, picks: picks, disabled: nonDesktop, renameOnMount: justAdded?.prop === axis.prop ? justAdded.value : undefined }, axis.prop))) }), _jsx("button", { type: "button", className: styles.addAxis, onClick: handleAddProperty, disabled: nonDesktop, title: nonDesktop ? 'Variants are edited at the desktop breakpoint' : undefined, children: axes.length === 0 ? '+ Add variant' : '+ Add property' }), error !== null && (_jsx("span", { className: styles.error, role: "alert", children: error }))] }), axes.length > 0 && _jsx(VariantInteractions, { axes: axes, picks: picks, disabled: nonDesktop })] }));
+    const label = axes.length === 0 ? 'Add variant' : 'Add property';
+    const plus = (_jsx("button", { type: "button", className: styles.headerButton, onClick: handleAddProperty, disabled: nonDesktop, "aria-label": label, title: nonDesktop ? 'Variants are edited at the desktop breakpoint' : label, children: _jsx(IconPlus, { size: 14 }) }));
+    return (_jsxs("div", { "data-testid": "variants-section", children: [_jsxs(Section, { title: "Variants", titleAccessory: plus, children: [_jsx("div", { className: styles.axes, children: axes.map((axis) => (_jsx(VariantAxisRow, { axis: axis, axes: axes, picks: picks, disabled: nonDesktop, renameOnMount: justAdded?.prop === axis.prop ? justAdded.value : undefined }, axis.prop))) }), error !== null && (_jsx("span", { className: styles.error, role: "alert", children: error }))] }), axes.length > 0 && _jsx(VariantInteractions, { axes: axes, picks: picks, disabled: nonDesktop })] }));
 };

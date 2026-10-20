@@ -25,7 +25,7 @@ test.describe('convert a page to a view', () => {
         await confirmDialog(window, /^Convert to view$/);
         // The page reopens as a view: same slug in the list, no component banner.
         await expect(window.getByTitle('Select page root')).toHaveText('home');
-        await expect(window.getByTestId('component-editor-banner')).toHaveCount(0);
+        await expect(window.getByRole('navigation', { name: 'Component editor breadcrumb' })).toHaveCount(0);
         await expect(pageSidebarItem(window, 'home')).toBeVisible();
         // The elements travelled, in the contract shape, without the page-root floor.
         expect(await project.viewExists('Home')).toBe(true);

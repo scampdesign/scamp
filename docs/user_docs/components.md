@@ -110,16 +110,10 @@ a page canvas, to open the component editor. It's the same canvas,
 properties panel, and code panel you already know, scoped to one
 component.
 
-A banner across the top of the canvas reminds you that you're editing a
-component:
-
-```
-Editing component: Card. Changes affect all instances.
-```
-
-When you open a component by double-clicking an instance, a breadcrumb
-above the canvas (`home › Card`) names the page or view you came from.
-Click it, or press **Esc**, to go back there.
+A breadcrumb above the canvas, such as `home › Card`, names the page or
+view you came from and the component you're editing. Changes affect
+every instance. To go back, click the first part of the breadcrumb, or
+press **Esc**.
 
 ### Component canvas size
 
@@ -227,13 +221,14 @@ component's own look.
 1. Open the component in the component editor.
 1. In the breadcrumb above the canvas, click the component's name to
    select it. The properties panel shows the **Variants** section.
-1. Click **+ Add variant**. Scamp adds a `variant` property with a
+1. In the **Variants** section header, click **+**. Scamp adds a `variant` property with a
    `default` value and a new value.
 1. Type a name for the value, such as `outline`, and press **Enter**.
 
 To add another value, click **+** after the property's values. The new
 value starts as a copy of the look you're editing. To add a second
-property, such as a size, click **+ Add property**.
+property, such as a size, click **+** in the **Variants** section header
+again. To remove a property, click **−** beside its name.
 
 Value and property names use lowercase letters and digits; values can
 also use hyphens. To rename one, double-click its name. A component can
@@ -268,9 +263,8 @@ Where a change is written depends on the frame:
 | A frame with one value that isn't a default, such as `outline · medium` | That value, with every other value: every outline button |
 | A frame with two or more, such as `outline · small` | Only that combination |
 
-- In the **Variants** section, **Editing** shows the frame you're
-  editing. Select another value in its lists, or click a value, to edit
-  another frame.
+- In the **Variants** section, the selected value of each property is
+  the frame you're editing. Click another value to edit another frame.
 - To change how a frame looks on hover, select **Hover** in the state
   switcher. See [Element states](element-states.md).
 - To hide an element in one frame, select the element, and then, in the
@@ -360,8 +354,8 @@ its `hover` look while the pointer is on it, or a menu opens when its
 trigger is clicked. This is Figma's **Change to** interaction.
 
 1. Select the component's name in the breadcrumb.
-1. In the **Variants** section, under **Editing**, select the frame the
-   interaction starts from—for example, `closed`.
+1. In the **Variants** section, click the value the interaction starts
+   from—for example, `closed`.
 1. In the **Interactions** section header, click **+**.
 1. In the panel, select a **Trigger**. For **On click**, also select the
    element that's clicked.
@@ -378,8 +372,8 @@ it.
 | **On click**, **On click outside**, **On Escape** | The Scamp framework's click handler | Scamp framework projects |
 
 A click is remembered until the next one, so a menu needs two: **On
-click** while editing `closed`, changing to `open`, and while editing
-`open`, changing to `closed`. Add **On
+click** with `closed` selected, changing to `open`, and with `open`
+selected, changing to `closed`. Add **On
 click outside** and **On Escape** from `open` to `closed` if the menu
 should also close those ways; leave them out if it shouldn't.
 

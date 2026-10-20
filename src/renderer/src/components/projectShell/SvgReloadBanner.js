@@ -43,5 +43,5 @@ export const SvgReloadBanner = () => {
         }
         setPending(null);
     };
-    return (_jsxs("div", { className: styles.componentEditorBanner, "data-testid": "svg-reload-banner", children: [_jsxs("span", { children: [_jsx("strong", { children: pending.fileName }), " was updated externally. Reloading replaces the inline SVG \u2014 colour edits made in Scamp will be lost."] }), _jsxs("div", { className: styles.snapshotPreviewActions, children: [_jsx("button", { type: "button", className: styles.componentEditorExit, onClick: handleReload, children: "Reload SVG" }), _jsx("button", { type: "button", className: styles.componentEditorExit, onClick: () => setPending(null), children: "Keep current" })] })] }));
+    return (_jsxs("div", { className: styles.noticeBanner, "data-testid": "svg-reload-banner", children: [_jsxs("span", { children: [_jsx("strong", { children: pending.fileName }), " was updated externally. Reloading replaces the inline SVG \u2014 colour edits made in Scamp will be lost."] }), _jsxs("div", { className: styles.snapshotPreviewActions, children: [_jsx("button", { type: "button", className: styles.noticeBannerButton, onClick: handleReload, children: "Reload SVG" }), _jsx("button", { type: "button", className: styles.noticeBannerButton, onClick: () => setPending(null), children: "Keep current" })] })] }));
 };

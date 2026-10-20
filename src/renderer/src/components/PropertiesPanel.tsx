@@ -85,7 +85,8 @@ export const PropertiesPanel = ({
       >
         <div className={styles.emptyBody}>
           {isComponent && <VariantsSection />}
-          {routesSection}
+          {/* Routes point at pages, never at a component. */}
+          {!isComponent && routesSection}
           {isComponentEditing && (
             <div data-testid="view-data-section">
               <Section title="Data" collapsible defaultOpen={false} count={dataCount}>

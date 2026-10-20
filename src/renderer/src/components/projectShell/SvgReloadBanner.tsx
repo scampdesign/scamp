@@ -51,7 +51,7 @@ export const SvgReloadBanner = (): JSX.Element | null => {
 
   return (
     <div
-      className={styles.componentEditorBanner}
+      className={styles.noticeBanner}
       data-testid="svg-reload-banner"
     >
       <span>
@@ -61,14 +61,14 @@ export const SvgReloadBanner = (): JSX.Element | null => {
       <div className={styles.snapshotPreviewActions}>
         <button
           type="button"
-          className={styles.componentEditorExit}
+          className={styles.noticeBannerButton}
           onClick={handleReload}
         >
           Reload SVG
         </button>
         <button
           type="button"
-          className={styles.componentEditorExit}
+          className={styles.noticeBannerButton}
           onClick={() => setPending(null)}
         >
           Keep current

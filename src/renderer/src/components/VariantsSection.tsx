@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { IconPlus } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { DESKTOP_BREAKPOINT_ID } from '@shared/types';
 import { ROOT_ELEMENT_ID, type VariantAxis } from '@lib/element';
@@ -11,7 +12,6 @@ import {
   variantAxisError,
 } from '@lib/variantAxes';
 
-import { EnumSelect } from './controls/EnumSelect';
 import { Section } from './sections/Section';
 import { VariantAxisRow } from './VariantAxisRow';
 import { VariantInteractions } from './VariantInteractions';
@@ -27,8 +27,8 @@ const nextAxisName = (elements: Parameters<typeof variantAxisError>[0]): string 
 
 /**
  * The component's variant properties, Figma's Properties section for a
- * component set: which frame you're editing, each axis with its values,
- * and **+ Add property**. The canvas draws every combination as a frame.
+ * component set: each axis with its values (the selected chips are the
+ * frame you're editing), and **+** on the header to add one. The canvas draws every combination as a frame.
  * see docs/plans/component-variants-plan.md, phase 6
  */
 export const VariantsSection = (): JSX.Element => {
@@ -47,8 +47,6 @@ export const VariantsSection = (): JSX.Element => {
 
   const picks = fullPicks(axes, activeVariantKey);
 
-  const handlePick = (prop: string, value: string): void => setActiveVariant(keyFor(axes, { ...picks, [prop]: value }));
-
   const handleAddProperty = (): void => {
     const elements = useCanvasStore.getState().elements;
     const prop = nextAxisName(elements);
@@ -64,25 +62,23 @@ export const VariantsSection = (): JSX.Element => {
     setJustAdded({ prop, value: second });
   };
 
+  const label = axes.length === 0 ? 'Add variant' : 'Add property';
+  const plus = (
+    <button
+      type="button"
+      className={styles.headerButton}
+      onClick={handleAddProperty}
+      disabled={nonDesktop}
+      aria-label={label}
+      title={nonDesktop ? 'Variants are edited at the desktop breakpoint' : label}
+    >
+      <IconPlus size={14} />
+    </button>
+  );
+
   return (
     <div data-testid="variants-section">
-      <Section title="Variants" collapsible defaultOpen>
-        {axes.length > 0 && (
-          <div className={styles.editing} role="group" aria-label="Editing">
-            <span className={styles.editingTitle}>Editing</span>
-            {axes.map((axis) => (
-              <label key={axis.prop} className={styles.pick}>
-                <span className={styles.pickName}>{axis.prop}</span>
-                <EnumSelect
-                  value={picks[axis.prop] ?? axis.defaultValue}
-                  options={axis.values.map((v) => ({ value: v, label: v }))}
-                  onChange={(value) => handlePick(axis.prop, value)}
-                  title={`The ${axis.prop} of the frame you're editing`}
-                />
-              </label>
-            ))}
-          </div>
-        )}
+      <Section title="Variants" titleAccessory={plus}>
         <div className={styles.axes}>
           {axes.map((axis) => (
             <VariantAxisRow
@@ -95,15 +91,6 @@ export const VariantsSection = (): JSX.Element => {
             />
           ))}
         </div>
-        <button
-          type="button"
-          className={styles.addAxis}
-          onClick={handleAddProperty}
-          disabled={nonDesktop}
-          title={nonDesktop ? 'Variants are edited at the desktop breakpoint' : undefined}
-        >
-          {axes.length === 0 ? '+ Add variant' : '+ Add property'}
-        </button>
         {error !== null && (
           <span className={styles.error} role="alert">
             {error}
