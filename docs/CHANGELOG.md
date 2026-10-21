@@ -54,6 +54,55 @@ release time.
 - **Checks find variant mistakes.** An instance set to a value its
   component lacks, and a rule for a value the component doesn't
   declare, are both listed.
+- **The Scamp Agent builds components with variants.** Ask it for an
+  outline button or a small size, and it adds variant properties,
+  values, and interactions to one component and styles each value,
+  rather than copying the component per look. It can also pick a value
+  on an instance. It asks before it removes a property or value.
+  Agents connected over MCP get the same guidance in `agent.md`.
+
+**Changed**
+
+- **Components are purple.** A component's set border, its icon in the
+  **Layers** panel, and a selected instance use purple, so you can tell
+  a component from a page element at a glance.
+- **A cleaner component editor.** The banner above the canvas is gone;
+  the breadcrumb, such as `home › Card`, names where you came from, and
+  you click its first part or press **Esc** to go back. **Routes** no
+  longer shows while you edit a component, because routes point at
+  pages.
+- **Variants and Interactions follow Figma's layout.** Each section
+  adds with **+** in its header. An interaction is added from a panel
+  with **Trigger** and **Action**, starts from the value you're
+  editing, and is listed on one line.
+
+**Fixed**
+
+- **An agent's edit no longer wipes your unsaved change.** An edit you
+  made in the moments before an agent wrote the same file was replaced
+  by the agent's version. Scamp now merges the two.
+- **Following a link to another page keeps your last edits.** Jumping
+  through the link indicator saves the page you leave first, as the
+  sidebar does.
+- **Restoring a snapshot is safe.** Restoring your oldest snapshot
+  restored nothing and deleted it. A restore that fails partway now
+  puts the project back as it was, instead of leaving some files from
+  each version.
+- **A failed save no longer leaves a page half-written.** Scamp writes
+  a page's `.tsx` and CSS together, or neither.
+- **Undo can't bring a deleted page back into a new one.** A new page
+  with a deleted page's name starts with its own history.
+- **Update scampjs works right after a release.** **Update** in project
+  settings asks npm for the newest version, instead of failing with
+  `ETARGET` while npm's cache was behind.
+- **Security.**
+  - On Linux, Scamp no longer stores your sign-in and API key when the
+    system keyring offers only its fixed, publicly known key.
+  - MCP connection files, which hold a token, are readable by your
+    user only.
+  - An image download during an import is capped in size and time.
+  - The preview opens a new window only after a click.
+  - An agent's heavy queries run one at a time.
 
 ### 0.10.0 (2026-10-17)
 
@@ -1027,6 +1076,11 @@ Everything Scamp does today. Each entry links to its user documentation.
 - Detach an instance back into plain elements, and double-click an
   instance to open its component.
   [Components](user_docs/components.md)
+- Variants: a component's looks as variant properties, drawn as a set
+  of frames, picked per instance, with interactions that change a
+  variant on hover, press, focus, or click. Starter Button, Modal, and
+  Menu components.
+  [Components](user_docs/components.md#add-a-variant)
 - Views: a page's design in the component file shape, listed under
   Pages, with repeat, show, attribute, and event bindings in the Data
   tab.
