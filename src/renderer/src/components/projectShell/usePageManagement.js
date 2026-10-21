@@ -149,6 +149,9 @@ export const usePageManagement = ({ project, onProjectChange, activePageName, se
         setDeletePageError(null);
         try {
             await window.scamp.deletePage({ projectPath: project.path, pageName: name });
+            const deleted = project.pages.find((p) => p.name === name);
+            if (deleted !== undefined)
+                useHistoryStore.getState().forgetPage(deleted.tsxPath);
             const nextPages = project.pages.filter((p) => p.name !== name);
             onProjectChange?.({ ...project, pages: nextPages });
             if (activePageName === name) {

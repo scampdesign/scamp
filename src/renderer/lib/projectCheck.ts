@@ -1,7 +1,7 @@
 import { viewSlugFor } from '@shared/templates';
 
 import type { ScampElement } from './element';
-import { lintView, type ViewFinding } from './viewLint';
+import { lintView, type ComponentRoot, type ViewFinding } from './viewLint';
 
 /**
  * The checks behind `scamp_check_view` and `scamp_check_project`, over
@@ -39,18 +39,18 @@ export type ProjectCheck = {
 export const ABOUT_NOTES =
   'Notes are valid CSS that renders correctly; the panel just has no control for the value, so it is edited in the CSS panel. Leave them as they are: rewriting the value to clear a note changes the layout.';
 
-/** Each component's and view's root tag, so an instance is checked as the tag it renders. */
-export const rootTagsOf = (targets: ReadonlyArray<CheckTarget>): Record<string, string | undefined> =>
+/** Each component's and view's root, so an instance is checked as what it renders. */
+export const componentRootsOf = (targets: ReadonlyArray<CheckTarget>): Record<string, ComponentRoot | undefined> =>
   Object.fromEntries(
-    targets.filter((t) => t.kind !== 'page').map((t) => [t.name, t.elements[t.rootId]?.tag])
+    targets.filter((t) => t.kind !== 'page').map((t) => [t.name, t.elements[t.rootId]])
   );
 
 export const checkTarget = (
   target: CheckTarget,
   themeTokens: ReadonlyArray<string>,
-  componentRootTags: Readonly<Record<string, string | undefined>> = {}
+  componentRoots: Readonly<Record<string, ComponentRoot | undefined>> = {}
 ): TargetCheck => {
-  const all = lintView({ elements: target.elements, rootId: target.rootId, themeTokens, componentRootTags });
+  const all = lintView({ elements: target.elements, rootId: target.rootId, themeTokens, componentRoots });
   return {
     name: target.name,
     kind: target.kind,
@@ -69,8 +69,8 @@ export const checkProject = (
   themeTokens: ReadonlyArray<string>,
   unreadable: ReadonlyArray<string> = []
 ): ProjectCheck => {
-  const tags = rootTagsOf(targets);
-  const results = targets.map((target) => checkTarget(target, themeTokens, tags));
+  const roots = componentRootsOf(targets);
+  const results = targets.map((target) => checkTarget(target, themeTokens, roots));
   return {
     checked: targets.length,
     problems: results.reduce((sum, r) => sum + r.findings.length, 0),

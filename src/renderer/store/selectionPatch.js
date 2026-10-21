@@ -5,7 +5,7 @@ import { useHistoryStore } from './historySlice';
 const resolvedOf = (id) => {
     const s = useCanvasStore.getState();
     const el = s.elements[id];
-    return el === undefined ? undefined : resolveElementAtState(el, s.activeBreakpointId, s.breakpoints, s.activeStateName);
+    return el === undefined ? undefined : resolveElementAtState(el, s.activeBreakpointId, s.breakpoints, s.activeStateName, s.activeVariantKey);
 };
 const build = (input, id) => {
     if (typeof input !== 'function')

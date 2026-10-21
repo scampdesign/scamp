@@ -1833,12 +1833,95 @@ A view imports nothing from \`scampjs\`: it is plain TSX plus a CSS
 module and renders unchanged in any React or Preact project. Scamp
 regenerates only the view's own two files.
 
+### Variants
+
+When a component has several looks (an outline button, a small size,
+an open menu), make **one** component with variants, as Figma's
+component sets do. Don't create \`Button\`, \`ButtonOutline\`, and
+\`ButtonSmall\`, and don't build a page of examples: Scamp draws every
+combination of values side by side when the component is opened.
+
+- Use one axis per way the looks differ: \`variant\` for the style,
+  \`size\`, \`state\` for open and closed. Axis names are lowercase
+  letters and digits; each axis has two or more values.
+- Every value has the same elements. An element only some values show
+  is hidden with \`display: none\` in the others.
+- A component can have up to 36 combinations of values.
+
+Declare each **axis** as a prop typed as a union of string literals,
+default it, and bind it on the root as \`data-<prop>\`:
+
+\`\`\`tsx
+type ButtonProps = {
+  variant?: "default" | "outline";
+  size?: "small" | "medium" | "large";
+  className?: string;
+};
+
+export default function Button({ variant = "default", size = "medium", className }: ButtonProps) {
+  return (
+    <button data-scamp-id="root" className={\`\${styles.root} \${className ?? ''}\`} type="button" data-variant={variant} data-size={size}>
+      …
+\`\`\`
+
+Each non-default value is styled after every element's own rules, one
+rule per element it changes. The root's is \`.root[data-<prop>="<value>"]\`;
+any other element's is \`.root[data-<prop>="<value>"] .<class>\`.
+\`:hover\`, \`:active\`, or \`:focus\` go on the last part:
+
+\`\`\`css
+.root[data-variant="outline"] {
+  background: transparent;
+}
+
+.root[data-variant="outline"]:hover {
+  background: var(--color-surface);
+}
+
+.root[data-size="small"] .label_c1a1 {
+  font-size: 12px;
+}
+\`\`\`
+
+- The default value has no rules: its look is the elements' own rules.
+- Order the rules by axis, then value, as the union lists them.
+- A look for two values together combines them on the root, one
+  attribute per axis in the props type's order, after every single
+  value's rules: \`.root[data-variant="outline"][data-size="small"] .label_c1a1\`.
+  None of its values is a default.
+- A variant rule inside \`@media\` is kept verbatim but can't be edited
+  in Scamp.
+- Values are lowercase, with hyphens. Every value a rule names must be
+  in the union.
+- A variant rule outranks the element's own \`:hover\` rule.
+
+**Interactions.** A component can change a value by itself. Hover,
+press, and focus give each rule of the value changed to a second
+selector: the value changed from, with \`:hover\`, \`:active\`, or
+\`:focus-visible\` on the root. For "from any value", keep the attribute
+with no value (\`.root[data-state]:hover\`), so it outranks the other
+values' rules:
+
+\`\`\`css
+.root[data-state="hover"] .label_c1a1,
+.root[data-state="default"]:hover .label_c1a1 {
+  color: #1d4ed8;
+}
+\`\`\`
+
+In a Scamp framework project, a click, a click outside, and Escape are
+literal attributes the framework's handler reads, one
+\`<axis>:<from>=<to>,…\` group per axis (\`*\` for any value):
+\`data-scamp-click\` on the element clicked, \`data-scamp-outside\` and
+\`data-scamp-escape\` on the root. Put a click on a \`<button>\`.
+
 ### Instancing on a page
 
 Import the component (after the \`styles\` import; component imports
 sorted alphabetically) and place a self-closing tag carrying
 \`data-scamp-instance-id\`. The id is \`inst_\` plus a hex suffix, and prop
-overrides are plain JSX attributes:
+overrides are plain JSX attributes. A variant is picked the same way,
+\`variant="outline"\`; leave it out for the default:
 
 \`\`\`tsx
 import styles from '${v.exampleCssImport}';

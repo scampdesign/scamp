@@ -3,6 +3,9 @@ import { describe, it, expect } from 'vitest';
 import { DEFAULT_RECT_STYLES } from '@lib/defaults';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { reduceCapture } from '@lib/importReduce';
+import { generateCode } from '@lib/generateCode';
+import { parseCode } from '@lib/parseCode';
+import { DEFAULT_BREAKPOINTS } from '@shared/types';
 import { describeReactFinding, planReactComponents } from '@lib/reactComponents';
 /**
  * Finding a React app's components across its imported views.
@@ -91,12 +94,38 @@ describe('planReactComponents', () => {
         expect(Object.values(def).some((e) => e.name === 'card')).toBe(false);
         expect(def[ROOT_ELEMENT_ID]).toMatchObject({ parentId: null, name: undefined });
     });
-    it('shows the commonest look where copies differ, and says which elements', () => {
-        // Each nav item is highlighted in one view of three, so plain wins.
-        const items = Object.values(plan.components[0].elements).filter((e) => e.name === 'nav_item');
+    it('draws the commonest look, and makes each page’s highlight a variant named for the page', () => {
+        // Each nav item is highlighted in one view of three, so plain wins the
+        // base look, and each view's copy is its own value.
+        const def = plan.components[0].elements;
+        const items = Object.values(def).filter((e) => e.name === 'nav_item');
         expect(items).toHaveLength(3);
         expect(items.every((i) => i.backgroundColor !== '#dbe8f6')).toBe(true);
-        expect(plan.findings).toContainEqual({ component: 'Shell', kind: 'style-varies', detail: 'nav_item, nav_item, nav_item' });
+        expect(def[ROOT_ELEMENT_ID]?.variantAxes).toEqual([
+            { prop: 'variant', values: ['default', 'home', 'about', 'team'], defaultValue: 'default' },
+        ]);
+        expect(items.map((i) => Object.keys(i.variantOverrides ?? {}))).toEqual([['variant=home'], ['variant=about'], ['variant=team']]);
+        expect(items[1]?.variantOverrides?.['variant=about']).toEqual({ backgroundColor: '#dbe8f6' });
+        expect(plan.findings).toContainEqual({ component: 'Shell', kind: 'variants', detail: 'variant: default, home, about, team' });
+        expect(plan.findings.some((f) => f.kind === 'style-varies')).toBe(false);
+    });
+    it('has each view’s instance pick its own look', () => {
+        const picked = plan.views.map((view) => Object.values(view.elements).find((e) => e.type === 'component-instance')?.propOverrides?.['variant']);
+        expect(picked).toEqual(['home', 'about', 'team']);
+    });
+    it('writes a component whose variants read back the same', () => {
+        const component = plan.components[0];
+        const { tsx, css } = generateCode({
+            elements: component.elements,
+            rootId: component.rootId,
+            pageName: component.name,
+            cssModuleImportName: component.name,
+            breakpoints: DEFAULT_BREAKPOINTS,
+            isComponent: true,
+        });
+        expect(css).toContain('.root[data-variant="about"]');
+        const parsed = parseCode(tsx, css, { breakpoints: DEFAULT_BREAKPOINTS, isComponent: true });
+        expect(parsed.elements[ROOT_ELEMENT_ID]?.variantAxes).toEqual(component.elements[ROOT_ELEMENT_ID]?.variantAxes);
     });
     it('lets the content size a box whose size differs by page, and keeps one every page shares', () => {
         const sized = (view, height) => ({
@@ -252,6 +281,9 @@ describe('planReactComponents — what stays as it is', () => {
     });
 });
 describe('describeReactFinding', () => {
+    it('says a component’s looks became variants each instance picks', () => {
+        expect(describeReactFinding({ component: 'Button', kind: 'variants', detail: 'variant: default, outline' })).toBe('Button looks different on some pages, so each look is a variant (variant: default, outline) and each instance picks its own');
+    });
     it('says what a look that varies by page costs', () => {
         expect(describeReactFinding({ component: 'Shell', kind: 'style-varies', detail: 'nav_item' })).toBe('Shell looks different on some pages (nav_item); the component shows its most common look');
     });

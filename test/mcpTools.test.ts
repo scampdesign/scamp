@@ -163,10 +163,10 @@ describe('TOOL_DESCRIPTORS', () => {
     expect(tool?.description.toLowerCase()).toContain('rather than a page');
   });
 
-  it('does not advertise variants on list_components', () => {
-    // Variants aren't on main; promising the field would mislead the agent.
+  it('tells the agent list_components carries variants, and how an instance picks one', () => {
     const tool = TOOL_DESCRIPTORS.find((t) => t.name === 'scamp_list_components');
-    expect(tool?.description.toLowerCase()).not.toContain('variant');
+    expect(tool?.description).toContain('`variants`');
+    expect(tool?.description).toContain('variant="outline"');
   });
 
   it('warns that get_canvas_state is large and capped', () => {

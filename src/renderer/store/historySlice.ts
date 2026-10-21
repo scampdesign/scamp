@@ -141,6 +141,11 @@ type HistoryState = {
   clearAllHistory: () => void;
   /** Rekey a page's history (page rename). */
   rekeyPage: (oldId: string, newId: string) => void;
+  /**
+   * Drop a deleted page's or component's history. Kept, a new one with
+   * the same name inherits it, and undo writes the deleted content back.
+   */
+  forgetPage: (id: string) => void;
 };
 
 /**
@@ -422,6 +427,15 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
 
   clearAllHistory: () => {
     set({ perPage: {}, transactionDepth: 0, pendingExternalEdit: null });
+  },
+
+  forgetPage: (id) => {
+    set((state) => {
+      if (!(id in state.perPage)) return state;
+      const next = { ...state.perPage };
+      delete next[id];
+      return { perPage: next };
+    });
   },
 
   rekeyPage: (oldId, newId) => {

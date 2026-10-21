@@ -1,4 +1,5 @@
-import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useCallback, useState } from 'react';
 import { viewSlugFor } from '@shared/templates';
 import { componentCanvasSizeFor } from '@shared/types';
 import { resolveClip } from '@shared/projectConfig';
@@ -6,6 +7,7 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { useSnapshotsStore } from '@store/snapshotsSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { Viewport } from '@renderer/src/canvas/Viewport';
+import { VariantSet } from '@renderer/src/canvas/VariantSet';
 import { CanvasSizeControl } from '../CanvasSizeControl';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 import { Toolbar } from '../Toolbar';
@@ -32,9 +34,18 @@ export const CanvasArea = ({ activeComponent, activePageName, projectConfig, art
         ? projectConfig.canvasOverflowHidden
         : resolveClip(projectConfig, activeBreakpointId);
     const pageHeightIsFixed = !isComponent && projectConfig.canvasFixedHeight === true;
-    const frameWidth = component !== null
-        ? componentCanvasSizeFor(projectConfig, component.name, 'component').width
-        : projectConfig.canvasWidth;
+    const artboard = component !== null ? componentCanvasSizeFor(projectConfig, component.name, 'component') : null;
+    // A component with variants is drawn as its variant set, which sizes
+    // the frame to itself. see docs/plans/component-variants-plan.md, phase 6
+    const hasVariants = useCanvasStore((s) => (s.elements[ROOT_ELEMENT_ID]?.variantAxes?.length ?? 0) > 0);
+    const setMode = component !== null && hasVariants;
+    const [setWidth, setSetWidth] = useState(0);
+    const handleSetWidth = useCallback((width) => setSetWidth(width), []);
+    const frameWidth = setMode
+        ? Math.max(setWidth, 1)
+        : artboard !== null
+            ? artboard.width
+            : projectConfig.canvasWidth;
     // The header spans the frame as drawn, so the size control sits at the
     // frame's right edge. Fit zooms to the content, overflow included, so a
     // page with a wide marquee draws its frame well short of the canvas area.
@@ -46,30 +57,29 @@ export const CanvasArea = ({ activeComponent, activePageName, projectConfig, art
     const handleExitPreview = () => {
         useCanvasStore.getState().exitSnapshotPreview();
     };
-    return (_jsxs("div", { className: styles.artboard, children: [_jsx("div", { ref: artboardScrollRef, className: styles.artboardScroll, style: { backgroundColor: projectConfig.artboardBackground }, children: _jsxs("div", { className: styles.canvasContent, children: [_jsx(SvgReloadBanner, {}), snapshotPreview !== null && (_jsxs("div", { className: styles.snapshotPreviewBanner, "data-testid": "snapshot-preview-banner", children: [_jsxs("span", { children: ["Previewing snapshot:", ' ', _jsx("strong", { children: snapshotPreview.label }), ". The canvas is read-only \u2014 restoring replaces all project files."] }), _jsxs("div", { className: styles.snapshotPreviewActions, children: [_jsx("button", { type: "button", className: styles.snapshotPreviewRestore, onClick: handleRestorePreview, children: "Restore" }), _jsx("button", { type: "button", className: styles.snapshotPreviewExit, onClick: handleExitPreview, children: "Exit" })] })] })), activeComponent !== null && activeComponent.kind === 'component' && (_jsxs("div", { className: styles.componentEditorBanner, "data-testid": "component-editor-banner", children: [_jsxs("span", { children: ["Editing component:", ' ', _jsx("strong", { children: activeComponent.name }), ". Changes affect all instances."] }), _jsx("button", { type: "button", className: styles.componentEditorExit, onClick: onExitComponentEditor, children: "Exit" })] })), _jsxs("div", { className: styles.canvasHeader, style: { maxWidth: headerWidth }, children: [activeComponent !== null && activeComponent.kind === 'component' ? (
-                                // Breadcrumb: "<return page> > <component>" when
-                                // entered from a page, otherwise just the
-                                // component name. Clicking a non-current segment
-                                // navigates back to it; clicking the current
-                                // segment selects the root element same as the
-                                // page badge.
-                                _jsxs("div", { className: styles.canvasHeaderBadge, role: "navigation", "aria-label": "Component editor breadcrumb", children: [(activeComponent.returnTo !== undefined || activeComponent.returnToPage !== null) && (_jsxs(_Fragment, { children: [_jsx("button", { type: "button", className: styles.canvasBreadcrumbLink, onClick: onExitComponentEditor, children: activeComponent.returnTo?.name ?? activeComponent.returnToPage }), _jsx("span", { "aria-hidden": "true", children: ' › ' })] })), _jsx("button", { type: "button", className: styles.canvasBreadcrumbCurrent, onClick: () => useCanvasStore
+    return (_jsxs("div", { className: styles.artboard, children: [_jsx("div", { ref: artboardScrollRef, className: styles.artboardScroll, style: { backgroundColor: projectConfig.artboardBackground }, children: _jsxs("div", { className: styles.canvasContent, children: [_jsx(SvgReloadBanner, {}), snapshotPreview !== null && (_jsxs("div", { className: styles.snapshotPreviewBanner, "data-testid": "snapshot-preview-banner", children: [_jsxs("span", { children: ["Previewing snapshot:", ' ', _jsx("strong", { children: snapshotPreview.label }), ". The canvas is read-only \u2014 restoring replaces all project files."] }), _jsxs("div", { className: styles.snapshotPreviewActions, children: [_jsx("button", { type: "button", className: styles.snapshotPreviewRestore, onClick: handleRestorePreview, children: "Restore" }), _jsx("button", { type: "button", className: styles.snapshotPreviewExit, onClick: handleExitPreview, children: "Exit" })] })] })), _jsxs("div", { className: styles.canvasHeader, style: { maxWidth: headerWidth }, children: [activeComponent !== null && activeComponent.kind === 'component' ? (
+                                // Breadcrumb: "<return page> > <component>". The first
+                                // segment is the way out of the component editor;
+                                // clicking the current one selects the root.
+                                _jsxs("div", { className: styles.canvasHeaderBadge, role: "navigation", "aria-label": "Component editor breadcrumb", children: [_jsx("button", { type: "button", className: styles.canvasBreadcrumbLink, onClick: onExitComponentEditor, title: "Exit the component", children: activeComponent.returnTo?.name ?? activeComponent.returnToPage ?? activePageName ?? 'Pages' }), _jsx("span", { "aria-hidden": "true", children: ' › ' }), _jsx("button", { type: "button", className: styles.canvasBreadcrumbCurrent, onClick: () => useCanvasStore
                                                 .getState()
                                                 .selectElement(ROOT_ELEMENT_ID), title: "Select component root", children: activeComponent.name })] })) : (_jsx("button", { type: "button", className: styles.canvasHeaderBadge, onClick: () => useCanvasStore
                                         .getState()
                                         .selectElement(ROOT_ELEMENT_ID), title: "Select page root", children: activeComponent !== null
                                         ? viewSlugFor(activeComponent.name)
-                                        : activePageName ?? 'Page' })), _jsx("span", { className: styles.canvasHeaderSpacer }), _jsx(ThemeSwitcher, {}), _jsx(CanvasSizeControl, { config: projectConfig, onChange: onProjectConfigChange, componentName: component !== null ? component.name : undefined, componentKind: component !== null ? 'component' : undefined })] }), _jsx(Viewport, { canvasWidth: frameWidth, canvasHeight: component !== null
-                                ? componentCanvasSizeFor(projectConfig, component.name, 'component').height
-                                : pageHeightIsFixed
-                                    ? projectConfig.canvasHeight
-                                    : undefined, heightIsFixed: pageHeightIsFixed, clipContent: clipContent, scrollContainerRef: artboardScrollRef, 
+                                        : activePageName ?? 'Page' })), _jsx("span", { className: styles.canvasHeaderSpacer }), _jsx(ThemeSwitcher, {}), _jsx(CanvasSizeControl, { config: projectConfig, onChange: onProjectConfigChange, componentName: component !== null ? component.name : undefined, componentKind: component !== null ? 'component' : undefined })] }), _jsx(Viewport, { canvasWidth: frameWidth, canvasHeight: setMode
+                                ? 0
+                                : artboard !== null
+                                    ? artboard.height
+                                    : pageHeightIsFixed
+                                        ? projectConfig.canvasHeight
+                                        : undefined, heightIsFixed: pageHeightIsFixed, clipContent: setMode ? false : clipContent, frameContent: setMode && component !== null && artboard !== null ? (_jsx(VariantSet, { componentName: component.name, artboardWidth: artboard.width, artboardHeight: artboard.height, onWidth: handleSetWidth })) : undefined, scrollContainerRef: artboardScrollRef, 
                             // Drag-handle resize is enabled only in component
                             // mode; the page canvas uses the project-wide
                             // `canvasWidth` setting (no resize handle, no
                             // explicit height — page canvases grow with
                             // content).
-                            onResize: component !== null
+                            onResize: component !== null && !setMode
                                 ? (width, height) => {
                                     const name = component.name;
                                     const nextMap = {

@@ -1,0 +1,209 @@
+import {
+  ROOT_ELEMENT_ID,
+  VARIANT_AXIS_RE,
+  VARIANT_VALUE_RE,
+  type ScampElement,
+  type VariantAxis,
+  type VariantInteraction,
+  type VariantPick,
+  type VariantTrigger,
+} from './element';
+
+/**
+ * Variant interactions, CONTRACT.md §1.3.2: a component changes one
+ * axis's value on hover, press, focus, a click, a click outside, or
+ * Escape. Pure. see docs/plans/component-variants-plan.md, phase 7
+ */
+
+type Elements = Record<string, ScampElement>;
+
+/** The triggers CSS expresses, and the pseudo-class each puts on the root. */
+export const TRIGGER_PSEUDO: Readonly<Record<'hover' | 'press' | 'focus', string>> = {
+  hover: ':hover',
+  press: ':active',
+  focus: ':focus-visible',
+};
+
+export const isCssTrigger = (trigger: VariantTrigger): trigger is 'hover' | 'press' | 'focus' =>
+  trigger === 'hover' || trigger === 'press' || trigger === 'focus';
+
+/** The attribute each remembered trigger is written as. */
+const TRIGGER_ATTRIBUTE: Readonly<Record<'click' | 'outside' | 'escape', string>> = {
+  click: 'data-scamp-click',
+  outside: 'data-scamp-outside',
+  escape: 'data-scamp-escape',
+};
+
+export const TRIGGER_LABEL: Readonly<Record<VariantTrigger, string>> = {
+  hover: 'While hovering',
+  press: 'While pressing',
+  focus: 'While focused',
+  click: 'On click',
+  outside: 'On click outside',
+  escape: 'On Escape',
+};
+
+export const interactionsOf = (elements: Elements): ReadonlyArray<VariantInteraction> =>
+  elements[ROOT_ELEMENT_ID]?.variantInteractions ?? [];
+
+/**
+ * The second selectors a variant rule gains, one per CSS interaction
+ * whose `to` is one of its values: that value swapped for `from`, or for
+ * any value (`[data-state]`, which keeps the selector as specific as the
+ * other values' rules it has to beat), with the trigger's pseudo-class on
+ * the root.
+ * `rest` is everything after the root's attributes (` .label_c1a1:hover`).
+ */
+export const aliasSelectors = (
+  rootClass: string,
+  parts: ReadonlyArray<VariantPick>,
+  rest: string,
+  interactions: ReadonlyArray<VariantInteraction>
+): string[] => {
+  const out: string[] = [];
+  for (const i of interactions) {
+    if (!isCssTrigger(i.trigger)) continue;
+    if (!parts.some((p) => p.axis === i.axis && p.value === i.to)) continue;
+    const attrs = parts
+      .map((p) =>
+        p.axis !== i.axis ? `[data-${p.axis}="${p.value}"]` : i.from === null ? `[data-${p.axis}]` : `[data-${p.axis}="${i.from}"]`
+      )
+      .join('');
+    out.push(`.${rootClass}${attrs}${TRIGGER_PSEUDO[i.trigger]}${rest}`);
+  }
+  return out;
+};
+
+/** `state:closed=open,open=closed tab:*=one`, axes in first-seen order. */
+const serialize = (interactions: ReadonlyArray<VariantInteraction>): string => {
+  const groups = new Map<string, string[]>();
+  for (const i of interactions) groups.set(i.axis, [...(groups.get(i.axis) ?? []), `${i.from ?? '*'}=${i.to}`]);
+  return [...groups].map(([axis, pairs]) => `${axis}:${pairs.join(',')}`).join(' ');
+};
+
+
+/** Read an attribute's interactions, or null when any part is malformed. */
+const deserialize = (value: string, trigger: VariantTrigger, target: string | undefined): VariantInteraction[] | null => {
+  const out: VariantInteraction[] = [];
+  for (const group of value.trim().split(/\s+/)) {
+    const at = group.indexOf(':');
+    const axis = group.slice(0, at);
+    if (at <= 0 || !VARIANT_AXIS_RE.test(axis)) return null;
+    for (const pair of group.slice(at + 1).split(',')) {
+      const [from = '', to = '', ...extra] = pair.split('=');
+      if (extra.length > 0 || !VARIANT_VALUE_RE.test(to) || (from !== '*' && !VARIANT_VALUE_RE.test(from))) return null;
+      out.push({ axis, from: from === '*' ? null : from, trigger, to, ...(target !== undefined ? { target } : {}) });
+    }
+  }
+  return out.length > 0 ? out : null;
+};
+
+/**
+ * The elements as the TSX writes them: each remembered interaction as a
+ * `data-scamp-*` attribute, click on its target (the root by default),
+ * outside and Escape on the root.
+ */
+export const withInteractionAttributes = (elements: Elements): Elements => {
+  const interactions = interactionsOf(elements).filter((i) => !isCssTrigger(i.trigger));
+  if (interactions.length === 0) return elements;
+  const byElement = new Map<string, Map<string, VariantInteraction[]>>();
+  for (const i of interactions) {
+    const id = i.trigger === 'click' ? (i.target ?? ROOT_ELEMENT_ID) : ROOT_ELEMENT_ID;
+    if (elements[id] === undefined) continue;
+    const attr = TRIGGER_ATTRIBUTE[i.trigger as 'click' | 'outside' | 'escape'];
+    const forElement = byElement.get(id) ?? new Map<string, VariantInteraction[]>();
+    forElement.set(attr, [...(forElement.get(attr) ?? []), i]);
+    byElement.set(id, forElement);
+  }
+  const next = { ...elements };
+  for (const [id, attrs] of byElement) {
+    const el = next[id] as ScampElement;
+    const added = Object.fromEntries([...attrs].map(([attr, list]) => [attr, serialize(list)]));
+    next[id] = { ...el, attributes: { ...el.attributes, ...added } };
+  }
+  return next;
+};
+
+/**
+ * Take the `data-scamp-*` attributes off the elements and back into
+ * interactions. A malformed one stays as an ordinary attribute, verbatim.
+ */
+export const readInteractionAttributes = (elements: Elements): { elements: Elements; interactions: VariantInteraction[] } => {
+  const interactions: VariantInteraction[] = [];
+  const next: Elements = {};
+  for (const [id, el] of Object.entries(elements)) {
+    let attributes = el.attributes;
+    for (const [trigger, attr] of Object.entries(TRIGGER_ATTRIBUTE) as Array<[VariantTrigger, string]>) {
+      const value = attributes?.[attr];
+      if (value === undefined) continue;
+      // Outside and Escape belong on the root; elsewhere they're someone else's attribute.
+      if (trigger !== 'click' && id !== ROOT_ELEMENT_ID) continue;
+      const read = deserialize(value, trigger, trigger === 'click' && id !== ROOT_ELEMENT_ID ? id : undefined);
+      if (read === null) continue;
+      interactions.push(...read);
+      const { [attr]: _drop, ...rest } = attributes ?? {};
+      attributes = rest;
+    }
+    if (attributes === el.attributes) {
+      next[id] = el;
+      continue;
+    }
+    const { attributes: _old, ...without } = el;
+    next[id] = attributes !== undefined && Object.keys(attributes).length > 0 ? { ...without, attributes } : without;
+  }
+  return { elements: next, interactions };
+};
+
+/** Why an interaction can't be added, or null. */
+export const interactionError = (axes: ReadonlyArray<VariantAxis>, i: VariantInteraction): string | null => {
+  const axis = axes.find((a) => a.prop === i.axis);
+  if (axis === undefined) return `There's no ${i.axis} property.`;
+  if (!axis.values.includes(i.to)) return `${i.axis} has no value named ${i.to}.`;
+  if (i.from !== null && !axis.values.includes(i.from)) return `${i.axis} has no value named ${i.from}.`;
+  if (i.from === i.to) return 'Choose a different value to change to.';
+  // The default's look is the base rules: there's no rule to give a second selector.
+  if (isCssTrigger(i.trigger) && i.to === axis.defaultValue) {
+    return `${TRIGGER_LABEL[i.trigger]} can't change to the default, ${i.to}. Make another value the default, or use a click.`;
+  }
+  return null;
+};
+
+const setInteractions = (elements: Elements, list: ReadonlyArray<VariantInteraction>): Elements => {
+  const root = elements[ROOT_ELEMENT_ID];
+  if (root === undefined) return elements;
+  const { variantInteractions: _old, ...rest } = root;
+  return { ...elements, [ROOT_ELEMENT_ID]: list.length > 0 ? { ...rest, variantInteractions: list } : rest };
+};
+
+/** The same trigger, from the same value, on the same element: one replaces the other. */
+const sameInteraction = (a: VariantInteraction, b: VariantInteraction): boolean =>
+  a.axis === b.axis && a.from === b.from && a.trigger === b.trigger && (a.target ?? null) === (b.target ?? null);
+
+export const addVariantInteraction = (elements: Elements, i: VariantInteraction): Elements => {
+  const axes = elements[ROOT_ELEMENT_ID]?.variantAxes ?? [];
+  if (interactionError(axes, i) !== null) return elements;
+  // One interaction per trigger and starting value: a new one replaces it.
+  return setInteractions(elements, [...interactionsOf(elements).filter((a) => !sameInteraction(a, i)), i]);
+};
+
+export const removeVariantInteraction = (elements: Elements, i: VariantInteraction): Elements => {
+  const list = interactionsOf(elements);
+  const kept = list.filter((a) => !sameInteraction(a, i) || a.to !== i.to);
+  return kept.length === list.length ? elements : setInteractions(elements, kept);
+};
+
+/**
+ * Keep interactions in step with an axis edit: rename a value or an
+ * axis, or drop the ones that name a removed value or axis.
+ */
+export const mapInteractions = (
+  elements: Elements,
+  fn: (i: VariantInteraction) => VariantInteraction | null
+): Elements => {
+  const list = interactionsOf(elements);
+  if (list.length === 0) return elements;
+  return setInteractions(elements, list.flatMap((i) => {
+    const next = fn(i);
+    return next === null ? [] : [next];
+  }));
+};

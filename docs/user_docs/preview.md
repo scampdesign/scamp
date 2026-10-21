@@ -18,7 +18,10 @@ the dev server in a second or two.
 
 A [view](views.md) previews at its page's route, through the wrapper
 page. In a Scamp framework project, the preview runs `scamp dev` instead
-of `next dev` and opens the view at `/_views/[Name]`.
+of `next dev` and opens the view at `/_views/[Name]`. Previewing while
+you edit a component opens it on its own at `/_components/[Name]`, with
+its default values, so you can try its
+[interactions](components.md#change-a-variant-on-hover-or-click).
 
 The preview requires the Next.js project format. In legacy-format
 projects, the **Preview** button is disabled, and its tooltip points to

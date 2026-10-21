@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useRef, useState } from 'react';
-import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconComponents } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { classNameFor } from '@lib/generateCode';
 import { canContainChildren } from '@lib/insertParent';
@@ -82,6 +82,9 @@ const Row = ({ element, depth, dragOver, setDragOver, showToggle, collapsed, has
     const toggleSelectElement = useCanvasStore((s) => s.toggleSelectElement);
     const reorderElement = useCanvasStore((s) => s.reorderElement);
     const patchElement = useCanvasStore((s) => s.patchElement);
+    // In the component editor the root is the component itself.
+    const componentName = useCanvasStore((s) => (s.activeComponent?.kind === 'component' ? s.activeComponent.name : null));
+    const isComponentRoot = element.id === ROOT_ELEMENT_ID && componentName !== null;
     const ref = useRef(null);
     const inputRef = useRef(null);
     const [renaming, setRenaming] = useState(false);
@@ -182,13 +185,9 @@ const Row = ({ element, depth, dragOver, setDragOver, showToggle, collapsed, has
                             inputRef.current?.focus();
                             inputRef.current?.select();
                         });
-                    }, children: [_jsx("span", { className: styles.icon, "aria-hidden": "true", children: element.type === 'text'
-                                ? 'T'
-                                : element.type === 'component-instance'
-                                    ? '◆'
-                                    : element.type === 'image' && element.tag === 'svg'
-                                        ? '✦'
-                                        : '▢' }), renaming ? (_jsx("input", { ref: inputRef, type: "text", className: styles.renameInput, value: draft, onChange: (e) => setDraft(e.target.value), onBlur: () => {
+                    }, children: [element.type === 'component-instance' || isComponentRoot ? (
+                        // The sidebar's Components icon, in the component purple, as Figma marks them.
+                        _jsx("span", { className: `${styles.icon} ${styles.componentIcon}`, "aria-hidden": "true", children: _jsx(IconComponents, { size: 12, stroke: 2 }) })) : (_jsx("span", { className: styles.icon, "aria-hidden": "true", children: element.type === 'text' ? 'T' : element.type === 'image' && element.tag === 'svg' ? '✦' : '▢' })), renaming ? (_jsx("input", { ref: inputRef, type: "text", className: styles.renameInput, value: draft, onChange: (e) => setDraft(e.target.value), onBlur: () => {
                                 const slug = slugifyName(draft);
                                 patchElement(element.id, {
                                     name: slug.length > 0 ? slug : undefined,
@@ -203,7 +202,7 @@ const Row = ({ element, depth, dragOver, setDragOver, showToggle, collapsed, has
                                 }
                                 // Stop propagation so typing doesn't trigger tool shortcuts.
                                 e.stopPropagation();
-                            }, onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation() })) : (_jsx("span", { className: styles.label, children: labelFor(element) }))] }) }), showAfter && (_jsx("div", { className: styles.dropLine, style: { left: 8 + depth * INDENT_PX } }))] }));
+                            }, onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation() })) : (_jsx("span", { className: styles.label, children: isComponentRoot ? componentName : labelFor(element) }))] }) }), showAfter && (_jsx("div", { className: styles.dropLine, style: { left: 8 + depth * INDENT_PX } }))] }));
 };
 /**
  * Apply a tree-row drop to the store. Resolves the (target, position)

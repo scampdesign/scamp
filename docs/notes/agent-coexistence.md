@@ -50,6 +50,8 @@ There is deliberately no "agent in the terminal" signal. One shipped (polling th
 
 A paused write sets `canvasChangedDuringQuiet`, so the reconcile when the pause ends flushes it instead of reporting **Saved**. And leaving a target (`flushPendingPageWrite()`, which every page / component switch calls) writes even while paused, through the compare-and-swap and merge; only the auto-snapshot and project close pass `{ respectPause: true }`. A refused merge for a target already left skips the canvas reload but still writes the merge.
 
+The same goes for an external edit that lands while the canvas holds such an edit (a save waiting on its debounce, or one a pause deferred). The `file:changed` handler used to cancel that save and reload the file over the canvas, so the edit vanished while the indicator said **Saved**. It now hands both to the merge below (`onWriteConflict` with the canvas as "ours" and the file as "theirs"); only overlapping edits fall back to adopting the file, through the usual `reloaded-from-disk` path. A link indicator's page jump saves the page it leaves first, as the sidebar does.
+
 ## When the compare-and-swap refuses
 
 The pause signals above are the common case. Underneath them a canvas

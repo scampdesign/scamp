@@ -19,6 +19,8 @@ export type SafeStorageLike = {
     isEncryptionAvailable: () => boolean;
     encryptString: (plain: string) => Buffer;
     decryptString: (encrypted: Buffer) => string;
+    /** Linux only: which keyring encrypts. Absent elsewhere. */
+    getSelectedStorageBackend?: () => string;
 };
 export type TokenStoreDeps = {
     safeStorage: SafeStorageLike;

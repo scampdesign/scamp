@@ -21,6 +21,8 @@ export const makeCancelWriteTimer = (ctx: SaveContext) => (): void => {
 export const makeFlushDebouncedWrite =
   (ctx: SaveContext) =>
   (evenIfPaused: boolean = false): void => {
+    // A fired timer is spent; left set, it reads as an unsaved edit forever.
+    ctx.writeTimer = null;
     const state = useCanvasStore.getState();
     // A snapshot preview is on the canvas in memory only; writing it here
     // (page switch, project close) put the old version over the live page.

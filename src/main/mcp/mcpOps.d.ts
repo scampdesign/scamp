@@ -14,6 +14,11 @@ export type McpConfig = {
     running: boolean;
     started_at: string;
     project: string;
+    /**
+     * The folder this file was written for. A token is only reused there: a
+     * project copied from someone else carries their token, which they know.
+     */
+    path?: string;
 };
 export declare const mcpConfigPath: (projectPath: string) => string;
 /** Read the existing config, or null when absent/unreadable/corrupt. */
@@ -28,6 +33,13 @@ export declare const readMcpConfig: (projectPath: string) => Promise<McpConfig |
  */
 export declare const ensureToken: (projectPath: string) => Promise<string>;
 export declare const writeMcpConfig: (projectPath: string, config: McpConfig) => Promise<void>;
+/**
+ * Write a file only its owner can read: it holds the token that lets a
+ * caller read the canvas. `mode` only applies to a new file, so an
+ * existing one is narrowed too. (No effect on Windows, whose files
+ * aren't shared through modes.)
+ */
+export declare const writePrivate: (path: string, content: string) => Promise<void>;
 /**
  * Mark the server stopped WITHOUT deleting the file.
  *

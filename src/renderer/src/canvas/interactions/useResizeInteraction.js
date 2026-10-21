@@ -36,8 +36,8 @@ export const useResizeInteraction = (geometry, scale) => {
         // breakpoint (where the resize writes), and its measured size on any
         // axis that hugs, fills, or is auto — the stored number there is a
         // fallback, not what's on screen. see docs/archive/2026-10-14-text-resize-height-plan.md
-        const { activeBreakpointId, breakpoints } = useCanvasStore.getState();
-        const shown = resolveElementAtState(el, activeBreakpointId, breakpoints, null);
+        const { activeBreakpointId, breakpoints, activeVariantKey } = useCanvasStore.getState();
+        const shown = resolveElementAtState(el, activeBreakpointId, breakpoints, null, activeVariantKey);
         const measured = geometry.measureElementInFrame(selectedElementId);
         // Open a history transaction so the per-tick `resizeElement`
         // calls during the drag don't each create their own history

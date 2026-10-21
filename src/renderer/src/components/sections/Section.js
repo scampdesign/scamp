@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { IconChevronDown, IconEye, IconEyeOff } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { forSelection } from '@store/selectionPatch';
-import { useBreakpointOverrideFields, useStateOverrideFields, } from '@store/useResolvedElement';
+import { useBreakpointOverrideFields, useStateOverrideFields, useVariantOverrideFields, } from '@store/useResolvedElement';
 import { FIELD_LABELS } from '@lib/fieldLabels';
 import { Tooltip } from '../controls/Tooltip';
 import styles from './Section.module.css';
@@ -117,8 +117,11 @@ const useDuplicateIndicator = (elementId, cssProperties) => {
 const useOverrideIndicator = (elementId, fields) => {
     const overriddenBreakpointFields = useBreakpointOverrideFields(elementId ?? '');
     const overriddenStateFields = useStateOverrideFields(elementId ?? '');
+    const overriddenVariantFields = useVariantOverrideFields(elementId ?? '');
     const activeBreakpointId = useCanvasStore((s) => s.activeBreakpointId);
     const activeStateName = useCanvasStore((s) => s.activeStateName);
+    const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
+    const resetVariantFields = useCanvasStore((s) => s.resetElementFieldsAtVariant);
     const resetBreakpointFields = useCanvasStore((s) => s.resetElementFieldsAtBreakpoint);
     const resetStateFields = useCanvasStore((s) => s.resetElementFieldsAtState);
     if (!elementId || !fields || fields.length === 0)
@@ -126,14 +129,21 @@ const useOverrideIndicator = (elementId, fields) => {
     // Pick which axis to surface. Prefer state when one is active —
     // breakpoint indicators are also disabled (state ⇒ desktop) by the
     // switcher's effect, so this branch ordering matches the routing.
-    const axis = activeStateName !== null
-        ? 'state'
-        : activeBreakpointId !== 'desktop'
-            ? 'breakpoint'
-            : null;
+    // A variant comes first: its edits, state ones included, land in it.
+    const axis = activeVariantKey !== null
+        ? 'variant'
+        : activeStateName !== null
+            ? 'state'
+            : activeBreakpointId !== 'desktop'
+                ? 'breakpoint'
+                : null;
     if (axis === null)
         return null;
-    const overriddenFields = axis === 'state' ? overriddenStateFields : overriddenBreakpointFields;
+    const overriddenFields = axis === 'variant'
+        ? overriddenVariantFields
+        : axis === 'state'
+            ? overriddenStateFields
+            : overriddenBreakpointFields;
     const overriddenInSection = fields.filter((f) => overriddenFields.has(f));
     if (overriddenInSection.length === 0)
         return null;
@@ -142,7 +152,10 @@ const useOverrideIndicator = (elementId, fields) => {
         e.preventDefault();
         // With several elements selected, reset each one's override.
         forSelection(() => true, elementId, overriddenInSection, (id) => {
-            if (axis === 'state' && activeStateName !== null) {
+            if (axis === 'variant' && activeVariantKey !== null) {
+                resetVariantFields(id, activeVariantKey, overriddenInSection);
+            }
+            else if (axis === 'state' && activeStateName !== null) {
                 resetStateFields(id, activeStateName, overriddenInSection);
             }
             else if (axis === 'breakpoint') {

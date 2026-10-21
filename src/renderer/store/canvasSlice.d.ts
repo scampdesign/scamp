@@ -278,6 +278,14 @@ export type CanvasState = {
      */
     activeStateName: ElementStateName | null;
     /**
+     * The component variant value being edited, keyed `axis=value`
+     * (`variant=outline`), or null for the base look. Edits land in
+     * `element.variantOverrides[key]` and the whole component renders in
+     * that value. Desktop only, like states. Transient UI state.
+     * see docs/plans/component-variants-plan.md
+     */
+    activeVariantKey: string | null;
+    /**
      * Persisted-across-the-session export-panel settings. The Export
      * section lives at the bottom of the WYSIWYG panel and remembers
      * the user's last format / scale choice so successive exports
@@ -634,6 +642,14 @@ export type CanvasState = {
      * element so round-trips stay text-stable.
      */
     resetElementFieldsAtState: (id: string, stateName: ElementStateName, fields: ReadonlyArray<keyof BreakpointOverride>) => void;
+    /** Clear fields from the active variant's override (or its active state). */
+    resetElementFieldsAtVariant: (id: string, key: string, fields: ReadonlyArray<keyof BreakpointOverride>) => void;
+    /**
+     * Apply an edit to the component's variant axes (`lib/variantAxes.ts`)
+     * as one undo step, then edit `nextKey`: a value, or null for the base
+     * look. Omitted, the current value stays if the edit kept it.
+     */
+    editVariants: (edit: (elements: Record<string, ScampElement>) => Record<string, ScampElement>, nextKey?: string | null) => void;
     /**
      * Active read-only snapshot preview, or null. When set, the canvas
      * shows the snapshot's active-page content and is non-editable; the
@@ -680,6 +696,7 @@ export type CanvasState = {
     setSidebarSection: (section: SidebarSection) => void;
     setActiveBreakpoint: (id: string) => void;
     setActiveState: (state: ElementStateName | null) => void;
+    setActiveVariant: (key: string | null) => void;
     setExportFormat: (format: 'png' | 'svg') => void;
     setExportPngScale: (scale: 1 | 2 | 3) => void;
     setBreakpoints: (breakpoints: Breakpoint[]) => void;

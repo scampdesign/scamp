@@ -1,4 +1,5 @@
 import { isMappedProperty } from './cssPropertyMap';
+import { TRIGGER_LABEL, interactionError } from './variantInteractions';
 import { BIND_MARK } from './parseCode/bindings';
 import { ROOT_ELEMENT_ID } from './element';
 import { classNameFor } from './generateCode/internal';
@@ -7,6 +8,8 @@ import { columnOwnsWidth, isGridTable } from './tableGrid';
 import { BOOLEAN_ATTRIBUTES, isRowPath } from './viewProps';
 const NOTE_KINDS = new Set(['not-panel-editable', 'side-not-typed']);
 export const severityOf = (kind) => (NOTE_KINDS.has(kind) ? 'note' : 'problem');
+/** Tags the keyboard reaches on its own, so a click on one works without a mouse. */
+const FOCUSABLE_TAGS = new Set(['button', 'a', 'input', 'select', 'textarea', 'summary']);
 /**
  * Longhands whose shorthand Scamp types. Writing the side renders
  * correctly and drops out of the panel, which reads as Scamp losing the
@@ -140,7 +143,7 @@ export const lintView = (input) => {
     const findings = [];
     /** The tag an element puts on the page; an instance's is its component's root. */
     const tagOf = (el) => el?.type === 'component-instance' && el.componentName !== undefined
-        ? (input.componentRootTags?.[el.componentName] ?? el.tag)
+        ? (input.componentRoots?.[el.componentName]?.tag ?? el.tag)
         : el?.tag;
     const root = elements[rootId];
     const samples = root?.samples ?? {};
@@ -229,6 +232,83 @@ export const lintView = (input) => {
                 message: `\`${attr}={${expr}}\` has no sample, so it renders empty on the canvas.`,
                 hint: `Give \`${name}\` a default in the destructure — the default IS the sample the canvas draws.`,
             });
+        }
+        // A value the component doesn't declare fails the props type check
+        // and matches no rule. CONTRACT.md §1.3.1
+        if (el.type === 'component-instance' && el.componentName !== undefined) {
+            for (const axis of input.componentRoots?.[el.componentName]?.variantAxes ?? []) {
+                const value = el.propOverrides?.[axis.prop];
+                if (value === undefined || axis.values.includes(value))
+                    continue;
+                findings.push({
+                    ...at,
+                    kind: 'unknown-variant-value',
+                    message: `\`${axis.prop}="${value}"\` isn't one of ${el.componentName}'s ${axis.prop} values, so it fails the type check and draws as \`${axis.defaultValue}\`.`,
+                    hint: `Use one of ${axis.values.map((v) => `\`${v}\``).join(', ')}, or add \`${value}\` to the component.`,
+                });
+            }
+        }
+        // Interactions that can't work as written. CONTRACT.md §1.3.2
+        if (id === rootId) {
+            const axes = el.variantAxes ?? [];
+            const interactions = el.variantInteractions ?? [];
+            for (const i of interactions) {
+                const problem = interactionError(axes, i);
+                if (problem !== null) {
+                    findings.push({ ...at, kind: 'variant-interaction', message: `${TRIGGER_LABEL[i.trigger]}: ${problem}` });
+                }
+                if (i.trigger === 'click') {
+                    const target = elements[i.target ?? rootId];
+                    const tag = target === undefined ? undefined : tagOf(target);
+                    const focusable = tag !== undefined && FOCUSABLE_TAGS.has(tag);
+                    // Fine when the keyboard can make the same change another way: a
+                    // modal's backdrop click, when Escape closes it too.
+                    const reachable = interactions.some((o) => o !== i &&
+                        o.axis === i.axis &&
+                        o.to === i.to &&
+                        (o.from === null || o.from === i.from) &&
+                        (o.trigger === 'escape' || (o.trigger === 'click' && FOCUSABLE_TAGS.has(tagOf(elements[o.target ?? rootId]) ?? ''))));
+                    if (target !== undefined && !focusable && !reachable && target.attributes?.['tabIndex'] === undefined) {
+                        findings.push({
+                            ...at,
+                            kind: 'variant-interaction',
+                            message: `The click on \`${target.id === rootId ? 'root' : classNameFor(target)}\` can't be reached from the keyboard.`,
+                            hint: 'Make that element a <button>, or give it role="button" and tabIndex={0}.',
+                        });
+                    }
+                }
+            }
+            // Both match while pressing; the rule written later wins.
+            for (const press of interactions.filter((i) => i.trigger === 'press')) {
+                const values = axes.find((a) => a.prop === press.axis)?.values ?? [];
+                for (const hover of interactions.filter((i) => i.trigger === 'hover' && i.axis === press.axis && i.to !== press.to)) {
+                    if (values.indexOf(press.to) < values.indexOf(hover.to)) {
+                        findings.push({
+                            ...at,
+                            kind: 'variant-interaction',
+                            message: `While pressing shows ${press.to}, but ${hover.to} comes after it, so the hover look wins while pressing.`,
+                            hint: `Move ${press.to} after ${hover.to} in the ${press.axis} values.`,
+                        });
+                    }
+                }
+            }
+        }
+        // A rule for a value the axis doesn't declare is kept verbatim, and
+        // no instance can reach it.
+        if (id === rootId) {
+            for (const block of el.customSelectorBlocks ?? []) {
+                for (const axis of el.variantAxes ?? []) {
+                    const value = new RegExp(`\\[data-${axis.prop}="([^"]*)"\\]`).exec(block.selector)?.[1];
+                    if (value === undefined || axis.values.includes(value))
+                        continue;
+                    findings.push({
+                        ...at,
+                        kind: 'undeclared-variant-rule',
+                        message: `\`${block.selector}\` styles a ${axis.prop} value the props type doesn't declare, so no instance can use it.`,
+                        hint: `Add \`"${value}"\` to the \`${axis.prop}\` union, or remove the rule.`,
+                    });
+                }
+            }
         }
         // Declarations that render but leave the panel controls blank.
         for (const [prop, value] of Object.entries(el.customProperties ?? {})) {

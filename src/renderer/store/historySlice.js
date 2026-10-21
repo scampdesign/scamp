@@ -277,6 +277,15 @@ export const useHistoryStore = create((set, get) => ({
     clearAllHistory: () => {
         set({ perPage: {}, transactionDepth: 0, pendingExternalEdit: null });
     },
+    forgetPage: (id) => {
+        set((state) => {
+            if (!(id in state.perPage))
+                return state;
+            const next = { ...state.perPage };
+            delete next[id];
+            return { perPage: next };
+        });
+    },
     rekeyPage: (oldId, newId) => {
         set((state) => {
             const existing = state.perPage[oldId];

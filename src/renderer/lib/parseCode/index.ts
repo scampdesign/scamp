@@ -9,7 +9,7 @@ import {
   isInvertedBinding,
   isRowPath,
 } from '../viewProps';
-import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, withAttributeSample, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride } from "../element";
+import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, variantComboKey, variantPartsLive, withAttributeSample, type BreakpointOverride, type ElementStateName, type KeyframesBlock, type ScampElement, type StateOverride, type VariantInteraction, type VariantOverride } from "../element";
 import { DEFAULT_RECT_STYLES } from '../defaults';
 import { composeMaps } from '../sourceMap';
 import { TABLE_LAYOUT_TAGS } from '../tableGrid';
@@ -20,6 +20,7 @@ import {
   parseTsxStructure,
   parseScampMeta,
   parseSlotNames,
+  readVariantAxes,
   type ScampViewMeta,
   PROP_REF_TEXT_RE,
   mapRange,
@@ -28,6 +29,7 @@ import {
 import { hoistNamedSlotsWithMap, SLOT_MARKER_ATTR } from "./namedSlots";
 import { DEFAULT_BREAKPOINTS, DESKTOP_BREAKPOINT_ID, type Breakpoint } from "@shared/types";
 import { WRITTEN_CONTRACT } from "@shared/projectConfig";
+import { readInteractionAttributes } from "../variantInteractions";
 
 /**
  * Pure function: real TSX + CSS module text → canvas state.
@@ -644,6 +646,71 @@ export const parseCode = (
     if (typeof marker !== 'string' || marker.length === 0) continue;
     const { [SLOT_MARKER_ATTR]: _drop, ...restAttrs } = el.attributes;
     elements[id] = { ...el, slotName: marker, attributes: restAttrs };
+  }
+
+  // Post-pass: variant axes. A rule for a declared axis and value lands on
+  // its element as a typed override; anything else (an undeclared axis or
+  // value, the default's own value, a missing element) goes back to the
+  // anchor class verbatim, as before axes existed.
+  // see docs/plans/component-variants-plan.md
+  const axes = isComponent ? readVariantAxes(tsx, elements[ROOT_ELEMENT_ID]) : [];
+  const idByClass = new Map([...classById].map(([id, cls]) => [cls, id]));
+  const rootClass = classById.get(ROOT_ELEMENT_ID);
+  const cssInteractions: VariantInteraction[] = [];
+  for (const rule of parsedCss.axisRules) {
+    // Each attribute a declared axis's non-default value, one per axis, in
+    // axis order: the order the generator writes, so the file round-trips.
+    const partsPlaceable = variantPartsLive(axes, rule.parts);
+    const targetId = idByClass.get(rule.targetClass);
+    const target = targetId === undefined ? undefined : elements[targetId];
+    // An interaction's starting value has to be one of the axis's too.
+    const aliasesPlaceable = rule.aliases.every(
+      (a) => a.from === null || (axes.find((x) => x.prop === a.axis)?.values.includes(a.from) ?? false)
+    );
+    const placeable =
+      partsPlaceable &&
+      aliasesPlaceable &&
+      rule.anchorClass === rootClass &&
+      target !== undefined &&
+      targetId !== undefined;
+    if (!placeable) {
+      const anchorId = idByClass.get(rule.anchorClass);
+      const anchor = anchorId === undefined ? undefined : elements[anchorId];
+      if (anchorId !== undefined && anchor !== undefined) {
+        elements[anchorId] = { ...anchor, customSelectorBlocks: [...(anchor.customSelectorBlocks ?? []), rule.raw] };
+      }
+      continue;
+    }
+    for (const alias of rule.aliases) {
+      const known = cssInteractions.some(
+        (i) => i.axis === alias.axis && i.from === alias.from && i.trigger === alias.trigger && i.to === alias.to
+      );
+      if (!known) cssInteractions.push(alias);
+    }
+    // An empty rule only carries its interactions' second selectors.
+    if (rule.decls.length === 0 && rule.state === null) continue;
+    const key = variantComboKey(rule.parts);
+    const existing: VariantOverride = target.variantOverrides?.[key] ?? {};
+    const next: VariantOverride =
+      rule.state === null
+        ? { ...existing, ...applyDeclarationsAsOverride(rule.decls) }
+        : { ...existing, states: { ...existing.states, [rule.state]: applyDeclarationsAsStateOverride(rule.decls) } };
+    elements[targetId] = { ...target, variantOverrides: { ...target.variantOverrides, [key]: next } };
+  }
+  if (axes.length > 0) {
+    // Click, outside, and Escape come off the elements' attributes.
+    // CONTRACT.md §1.3.2
+    const read = readInteractionAttributes(elements);
+    for (const [id, el] of Object.entries(read.elements)) elements[id] = el;
+    const interactions = [...cssInteractions, ...read.interactions];
+    const root = elements[ROOT_ELEMENT_ID];
+    if (root) {
+      elements[ROOT_ELEMENT_ID] = {
+        ...root,
+        variantAxes: axes,
+        ...(interactions.length > 0 ? { variantInteractions: interactions } : {}),
+      };
+    }
   }
 
   // Elements the parser reassigned because their id collided with an

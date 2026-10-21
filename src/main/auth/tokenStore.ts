@@ -23,6 +23,23 @@ export type SafeStorageLike = {
   isEncryptionAvailable: () => boolean;
   encryptString: (plain: string) => Buffer;
   decryptString: (encrypted: Buffer) => string;
+  /** Linux only: which keyring encrypts. Absent elsewhere. */
+  getSelectedStorageBackend?: () => string;
+};
+
+/**
+ * Encryption that actually protects. On a Linux box with no keyring,
+ * Electron still reports encryption as available but uses `basic_text`,
+ * a fixed key anyone can look up, so that counts as none.
+ */
+const protects = (safeStorage: SafeStorageLike): boolean => {
+  if (!safeStorage.isEncryptionAvailable()) return false;
+  try {
+    return safeStorage.getSelectedStorageBackend?.() !== 'basic_text';
+  } catch {
+    // Not on Linux, or not ready to say: the availability check stands.
+    return true;
+  }
 };
 
 export type TokenStoreDeps = {
@@ -69,7 +86,7 @@ export const saveSecret = async (
   secret: string,
   { safeStorage, userDataDir }: TokenStoreDeps
 ): Promise<SaveResult> => {
-  if (!safeStorage.isEncryptionAvailable()) return { status: 'memory-only' };
+  if (!protects(safeStorage)) return { status: 'memory-only' };
   const encrypted = safeStorage.encryptString(secret);
   await fs.mkdir(userDataDir, { recursive: true });
   await fs.writeFile(path.join(userDataDir, fileName), encrypted);
@@ -93,6 +110,12 @@ export const loadSecret = async (
   { safeStorage, userDataDir }: TokenStoreDeps
 ): Promise<LoadResult> => {
   if (!safeStorage.isEncryptionAvailable()) return { status: 'unavailable' };
+  if (!protects(safeStorage)) {
+    // Written under the fixed key before this check existed: as good as
+    // plain text, so it goes rather than staying readable on disk.
+    await fs.rm(path.join(userDataDir, fileName), { force: true });
+    return { status: 'unavailable' };
+  }
   let blob: Buffer;
   try {
     blob = await fs.readFile(path.join(userDataDir, fileName));

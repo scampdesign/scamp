@@ -32,8 +32,12 @@ export const needsConfirmation = (
   calls: ReadonlyArray<ToolCall>,
   options: { planApproved?: boolean } = {}
 ): boolean =>
-  calls.some((c) => ALWAYS_CONFIRM.has(c.name)) ||
+  calls.some((c) => ALWAYS_CONFIRM.has(c.name) || isVariantRemoval(c)) ||
   (options.planApproved !== true && calls.filter((c) => WRITE_TOOL_NAMES.has(c.name)).length > BATCH_LIMIT);
+
+/** Removing a variant property or value drops its styles. */
+const isVariantRemoval = (c: ToolCall): boolean =>
+  c.name === 'scamp_edit_variants' && ['remove_property', 'remove_value'].includes(str(c.input, 'action'));
 
 const str = (input: unknown, key: string): string => {
   if (input === null || typeof input !== 'object') return '';
@@ -81,6 +85,26 @@ const describeEdit = ({ name, input }: ToolCall): string => {
       return `Change ${element} to <${str(input, 'tag')}>`;
     case 'scamp_set_attributes':
       return `Change attributes on ${element}`;
+    case 'scamp_edit_variants': {
+      const property = str(input, 'property');
+      const value = str(input, 'value');
+      switch (str(input, 'action')) {
+        case 'add_property':
+          return `Add the variant property ${property}`;
+        case 'remove_property':
+          return `Remove the variant property ${property} and its styles`;
+        case 'add_value':
+          return `Add ${value} to ${property}`;
+        case 'remove_value':
+          return `Remove ${value} from ${property}, with its styles`;
+        case 'make_default':
+          return `Make ${value} the default ${property}`;
+        case 'add_interaction':
+          return `Add a ${str(input, 'trigger')} interaction: ${property} ${str(input, 'from') || 'any'} → ${str(input, 'to')}`;
+        default:
+          return `Change the variants of ${property}`;
+      }
+    }
     case 'scamp_move_element':
       return `Move ${element} into ${str(input, 'parent')}`;
     case 'scamp_wrap_elements':

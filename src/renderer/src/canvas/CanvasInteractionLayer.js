@@ -6,7 +6,8 @@ import { SelectionOverlay } from './SelectionOverlay';
 import { DrawPreview } from './DrawPreview';
 import { GridOverlay } from './GridOverlay';
 import { LinkIndicators } from './LinkIndicators';
-import { hitTest, instanceAt, propTextHitTest } from './interactions/canvasHitTest';
+import { hitTest, inactiveVariantCellAt, instanceAt, propTextHitTest } from './interactions/canvasHitTest';
+import { classNameFor } from '@lib/generateCode';
 import { resolveInsertParent } from '@lib/insertParent';
 import { useCanvasGeometry } from './interactions/useCanvasGeometry';
 import { useDrawInteraction } from './interactions/useDrawInteraction';
@@ -103,6 +104,18 @@ export const CanvasInteractionLayer = ({ frameRef, scale }) => {
         // which would otherwise select the app's text from the last caret.
         if (e.shiftKey)
             e.preventDefault();
+        // Another frame of the variant set: make it the live one and select
+        // what was clicked in it, in one press. see docs/plans/component-variants-plan.md
+        const cell = inactiveVariantCellAt(e.clientX, e.clientY);
+        if (cell !== null) {
+            const state = useCanvasStore.getState();
+            const hit = cell.className === null
+                ? undefined
+                : Object.values(state.elements).find((el) => classNameFor(el) === cell.className);
+            state.setActiveVariant(cell.key);
+            selectElement(hit?.id ?? null);
+            return;
+        }
         // Resize takes precedence — handles sit on top of everything. Then the
         // active draw tool (rectangle / input / text / image).
         if (resize.tryStart(e))

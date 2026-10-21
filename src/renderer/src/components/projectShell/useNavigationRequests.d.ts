@@ -8,6 +8,7 @@ type ComponentNavRef = {
         }) => void;
         activePageName: string | null;
         activeComponent: ActiveComponent | null;
+        persistActiveSource: () => void;
     };
 };
 /**

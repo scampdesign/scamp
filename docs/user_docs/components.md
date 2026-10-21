@@ -63,6 +63,32 @@ At the bottom of the Components list, click **+ Add component**, and
 then type a name. Scamp scaffolds an empty component and opens the
 component editor so you can start designing.
 
+### From a starter
+
+Below **+ Add component**, click one of the **Starters**: **Button**,
+**Modal**, or **Menu**. Scamp adds a ready-made component and opens it
+in the component editor. Each one shows [variants](#variants) at work,
+so you can use it as it is, restyle it, or read it to learn how to
+build your own.
+
+| Starter | Variants | Opens and closes |
+|---|---|---|
+| Button | `variant`: `default`, `outline`, `secondary`; `size`: `small`, `medium`, `large` | Not applicable |
+| Modal | `state`: `closed`, `open` | Its **Open dialog** button opens it; **Close**, a click on the backdrop, and Escape close it |
+| Menu | `state`: `closed`, `open` | Its trigger opens and closes it; a click outside and Escape close it |
+
+In a Scamp framework project, the Modal and Menu open and close by
+themselves, through [interactions](#change-a-variant-on-hover-or-click):
+drop one on a page and it works. They fade in and out with a transition
+on `opacity` and `visibility`, so the fade plays both ways. In a Next.js
+project they come without the interactions; a page's own code opens
+them (see [Open a modal from a route](#open-a-modal-from-a-route)).
+
+If the project already has a component with that name, Scamp numbers
+the new one: `Button2`, `Button3`, and so on. The starters use plain
+colors rather than your theme's tokens; swap in tokens once you've added
+one.
+
 ### From an agent
 
 An [AI agent](ai-agents.md) working in your project can create
@@ -84,16 +110,10 @@ a page canvas, to open the component editor. It's the same canvas,
 properties panel, and code panel you already know, scoped to one
 component.
 
-A banner across the top of the canvas reminds you that you're editing a
-component:
-
-```
-Editing component: Card. Changes affect all instances.
-```
-
-When you open a component by double-clicking an instance, a breadcrumb
-above the canvas (`home › Card`) names the page or view you came from.
-Click it, or press **Esc**, to go back there.
+A breadcrumb above the canvas, such as `home › Card`, names the page or
+view you came from and the component you're editing. Changes affect
+every instance. To go back, click the first part of the breadcrumb, or
+press **Esc**.
 
 ### Component canvas size
 
@@ -183,6 +203,250 @@ The generated JSX picks up overrides as JSX attributes:
 
 Locked text in the component renders the same across every instance and
 never appears in the Instance section.
+
+## Variants
+
+A variant is one look of a component: an outline button, a small one, a
+modal that's open or closed. You design every look in one component, and
+each instance picks the one it shows.
+
+Variants are grouped into **properties**. A property is a prop with a
+fixed list of values, such as `variant` with `default`, `outline`, and
+`secondary`. A component can have several; a button might have
+`variant` and `size`. Each property has a default value, which is the
+component's own look.
+
+### Add a variant
+
+1. Open the component in the component editor.
+1. In the breadcrumb above the canvas, click the component's name to
+   select it. The properties panel shows the **Variants** section.
+1. In the **Variants** section header, click **+**. Scamp adds a `variant` property with a
+   `default` value and a new value.
+1. Type a name for the value, such as `outline`, and press **Enter**.
+
+To add another value, click **+** after the property's values. The new
+value starts as a copy of the look you're editing. To add a second
+property, such as a size, click **+** in the **Variants** section header
+again. To remove a property, click **−** beside its name.
+
+Value and property names use lowercase letters and digits; values can
+also use hyphens. To rename one, double-click its name. A component can
+have up to 36 combinations of values.
+
+### The variant set
+
+A component with variants is drawn as a set, as in Figma: every
+combination of values is its own frame, inside a dashed border with the
+component's name.
+
+- The first property runs down the rows and the second across the
+  columns, so a row shows one look in every size. A third property adds
+  one grid per value, each with a heading.
+- Each frame is labelled with its values, and the default frame says
+  **default**.
+- Each frame is as big as the component. A root set to fill its
+  container takes the size from **Canvas size** in the header.
+
+### Design a variant
+
+Click any element in any frame. That frame becomes the one you edit, and
+the element is selected, in one click. Anything you change applies to
+that frame's values only: colors, borders, sizes, and the position of
+elements.
+
+Where a change is written depends on the frame:
+
+| Frame | A change applies to |
+|---|---|
+| The default frame | The component's own look, in every frame |
+| A frame with one value that isn't a default, such as `outline · medium` | That value, with every other value: every outline button |
+| A frame with two or more, such as `outline · small` | Only that combination |
+
+- In the **Variants** section, the selected value of each property is
+  the frame you're editing. Click another value to edit another frame.
+- To change how a frame looks on hover, select **Hover** in the state
+  switcher. See [Element states](element-states.md).
+- To hide an element in one frame, select the element, and then, in the
+  **Visibility** section, set **Display** to **None**.
+- A section title shows the override dot when the frame changes one of
+  its fields. Right-click the title to reset those fields.
+
+Variants are designed at the desktop breakpoint. At other breakpoints,
+the **Variants** section is turned off and the canvas shows the default
+look.
+
+### Reorder, change the default, and remove
+
+In the **Variants** section, select a value, and then:
+
+- **Drag** a value to another place to reorder it. The grid and the
+  order of the rules in the file follow.
+- Click **Make [value] the default** to make it the component's own
+  look. It moves to the front, and every frame keeps its look.
+- Click **Remove [value]**, and then click **Remove** to confirm. Scamp
+  deletes the value and its styles. The default can't be removed; make
+  another value the default first.
+
+**Remove** beside a property removes it with all its values.
+
+An instance still set to a removed value shows the default look, and the
+[Checks](views.md#find-problems-in-a-view) section lists it.
+
+### Pick a variant for an instance
+
+Select an instance on a page. In the properties panel, the section named
+after the component has one list for each axis. Select a value, and the
+instance shows that look.
+
+The page's file names the value as a plain attribute:
+
+```tsx
+<Button data-scamp-instance-id="inst_a1b2" variant="outline" size="small" />
+```
+
+Selecting the default value removes the attribute.
+
+### Open a modal from a route
+
+The Modal and Menu starters open and close themselves. When a page's
+own code needs to decide instead, for example to open a modal after a
+save, the page's route holds whether it's open and passes it to the
+component's `state` axis. This works in a
+[Scamp framework project](scamp-framework.md).
+
+1. Under **Starters**, click **Modal**.
+1. Open the view the modal belongs to, select the button that opens it,
+   and then, in the **Data** tab, bind the button's `onClick` to a new
+   event, such as `onOpenModal`.
+1. With nothing selected, under **Routes**, click **Generate route**.
+   Because the view has an event, the route renders in the browser.
+1. Edit the route so it keeps the modal's state and renders the modal
+   beside the view:
+
+   ```tsx
+   import { useState } from 'preact/hooks';
+   import Lobby from '@/views/Lobby/Lobby';
+   import Modal from '@/components/Modal/Modal';
+
+   export const render = 'client';
+
+   export default function LobbyRoute() {
+     const [open, setOpen] = useState(false);
+     return (
+       <>
+         <Lobby onOpenModal={() => setOpen(true)} />
+         <Modal state={open ? 'open' : 'closed'} onClose={() => setOpen(false)} />
+       </>
+     );
+   }
+   ```
+
+The modal's root is fixed to the window, so it covers the page wherever
+the route places it. The **Menu** starter works the same way, with
+`onToggle` on its trigger: `onToggle={() => setOpen(!open)}`.
+
+
+### Change a variant on hover or click
+
+A component can change its own variant while it's used: a button shows
+its `hover` look while the pointer is on it, or a menu opens when its
+trigger is clicked. This is Figma's **Change to** interaction.
+
+1. Select the component's name in the breadcrumb.
+1. In the **Variants** section, click the value the interaction starts
+   from—for example, `closed`.
+1. In the **Interactions** section header, click **+**.
+1. In the panel, select a **Trigger**. For **On click**, also select the
+   element that's clicked.
+1. Under **Action**, select the value to change to.
+1. Click **Add**.
+
+Each interaction is one line in the **Interactions** section. To see the
+whole line, hold the pointer over it. To remove one, click **−** beside
+it.
+
+| Trigger | Runs as | Projects |
+|---|---|---|
+| **While hovering**, **While pressing**, **While focused** | CSS, with no JavaScript | All |
+| **On click**, **On click outside**, **On Escape** | The Scamp framework's click handler | Scamp framework projects |
+
+A click is remembered until the next one, so a menu needs two: **On
+click** with `closed` selected, changing to `open`, and with `open`
+selected, changing to `closed`. Add **On
+click outside** and **On Escape** from `open` to `closed` if the menu
+should also close those ways; leave them out if it shouldn't.
+
+To try the interactions, click **Preview** while you're editing the
+component. In a Scamp framework project, the Preview window shows the
+component on its own, with its default values, and runs its
+interactions as a page will. The canvas doesn't: it's for designing
+each look, and every look is already on it.
+
+**Note:** Clicks need scampjs 0.3.4 or later. If **Preview** shows "Not
+found" for a component, update scampjs from the project's settings.
+
+**Note:** Hover, press, and focus can't change to the default value,
+because the default's look is the component's own rules. Make another
+value the default, or use a click.
+
+### How variants are written
+
+Each axis is a prop typed as a union of its values, and the component's
+root carries it as a `data-` attribute:
+
+```tsx
+type ButtonProps = {
+  variant?: "default" | "outline" | "secondary";
+  className?: string;
+};
+
+export default function Button({ variant = "default", className }: ButtonProps) {
+  return (
+    <button data-scamp-id="root" className={`${styles.root} ${className ?? ''}`} type="button" data-variant={variant}>
+```
+
+Each value's styles are a rule after every element's own rules:
+
+```css
+.root[data-variant="outline"] {
+  background: transparent;
+}
+
+.root[data-variant="outline"] .label_c1a1 {
+  color: #2563eb;
+}
+```
+
+A combination's rule names each of its values, after every single
+value's rules:
+
+```css
+.root[data-variant="outline"][data-size="small"] {
+  border-width: 2px;
+}
+```
+
+An interaction on hover, press, or focus adds a second selector to each
+rule of the value it changes to:
+
+```css
+.root[data-state="hover"] .label_b7e1,
+.root[data-state="default"]:hover .label_b7e1 {
+  color: #1d4ed8;
+}
+```
+
+A click, a click outside, and Escape are attributes the framework reads:
+
+```tsx
+<button data-scamp-id="trigger_e51a" className={styles.trigger_e51a} type="button" data-scamp-click="state:closed=open,open=closed">{trigger}</button>
+```
+
+A variant rule outranks the element's own rule, and its own `:hover`
+rule; a combination outranks the values it combines. A rule whose
+values aren't in the props type's order, or that names a default, is
+kept as it is, and you edit it in the CSS panel.
 
 ## Slots
 

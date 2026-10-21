@@ -1,4 +1,4 @@
-import { type RefObject } from 'react';
+import { useCallback, useState, type RefObject } from 'react';
 import { viewSlugFor } from '@shared/templates';
 
 import type { ProjectConfig } from '@shared/types';
@@ -8,6 +8,7 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { useSnapshotsStore } from '@store/snapshotsSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { Viewport } from '@renderer/src/canvas/Viewport';
+import { VariantSet } from '@renderer/src/canvas/VariantSet';
 
 import { CanvasSizeControl } from '../CanvasSizeControl';
 import { ThemeSwitcher } from '../ThemeSwitcher';
@@ -53,9 +54,18 @@ export const CanvasArea = ({
     ? projectConfig.canvasOverflowHidden
     : resolveClip(projectConfig, activeBreakpointId);
   const pageHeightIsFixed = !isComponent && projectConfig.canvasFixedHeight === true;
-  const frameWidth = component !== null
-    ? componentCanvasSizeFor(projectConfig, component.name, 'component').width
-    : projectConfig.canvasWidth;
+  const artboard = component !== null ? componentCanvasSizeFor(projectConfig, component.name, 'component') : null;
+  // A component with variants is drawn as its variant set, which sizes
+  // the frame to itself. see docs/plans/component-variants-plan.md, phase 6
+  const hasVariants = useCanvasStore((s) => (s.elements[ROOT_ELEMENT_ID]?.variantAxes?.length ?? 0) > 0);
+  const setMode = component !== null && hasVariants;
+  const [setWidth, setSetWidth] = useState(0);
+  const handleSetWidth = useCallback((width: number): void => setSetWidth(width), []);
+  const frameWidth = setMode
+    ? Math.max(setWidth, 1)
+    : artboard !== null
+      ? artboard.width
+      : projectConfig.canvasWidth;
   // The header spans the frame as drawn, so the size control sits at the
   // frame's right edge. Fit zooms to the content, overflow included, so a
   // page with a wide marquee draws its frame well short of the canvas area.
@@ -106,50 +116,25 @@ export const CanvasArea = ({
               </div>
             </div>
           )}
-          {activeComponent !== null && activeComponent.kind === 'component' && (
-            <div
-              className={styles.componentEditorBanner}
-              data-testid="component-editor-banner"
-            >
-              <span>
-                Editing component:{' '}
-                <strong>{activeComponent.name}</strong>. Changes
-                affect all instances.
-              </span>
-              <button
-                type="button"
-                className={styles.componentEditorExit}
-                onClick={onExitComponentEditor}
-              >
-                Exit
-              </button>
-            </div>
-          )}
           <div className={styles.canvasHeader} style={{ maxWidth: headerWidth }}>
             {activeComponent !== null && activeComponent.kind === 'component' ? (
-              // Breadcrumb: "<return page> > <component>" when
-              // entered from a page, otherwise just the
-              // component name. Clicking a non-current segment
-              // navigates back to it; clicking the current
-              // segment selects the root element same as the
-              // page badge.
+              // Breadcrumb: "<return page> > <component>". The first
+              // segment is the way out of the component editor;
+              // clicking the current one selects the root.
               <div
                 className={styles.canvasHeaderBadge}
                 role="navigation"
                 aria-label="Component editor breadcrumb"
               >
-                {(activeComponent.returnTo !== undefined || activeComponent.returnToPage !== null) && (
-                  <>
-                    <button
-                      type="button"
-                      className={styles.canvasBreadcrumbLink}
-                      onClick={onExitComponentEditor}
-                    >
-                      {activeComponent.returnTo?.name ?? activeComponent.returnToPage}
-                    </button>
-                    <span aria-hidden="true">{' › '}</span>
-                  </>
-                )}
+                <button
+                  type="button"
+                  className={styles.canvasBreadcrumbLink}
+                  onClick={onExitComponentEditor}
+                  title="Exit the component"
+                >
+                  {activeComponent.returnTo?.name ?? activeComponent.returnToPage ?? activePageName ?? 'Pages'}
+                </button>
+                <span aria-hidden="true">{' › '}</span>
                 <button
                   type="button"
                   className={styles.canvasBreadcrumbCurrent}
@@ -191,14 +176,26 @@ export const CanvasArea = ({
           <Viewport
             canvasWidth={frameWidth}
             canvasHeight={
-              component !== null
-                ? componentCanvasSizeFor(projectConfig, component.name, 'component').height
-                : pageHeightIsFixed
-                  ? projectConfig.canvasHeight
-                  : undefined
+              setMode
+                ? 0
+                : artboard !== null
+                  ? artboard.height
+                  : pageHeightIsFixed
+                    ? projectConfig.canvasHeight
+                    : undefined
             }
             heightIsFixed={pageHeightIsFixed}
-            clipContent={clipContent}
+            clipContent={setMode ? false : clipContent}
+            frameContent={
+              setMode && component !== null && artboard !== null ? (
+                <VariantSet
+                  componentName={component.name}
+                  artboardWidth={artboard.width}
+                  artboardHeight={artboard.height}
+                  onWidth={handleSetWidth}
+                />
+              ) : undefined
+            }
             scrollContainerRef={artboardScrollRef}
             // Drag-handle resize is enabled only in component
             // mode; the page canvas uses the project-wide
@@ -206,7 +203,7 @@ export const CanvasArea = ({
             // explicit height — page canvases grow with
             // content).
             onResize={
-              component !== null
+              component !== null && !setMode
                 ? (width, height) => {
                     const name = component.name;
                     const nextMap = {

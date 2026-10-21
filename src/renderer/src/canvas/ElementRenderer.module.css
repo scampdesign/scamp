@@ -85,6 +85,11 @@
   outline-offset: -2px;
 }
 
+/* A selected instance is outlined in the component purple, as in Figma. */
+.element.selected[data-scamp-instance-id] {
+  outline-color: var(--component);
+}
+
 /* Text-edit mode — same specificity bump so `all: unset` on tagged
  * elements doesn't strip the dashed indicator. */
 .element.textEditing {
@@ -100,7 +105,7 @@
  * (`!important` mirrors `.textEditing` so `all: unset` on form tags
  * doesn't drop the indicator.) */
 .propEditAffordance {
-  outline: 1px dashed rgba(99, 102, 241, 0.45) !important;
+  outline: 1px dashed var(--component) !important;
   outline-offset: 1px !important;
   cursor: text;
 }

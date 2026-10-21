@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
+import { flushPendingPageWrite } from '../../syncBridge';
 /**
  * Consumes the one-shot canvas → navigation requests the store exposes:
  * the link indicator's page jump, and the page canvas's double-click into
@@ -14,10 +15,14 @@ export const useNavigationRequests = (project, setActivePageName, componentNav) 
         if (pendingPageNavigation === null)
             return;
         if (project.pages.some((p) => p.name === pendingPageNavigation)) {
+            // Save the page being left first, as the sidebar does: a write the
+            // quiet window or a pause deferred would otherwise be dropped.
+            flushPendingPageWrite();
+            componentNav.current.persistActiveSource();
             setActivePageName(pendingPageNavigation);
         }
         useCanvasStore.getState().requestPageNavigation(null);
-    }, [pendingPageNavigation, project.pages, setActivePageName]);
+    }, [pendingPageNavigation, project.pages, setActivePageName, componentNav]);
     const pendingComponentNavigation = useCanvasStore((s) => s.pendingComponentNavigation);
     useEffect(() => {
         if (pendingComponentNavigation === null)

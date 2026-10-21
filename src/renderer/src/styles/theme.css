@@ -61,6 +61,13 @@
      size presets, token chips) — a light blue on the dark selection. */
   --accent-text: #cfe0fb;
 
+  /* ---------- Component ---------- */
+  /* Purple marks components, as in Figma: the variant set's border, the
+     component icon in the layers panel, the component editor's banner. */
+  --component: #a78bfa;
+  /* Translucent tint for component surfaces (the editor banner). */
+  --component-muted: rgba(167, 139, 250, 0.16);
+
   /* ---------- Status ---------- */
   --status-error: #ef4444;
   --status-warn: #f59e0b;
@@ -157,6 +164,10 @@
   --accent-dark: #d3e2ff;
   /* Text on the pale selection — a deep blue so it reads on light. */
   --accent-text: #1e40af;
+
+  /* ---------- Component ---------- */
+  --component: #7c3aed;
+  --component-muted: rgba(124, 58, 237, 0.12);
 
   /* ---------- Status ---------- */
   --status-error: #dc2626;

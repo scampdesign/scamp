@@ -16,6 +16,12 @@ export type ViewProp = {
 };
 /** HTML attributes whose presence is the value; bound, they type as boolean. */
 export declare const BOOLEAN_ATTRIBUTES: ReadonlySet<string>;
+/**
+ * Names a prop can't take: React keeps `key`, `ref`, `children`, `style`,
+ * and `className` for itself, and a JavaScript keyword can't be a
+ * destructured binding (`{ class = "a" }` is a syntax error).
+ */
+export declare const RESERVED_PROP_NAMES: ReadonlySet<string>;
 /** `player.label` binds a row field, not a prop. */
 export declare const isRowPath: (ref: string) => boolean;
 /** The prop behind a binding expression: `!canStart` → `canStart`. */

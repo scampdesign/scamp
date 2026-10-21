@@ -5,7 +5,7 @@ import {
   TAG_OPTIONS,
   type AttributeSpec,
 } from '@lib/elementTags';
-import type { ScampElement, SelectOption } from '@lib/element';
+import type { ScampElement, SelectOption, VariantAxis } from '@lib/element';
 import { Button } from '../controls/Button';
 import { EnumSelect } from '../controls/EnumSelect';
 import { PrefixSuffixInput } from '../controls/PrefixSuffixInput';
@@ -43,6 +43,7 @@ export const ElementSection = ({ elementId }: Props): JSX.Element | null => {
         <Row label="Instance">
           <code className={styles.instanceId}>{element.instanceId ?? '—'}</code>
         </Row>
+        <InstanceVariantFields element={element} />
       </Section>
     );
   }
@@ -94,6 +95,46 @@ export const ElementSection = ({ elementId }: Props): JSX.Element | null => {
         />
       )}
     </Section>
+  );
+};
+
+const EMPTY_AXES: ReadonlyArray<VariantAxis> = [];
+
+/**
+ * One select per variant axis of the instance's component. The default
+ * clears the prop, so the file only names values that differ.
+ * see docs/plans/component-variants-plan.md
+ */
+const InstanceVariantFields = ({ element }: { element: ScampElement }): JSX.Element | null => {
+  const axes = useCanvasStore((s) => {
+    const tree = element.componentName === undefined ? undefined : s.componentTrees[element.componentName];
+    return tree?.elements[tree.rootId]?.variantAxes ?? EMPTY_AXES;
+  });
+  const setPropOverride = useCanvasStore((s) => s.setPropOverride);
+  const clearPropOverride = useCanvasStore((s) => s.clearPropOverride);
+  if (axes.length === 0) return null;
+  return (
+    <>
+      {axes.map((axis) => {
+        const value = element.propOverrides?.[axis.prop] ?? axis.defaultValue;
+        // A value the component lacks still shows, so the select can say so.
+        const values = axis.values.includes(value) ? axis.values : [value, ...axis.values];
+        return (
+          <Row key={axis.prop} label={axis.prop}>
+            <EnumSelect
+              value={value}
+              options={values.map((v) => ({ value: v, label: v }))}
+              onChange={(next) =>
+                next === axis.defaultValue
+                  ? clearPropOverride(element.id, axis.prop)
+                  : setPropOverride(element.id, axis.prop, next)
+              }
+              title={`${element.componentName ?? 'Component'} ${axis.prop}`}
+            />
+          </Row>
+        );
+      })}
+    </>
   );
 };
 

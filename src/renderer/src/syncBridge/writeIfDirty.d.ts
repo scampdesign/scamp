@@ -1,3 +1,5 @@
+import { cssWriteFor } from './cssWrite';
+import { tsxWriteFor } from './tsxWrite';
 import type { KeyframesBlock, ScampElement } from '@lib/element';
 import { type EditTarget } from './editTarget';
 import type { SaveContext, WriteConflict, WriteIntent } from './saveContext';
@@ -19,6 +21,20 @@ import type { SaveContext, WriteConflict, WriteIntent } from './saveContext';
  * carries no intent of its own, so a second conflict adopts disk.
  */
 export declare const makeOnWriteConflict: (ctx: SaveContext) => (target: EditTarget, conflict: WriteConflict, silent?: boolean, intent?: WriteIntent) => void;
+/**
+ * The files a save would write for this canvas: the generated code, laid
+ * over what's on disk (`lastSerialized`) so only changed rules are
+ * rewritten. Shared by the save and by the merge an external edit runs
+ * when the canvas has unsaved changes.
+ */
+export declare const serializeCanvas: (ctx: SaveContext, elements: Record<string, ScampElement>, rootElementId: string, target: EditTarget, customMediaBlocks: ReadonlyArray<string>, pageKeyframesBlocks: ReadonlyArray<KeyframesBlock>) => {
+    code: {
+        tsx: string;
+        css: string;
+    };
+    tsxOut: ReturnType<typeof tsxWriteFor>;
+    cssOut: ReturnType<typeof cssWriteFor>;
+};
 /**
  * Generate code for the given (elements, rootId, page) tuple and write
  * it to disk if it differs from the last-written cache. Pure with

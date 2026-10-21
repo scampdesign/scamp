@@ -1,0 +1,237 @@
+.axes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.axis {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.axisHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.axisName {
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: default;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.chip:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.chipActive {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.defaultMark {
+  color: var(--accent);
+  font-size: 8px;
+}
+
+.valueActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.renameInput {
+  height: var(--control-h);
+  width: 96px;
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.iconButton,
+.confirmCancel {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled),
+.confirmCancel:hover {
+  color: var(--text-primary);
+}
+
+.iconButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+.confirmRemove {
+  background: var(--error-bg);
+  border: none;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--error-text);
+  cursor: pointer;
+}
+
+.error {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--error-text);
+}
+
+.interactionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.interaction {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+/* One line per interaction; the full text is in its title. */
+.interactionText {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Matches the section header's other icon buttons (Section.module.css .groupToggleButton). */
+.headerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.headerButton:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.headerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Laid out like the colour picker's popover (Controls.module.css .colorPopover). */
+.interactionPopover {
+  position: fixed;
+  z-index: 100;
+  width: 240px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  overflow-y: auto;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  font-size: 12px;
+}
+
+.popoverRow {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.popoverLabel {
+  color: var(--text-secondary);
+}
+
+.interactionNote {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.popoverAdd {
+  align-self: flex-end;
+  height: var(--control-h);
+  padding: 0 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-inverse);
+  cursor: pointer;
+}
+
+.popoverAdd:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.popoverAdd:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

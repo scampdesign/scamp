@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
-import { atomicWrite } from '../src/main/ipc/fileOps';
+import { atomicWrite, writePagePair } from '../src/main/ipc/fileOps';
 const tmpFiles = async (dir) => (await fs.readdir(dir)).filter((f) => f.endsWith('.tmp'));
 const errnoError = (code) => {
     const err = new Error(code);
@@ -89,5 +89,38 @@ describe('atomicWrite', () => {
                 expect(await tmpFiles(dir)).toEqual([]);
             });
         });
+    });
+});
+describe('writePagePair', () => {
+    // A failed CSS write used to leave the new TSX on disk beside the old
+    // CSS, and the canvas loaded that mix. see docs/audits/2026-10-20-repo-audit.md, finding 12
+    let dir;
+    beforeEach(async () => {
+        dir = await fs.mkdtemp(path.join(os.tmpdir(), 'scamp-pair-'));
+    });
+    afterEach(async () => {
+        await fs.rm(dir, { recursive: true, force: true });
+    });
+    it('writes both files', async () => {
+        const tsx = path.join(dir, 'home.tsx');
+        const css = path.join(dir, 'home.module.css');
+        await writePagePair(tsx, 'new tsx', css, 'new css');
+        expect(await fs.readFile(tsx, 'utf-8')).toBe('new tsx');
+        expect(await fs.readFile(css, 'utf-8')).toBe('new css');
+    });
+    it('puts the TSX back when the CSS can’t be written', async () => {
+        const tsx = path.join(dir, 'home.tsx');
+        await fs.writeFile(tsx, 'old tsx');
+        // Its folder doesn't exist, so the CSS write fails.
+        const css = path.join(dir, 'missing', 'home.module.css');
+        await expect(writePagePair(tsx, 'new tsx', css, 'new css')).rejects.toThrow();
+        expect(await fs.readFile(tsx, 'utf-8')).toBe('old tsx');
+        expect(await tmpFiles(dir)).toEqual([]);
+    });
+    it('removes a TSX that didn’t exist before when the CSS can’t be written', async () => {
+        const tsx = path.join(dir, 'new.tsx');
+        const css = path.join(dir, 'missing', 'new.module.css');
+        await expect(writePagePair(tsx, 'new tsx', css, 'new css')).rejects.toThrow();
+        await expect(fs.access(tsx)).rejects.toThrow();
     });
 });

@@ -6,11 +6,12 @@ import {
   PointerEvent,
   type ReactNode,
   createElement,
+  useContext,
   useEffect,
   useMemo,
   useRef, cloneElement } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
-import { type FlexDirection, type ScampElement, ROOT_ELEMENT_ID } from '@lib/element';
+import { type FlexDirection, type ScampElement, ROOT_ELEMENT_ID, variantKeyParts } from '@lib/element';
 import {
   childBindingKey,
   expandChildren,
@@ -38,7 +39,8 @@ import {
 import { DEFAULT_ROOT_STYLES } from '@lib/defaults';
 import { instanceStretchStyle } from '@lib/instanceStretch';
 import { resolveElementAtBreakpoint } from '@lib/breakpointCascade';
-import { resolveElementAtState } from '@lib/stateCascade';
+import { instanceVariantKeys } from '@lib/variantAxes';
+import { layerVariants, resolveElementAtState } from '@lib/stateCascade';
 import { formatAnimationShorthand } from '@lib/parsers';
 import type { ThemeToken,
   ProjectFormat,
@@ -47,6 +49,7 @@ import { effectiveDisplay } from '@lib/effectiveDisplay';
 import { sanitizeSvgInner } from '../lib/svg';
 import { sanitizeInlineMarkup } from '../lib/inlineMarkup';
 import { EMPTY_FRAME_MIN_HEIGHT } from './Viewport';
+import { VariantFrameContext } from './variantFrame';
 import styles from './ElementRenderer.module.css';
 
 /** HTML void elements — React throws if createElement receives children for these. */
@@ -181,8 +184,8 @@ const renderComponentSubtree = (
         key={element.id}
         style={{
           padding: '4px 8px',
-          background: 'rgba(99, 102, 241, 0.12)',
-          border: '1px dashed var(--accent, #6366f1)',
+          background: 'var(--component-muted)',
+          border: '1px dashed var(--component)',
           borderRadius: 4,
           color: 'var(--text-secondary)',
           fontSize: 12,
@@ -510,10 +513,15 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
   // carries no hit-test id or ref, so selection and measurement land on
   // the first copy.
   const isRepeatCopy = row !== undefined && row.index > 0;
+  // A read-only variant frame draws its value and owns no selection.
+  const variantFrame = useContext(VariantFrameContext);
+  const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
+  const variantKey = variantFrame !== null ? variantFrame.variantKey : activeVariantKey;
+  const displayOnly = isRepeatCopy || variantFrame?.displayOnly === true;
   const activeBreakpointId = useCanvasStore((s) => s.activeBreakpointId);
   const activeStateName = useCanvasStore((s) => s.activeStateName);
   const breakpoints = useCanvasStore((s) => s.breakpoints);
-  const isSelected = useCanvasStore((s) => s.selectedElementIds.includes(elementId));
+  const isSelected = useCanvasStore((s) => s.selectedElementIds.includes(elementId)) && variantFrame?.displayOnly !== true;
   // Resolve overrides at render time. Selected elements get the
   // active state's overrides layered in (the state switcher *is* the
   // canvas preview); non-selected elements always render their
@@ -526,20 +534,25 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
         rawElement,
         activeBreakpointId,
         breakpoints,
-        previewState
+        previewState,
+        variantKey
       )
     : undefined;
   // Parent resolution doesn't carry a state preview — only the
   // selected element previews its hover/active/focus styles. The
   // parent's layout (flex / grid behaviour) is whatever the
   // breakpoint cascade resolves.
-  const parentResolved = useCanvasStore((s) => {
+  // The raw parent from the store, resolved here: a selector returning the
+  // resolved copy is a new object whenever an override applies, which
+  // re-rendered every child on every store change.
+  const rawParent = useCanvasStore((s) => {
     const el = s.elements[elementId];
-    if (!el || !el.parentId) return undefined;
-    const parent = s.elements[el.parentId];
-    if (!parent) return undefined;
-    return resolveElementAtBreakpoint(parent, s.activeBreakpointId, s.breakpoints);
+    return el?.parentId ? s.elements[el.parentId] : undefined;
   });
+  const parentResolved = useMemo(
+    () => (rawParent === undefined ? undefined : resolveElementAtState(rawParent, activeBreakpointId, breakpoints, null, variantKey)),
+    [rawParent, activeBreakpointId, breakpoints, variantKey]
+  );
   // Slot content (an element whose parent is a component-instance) flows
   // inside the slot rather than being absolutely positioned by its page
   // x/y — otherwise it renders at its old page coordinates, escaping the
@@ -573,7 +586,7 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
     s.previewAnimation?.elementId === elementId ? s.previewAnimation : null
   );
   const projectPath = useCanvasStore((s) => s.projectPath);
-  const isEditing = useCanvasStore((s) => s.editingElementId === elementId);
+  const isEditing = useCanvasStore((s) => s.editingElementId === elementId) && !displayOnly;
   const setEditingElement = useCanvasStore((s) => s.setEditingElement);
   const setTextSelection = useCanvasStore((s) => s.setTextSelection);
   const setElementText = useCanvasStore((s) => s.setElementText);
@@ -595,14 +608,29 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
   // `@media` rule — the canvas showed the desktop size at Mobile while the
   // preview filled. Same cascade the page's own elements go through.
   // see docs/notes/components-data-model.md — "Instance wrapper sizing"
+  // Then the variant values the instance picks. see docs/plans/component-variants-plan.md
+  const instanceProps = rawElement?.propOverrides;
   const resolvedComponentElements = useMemo(() => {
     if (!componentTreeForInstance) return undefined;
+    const axes = componentTreeForInstance.elements[componentTreeForInstance.rootId]?.variantAxes ?? [];
+    const keys = instanceVariantKeys(axes, instanceProps);
     const out: Record<string, ScampElement> = {};
     for (const [id, el] of Object.entries(componentTreeForInstance.elements)) {
-      out[id] = resolveElementAtBreakpoint(el, activeBreakpointId, breakpoints);
+      out[id] = layerVariants(resolveElementAtBreakpoint(el, activeBreakpointId, breakpoints), keys);
+    }
+    // The root carries each picked value, so the injected sheet's rules match too.
+    const root = out[componentTreeForInstance.rootId];
+    if (root !== undefined && axes.length > 0) {
+      const picked = Object.fromEntries(
+        axes.map((axis) => {
+          const value = instanceProps?.[axis.prop];
+          return [`data-${axis.prop}`, value !== undefined && axis.values.includes(value) ? value : axis.defaultValue];
+        })
+      );
+      out[componentTreeForInstance.rootId] = { ...root, attributes: { ...root.attributes, ...picked } };
     }
     return out;
-  }, [componentTreeForInstance, activeBreakpointId, breakpoints]);
+  }, [componentTreeForInstance, activeBreakpointId, breakpoints, instanceProps]);
   const requestComponentNavigation = useCanvasStore(
     (s) => s.requestComponentNavigation
   );
@@ -689,7 +717,8 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
     themeTokens,
     projectDir,
     projectFormat,
-    false,
+    // A frame of the variant set draws the root at its own size.
+    variantFrame !== null,
     canvasMinHeight,
     inComponentEditor
   );
@@ -921,8 +950,8 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
           style={{
             ...style,
             padding: '12px 16px',
-            background: 'rgba(99, 102, 241, 0.08)',
-            border: '1px dashed var(--accent, #6366f1)',
+            background: 'var(--component-muted)',
+            border: '1px dashed var(--component)',
             borderRadius: 4,
             color: 'var(--text-secondary)',
             fontSize: 12,
@@ -1034,7 +1063,9 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
     'data-scamp-id': classNameFor(element),
     ...(isRepeatCopy && row !== undefined
       ? { 'data-scamp-repeat-copy': row.index }
-      : { 'data-element-id': element.id }),
+      : displayOnly
+        ? {}
+        : { 'data-element-id': element.id }),
     onContextMenu: handleContextMenu,
     // Animation preview: increment the React key on each Play click
     // so React remounts the element and the CSS animation plays from
@@ -1049,7 +1080,7 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
       element.visibilityMode === 'none' ? styles.hiddenNone : ''
     }`.trim(),
     style,
-    ...(isRepeatCopy ? {} : { ref: elementRef }),
+    ...(displayOnly ? {} : { ref: elementRef }),
   };
 
   // Forward tag-specific attributes from the element's attribute bag
@@ -1065,6 +1096,9 @@ export const ElementRenderer = ({ elementId, row }: Props): JSX.Element | null =
       props[name] = value === '' ? true : value;
     }
   }
+  // The root carries the value drawn, so the injected sheet's variant rules match.
+  const drawnVariant = variantKey !== null && element.id === ROOT_ELEMENT_ID ? variantKeyParts(variantKey) : null;
+  for (const part of drawnVariant ?? []) props[`data-${part.axis}`] = part.value;
 
   // Interaction side-effects prevention for tags that would otherwise
   // navigate or submit. The canvas is a design surface, not a runtime.

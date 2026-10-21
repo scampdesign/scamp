@@ -1,5 +1,21 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+/**
+ * Encryption that actually protects. On a Linux box with no keyring,
+ * Electron still reports encryption as available but uses `basic_text`,
+ * a fixed key anyone can look up, so that counts as none.
+ */
+const protects = (safeStorage) => {
+    if (!safeStorage.isEncryptionAvailable())
+        return false;
+    try {
+        return safeStorage.getSelectedStorageBackend?.() !== 'basic_text';
+    }
+    catch {
+        // Not on Linux, or not ready to say: the availability check stands.
+        return true;
+    }
+};
 const FILE_NAME = 'auth-token.bin';
 /**
  * Persist the token, or refuse to.
@@ -15,7 +31,7 @@ export const saveToken = (token, deps) => saveSecret(FILE_NAME, token, deps);
  * provider key uses it too. see docs/archive/2026-10-06-builtin-agent-plan.md
  */
 export const saveSecret = async (fileName, secret, { safeStorage, userDataDir }) => {
-    if (!safeStorage.isEncryptionAvailable())
+    if (!protects(safeStorage))
         return { status: 'memory-only' };
     const encrypted = safeStorage.encryptString(secret);
     await fs.mkdir(userDataDir, { recursive: true });
@@ -35,6 +51,12 @@ export const loadToken = (deps) => loadSecret(FILE_NAME, deps);
 export const loadSecret = async (fileName, { safeStorage, userDataDir }) => {
     if (!safeStorage.isEncryptionAvailable())
         return { status: 'unavailable' };
+    if (!protects(safeStorage)) {
+        // Written under the fixed key before this check existed: as good as
+        // plain text, so it goes rather than staying readable on disk.
+        await fs.rm(path.join(userDataDir, fileName), { force: true });
+        return { status: 'unavailable' };
+    }
     let blob;
     try {
         blob = await fs.readFile(path.join(userDataDir, fileName));

@@ -1,6 +1,6 @@
 // parseCode/css.ts — split out of parseCode.ts (4.4).
 import postcss from 'postcss';
-import { ELEMENT_STATES, type ElementStateName, type KeyframesBlock, type PropertyGroup, type RawSelectorBlock, type TableStyle } from "../element";
+import { ELEMENT_STATES, type ElementStateName, type KeyframesBlock, type PropertyGroup, type RawSelectorBlock, type TableStyle, type VariantPick } from "../element";
 import { matchesPreset } from "../keyframesMatch";
 import { canonicalizeGroupList, isPropertyGroup } from "../propertyGroups";
 import { matchTableRule } from "../tableStyle";
@@ -156,8 +156,109 @@ export type ParsedCss = {
    * `@lib/tableStyle` derives. Keyed by the table's class name.
    */
   tableStyleByClass: Map<string, TableStyle>;
+  /**
+   * Variant-axis rules (`.root[data-variant="outline"] .label`), in source
+   * order. Whether one is typed depends on the component's props type, so
+   * `parseCode` decides; one it can't place goes back to the anchor
+   * class's raw blocks verbatim. see docs/plans/component-variants-plan.md
+   */
+  axisRules: AxisRule[];
 };
 
+/** One `[data-<axis>="<value>"]` rule (several, for a combination), as read and as written. */
+export type AxisRule = {
+  /** The class carrying the attributes: the component's root. */
+  anchorClass: string;
+  /** Each attribute, in source order. */
+  parts: VariantPick[];
+  /** The element the declarations style: the anchor, or a descendant. */
+  targetClass: string;
+  state: ElementStateName | null;
+  /**
+   * Hover, press, and focus interactions into this rule's value, read
+   * from its second selectors. CONTRACT.md §1.3.2
+   */
+  aliases: Array<{ axis: string; from: string | null; trigger: 'hover' | 'press' | 'focus'; to: string }>;
+  decls: RawDeclaration[];
+  /** Verbatim, for when the axis isn't one the props type declares. */
+  raw: RawSelectorBlock;
+};
+
+const STATE_GROUP = ELEMENT_STATES.join('|');
+const AXIS_ATTR = '\\[data-[a-z][a-z0-9]*="[^"]*"\\]';
+const AXIS_RULE_RE = new RegExp(
+  `^\\.([A-Za-z_][\\w-]*)((?:${AXIS_ATTR})+)(?::(${STATE_GROUP}))?(?:\\s+\\.([A-Za-z_][\\w-]*)(?::(${STATE_GROUP}))?)?$`
+);
+const AXIS_ATTR_PARTS_RE = /\[data-([a-z][a-z0-9]*)="([^"]*)"\]/g;
+
+/**
+ * Read an axis rule's selector: the root's attribute, then optionally a
+ * descendant class, with a state on whichever comes last. A state on the
+ * root followed by a descendant is outside the grammar.
+ */
+export const matchAxisSelector = (
+  selector: string
+): Omit<AxisRule, 'decls' | 'raw'> | null => {
+  const m = AXIS_RULE_RE.exec(selector);
+  if (m === null) return null;
+  const [, anchorClass = '', attrs = '', anchorState, targetClass, targetState] = m;
+  if (targetClass !== undefined && anchorState !== undefined) return null;
+  const state = (targetClass !== undefined ? targetState : anchorState) ?? null;
+  return {
+    anchorClass,
+    parts: [...attrs.matchAll(AXIS_ATTR_PARTS_RE)].map((a) => ({ axis: a[1] ?? '', value: a[2] ?? '' })),
+    aliases: [],
+    targetClass: targetClass ?? anchorClass,
+    state: state === null ? null : (state as ElementStateName),
+  };
+};
+
+
+const PSEUDO_TRIGGER: Readonly<Record<string, 'hover' | 'press' | 'focus'>> = {
+  ':hover': 'hover',
+  ':active': 'press',
+  ':focus-visible': 'focus',
+};
+/** An alias may name an axis with no value: any value. */
+const ALIAS_ATTR = '\\[data-[a-z][a-z0-9]*(?:="[^"]*")?\\]';
+const ALIAS_ATTR_PARTS_RE = /\[data-([a-z][a-z0-9]*)(?:="([^"]*)")?\]/g;
+const ALIAS_RE = new RegExp(`^\\.([A-Za-z_][\\w-]*)((?:${ALIAS_ATTR})*)(:hover|:active|:focus-visible)(.*)$`);
+
+/**
+ * A variant rule with second selectors for its interactions: the first
+ * is the rule; each other is the same rule with one of its values swapped
+ * for the value it changes from (or dropped, for any value) and a
+ * trigger's pseudo-class on the root. Null when the first isn't a variant
+ * rule or another isn't such a selector. CONTRACT.md §1.3.2
+ */
+export const matchAxisSelectorList = (
+  selector: string
+): Omit<AxisRule, 'decls' | 'raw'> | null => {
+  const [first = '', ...others] = selector.split(',').map((part) => part.trim());
+  const main = matchAxisSelector(first);
+  if (main === null) return null;
+  const attrs = main.parts.map((p) => `[data-${p.axis}="${p.value}"]`).join('');
+  const rest = first.slice(`.${main.anchorClass}${attrs}`.length);
+  const aliases: AxisRule['aliases'] = [];
+  for (const other of others) {
+    const m = ALIAS_RE.exec(other);
+    if (m === null || m[1] !== main.anchorClass || m[4] !== rest) return null;
+    // A value of null is the axis with no value: any value.
+    const theirs = [...(m[2] ?? '').matchAll(ALIAS_ATTR_PARTS_RE)].map((a) => ({ axis: a[1] ?? '', value: a[2] ?? null }));
+    // Exactly one of the rule's values swapped (for another, or any); the
+    // rest as they are, in the same order.
+    const changed = main.parts.filter((p) => !theirs.some((t) => t.axis === p.axis && t.value === p.value));
+    const target = changed[0];
+    if (changed.length !== 1 || target === undefined || theirs.length !== main.parts.length) return null;
+    if (theirs.some((t, i) => t.axis !== main.parts[i]?.axis)) return null;
+    const swapped = theirs.find((t) => t.axis === target.axis);
+    if (swapped === undefined || swapped.value === target.value) return null;
+    const trigger = PSEUDO_TRIGGER[m[3] ?? ''];
+    if (trigger === undefined) return null;
+    aliases.push({ axis: target.axis, from: swapped.value, trigger, to: target.value });
+  }
+  return { ...main, aliases };
+};
 
 /**
  * Inspect a top-level rule selector and decide what bucket it belongs
@@ -276,6 +377,25 @@ const parseCssLenient = (css: string): postcss.Root => {
   }
 };
 
+/**
+ * A rule as a verbatim block. Formats the body as one string; postcss's
+ * `Declaration.toString()` omits the trailing `;`, so it's re-appended:
+ * without it a block of two or more declarations re-emits as invalid CSS
+ * and the next parse fails for the whole page.
+ * See docs/plans/2026-06-19-style-loss-on-css-edit.md.
+ */
+const rawBlockOf = (node: postcss.Rule): RawSelectorBlock => ({
+  selector: node.selector.trim(),
+  body: node.nodes
+    .map((child) => {
+      const s = child.toString().trim();
+      if (s.length === 0) return '';
+      return child.type === 'decl' ? `  ${s};` : `  ${s}`;
+    })
+    .filter((s) => s.length > 0)
+    .join('\n'),
+});
+
 export const parseCssDeclarations = (
   css: string,
   breakpoints: ReadonlyArray<Breakpoint>
@@ -288,6 +408,7 @@ export const parseCssDeclarations = (
   const keyframesBlocks: KeyframesBlock[] = [];
   const toggledOffByClass = new Map<string, PropertyGroup[]>();
   const tableStyleByClass = new Map<string, TableStyle>();
+  const axisRules: AxisRule[] = [];
 
   /** Merge a freshly-parsed `toggledOff` list into the union map. */
   const mergeToggledOff = (
@@ -311,23 +432,10 @@ export const parseCssDeclarations = (
     if (node.type !== 'rule') continue;
     const selector = node.selector.trim();
 
-    // Preserve verbatim. Format the body as a single string —
-    // postcss's `raws` give us original whitespace and comments.
-    // `Declaration.toString()` omits the trailing `;`, so re-append it
-    // for declarations: without it a raw block with two+ declarations
-    // re-emits as invalid CSS and the next parse fails for the whole
-    // page. See docs/plans/2026-06-19-style-loss-on-css-edit.md.
+    // Preserve verbatim (see rawBlockOf).
     const keepRaw = (className: string): void => {
-      const body = node.nodes
-        .map((child) => {
-          const s = child.toString().trim();
-          if (s.length === 0) return '';
-          return child.type === 'decl' ? `  ${s};` : `  ${s}`;
-        })
-        .filter((s) => s.length > 0)
-        .join('\n');
       const list = rawByClass.get(className) ?? [];
-      list.push({ selector, body });
+      list.push(rawBlockOf(node));
       rawByClass.set(className, list);
     };
 
@@ -346,6 +454,12 @@ export const parseCssDeclarations = (
       } else if (tableRule.kind === 'raw') {
         keepRaw(tableRule.className);
       }
+      continue;
+    }
+
+    const axisMatch = matchAxisSelectorList(selector);
+    if (axisMatch !== null) {
+      axisRules.push({ ...axisMatch, decls: collectRuleNodes(node).decls, raw: rawBlockOf(node) });
       continue;
     }
 
@@ -461,6 +575,7 @@ export const parseCssDeclarations = (
     keyframesBlocks,
     toggledOffByClass,
     tableStyleByClass,
+    axisRules,
   };
 };
 

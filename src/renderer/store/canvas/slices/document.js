@@ -1,5 +1,6 @@
 import { ROOT_ELEMENT_ID, } from '@lib/element';
 import { useHistoryStore } from '../../historySlice';
+import { isVariantKeyLive } from '@lib/variantAxes';
 import { makeRootElement, } from '../factories';
 export const createDocumentSlice = (set) => ({
     activePage: null,
@@ -82,6 +83,7 @@ export const createDocumentSlice = (set) => ({
             // round trip), and wiping the user's tree view on those would be a
             // bug in itself. see docs/archive/2026-08-11-tree-collapse-plan.md
             collapsedIds: state.activePage?.tsxPath === page.tsxPath ? state.collapsedIds : {},
+            activeVariantKey: null,
         }));
         useHistoryStore.getState().setActivePageId(page.tsxPath);
         // Seed the history bucket so Cmd+Z can return to this state.
@@ -109,6 +111,11 @@ export const createDocumentSlice = (set) => ({
             collapsedIds: state.activeComponent?.tsxPath === component.tsxPath
                 ? state.collapsedIds
                 : {},
+            activeVariantKey: state.activeComponent?.tsxPath === component.tsxPath &&
+                state.activeVariantKey !== null &&
+                isVariantKeyLive(elements, state.activeVariantKey)
+                ? state.activeVariantKey
+                : null,
         }));
         // Components get their own per-target history bucket keyed by
         // their tsxPath — same shape as pages so the history slice
@@ -126,6 +133,10 @@ export const createDocumentSlice = (set) => ({
             // Drop any selection that no longer exists in the new tree (the file
             // could have been edited externally to remove an element).
             selectedElementIds: state.selectedElementIds.filter((id) => id in elements),
+            // An external edit can remove the value being edited.
+            activeVariantKey: state.activeVariantKey !== null && isVariantKeyLive(elements, state.activeVariantKey)
+                ? state.activeVariantKey
+                : null,
             isLoading: true,
             lastLoadKind: 'external',
             // An external edit replacing the canvas voids any snapshot-preview

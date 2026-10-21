@@ -95,14 +95,17 @@ export const shouldCollapseAgentEdit = (
  */
 export const pruneToLimit = (
   snapshots: ReadonlyArray<SnapshotMeta>,
-  limit: number = SNAPSHOT_LIMIT
+  limit: number = SNAPSHOT_LIMIT,
+  /** Never removed: the snapshot a restore is about to copy back. */
+  keepId?: string
 ): { kept: SnapshotMeta[]; removed: SnapshotMeta[] } => {
   const sorted = [...snapshots].sort(
     (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp)
   );
   if (sorted.length <= limit) return { kept: sorted, removed: [] };
   const overBy = sorted.length - limit;
-  return { removed: sorted.slice(0, overBy), kept: sorted.slice(overBy) };
+  const removed = sorted.filter((s) => s.id !== keepId).slice(0, overBy);
+  return { removed, kept: sorted.filter((s) => !removed.includes(s)) };
 };
 
 // ---- Index read/write ----
@@ -295,7 +298,8 @@ export const createSnapshot = async (
   format: ProjectFormat,
   trigger: SnapshotTrigger,
   detail?: string,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  keepId?: string
 ): Promise<SnapshotMeta | null> => {
   try {
     const existing = await readIndex(projectPath);
@@ -319,7 +323,7 @@ export const createSnapshot = async (
     };
 
     await updateIndex(projectPath, async (current) => {
-      const { kept, removed } = pruneToLimit([...current, meta]);
+      const { kept, removed } = pruneToLimit([...current, meta], SNAPSHOT_LIMIT, keepId);
       for (const r of removed) {
         await fs
           .rm(snapshotDirFor(projectPath, r.id), { recursive: true, force: true })
@@ -407,19 +411,42 @@ export const restoreSnapshot = async (
     if (!existing.some((s) => s.id === snapshotId)) {
       return { ok: false, error: 'Snapshot not found.' };
     }
+    const dir = snapshotDirFor(projectPath, snapshotId);
+    const files = await walkFiles(dir);
+    if (files.length === 0) {
+      return { ok: false, error: 'That snapshot has no files to restore.' };
+    }
     // No safety copy, no restore: it would overwrite work with no way back.
-    const safety = await createSnapshot(projectPath, format, 'before_restore', undefined, opts.nowMs);
+    // The safety copy can push the count past the limit, which prunes the
+    // oldest snapshot; that must not be the one being restored.
+    const safety = await createSnapshot(projectPath, format, 'before_restore', undefined, opts.nowMs, snapshotId);
     if (safety === null) {
       return { ok: false, error: "Couldn't save the current state first, so nothing was restored." };
     }
 
-    const dir = snapshotDirFor(projectPath, snapshotId);
-    const files = await walkFiles(dir);
-    for (const abs of files) {
-      const dest = join(projectPath, relative(dir, abs));
-      await fs.mkdir(dirname(dest), { recursive: true });
-      opts.beforeWrite?.(dest);
-      await fs.copyFile(abs, dest);
+    const written: string[] = [];
+    try {
+      for (const abs of files) {
+        const dest = join(projectPath, relative(dir, abs));
+        await fs.mkdir(dirname(dest), { recursive: true });
+        opts.beforeWrite?.(dest);
+        await fs.copyFile(abs, dest);
+        written.push(dest);
+      }
+    } catch (err) {
+      // Partway through, the project is part snapshot, part current work,
+      // and the canvas still shows the current work. Put back what was
+      // replaced from the safety copy just taken, so it's all current again.
+      const safetyDir = snapshotDirFor(projectPath, safety.id);
+      for (const dest of written) {
+        const saved = join(safetyDir, relative(projectPath, dest));
+        // Not in the safety copy means it didn't exist before the restore.
+        const existed = await fs.access(saved).then(() => true, () => false);
+        if (existed) await fs.copyFile(saved, dest).catch(() => undefined);
+        else await fs.rm(dest, { force: true });
+      }
+      const reason = err instanceof Error ? err.message : String(err);
+      return { ok: false, error: `The restore failed partway (${reason}), so the project was left as it was.` };
     }
     return { ok: true };
   } catch (err) {

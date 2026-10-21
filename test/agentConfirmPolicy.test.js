@@ -18,6 +18,21 @@ describe('needsConfirmation', () => {
     it('never asks for nothing', () => {
         expect(needsConfirmation([])).toBe(false);
     });
+    it('asks before removing a variant property or value, but not before adding one', () => {
+        const variants = (action) => ({
+            name: 'scamp_edit_variants',
+            input: { action, property: 'variant', value: 'outline' },
+        });
+        expect(needsConfirmation([variants('remove_property')])).toBe(true);
+        expect(needsConfirmation([variants('remove_value')])).toBe(true);
+        expect(needsConfirmation([variants('add_value')])).toBe(false);
+    });
+});
+describe('describeToolCall for variants', () => {
+    it('says which variant edit it is', () => {
+        expect(describeToolCall({ name: 'scamp_edit_variants', input: { action: 'remove_value', property: 'variant', value: 'outline' } })).toBe('Remove outline from variant, with its styles');
+        expect(describeToolCall({ name: 'scamp_edit_variants', input: { action: 'add_interaction', property: 'state', trigger: 'click', to: 'open' } })).toBe('Add a click interaction: state any → open');
+    });
 });
 describe('describeToolCall', () => {
     it('says what each edit will do', () => {

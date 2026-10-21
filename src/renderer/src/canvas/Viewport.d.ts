@@ -1,4 +1,4 @@
-import { type RefObject } from 'react';
+import { type ReactNode, type RefObject } from 'react';
 /**
  * Floor on the canvas frame's rendered height. Purely a design-tool
  * convenience — the frame grows past this as content is added, but
@@ -50,6 +50,33 @@ type Props = {
      * the prop so no handle renders.
      */
     onResize?: (width: number, height: number) => void;
+    /**
+     * Drawn in the frame instead of the root, on a clear background: the
+     * component editor's variant set, which draws the root in each frame.
+     */
+    frameContent?: ReactNode;
 };
-export declare const Viewport: ({ canvasWidth, canvasHeight, heightIsFixed, clipContent, scrollContainerRef, onResize, }: Props) => JSX.Element;
+export declare const Viewport: ({ canvasWidth, canvasHeight, heightIsFixed, clipContent, scrollContainerRef, onResize, frameContent, }: Props) => JSX.Element;
+/**
+ * Mounts a `<style>` element inside the canvas frame containing the
+ * page's `@keyframes` blocks. Without this, the inline `animation`
+ * declarations the renderer applies during preview can't resolve
+ * their keyframe names — Scamp renders into the Electron renderer's
+ * own document, not via the user's CSS module file.
+ *
+ * Re-renders only when `pageKeyframesBlocks` changes; otherwise the
+ * `<style>` tag's textContent stays stable and doesn't churn.
+ */
+/**
+ * Mounts the page's own generated CSS inside the canvas frame.
+ *
+ * The canvas translates the element model into inline styles, which cannot
+ * express `::before` / `::after` or any hand-written selector — those
+ * rendered in the preview and not here. Loading the same stylesheet the
+ * generator writes to disk supplies exactly what the translation can't.
+ * Inline styles still win on the properties they set, so this only adds.
+ *
+ * see docs/plans/canvas-preview-parity-plan.md
+ */
+export declare const CanvasPageStylesheet: () => JSX.Element | null;
 export {};

@@ -4,6 +4,8 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { PanelHeader } from './PanelHeader';
 import { PanelModeToggle } from './PanelModeToggle';
 import { StateSwitcher } from './StateSwitcher';
+import { VariantsSection } from './VariantsSection';
+import { ROOT_ELEMENT_ID } from '@lib/element';
 import { UiPanel } from './UiPanel';
 import { CssPanel } from './CssPanel';
 import { DataPanel, useViewDataCount, ViewDataSection } from './DataPanel';
@@ -65,6 +67,9 @@ export const PropertiesPanel = ({
   const selectedId = useCanvasStore((s) => s.selectedElementIds[0] ?? null);
   const panelMode = useCanvasStore((s) => s.panelMode);
   const isComponentEditing = useCanvasStore((s) => s.activeComponent !== null);
+  // Variants belong to a component, not a view: Figma's set properties,
+  // shown with the component (its root, or nothing) selected.
+  const isComponent = useCanvasStore((s) => s.activeComponent?.kind === 'component');
   const dataCount = useViewDataCount();
 
   // Nothing selected: the panel shows what belongs to the page rather
@@ -79,7 +84,9 @@ export const PropertiesPanel = ({
         data-panel-mode="empty"
       >
         <div className={styles.emptyBody}>
-          {routesSection}
+          {isComponent && <VariantsSection />}
+          {/* Routes point at pages, never at a component. */}
+          {!isComponent && routesSection}
           {isComponentEditing && (
             <div data-testid="view-data-section">
               <Section title="Data" collapsible defaultOpen={false} count={dataCount}>
@@ -108,6 +115,7 @@ export const PropertiesPanel = ({
       <PanelHeader />
       <PanelModeToggle />
       {panelMode === 'ui' && <StateSwitcher />}
+      {panelMode === 'ui' && isComponent && selectedId === ROOT_ELEMENT_ID && <VariantsSection />}
       {panelMode === 'data' ? (
         <DataPanel />
       ) : panelMode === 'ui' ? (

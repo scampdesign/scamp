@@ -857,6 +857,30 @@ export type ScampElement = {
   customSelectorBlocks?: ReadonlyArray<RawSelectorBlock>;
 
   /**
+   * A component root's variant axes: each a prop bound to `data-<prop>`
+   * on the root, typed as a union of its values. Only the root of a
+   * component carries them. see docs/plans/component-variants-plan.md
+   */
+  variantAxes?: ReadonlyArray<VariantAxis>;
+
+  /**
+   * This element's styles under one value of an axis, keyed
+   * `variantKey(axis, value)` (`variant=outline`). The default value
+   * has none: its look is the element's own styles. Emitted as
+   * `.root[data-<axis>="<value>"]` rules after every element's own.
+   */
+  variantOverrides?: Record<string, VariantOverride>;
+
+  /**
+   * A component root's interactions: an axis that changes value on
+   * hover, press, focus, a click, a click outside, or Escape. Hover,
+   * press, and focus are written as second selectors on the target
+   * value's rules; the others as `data-scamp-*` attributes the scampjs
+   * handler reads. CONTRACT.md §1.3.2, docs/plans/component-variants-plan.md
+   */
+  variantInteractions?: ReadonlyArray<VariantInteraction>;
+
+  /**
    * Row and cell styling a `<table>` sets once for all of them. Not
    * overridable per breakpoint or state.
    */
@@ -886,6 +910,9 @@ export type BreakpointOverride = Partial<
     | 'breakpointOverrides'
     | 'stateOverrides'
     | 'customSelectorBlocks'
+    | 'variantAxes'
+    | 'variantOverrides'
+    | 'variantInteractions'
     | 'tableStyle'
     | 'tag'
     | 'attributes'
@@ -942,6 +969,110 @@ export const ELEMENT_STATES: ReadonlyArray<ElementStateName> = [
  */
 export type StateOverride = BreakpointOverride & {
   animation?: ElementAnimation;
+};
+
+/** One variant axis of a component: its prop, its values in order, and the default. */
+export type VariantAxis = {
+  prop: string;
+  values: ReadonlyArray<string>;
+  defaultValue: string;
+};
+
+/** An element's styles under one axis value, with its states under that value. */
+export type VariantOverride = BreakpointOverride & {
+  states?: Partial<Record<ElementStateName, StateOverride>>;
+};
+
+/** What changes a component's variant by itself. */
+export type VariantTrigger = 'hover' | 'press' | 'focus' | 'click' | 'outside' | 'escape';
+
+/** One interaction: on `trigger`, `axis` goes from `from` (null for any value) to `to`. */
+export type VariantInteraction = {
+  axis: string;
+  from: string | null;
+  trigger: VariantTrigger;
+  to: string;
+  /** Click only: the element clicked. The root when absent. */
+  target?: string;
+};
+
+/** The `variantOverrides` key for one axis value. */
+export const variantKey = (axis: string, value: string): string => `${axis}=${value}`;
+
+/** One axis's value in a variant key. */
+export type VariantPick = { axis: string; value: string };
+
+/** A variant axis name: a prop, and a `data-` attribute suffix CSS matches lowercase. */
+export const VARIANT_AXIS_RE = /^[a-z][a-z0-9]*$/;
+/** A variant value: a CSS attribute value and a TypeScript string literal. */
+export const VARIANT_VALUE_RE = /^[a-z][a-z0-9-]*$/;
+
+/**
+ * Whether `parts` are non-default values of `axes`, one per axis, in axis
+ * order: the shape of a key the generator writes and the parser places.
+ */
+export const variantPartsLive = (axes: ReadonlyArray<VariantAxis>, parts: ReadonlyArray<VariantPick>): boolean => {
+  let previous = -1;
+  for (const part of parts) {
+    const index = axes.findIndex((a) => a.prop === part.axis);
+    const axis = axes[index];
+    if (axis === undefined || index <= previous || !axis.values.includes(part.value) || axis.defaultValue === part.value) return false;
+    previous = index;
+  }
+  return parts.length > 0;
+};
+
+/** The key for a combination, parts in axis order: `variant=outline&size=small`. */
+export const variantComboKey = (parts: ReadonlyArray<VariantPick>): string =>
+  parts.map((p) => variantKey(p.axis, p.value)).join('&');
+
+/** A key's parts, or null when one isn't `axis=value`. */
+export const variantKeyParts = (key: string): VariantPick[] | null => {
+  const parts: VariantPick[] = [];
+  for (const part of key.split('&')) {
+    const at = part.indexOf('=');
+    if (at <= 0 || at === part.length - 1) return null;
+    parts.push({ axis: part.slice(0, at), value: part.slice(at + 1) });
+  }
+  return parts;
+};
+
+/** Each subset of `items` with `size` members, in index order. */
+const subsetsOf = <T>(items: ReadonlyArray<T>, size: number): T[][] => {
+  if (size === 0) return [[]];
+  const out: T[][] = [];
+  items.forEach((item, i) => {
+    for (const rest of subsetsOf(items.slice(i + 1), size - 1)) out.push([item, ...rest]);
+  });
+  return out;
+};
+
+/**
+ * Every key whose rule applies when these values are picked (one per
+ * axis, in axis order): each single value, then each pair, and so on,
+ * in the order their rules are written. A later rule wins a tie, so
+ * layering in this order matches the browser. CONTRACT.md §1.3.1
+ */
+export const keysCovering = (picks: ReadonlyArray<VariantPick>): string[] => {
+  const out: string[] = [];
+  for (let size = 1; size <= picks.length; size += 1) {
+    for (const subset of subsetsOf(picks, size)) out.push(variantComboKey(subset));
+  }
+  return out;
+};
+
+/** Every key the axes allow, in the order their rules are written. */
+export const orderedVariantKeys = (axes: ReadonlyArray<VariantAxis>): string[] => {
+  const choices = axes.map((axis) => axis.values.filter((v) => v !== axis.defaultValue).map((value) => ({ axis: axis.prop, value })));
+  const out: string[] = [];
+  for (let size = 1; size <= axes.length; size += 1) {
+    for (const subset of subsetsOf(choices, size)) {
+      let tuples: VariantPick[][] = [[]];
+      for (const options of subset) tuples = tuples.flatMap((t) => options.map((o) => [...t, o]));
+      for (const tuple of tuples) out.push(variantComboKey(tuple));
+    }
+  }
+  return out;
 };
 
 /**

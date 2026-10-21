@@ -19,6 +19,20 @@ export const BOOLEAN_ATTRIBUTES = new Set([
     'autofocus',
     'autoFocus',
 ]);
+/**
+ * Names a prop can't take: React keeps `key`, `ref`, `children`, `style`,
+ * and `className` for itself, and a JavaScript keyword can't be a
+ * destructured binding (`{ class = "a" }` is a syntax error).
+ */
+export const RESERVED_PROP_NAMES = new Set([
+    'className', 'children', 'key', 'ref', 'style',
+    'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else',
+    'enum', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'implements', 'import', 'in',
+    'instanceof', 'interface', 'let', 'new', 'null', 'package', 'private', 'protected', 'public', 'return',
+    'static', 'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with', 'yield',
+]);
+/** A TypeScript double-quoted string literal. */
+const quoteLiteral = (value) => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 /** `player.label` binds a row field, not a prop. */
 export const isRowPath = (ref) => ref.includes('.');
 /** The prop behind a binding expression: `!canStart` → `canStart`. */
@@ -109,11 +123,15 @@ export const collectViewProps = (elements, rootId) => {
                 continue;
             }
             const literal = isInstance ? el.propOverrides?.[attr] : attributeSample(el, attr);
+            // A variant axis types as the union of its values. CONTRACT.md §1.3.1
+            const axis = id === rootId && attr === `data-${name}`
+                ? el.variantAxes?.find((a) => a.prop === name)
+                : undefined;
             add(props, {
                 name,
                 kind: 'attribute',
-                tsType: 'string',
-                defaultValue: literal ?? '',
+                tsType: axis !== undefined ? axis.values.map(quoteLiteral).join(' | ') : 'string',
+                defaultValue: axis !== undefined ? axis.defaultValue : literal ?? '',
             });
         }
         for (const handler of Object.values(el.on ?? {})) {

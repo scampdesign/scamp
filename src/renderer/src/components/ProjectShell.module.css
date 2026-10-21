@@ -153,27 +153,25 @@
   color: var(--text-inverse);
 }
 
-/* Persistent banner shown above the canvas when the user is in
-   the component editor. Visually distinct from MigrationBanner
-   (yellow / warning) because this is an info / state indicator,
-   not a recoverable problem to dismiss. */
-.componentEditorBanner {
+/* An info banner above the canvas (the SVG reload notice). Distinct
+   from MigrationBanner's yellow, which is a warning. */
+.noticeBanner {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
-  background: var(--accent-muted, rgba(99, 102, 241, 0.12));
-  border-bottom: 1px solid var(--accent, #6366f1);
+  background: var(--component-muted);
+  border-bottom: 1px solid var(--component);
   color: var(--text-primary);
   font-size: 12px;
   flex-shrink: 0;
 }
 
-.componentEditorBanner strong {
+.noticeBanner strong {
   font-weight: 600;
 }
 
-.componentEditorExit {
+.noticeBannerButton {
   margin-left: auto;
   background: transparent;
   border: 1px solid var(--border);
@@ -185,13 +183,13 @@
   cursor: pointer;
 }
 
-.componentEditorExit:hover {
+.noticeBannerButton:hover {
   background: var(--bg-hover);
   color: var(--text-inverse);
 }
 
-/* Snapshot preview banner — same accent treatment as the component
-   editor banner, but with a primary Restore action + an Exit. */
+/* Snapshot preview banner — same accent treatment as the notice
+   banner, but with a primary Restore action + an Exit. */
 .snapshotPreviewBanner {
   display: flex;
   align-items: center;
@@ -648,4 +646,36 @@ font-size: 13px;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
 font-size: 12px;
+}
+
+.starterRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.starterButton {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.starterButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.starterError {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--error-text);
 }

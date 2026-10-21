@@ -1,5 +1,5 @@
 import { parseCode } from '@lib/parseCode';
-import { ABOUT_NOTES, checkProject, checkTarget, findCheckTarget, rootTagsOf, type CheckTarget } from '@lib/projectCheck';
+import { ABOUT_NOTES, checkProject, checkTarget, findCheckTarget, componentRootsOf, type CheckTarget } from '@lib/projectCheck';
 import { componentKindOf } from '@shared/types';
 import { useCanvasStore } from '@store/canvasSlice';
 
@@ -80,6 +80,6 @@ export const answerCheck = async (
       text: `No page, view, or component named "${name}" exists. Call scamp_list_pages or scamp_list_components for the names.`,
     };
   }
-  const checked = checkTarget(found, tokens, rootTagsOf(targets));
+  const checked = checkTarget(found, tokens, componentRootsOf(targets));
   return { ok: true, text: JSON.stringify({ ...checked, ...(checked.notes.length > 0 ? { aboutNotes: ABOUT_NOTES } : {}) }, null, 2) };
 };

@@ -129,6 +129,46 @@ export const makeOnWriteConflict = (ctx) => (target, conflict, silent = false, i
         .log('warn', `${target.name} was edited outside Scamp; reloaded to that version. Your in-flight edit was dropped.`);
 };
 /**
+ * The files a save would write for this canvas: the generated code, laid
+ * over what's on disk (`lastSerialized`) so only changed rules are
+ * rewritten. Shared by the save and by the merge an external edit runs
+ * when the canvas has unsaved changes.
+ */
+export const serializeCanvas = (ctx, elements, rootElementId, target, customMediaBlocks, pageKeyframesBlocks) => {
+    const store = useCanvasStore.getState();
+    const code = generateCode({
+        elements,
+        rootId: rootElementId,
+        // generateCode uses `pageName` for the function name AND the
+        // CSS-module import basename. For components the name IS the
+        // PascalCase component name, which generateCode passes through
+        // unchanged — both halves come out right.
+        pageName: target.name,
+        breakpoints: store.breakpoints,
+        customMediaBlocks,
+        pageKeyframesBlocks,
+        cssModuleImportName: importNameForTarget(target, store.projectFormat),
+        isComponent: target.kind === 'component',
+    });
+    // Rewrite only the rules that changed, keeping whatever else the
+    // stylesheet on disk holds. see docs/plans/incremental-writes-plan.md
+    const cssOut = cssWriteFor({
+        baseCss: ctx.lastSerializedCss,
+        generatedCss: code.css,
+        tsx: code.tsx,
+        breakpoints: store.breakpoints,
+        isComponent: target.kind === 'component',
+    });
+    const tsxOut = tsxWriteFor({
+        baseTsx: ctx.lastSerializedTsx,
+        generatedTsx: code.tsx,
+        css: code.css,
+        breakpoints: store.breakpoints,
+        isComponent: target.kind === 'component',
+    });
+    return { code, tsxOut, cssOut };
+};
+/**
  * Generate code for the given (elements, rootId, page) tuple and write
  * it to disk if it differs from the last-written cache. Pure with
  * respect to its arguments — used by the debounced flush, the page-
@@ -184,36 +224,7 @@ export const makeWriteIfDirty = (ctx) => (elements, rootElementId, target, custo
         }
     }
     const store = useCanvasStore.getState();
-    const code = generateCode({
-        elements,
-        rootId: rootElementId,
-        // generateCode uses `pageName` for the function name AND the
-        // CSS-module import basename. For components the name IS the
-        // PascalCase component name, which generateCode passes through
-        // unchanged — both halves come out right.
-        pageName: target.name,
-        breakpoints: store.breakpoints,
-        customMediaBlocks,
-        pageKeyframesBlocks,
-        cssModuleImportName: importNameForTarget(target, store.projectFormat),
-        isComponent: target.kind === 'component',
-    });
-    // Rewrite only the rules that changed, keeping whatever else the
-    // stylesheet on disk holds. see docs/plans/incremental-writes-plan.md
-    const cssOut = cssWriteFor({
-        baseCss: ctx.lastSerializedCss,
-        generatedCss: code.css,
-        tsx: code.tsx,
-        breakpoints: store.breakpoints,
-        isComponent: target.kind === 'component',
-    });
-    const tsxOut = tsxWriteFor({
-        baseTsx: ctx.lastSerializedTsx,
-        generatedTsx: code.tsx,
-        css: code.css,
-        breakpoints: store.breakpoints,
-        isComponent: target.kind === 'component',
-    });
+    const { code, tsxOut, cssOut } = serializeCanvas(ctx, elements, rootElementId, target, customMediaBlocks, pageKeyframesBlocks);
     if (tsxOut.tsx === ctx.lastSerializedTsx && cssOut.css === ctx.lastSerializedCss) {
         // No-op dedupe: the debounce fired but the generated code matches
         // what's already on disk. Advance the indicator out of "unsaved"

@@ -162,6 +162,14 @@ describe('pruneToLimit', () => {
     expect(removed.map((s) => s.id)).toEqual(['s0', 's1']);
   });
 
+  it('never removes the snapshot it is told to keep, removing the next oldest instead', () => {
+    const snaps = Array.from({ length: 51 }, (_, i) => meta({ id: `s${i}`, timestamp: at(i) }));
+    const { kept, removed } = pruneToLimit(snaps, 50, 's0');
+    expect(removed.map((s) => s.id)).toEqual(['s1']);
+    expect(kept.map((s) => s.id)).toContain('s0');
+    expect(kept).toHaveLength(50);
+  });
+
   it('defaults to a 50-snapshot limit', () => {
     expect(SNAPSHOT_LIMIT).toBe(50);
   });
@@ -417,6 +425,57 @@ describe('restoreSnapshot', () => {
       'utf-8'
     );
     expect(captured).toBe('BROKEN by agent');
+  });
+
+  it('restores the oldest snapshot when the safety copy takes the count past the limit', async () => {
+    const root = await makeNextjsProject();
+    const oldest = await createSnapshot(root, 'nextjs', 'manual', 'oldest', now);
+    for (let i = 1; i < SNAPSHOT_LIMIT; i += 1) {
+      await createSnapshot(root, 'nextjs', 'manual', `s${i}`, now + i * 1000);
+    }
+    await fs.writeFile(path.join(root, 'app', 'page.tsx'), 'BROKEN by agent');
+
+    const res = await restoreSnapshot(root, 'nextjs', oldest!.id, { nowMs: now + 3_600_000 });
+    expect(res.ok).toBe(true);
+    expect(await fs.readFile(path.join(root, 'app', 'page.tsx'), 'utf-8')).toBe('home tsx');
+    const list = await listSnapshots(root);
+    expect(list).toHaveLength(SNAPSHOT_LIMIT);
+    expect(list.some((s) => s.id === oldest!.id)).toBe(true);
+  });
+
+  it('puts the project back as it was when a copy fails partway', async () => {
+    // It used to stop with some files restored and the rest not, while the
+    // canvas showed neither. see docs/audits/2026-10-20-repo-audit.md, finding 13
+    const root = await makeNextjsProject();
+    const snap = await createSnapshot(root, 'nextjs', 'manual', 'good state', now);
+    const files = await enumerateProjectFiles(root, 'nextjs');
+    const before = await Promise.all(files.map(async (f) => {
+      await fs.writeFile(f, `current ${path.basename(f)}`);
+      return [f, `current ${path.basename(f)}`] as const;
+    }));
+    // A file only the snapshot has would be new to the project.
+    await fs.writeFile(path.join(root, '.scamp', 'snapshots', snap!.id, 'app', 'extra.tsx'), 'extra');
+
+    let copies = 0;
+    const res = await restoreSnapshot(root, 'nextjs', snap!.id, {
+      nowMs: now + 60000,
+      beforeWrite: () => {
+        copies += 1;
+        if (copies === 4) throw new Error('disk full');
+      },
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error).toContain('disk full');
+    for (const [file, content] of before) expect(await fs.readFile(file, 'utf-8')).toBe(content);
+    await expect(fs.access(path.join(root, 'app', 'extra.tsx'))).rejects.toThrow();
+  });
+
+  it('fails, rather than reporting success, when the snapshot has no files', async () => {
+    const root = await makeNextjsProject();
+    const snap = await createSnapshot(root, 'nextjs', 'manual', 'gone', now);
+    await fs.rm(path.join(root, '.scamp', 'snapshots', snap!.id), { recursive: true, force: true });
+    const res = await restoreSnapshot(root, 'nextjs', snap!.id, { nowMs: now + 60000 });
+    expect(res).toEqual({ ok: false, error: 'That snapshot has no files to restore.' });
   });
 
   it('refuses to restore, and touches nothing, when the safety snapshot fails', async () => {

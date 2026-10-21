@@ -4,6 +4,7 @@ import { canonicalizeGroupList } from '@lib/propertyGroups';
 import { PRESETS_BY_NAME, isPresetName } from '@lib/animationPresets';
 import { classNameFor } from '@lib/generateCode';
 import { resolveElementAtState } from '@lib/stateCascade';
+import { isVariantKeyLive, resetVariantFields } from '@lib/variantAxes';
 import { ALL_RESIZE_AXES } from '@lib/resizeAxes';
 import { applyPatchWithAxisRouting, } from '../patchRouting';
 import { commitElementsToHistory } from '../history';
@@ -272,7 +273,7 @@ export const createElementsEditSlice = (set) => ({
             // never on a state override, even if a state is active in the
             // panel. Moving an element on the canvas is a layout edit, not
             // a hover-state design decision.
-            const next = applyPatchWithAxisRouting(el, { x, y }, state.activeBreakpointId, null);
+            const next = applyPatchWithAxisRouting(el, { x, y }, state.activeBreakpointId, null, state.activeVariantKey);
             return { elements: { ...state.elements, [id]: next } };
         });
         // moveElement is called every pointermove tick during a drag,
@@ -298,7 +299,7 @@ export const createElementsEditSlice = (set) => ({
                 ...(axes.y ? { y } : {}),
                 ...(axes.width ? { widthValue: width, widthMode: 'fixed' } : {}),
                 ...(axes.height ? { heightValue: height, heightMode: 'fixed' } : {}),
-            }, state.activeBreakpointId, null);
+            }, state.activeBreakpointId, null, state.activeVariantKey);
             return { elements: { ...state.elements, [id]: next } };
         });
         // resizeElement runs every pointermove tick during a handle drag,
@@ -321,7 +322,7 @@ export const createElementsEditSlice = (set) => ({
             const el = state.elements[id];
             if (!el)
                 return state;
-            const next = applyPatchWithAxisRouting(el, patch, state.activeBreakpointId, state.activeStateName);
+            const next = applyPatchWithAxisRouting(el, patch, state.activeBreakpointId, state.activeStateName, state.activeVariantKey);
             // A panel edit on this element triggers `generateCode` to
             // rewrite its class block from typed state, which collapses any
             // duplicate declarations the file had. Clear the indicator
@@ -371,7 +372,7 @@ export const createElementsEditSlice = (set) => ({
             return;
         // Base off the resolved element so the merge matches what the
         // panel currently shows (and what the old splat-and-delete used).
-        const resolved = resolveElementAtState(el, state.activeBreakpointId, state.breakpoints, state.activeStateName);
+        const resolved = resolveElementAtState(el, state.activeBreakpointId, state.breakpoints, state.activeStateName, state.activeVariantKey);
         const next = { ...resolved.customProperties };
         for (const [key, value] of Object.entries(patch)) {
             if (value === undefined)
@@ -463,6 +464,31 @@ export const createElementsEditSlice = (set) => ({
             propertyKeys: fields,
         });
     },
+    resetElementFieldsAtVariant: (id, key, fields) => {
+        if (useCanvasStore.getState().snapshotPreview !== null)
+            return;
+        set((state) => {
+            const el = state.elements[id];
+            if (!el)
+                return state;
+            const next = resetVariantFields(el, key, state.activeStateName, fields);
+            return next === el ? state : { elements: { ...state.elements, [id]: next } };
+        });
+        commitElementsToHistory({ kind: 'patch', elementIds: [id], propertyKeys: fields });
+    },
+    editVariants: (edit, nextKey) => {
+        if (useCanvasStore.getState().snapshotPreview !== null)
+            return;
+        set((state) => {
+            const elements = edit(state.elements);
+            const key = nextKey === undefined ? state.activeVariantKey : nextKey;
+            return {
+                elements,
+                activeVariantKey: key !== null && isVariantKeyLive(elements, key) ? key : null,
+            };
+        });
+        commitElementsToHistory({ kind: 'variants' });
+    },
     setAnimation: (id, animation) => {
         set((state) => {
             const el = state.elements[id];
@@ -471,7 +497,7 @@ export const createElementsEditSlice = (set) => ({
             // Route the animation patch through the same axis-routing the
             // panel sections use — base when default state is active, the
             // matching state override otherwise.
-            const next = applyPatchWithAxisRouting(el, { animation }, state.activeBreakpointId, state.activeStateName);
+            const next = applyPatchWithAxisRouting(el, { animation }, state.activeBreakpointId, state.activeStateName, state.activeVariantKey);
             // Ensure a `KeyframesBlock` exists for the chosen name. If the
             // page already has one with this name (preset or agent-edited),
             // leave it alone — preserves user intent. If absent, append the
@@ -506,6 +532,9 @@ export const createElementsEditSlice = (set) => ({
                 return state;
             // Two cases: clear the base animation, or clear the active
             // state's animation override.
+            // shortcut: no removal inside a variant yet, add with the variant animation UI.
+            if (state.activeVariantKey !== null)
+                return state;
             if (state.activeStateName === null) {
                 const { animation: _drop, ...rest } = el;
                 const nextEl = el.animation === undefined ? el : rest;

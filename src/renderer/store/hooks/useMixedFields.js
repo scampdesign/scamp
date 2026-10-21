@@ -14,7 +14,7 @@ export const useMixedFields = (fits) => {
         const resolved = s.selectedElementIds.flatMap((id) => {
             const el = s.elements[id];
             return el !== undefined && fits(el)
-                ? [resolveElementAtState(el, s.activeBreakpointId, s.breakpoints, s.activeStateName)]
+                ? [resolveElementAtState(el, s.activeBreakpointId, s.breakpoints, s.activeStateName, s.activeVariantKey)]
                 : [];
         });
         return mixedFields(resolved).join('\n');

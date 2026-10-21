@@ -1,5 +1,5 @@
 import { DragEvent, useEffect, useRef, useState } from 'react';
-import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconComponents } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { classNameFor } from '@lib/generateCode';
 import { canContainChildren } from '@lib/insertParent';
@@ -121,6 +121,9 @@ const Row = ({
   const toggleSelectElement = useCanvasStore((s) => s.toggleSelectElement);
   const reorderElement = useCanvasStore((s) => s.reorderElement);
   const patchElement = useCanvasStore((s) => s.patchElement);
+  // In the component editor the root is the component itself.
+  const componentName = useCanvasStore((s) => (s.activeComponent?.kind === 'component' ? s.activeComponent.name : null));
+  const isComponentRoot = element.id === ROOT_ELEMENT_ID && componentName !== null;
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [renaming, setRenaming] = useState(false);
@@ -279,15 +282,16 @@ const Row = ({
           });
         }}
       >
-        <span className={styles.icon} aria-hidden="true">
-          {element.type === 'text'
-            ? 'T'
-            : element.type === 'component-instance'
-              ? '◆'
-              : element.type === 'image' && element.tag === 'svg'
-                ? '✦'
-                : '▢'}
-        </span>
+        {element.type === 'component-instance' || isComponentRoot ? (
+          // The sidebar's Components icon, in the component purple, as Figma marks them.
+          <span className={`${styles.icon} ${styles.componentIcon}`} aria-hidden="true">
+            <IconComponents size={12} stroke={2} />
+          </span>
+        ) : (
+          <span className={styles.icon} aria-hidden="true">
+            {element.type === 'text' ? 'T' : element.type === 'image' && element.tag === 'svg' ? '✦' : '▢'}
+          </span>
+        )}
         {renaming ? (
           <input
             ref={inputRef}
@@ -316,7 +320,7 @@ const Row = ({
             onPointerDown={(e) => e.stopPropagation()}
           />
         ) : (
-          <span className={styles.label}>{labelFor(element)}</span>
+          <span className={styles.label}>{isComponentRoot ? componentName : labelFor(element)}</span>
         )}
       </button>
       </Tooltip>

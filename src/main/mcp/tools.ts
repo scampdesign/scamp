@@ -92,13 +92,13 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   {
     name: 'scamp_list_components',
     description:
-      'Every reusable Scamp component in the project (`components/<Name>/`) with its project-relative file paths. Read the returned .tsx file for a component’s props and markup. If this is empty and the user asks for components, a kit, or a library, create them — call scamp_get_component_scaffold for the starter files rather than building a page of examples.',
+      'Every reusable Scamp component in the project (`components/<Name>/`) with its project-relative file paths, and `variants` when it has any: each axis prop, its values, and the default, plus `interactions` (a value that changes by itself on hover, press, focus, click, a click outside, or Escape). Pick a value on an instance as a plain attribute, e.g. variant="outline". Read the returned .tsx file for a component’s props and markup. If this is empty and the user asks for components, a kit, or a library, create them — call scamp_get_component_scaffold for the starter files rather than building a page of examples.',
     inputSchema: { ...NO_ARGS },
   },
   {
     name: 'scamp_get_component_scaffold',
     description:
-      'The exact starter TSX and CSS module for a new Scamp component, plus the project-relative paths to write them to. Call this before creating a component: when the user asks for components, a kit, or a library, write these folders under components/ rather than a page of examples. Scamp lists the component the moment the files exist. The name must be PascalCase letters and digits, e.g. "HeroCard".',
+      'The exact starter TSX and CSS module for a new Scamp component, plus the project-relative paths to write them to. Call this before creating a component: when the user asks for components, a kit, or a library, write these folders under components/ rather than a page of examples. Scamp lists the component the moment the files exist. A component with several looks (an outline button, a small size, an open menu) is one component with variants — an axis prop per way the looks differ — not a component per look; scamp_get_conventions section "Scamp components" has the shape, under Variants. The name must be PascalCase letters and digits, e.g. "HeroCard".',
     inputSchema: {
       type: 'object',
       properties: {

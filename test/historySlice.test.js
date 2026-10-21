@@ -296,6 +296,24 @@ describe('historySlice — per-page isolation', () => {
         expect(state.perPage['landing.tsx']?.entries).toHaveLength(1);
         expect(state.activePageId).toBe('landing.tsx');
     });
+    it('forgetPage drops a deleted page’s history, so a new page of that name starts empty', () => {
+        // Undo in the new page used to restore the deleted one and write it to disk.
+        // see docs/audits/2026-10-20-repo-audit.md, finding 11
+        const { setActivePageId, commitHistory, forgetPage, commitInitialIfEmpty } = useHistoryStore.getState();
+        setActivePageId('about.tsx');
+        commitHistory({ kind: 'draw-rect' }, snapshot('deleted page'));
+        forgetPage('about.tsx');
+        expect(useHistoryStore.getState().perPage['about.tsx']).toBeUndefined();
+        commitInitialIfEmpty(snapshot('new page'));
+        expect(useHistoryStore.getState().perPage['about.tsx']?.entries).toHaveLength(1);
+    });
+    it('forgetPage leaves other pages alone, and does nothing for an unknown page', () => {
+        const { setActivePageId, commitHistory, forgetPage } = useHistoryStore.getState();
+        setActivePageId('home.tsx');
+        commitHistory({ kind: 'draw-rect' }, snapshot('home1'));
+        forgetPage('missing.tsx');
+        expect(useHistoryStore.getState().perPage['home.tsx']?.entries).toHaveLength(1);
+    });
 });
 describe('historySlice — external edits', () => {
     beforeEach(reset);

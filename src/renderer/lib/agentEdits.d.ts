@@ -37,6 +37,7 @@ export declare const setStyles: (ctx: AgentEditContext, args: {
     set?: unknown;
     remove?: unknown;
     breakpoint?: unknown;
+    variant?: unknown;
 }) => AgentEditResult;
 /**
  * A new element inside `parent`, styled with `css`. Built by parsing a

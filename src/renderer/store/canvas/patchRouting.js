@@ -12,6 +12,9 @@ export const BASE_ONLY_PATCH_FIELDS = new Set([
     'childIds',
     'breakpointOverrides',
     'stateOverrides',
+    'variantAxes',
+    'variantOverrides',
+    'variantInteractions',
     'customSelectorBlocks',
     'tableStyle',
     'tag',
@@ -30,6 +33,10 @@ export const BASE_ONLY_PATCH_FIELDS = new Set([
  *     `stateOverrides[activeStateName]`.
  *   - Non-desktop + default state → style fields route to
  *     `breakpointOverrides[activeBreakpointId]`.
+ *   - A variant (`activeVariantKey`, desktop only) → style fields route
+ *     to `variantOverrides[key]`, or to its `states[activeStateName]`.
+ *     A variant at a non-desktop breakpoint drops the style patch, as
+ *     state × breakpoint does.
  *   - Non-desktop + non-default state → state×breakpoint matrix is
  *     out of scope in this version; the patch is dropped to avoid
  *     silently writing the wrong place. The properties panel UI
@@ -53,7 +60,44 @@ export const BASE_ONLY_PATCH_FIELDS = new Set([
 export const assignPatchKey = (target, source, key) => {
     target[key] = source[key];
 };
-export const applyPatchWithAxisRouting = (el, patch, activeBreakpointId, activeStateName) => dropKeptOffsets(routePatch(el, patch, activeBreakpointId, activeStateName), patch, activeBreakpointId, activeStateName);
+export const applyPatchWithAxisRouting = (el, patch, activeBreakpointId, activeStateName, activeVariantKey = null) => 
+// Variant rules aren't written for an instance inside a component, so
+// its styles are its own in every frame.
+activeVariantKey !== null && el.type !== 'component-instance'
+    ? routeVariantPatch(el, patch, activeBreakpointId, activeStateName, activeVariantKey)
+    : dropKeptOffsets(routePatch(el, patch, activeBreakpointId, activeStateName), patch, activeBreakpointId, activeStateName);
+/** `{ ...existing, ...patch }`, with `customProperties` merged by key. */
+const mergeOverride = (existing, stylePatch) => {
+    const mergedCustom = 'customProperties' in stylePatch && stylePatch.customProperties
+        ? { ...(existing.customProperties ?? {}), ...stylePatch.customProperties }
+        : existing.customProperties;
+    return { ...existing, ...stylePatch, ...(mergedCustom !== undefined ? { customProperties: mergedCustom } : {}) };
+};
+const splitPatch = (patch) => {
+    const basePatch = {};
+    const stylePatch = {};
+    for (const key of Object.keys(patch)) {
+        if (BASE_ONLY_PATCH_FIELDS.has(key)) {
+            assignPatchKey(basePatch, patch, key);
+        }
+        else {
+            assignPatchKey(stylePatch, patch, key);
+        }
+    }
+    return { basePatch, stylePatch };
+};
+// shortcut: an offset kept verbatim (`left: 50%`) isn't dropped inside a variant, add when one shows up there.
+const routeVariantPatch = (el, patch, activeBreakpointId, activeStateName, key) => {
+    const { basePatch, stylePatch } = splitPatch(patch);
+    const mergedBase = Object.keys(basePatch).length > 0 ? { ...el, ...basePatch } : el;
+    if (Object.keys(stylePatch).length === 0 || activeBreakpointId !== 'desktop')
+        return mergedBase;
+    const existing = mergedBase.variantOverrides?.[key] ?? {};
+    const next = activeStateName === null
+        ? mergeOverride(existing, stylePatch)
+        : { ...existing, states: { ...existing.states, [activeStateName]: mergeOverride(existing.states?.[activeStateName] ?? {}, stylePatch) } };
+    return { ...mergedBase, variantOverrides: { ...mergedBase.variantOverrides, [key]: next } };
+};
 const without = (custom, keys) => {
     if (custom === undefined || !keys.some((k) => k in custom))
         return custom;
@@ -95,16 +139,7 @@ const dropKeptOffsets = (el, patch, activeBreakpointId, activeStateName) => {
 const routePatch = (el, patch, activeBreakpointId, activeStateName) => {
     // Split the patch into base (always-top-level) and style (goes to
     // override when an axis is active).
-    const basePatch = {};
-    const stylePatch = {};
-    for (const key of Object.keys(patch)) {
-        if (BASE_ONLY_PATCH_FIELDS.has(key)) {
-            assignPatchKey(basePatch, patch, key);
-        }
-        else {
-            assignPatchKey(stylePatch, patch, key);
-        }
-    }
+    const { basePatch, stylePatch } = splitPatch(patch);
     const mergedBase = Object.keys(basePatch).length > 0 ? { ...el, ...basePatch } : el;
     const styleKeys = Object.keys(stylePatch);
     // Desktop + default state — merge style patch onto top-level.
@@ -117,18 +152,7 @@ const routePatch = (el, patch, activeBreakpointId, activeStateName) => {
         return mergedBase;
     // Desktop + non-default state — route to stateOverrides.
     if (activeBreakpointId === 'desktop' && activeStateName !== null) {
-        const existingOverride = mergedBase.stateOverrides?.[activeStateName] ?? {};
-        const mergedCustom = 'customProperties' in stylePatch && stylePatch.customProperties
-            ? {
-                ...(existingOverride.customProperties ?? {}),
-                ...stylePatch.customProperties,
-            }
-            : existingOverride.customProperties;
-        const nextOverride = {
-            ...existingOverride,
-            ...stylePatch,
-            ...(mergedCustom !== undefined ? { customProperties: mergedCustom } : {}),
-        };
+        const nextOverride = mergeOverride(mergedBase.stateOverrides?.[activeStateName] ?? {}, stylePatch);
         return {
             ...mergedBase,
             stateOverrides: {
@@ -144,18 +168,7 @@ const routePatch = (el, patch, activeBreakpointId, activeStateName) => {
     if (activeStateName !== null)
         return mergedBase;
     // Non-desktop + default state — route to breakpointOverrides.
-    const existingOverride = mergedBase.breakpointOverrides?.[activeBreakpointId] ?? {};
-    const mergedCustom = 'customProperties' in stylePatch && stylePatch.customProperties
-        ? {
-            ...(existingOverride.customProperties ?? {}),
-            ...stylePatch.customProperties,
-        }
-        : existingOverride.customProperties;
-    const nextOverride = {
-        ...existingOverride,
-        ...stylePatch,
-        ...(mergedCustom !== undefined ? { customProperties: mergedCustom } : {}),
-    };
+    const nextOverride = mergeOverride(mergedBase.breakpointOverrides?.[activeBreakpointId] ?? {}, stylePatch);
     return {
         ...mergedBase,
         breakpointOverrides: {

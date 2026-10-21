@@ -10,9 +10,10 @@
 
 /* Draw the selection border on the overlay for elements whose own
    `.element.selected` outline can't show — a component-instance wrapper is
-   0-sized, so the overlay (sized to its content bounds) carries the border. */
+   0-sized, so the overlay (sized to its content bounds) carries the border.
+   Only instances use it, so it's the component purple. */
 .outlineBox {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--component);
   outline-offset: -2px;
 }
 

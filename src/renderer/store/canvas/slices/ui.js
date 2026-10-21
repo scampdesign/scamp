@@ -115,7 +115,7 @@ export const createUiSlice = (set) => ({
                         heightMode: 'fixed',
                         heightValue: h,
                         heightCustom: undefined,
-                    }, s.activeBreakpointId, null),
+                    }, s.activeBreakpointId, null, s.activeVariantKey),
                 }
                 : s.elements;
             return { elements, ratioLocks: { ...s.ratioLocks, [id]: w / h } };

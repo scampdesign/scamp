@@ -99,6 +99,79 @@ const collectRuleNodes = (rule) => {
     }
     return { decls, toggledOff };
 };
+const STATE_GROUP = ELEMENT_STATES.join('|');
+const AXIS_ATTR = '\\[data-[a-z][a-z0-9]*="[^"]*"\\]';
+const AXIS_RULE_RE = new RegExp(`^\\.([A-Za-z_][\\w-]*)((?:${AXIS_ATTR})+)(?::(${STATE_GROUP}))?(?:\\s+\\.([A-Za-z_][\\w-]*)(?::(${STATE_GROUP}))?)?$`);
+const AXIS_ATTR_PARTS_RE = /\[data-([a-z][a-z0-9]*)="([^"]*)"\]/g;
+/**
+ * Read an axis rule's selector: the root's attribute, then optionally a
+ * descendant class, with a state on whichever comes last. A state on the
+ * root followed by a descendant is outside the grammar.
+ */
+export const matchAxisSelector = (selector) => {
+    const m = AXIS_RULE_RE.exec(selector);
+    if (m === null)
+        return null;
+    const [, anchorClass = '', attrs = '', anchorState, targetClass, targetState] = m;
+    if (targetClass !== undefined && anchorState !== undefined)
+        return null;
+    const state = (targetClass !== undefined ? targetState : anchorState) ?? null;
+    return {
+        anchorClass,
+        parts: [...attrs.matchAll(AXIS_ATTR_PARTS_RE)].map((a) => ({ axis: a[1] ?? '', value: a[2] ?? '' })),
+        aliases: [],
+        targetClass: targetClass ?? anchorClass,
+        state: state === null ? null : state,
+    };
+};
+const PSEUDO_TRIGGER = {
+    ':hover': 'hover',
+    ':active': 'press',
+    ':focus-visible': 'focus',
+};
+/** An alias may name an axis with no value: any value. */
+const ALIAS_ATTR = '\\[data-[a-z][a-z0-9]*(?:="[^"]*")?\\]';
+const ALIAS_ATTR_PARTS_RE = /\[data-([a-z][a-z0-9]*)(?:="([^"]*)")?\]/g;
+const ALIAS_RE = new RegExp(`^\\.([A-Za-z_][\\w-]*)((?:${ALIAS_ATTR})*)(:hover|:active|:focus-visible)(.*)$`);
+/**
+ * A variant rule with second selectors for its interactions: the first
+ * is the rule; each other is the same rule with one of its values swapped
+ * for the value it changes from (or dropped, for any value) and a
+ * trigger's pseudo-class on the root. Null when the first isn't a variant
+ * rule or another isn't such a selector. CONTRACT.md §1.3.2
+ */
+export const matchAxisSelectorList = (selector) => {
+    const [first = '', ...others] = selector.split(',').map((part) => part.trim());
+    const main = matchAxisSelector(first);
+    if (main === null)
+        return null;
+    const attrs = main.parts.map((p) => `[data-${p.axis}="${p.value}"]`).join('');
+    const rest = first.slice(`.${main.anchorClass}${attrs}`.length);
+    const aliases = [];
+    for (const other of others) {
+        const m = ALIAS_RE.exec(other);
+        if (m === null || m[1] !== main.anchorClass || m[4] !== rest)
+            return null;
+        // A value of null is the axis with no value: any value.
+        const theirs = [...(m[2] ?? '').matchAll(ALIAS_ATTR_PARTS_RE)].map((a) => ({ axis: a[1] ?? '', value: a[2] ?? null }));
+        // Exactly one of the rule's values swapped (for another, or any); the
+        // rest as they are, in the same order.
+        const changed = main.parts.filter((p) => !theirs.some((t) => t.axis === p.axis && t.value === p.value));
+        const target = changed[0];
+        if (changed.length !== 1 || target === undefined || theirs.length !== main.parts.length)
+            return null;
+        if (theirs.some((t, i) => t.axis !== main.parts[i]?.axis))
+            return null;
+        const swapped = theirs.find((t) => t.axis === target.axis);
+        if (swapped === undefined || swapped.value === target.value)
+            return null;
+        const trigger = PSEUDO_TRIGGER[m[3] ?? ''];
+        if (trigger === undefined)
+            return null;
+        aliases.push({ axis: target.axis, from: swapped.value, trigger, to: target.value });
+    }
+    return { ...main, aliases };
+};
 const SUPPORTED_STATES = new Map(ELEMENT_STATES.map((s) => [`:${s}`, s]));
 const classifyClassSelector = (selector) => {
     if (!selector.startsWith('.'))
@@ -196,6 +269,25 @@ const parseCssLenient = (css) => {
         return recovered;
     }
 };
+/**
+ * A rule as a verbatim block. Formats the body as one string; postcss's
+ * `Declaration.toString()` omits the trailing `;`, so it's re-appended:
+ * without it a block of two or more declarations re-emits as invalid CSS
+ * and the next parse fails for the whole page.
+ * See docs/plans/2026-06-19-style-loss-on-css-edit.md.
+ */
+const rawBlockOf = (node) => ({
+    selector: node.selector.trim(),
+    body: node.nodes
+        .map((child) => {
+        const s = child.toString().trim();
+        if (s.length === 0)
+            return '';
+        return child.type === 'decl' ? `  ${s};` : `  ${s}`;
+    })
+        .filter((s) => s.length > 0)
+        .join('\n'),
+});
 export const parseCssDeclarations = (css, breakpoints) => {
     const byClass = new Map();
     const byBreakpoint = new Map();
@@ -205,6 +297,7 @@ export const parseCssDeclarations = (css, breakpoints) => {
     const keyframesBlocks = [];
     const toggledOffByClass = new Map();
     const tableStyleByClass = new Map();
+    const axisRules = [];
     /** Merge a freshly-parsed `toggledOff` list into the union map. */
     const mergeToggledOff = (className, groups) => {
         if (groups.length === 0)
@@ -223,24 +316,10 @@ export const parseCssDeclarations = (css, breakpoints) => {
         if (node.type !== 'rule')
             continue;
         const selector = node.selector.trim();
-        // Preserve verbatim. Format the body as a single string —
-        // postcss's `raws` give us original whitespace and comments.
-        // `Declaration.toString()` omits the trailing `;`, so re-append it
-        // for declarations: without it a raw block with two+ declarations
-        // re-emits as invalid CSS and the next parse fails for the whole
-        // page. See docs/plans/2026-06-19-style-loss-on-css-edit.md.
+        // Preserve verbatim (see rawBlockOf).
         const keepRaw = (className) => {
-            const body = node.nodes
-                .map((child) => {
-                const s = child.toString().trim();
-                if (s.length === 0)
-                    return '';
-                return child.type === 'decl' ? `  ${s};` : `  ${s}`;
-            })
-                .filter((s) => s.length > 0)
-                .join('\n');
             const list = rawByClass.get(className) ?? [];
-            list.push({ selector, body });
+            list.push(rawBlockOf(node));
             rawByClass.set(className, list);
         };
         // A table's derived rules. The subgrid one is rebuilt from the
@@ -259,6 +338,11 @@ export const parseCssDeclarations = (css, breakpoints) => {
             else if (tableRule.kind === 'raw') {
                 keepRaw(tableRule.className);
             }
+            continue;
+        }
+        const axisMatch = matchAxisSelectorList(selector);
+        if (axisMatch !== null) {
+            axisRules.push({ ...axisMatch, decls: collectRuleNodes(node).decls, raw: rawBlockOf(node) });
             continue;
         }
         const classification = classifyClassSelector(selector);
@@ -374,5 +458,6 @@ export const parseCssDeclarations = (css, breakpoints) => {
         keyframesBlocks,
         toggledOffByClass,
         tableStyleByClass,
+        axisRules,
     };
 };

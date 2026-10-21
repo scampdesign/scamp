@@ -30,7 +30,7 @@ test.describe('pages are views', () => {
     await expect(pageSidebarItem(window, 'hero-card')).toBeVisible();
     // Opens like a page: header badge shows the slug, no component banner.
     await expect(window.getByTitle('Select page root')).toHaveText('hero-card');
-    await expect(window.getByTestId('component-editor-banner')).toHaveCount(0);
+    await expect(window.getByRole('navigation', { name: 'Component editor breadcrumb' })).toHaveCount(0);
 
     expect(await project.viewExists('HeroCard')).toBe(true);
     const { tsx, css } = await project.readView('HeroCard');

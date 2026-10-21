@@ -4,6 +4,8 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { PanelHeader } from './PanelHeader';
 import { PanelModeToggle } from './PanelModeToggle';
 import { StateSwitcher } from './StateSwitcher';
+import { VariantsSection } from './VariantsSection';
+import { ROOT_ELEMENT_ID } from '@lib/element';
 import { UiPanel } from './UiPanel';
 import { CssPanel } from './CssPanel';
 import { DataPanel, useViewDataCount, ViewDataSection } from './DataPanel';
@@ -33,13 +35,16 @@ export const PropertiesPanel = ({ routesSection, migrationNotice, }) => {
     const selectedId = useCanvasStore((s) => s.selectedElementIds[0] ?? null);
     const panelMode = useCanvasStore((s) => s.panelMode);
     const isComponentEditing = useCanvasStore((s) => s.activeComponent !== null);
+    // Variants belong to a component, not a view: Figma's set properties,
+    // shown with the component (its root, or nothing) selected.
+    const isComponent = useCanvasStore((s) => s.activeComponent?.kind === 'component');
     const dataCount = useViewDataCount();
     // Nothing selected: the panel shows what belongs to the page rather
     // than to an element — its routes and its data — with the shortcuts
     // as a reference the user can open. Visual and CSS are element-level
     // and have nothing to say here, so the mode toggle stays out of it.
     if (!selectedId) {
-        return (_jsx("aside", { className: styles.panel, "data-testid": "properties-panel", "data-panel-mode": "empty", children: _jsxs("div", { className: styles.emptyBody, children: [routesSection, isComponentEditing && (_jsx("div", { "data-testid": "view-data-section", children: _jsx(Section, { title: "Data", collapsible: true, defaultOpen: false, count: dataCount, children: _jsx(ViewDataSection, {}) }) })), migrationNotice, _jsx(Section, { title: "Keyboard Shortcuts", collapsible: true, defaultOpen: false, children: _jsx(ShortcutsTable, {}) }), _jsx(ChecksSection, {})] }) }));
+        return (_jsx("aside", { className: styles.panel, "data-testid": "properties-panel", "data-panel-mode": "empty", children: _jsxs("div", { className: styles.emptyBody, children: [isComponent && _jsx(VariantsSection, {}), !isComponent && routesSection, isComponentEditing && (_jsx("div", { "data-testid": "view-data-section", children: _jsx(Section, { title: "Data", collapsible: true, defaultOpen: false, count: dataCount, children: _jsx(ViewDataSection, {}) }) })), migrationNotice, _jsx(Section, { title: "Keyboard Shortcuts", collapsible: true, defaultOpen: false, children: _jsx(ShortcutsTable, {}) }), _jsx(ChecksSection, {})] }) }));
     }
-    return (_jsxs("aside", { className: styles.panel, "data-testid": "properties-panel", "data-panel-mode": panelMode, children: [_jsx(PanelHeader, {}), _jsx(PanelModeToggle, {}), panelMode === 'ui' && _jsx(StateSwitcher, {}), panelMode === 'data' ? (_jsx(DataPanel, {})) : panelMode === 'ui' ? (_jsx(UiPanel, {})) : (_jsx(CssPanel, {}))] }));
+    return (_jsxs("aside", { className: styles.panel, "data-testid": "properties-panel", "data-panel-mode": panelMode, children: [_jsx(PanelHeader, {}), _jsx(PanelModeToggle, {}), panelMode === 'ui' && _jsx(StateSwitcher, {}), panelMode === 'ui' && isComponent && selectedId === ROOT_ELEMENT_ID && _jsx(VariantsSection, {}), panelMode === 'data' ? (_jsx(DataPanel, {})) : panelMode === 'ui' ? (_jsx(UiPanel, {})) : (_jsx(CssPanel, {}))] }));
 };

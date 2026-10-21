@@ -720,6 +720,27 @@ export type ScampElement = {
      */
     customSelectorBlocks?: ReadonlyArray<RawSelectorBlock>;
     /**
+     * A component root's variant axes: each a prop bound to `data-<prop>`
+     * on the root, typed as a union of its values. Only the root of a
+     * component carries them. see docs/plans/component-variants-plan.md
+     */
+    variantAxes?: ReadonlyArray<VariantAxis>;
+    /**
+     * This element's styles under one value of an axis, keyed
+     * `variantKey(axis, value)` (`variant=outline`). The default value
+     * has none: its look is the element's own styles. Emitted as
+     * `.root[data-<axis>="<value>"]` rules after every element's own.
+     */
+    variantOverrides?: Record<string, VariantOverride>;
+    /**
+     * A component root's interactions: an axis that changes value on
+     * hover, press, focus, a click, a click outside, or Escape. Hover,
+     * press, and focus are written as second selectors on the target
+     * value's rules; the others as `data-scamp-*` attributes the scampjs
+     * handler reads. CONTRACT.md §1.3.2, docs/plans/component-variants-plan.md
+     */
+    variantInteractions?: ReadonlyArray<VariantInteraction>;
+    /**
      * Row and cell styling a `<table>` sets once for all of them. Not
      * overridable per breakpoint or state.
      */
@@ -738,7 +759,7 @@ export type ScampElement = {
  * (the matrix is deferred — see the element-states plan), and the
  * raw-selector passthrough lives only at the top level.
  */
-export type BreakpointOverride = Partial<Omit<ScampElement, 'id' | 'type' | 'parentId' | 'childIds' | 'breakpointOverrides' | 'stateOverrides' | 'customSelectorBlocks' | 'tableStyle' | 'tag' | 'attributes' | 'selectOptions' | 'svgSource' | 'text' | 'runs' | 'name'>>;
+export type BreakpointOverride = Partial<Omit<ScampElement, 'id' | 'type' | 'parentId' | 'childIds' | 'breakpointOverrides' | 'stateOverrides' | 'customSelectorBlocks' | 'variantAxes' | 'variantOverrides' | 'variantInteractions' | 'tableStyle' | 'tag' | 'attributes' | 'selectOptions' | 'svgSource' | 'text' | 'runs' | 'name'>>;
 /**
  * The fixed set of CSS pseudo-classes Scamp models as first-class
  * "states" with typed per-field overrides. Other pseudo-classes
@@ -779,6 +800,56 @@ export declare const ELEMENT_STATES: ReadonlyArray<ElementStateName>;
 export type StateOverride = BreakpointOverride & {
     animation?: ElementAnimation;
 };
+/** One variant axis of a component: its prop, its values in order, and the default. */
+export type VariantAxis = {
+    prop: string;
+    values: ReadonlyArray<string>;
+    defaultValue: string;
+};
+/** An element's styles under one axis value, with its states under that value. */
+export type VariantOverride = BreakpointOverride & {
+    states?: Partial<Record<ElementStateName, StateOverride>>;
+};
+/** What changes a component's variant by itself. */
+export type VariantTrigger = 'hover' | 'press' | 'focus' | 'click' | 'outside' | 'escape';
+/** One interaction: on `trigger`, `axis` goes from `from` (null for any value) to `to`. */
+export type VariantInteraction = {
+    axis: string;
+    from: string | null;
+    trigger: VariantTrigger;
+    to: string;
+    /** Click only: the element clicked. The root when absent. */
+    target?: string;
+};
+/** The `variantOverrides` key for one axis value. */
+export declare const variantKey: (axis: string, value: string) => string;
+/** One axis's value in a variant key. */
+export type VariantPick = {
+    axis: string;
+    value: string;
+};
+/** A variant axis name: a prop, and a `data-` attribute suffix CSS matches lowercase. */
+export declare const VARIANT_AXIS_RE: RegExp;
+/** A variant value: a CSS attribute value and a TypeScript string literal. */
+export declare const VARIANT_VALUE_RE: RegExp;
+/**
+ * Whether `parts` are non-default values of `axes`, one per axis, in axis
+ * order: the shape of a key the generator writes and the parser places.
+ */
+export declare const variantPartsLive: (axes: ReadonlyArray<VariantAxis>, parts: ReadonlyArray<VariantPick>) => boolean;
+/** The key for a combination, parts in axis order: `variant=outline&size=small`. */
+export declare const variantComboKey: (parts: ReadonlyArray<VariantPick>) => string;
+/** A key's parts, or null when one isn't `axis=value`. */
+export declare const variantKeyParts: (key: string) => VariantPick[] | null;
+/**
+ * Every key whose rule applies when these values are picked (one per
+ * axis, in axis order): each single value, then each pair, and so on,
+ * in the order their rules are written. A later rule wins a tie, so
+ * layering in this order matches the browser. CONTRACT.md §1.3.1
+ */
+export declare const keysCovering: (picks: ReadonlyArray<VariantPick>) => string[];
+/** Every key the axes allow, in the order their rules are written. */
+export declare const orderedVariantKeys: (axes: ReadonlyArray<VariantAxis>) => string[];
 /**
  * One pseudo-class rule the parser couldn't route into a typed state
  * override — preserved verbatim so the generator can re-emit it

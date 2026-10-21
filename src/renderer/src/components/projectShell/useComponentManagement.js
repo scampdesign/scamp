@@ -4,6 +4,7 @@ import { viewNameForPage, viewSlugFor } from '@shared/templates';
 import { errorMessage } from '@shared/errorMessage';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useAppLogStore } from '@store/appLogSlice';
+import { useHistoryStore } from '@store/historySlice';
 import { parseCode } from '@lib/parseCode';
 import { generateCode } from '@lib/generateCode';
 import { findInstanceUsagesAcrossPages, groupUsagesByPage, } from '@lib/componentUsage';
@@ -70,7 +71,7 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
         const file = project.components.find((c) => c.name === componentName);
         return file ? componentKindOf(file) : 'component';
     };
-    const handleAddComponent = async (name, kind) => {
+    const handleAddComponent = async (name, kind, files) => {
         setCreatingComponent(true);
         setComponentEditError(null);
         try {
@@ -79,6 +80,7 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
                 componentName: name,
                 kind,
                 wrapperSlug: kind === 'view' ? wrapperSlugFor(name) : null,
+                ...(files !== undefined ? { tsxContent: files.tsx, cssContent: files.css } : {}),
             });
             // Functional updater so this composes with `openComponent`'s
             // follow-on `persistActiveSource` if the outgoing page has
@@ -196,6 +198,10 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
                 componentName,
                 kind: deletingComponent.kind,
             });
+            // A new component with this name mustn't inherit its undo history.
+            const deletedFile = fresh.components.find((c) => c.name === componentName);
+            if (deletedFile !== undefined)
+                useHistoryStore.getState().forgetPage(deletedFile.tsxPath);
             const wasEditingDeleted = activeComponent !== null && activeComponent.name === componentName;
             if (wasEditingDeleted) {
                 setActiveComponentState(null);
@@ -267,6 +273,8 @@ export const useComponentManagement = ({ project, onProjectChange, activeCompone
                 componentName: oldName,
                 kind,
             });
+            // The history follows the component to its new name, as a page's does.
+            useHistoryStore.getState().rekeyPage(sourceComponent.tsxPath, newComponentFile.tsxPath);
             const nextComponents = fresh.components.map((c) => c.name === oldName ? newComponentFile : c);
             // Preserve original page order so the sidebar doesn't reshuffle.
             const orderedPages = fresh.pages.map((p) => {
