@@ -60,11 +60,11 @@ the canvas, so an MCP agent should write its edits before calling it.
 
 | Tool | What it does | Built-in | MCP |
 |---|---|:-:|:-:|
-| `scamp_set_styles` | Set and remove CSS declarations, per breakpoint | ✅ | — |
+| `scamp_set_styles` | Set and remove CSS declarations, per breakpoint or per variant value | ✅ | — |
 | `scamp_add_element` | Add a container or text element | ✅ | — |
 | `scamp_set_text` | Replace a text element's words | ✅ | — |
 | `scamp_set_tag` | Change an element's HTML tag | ✅ | — |
-| `scamp_set_attributes` | Set or remove HTML attributes | ✅ | — |
+| `scamp_set_attributes` | Set or remove HTML attributes; on an instance, its props (a variant pick) | ✅ | — |
 | `scamp_move_element` | Move an element to another parent or position | ✅ | — |
 | `scamp_wrap_elements` | Wrap siblings in a new container | ✅ | — |
 | `scamp_delete_element` | Delete an element and its children | ✅ | — |
@@ -73,6 +73,7 @@ the canvas, so an MCP agent should write its edits before calling it.
 | `scamp_set_theme_tokens` | Add or change tokens in `theme.css` | ✅ | — |
 | `scamp_set_show` | Show an element only when a boolean prop is true | ✅ | — |
 | `scamp_rename_list` | Rename a repeated list, its row variable, and its fields | ✅ | — |
+| `scamp_edit_variants` | Add and remove a component's variant properties, values, and interactions; change the default | ✅ | — |
 
 Every edit tool except `scamp_set_theme_tokens` takes `view`, so the
 built-in agent can edit any view or component, not only the open one

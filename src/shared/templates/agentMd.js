@@ -1835,9 +1835,21 @@ regenerates only the view's own two files.
 
 ### Variants
 
-A component with several looks (an outline button, a small size, an
-open menu) declares each **axis** as a prop typed as a union of string
-literals, defaults it, and binds it on the root as \`data-<prop>\`:
+When a component has several looks (an outline button, a small size,
+an open menu), make **one** component with variants, as Figma's
+component sets do. Don't create \`Button\`, \`ButtonOutline\`, and
+\`ButtonSmall\`, and don't build a page of examples: Scamp draws every
+combination of values side by side when the component is opened.
+
+- Use one axis per way the looks differ: \`variant\` for the style,
+  \`size\`, \`state\` for open and closed. Axis names are lowercase
+  letters and digits; each axis has two or more values.
+- Every value has the same elements. An element only some values show
+  is hidden with \`display: none\` in the others.
+- A component can have up to 36 combinations of values.
+
+Declare each **axis** as a prop typed as a union of string literals,
+default it, and bind it on the root as \`data-<prop>\`:
 
 \`\`\`tsx
 type ButtonProps = {
@@ -1879,8 +1891,6 @@ any other element's is \`.root[data-<prop>="<value>"] .<class>\`.
   None of its values is a default.
 - A variant rule inside \`@media\` is kept verbatim but can't be edited
   in Scamp.
-- An element only some values show is hidden with \`display: none\` in
-  the others. The structure is the same in every value.
 - Values are lowercase, with hyphens. Every value a rule names must be
   in the union.
 - A variant rule outranks the element's own \`:hover\` rule.

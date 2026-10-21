@@ -15,6 +15,7 @@ import { generateElementId, groupSiblings, removeSubtree, reorderElementPure, sl
 import { TAG_OPTIONS } from './elementTags';
 import { classNameFor, generateCode } from './generateCode';
 import { parseCode } from './parseCode';
+import { editVariants } from './agentVariants';
 import { lintView } from './viewLint';
 import { RESERVED_PROP_NAMES } from './viewProps';
 const fail = (error) => ({ ok: false, error });
@@ -377,7 +378,9 @@ export const setAttributes = (ctx, args) => {
     if (attrs === null || typeof attrs !== 'object' || Array.isArray(attrs)) {
         return fail('"attributes" must be an object of name → value (null removes one).');
     }
-    const next = { ...(el.attributes ?? {}) };
+    // An instance's attributes are its component's props: a variant pick or a text override.
+    const isInstance = el.type === 'component-instance';
+    const next = { ...((isInstance ? el.propOverrides : el.attributes) ?? {}) };
     const changed = [];
     for (const [name, value] of Object.entries(attrs)) {
         if (RESERVED_ATTRIBUTE.test(name)) {
@@ -397,7 +400,7 @@ export const setAttributes = (ctx, args) => {
     }
     return {
         ok: true,
-        elements: { ...ctx.elements, [el.id]: { ...el, attributes: next } },
+        elements: { ...ctx.elements, [el.id]: isInstance ? { ...el, propOverrides: next } : { ...el, attributes: next } },
         summary: `Updated ${classNameFor(el)} — ${changed.join(', ')}`,
         touched: [el.id],
         notes: [],
@@ -746,4 +749,5 @@ export const AGENT_EDITS = {
     scamp_delete_element: (ctx, a) => deleteElement(ctx, { element: a['element'] }),
     scamp_set_show: (ctx, a) => setShow(ctx, { element: a['element'], flag: a['flag'], shown: a['shown'] }),
     scamp_rename_list: (ctx, a) => renameList(ctx, { list: a['list'], to: a['to'], row: a['row'], fields: a['fields'] }),
+    scamp_edit_variants: (ctx, a) => editVariants(ctx, a),
 };

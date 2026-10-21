@@ -68,6 +68,9 @@ The agent can do most of what you can do in the properties panel:
 - Change text, HTML tags, and attributes
 - Turn a repeated design into a [component](components.md), and replace
   matching elements on other pages with an instance of it
+- Give a component [variants](components.md#add-a-variant): add and
+  remove properties and values, style each value, add interactions, and
+  pick a value on an instance
 - Add or change theme tokens in `theme.css`
 - Show an element only when a condition is true, and rename a repeated
   list
@@ -86,6 +89,7 @@ The agent always asks before it does any of these:
 
 - Deletes an element
 - Creates a component or replaces elements with one
+- Removes a variant property or value, with its styles
 - Changes theme tokens
 - Makes more than five changes in one step
 

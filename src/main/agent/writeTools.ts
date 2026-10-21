@@ -89,7 +89,7 @@ export const WRITE_TOOLS: BetaTool[] = [
   {
     name: 'scamp_set_attributes',
     description:
-      'Set HTML attributes on an element (href, alt, title, aria-*, role…). A null value removes one. Class names, data-scamp-* ids, inline styles and event handlers are managed by Scamp and refused.',
+      'Set HTML attributes on an element (href, alt, title, aria-*, role…). A null value removes one. Class names, data-scamp-* ids, inline styles and event handlers are managed by Scamp and refused. On a component instance, attributes are the component’s props: pick a variant with {"variant": "outline"}, and remove it (null) for the default.',
     input_schema: {
       type: 'object',
       properties: {
@@ -236,6 +236,35 @@ export const WRITE_TOOLS: BetaTool[] = [
         },
       },
       required: ['list'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'scamp_edit_variants',
+    description:
+      'Edit a component’s variants, as Figma’s variant properties: one component with a property per way its looks differ (variant: default | outline, size: small | medium | large) rather than a component per look. Pass "view" with the component’s name. Actions: add_property (property, values — the first is the default), remove_property, add_value (property, value, copy_from to start from another value’s look), remove_value, make_default (every look stays the same), add_interaction and remove_interaction (property, trigger, from, to, target). Then style each non-default value with scamp_set_styles and "variant". A component can have up to 36 combinations. Hover, press, and focus run as CSS and can’t change to the default; click, outside, and escape need a Scamp framework project. Scamp asks the user before a remove.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        view,
+        action: {
+          type: 'string',
+          enum: ['add_property', 'remove_property', 'add_value', 'remove_value', 'make_default', 'add_interaction', 'remove_interaction'],
+        },
+        property: { type: 'string', description: 'The variant property, lowercase letters and digits, e.g. "variant", "size", "state".' },
+        values: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'add_property: two or more values, lowercase with hyphens; the first is the default.',
+        },
+        value: { type: 'string', description: 'add_value, remove_value, make_default: the value.' },
+        copy_from: { type: 'string', description: 'add_value: an existing value whose look the new one starts from.' },
+        trigger: { type: 'string', enum: ['hover', 'press', 'focus', 'click', 'outside', 'escape'] },
+        from: { type: 'string', description: 'The value the interaction changes from, or "*" for any value. Default "*".' },
+        to: { type: 'string', description: 'The value it changes to.' },
+        target: { ...element, description: 'A click only: the element clicked. Omit for the whole component.' },
+      },
+      required: ['action', 'property'],
       additionalProperties: false,
     },
   },

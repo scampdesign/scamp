@@ -74,7 +74,7 @@ export const TOOL_DESCRIPTORS = [
     },
     {
         name: 'scamp_get_component_scaffold',
-        description: 'The exact starter TSX and CSS module for a new Scamp component, plus the project-relative paths to write them to. Call this before creating a component: when the user asks for components, a kit, or a library, write these folders under components/ rather than a page of examples. Scamp lists the component the moment the files exist. The name must be PascalCase letters and digits, e.g. "HeroCard".',
+        description: 'The exact starter TSX and CSS module for a new Scamp component, plus the project-relative paths to write them to. Call this before creating a component: when the user asks for components, a kit, or a library, write these folders under components/ rather than a page of examples. Scamp lists the component the moment the files exist. A component with several looks (an outline button, a small size, an open menu) is one component with variants — an axis prop per way the looks differ — not a component per look; scamp_get_conventions section "Scamp components" has the shape, under Variants. The name must be PascalCase letters and digits, e.g. "HeroCard".',
         inputSchema: {
             type: 'object',
             properties: {
