@@ -4,6 +4,7 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { parseCode } from '@lib/parseCode';
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
 import { makeFileChangedHandler } from '../src/renderer/src/syncBridge/externalEdit';
+import { makeFlushDebouncedWrite } from '../src/renderer/src/syncBridge/quietReconcile';
 /**
  * An agent's edit arriving while the canvas has changes not yet on disk.
  * It used to cancel the pending save and reload the file over the
@@ -61,5 +62,12 @@ describe('an external edit while the canvas has unsaved changes', () => {
         makeFileChangedHandler(makeCtx(false, calls))({ path: TSX_PATH, tsxContent: tsxWith('after'), cssContent: CSS });
         expect(calls).toEqual([]);
         expect(textColor()).toBe('#ff0000');
+    });
+});
+describe('a debounced save that has fired', () => {
+    it('leaves no pending timer, so a later external edit reloads instead of merging', () => {
+        const ctx = { ...makeCtx(true, []), writeIfDirty: () => { } };
+        makeFlushDebouncedWrite(ctx)();
+        expect(ctx.writeTimer).toBeNull();
     });
 });

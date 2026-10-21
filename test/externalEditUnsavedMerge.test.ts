@@ -5,6 +5,7 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { parseCode } from '@lib/parseCode';
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
 import { makeFileChangedHandler } from '../src/renderer/src/syncBridge/externalEdit';
+import { makeFlushDebouncedWrite } from '../src/renderer/src/syncBridge/quietReconcile';
 import type { WriteConflict, WriteIntent } from '../src/renderer/src/syncBridge/saveContext';
 
 /**
@@ -75,5 +76,13 @@ describe('an external edit while the canvas has unsaved changes', () => {
     makeFileChangedHandler(makeCtx(false, calls))({ path: TSX_PATH, tsxContent: tsxWith('after'), cssContent: CSS } as never);
     expect(calls).toEqual([]);
     expect(textColor()).toBe('#ff0000');
+  });
+});
+
+describe('a debounced save that has fired', () => {
+  it('leaves no pending timer, so a later external edit reloads instead of merging', () => {
+    const ctx = { ...makeCtx(true, []), writeIfDirty: (): void => {} };
+    makeFlushDebouncedWrite(ctx)();
+    expect(ctx.writeTimer).toBeNull();
   });
 });
