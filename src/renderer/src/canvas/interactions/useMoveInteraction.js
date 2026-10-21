@@ -47,12 +47,18 @@ export const useMoveInteraction = (geometry, scale) => {
         const elRect = geometry.measureElementInFrame(id);
         const cursor = geometry.toFrame(e.clientX, e.clientY);
         armedForReparent.current = false;
+        // An offset x / y doesn't drive (`left: 50%`, `right: 8px`) starts from
+        // where the element is drawn, or the first move jumps it to x / y.
+        // see docs/notes/position-offsets.md
+        const parentRect = el.parentId === null ? null : geometry.measureElementInFrame(el.parentId);
+        const kept = (a, b) => el.customProperties[a] !== undefined || el.customProperties[b] !== undefined;
+        const drawn = elRect !== null && parentRect !== null ? { x: elRect.x - parentRect.x, y: elRect.y - parentRect.y } : null;
         setMove({
             id,
             pointerStartX: e.clientX,
             pointerStartY: e.clientY,
-            originX: el.x,
-            originY: el.y,
+            originX: drawn !== null && kept('left', 'right') ? drawn.x : el.x,
+            originY: drawn !== null && kept('top', 'bottom') ? drawn.y : el.y,
             grabDX: elRect ? cursor.x - elRect.x : 0,
             grabDY: elRect ? cursor.y - elRect.y : 0,
         });

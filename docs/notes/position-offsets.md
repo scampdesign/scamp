@@ -27,6 +27,25 @@ the stylesheet safely", which turned out to be a second, separate bug
   `top` from wherever the patch lands (base, breakpoint, or state).
   Otherwise it would keep winning and the element wouldn't move.
 
+## Anchored by right or bottom alone
+
+An agent pins a label to the right edge with `right: 8px` and no `left`.
+The model had no way to say "no left": `x` defaulted to 0, the canvas set
+`left: 0` inline, and `left` beats `right`, so the label drew at the
+left edge. The next save wrote `left: 0px` and broke the browser too.
+
+- **Parse**: when a rule has `right`, its `left` is kept verbatim in
+  `customProperties` whatever its value, so `left: 0; right: 0`
+  (stretch) stays distinguishable from no `left`. Same for `top` with
+  `bottom`.
+- **Generate / canvas**: with a `right` and no kept `left`, no `left` is
+  written or drawn. Same for `top`.
+- **Move**: x / y set on a right-only element drops `right` too, so it
+  becomes left anchored where it's drawn; a stretched one keeps its
+  `right`. A drag of any element whose offset x / y doesn't drive starts
+  from its drawn position (`offsetLeft` chain, so transforms don't count),
+  not from x / y, or the first move would jump it.
+
 ## The patch check that cried wolf
 
 `cssWriteFor` patches only the rules that changed, then checks the

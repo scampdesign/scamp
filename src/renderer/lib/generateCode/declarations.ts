@@ -546,15 +546,18 @@ export const elementDeclarationLines = (
   // for the same property name within a rule).
   // An offset the typed x / y can't hold (`left: 50%`) is written in
   // its place; the customProperties echo below is then skipped.
-  const left = (px: number): string => el.customProperties['left'] ?? `${px}px`;
-  const top = (px: number): string => el.customProperties['top'] ?? `${px}px`;
+  // Anchored by `right` / `bottom` alone, it has no `left` / `top` to write.
+  const offsets = (x: number, y: number): void => {
+    const c = el.customProperties;
+    if (c['left'] !== undefined || c['right'] === undefined) lines.push(`left: ${c['left'] ?? `${x}px`};`);
+    if (c['top'] !== undefined || c['bottom'] === undefined) lines.push(`top: ${c['top'] ?? `${y}px`};`);
+  };
   if (el.position === 'auto') {
     if (isRoot) {
       lines.push(`position: relative;`);
     } else if (!inLayoutParent) {
       lines.push(`position: absolute;`);
-      lines.push(`left: ${left(el.x)};`);
-      lines.push(`top: ${top(el.y)};`);
+      offsets(el.x, el.y);
     } else if (mustEstablishPositioningContext) {
       // Element is laid out by its flex/grid parent (so it doesn't
       // need its own position keyword for placement) BUT it contains
@@ -571,15 +574,11 @@ export const elementDeclarationLines = (
       // it here shifted the box by that much the moment a text was
       // placed inside it. see docs/notes/parse-position-absolute-in-flex.md
       lines.push(`position: relative;`);
-      lines.push(`left: ${left(0)};`);
-      lines.push(`top: ${top(0)};`);
+      offsets(0, 0);
     }
   } else {
     lines.push(`position: ${el.position};`);
-    if (el.position !== 'static') {
-      lines.push(`left: ${left(el.x)};`);
-      lines.push(`top: ${top(el.y)};`);
-    }
+    if (el.position !== 'static') offsets(el.x, el.y);
   }
 
   // customProperties always go last, in insertion order. They round-trip

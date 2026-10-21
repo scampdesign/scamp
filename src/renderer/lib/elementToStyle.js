@@ -264,16 +264,22 @@ inComponentEditor = false) => {
                 : inLayoutParent
                     ? 'relative'
                     : 'absolute',
-        left: positionForCanvas === 'static' || positionForCanvas === 'auto'
-            ? isRoot || inLayoutParent
-                ? undefined
-                : el.x
-            : el.x,
-        top: positionForCanvas === 'static' || positionForCanvas === 'auto'
-            ? isRoot || inLayoutParent
-                ? undefined
-                : el.y
-            : el.y,
+        // Anchored by `right` / `bottom` alone: no `left` / `top`, or it would
+        // win and pin the element to the left. see docs/notes/position-offsets.md
+        left: el.customProperties['right'] !== undefined && el.customProperties['left'] === undefined
+            ? undefined
+            : positionForCanvas === 'static' || positionForCanvas === 'auto'
+                ? isRoot || inLayoutParent
+                    ? undefined
+                    : el.x
+                : el.x,
+        top: el.customProperties['bottom'] !== undefined && el.customProperties['top'] === undefined
+            ? undefined
+            : positionForCanvas === 'static' || positionForCanvas === 'auto'
+                ? isRoot || inLayoutParent
+                    ? undefined
+                    : el.y
+                : el.y,
         width: effectiveWidth,
         height: effectiveHeight,
         // Canvas-only floor on the root's rendered height. Without this,

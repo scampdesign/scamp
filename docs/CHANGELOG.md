@@ -22,6 +22,18 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Fixed**
+
+- **An element pinned to the right edge stays there.** An element
+  placed with `right` and no `left`, such as a label an agent pinned to
+  a component's right side, drew at the left edge on the canvas, and
+  Scamp's next save added `left: 0px`, which moved it in the browser
+  too. It now draws and saves where `right` puts it, and the same goes
+  for `bottom`. Dragging it, or anything placed with `left: 50%`, no
+  longer makes it jump first.
+
 ### 0.11.0 (2026-10-21)
 
 **Added**

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { elementToStyle } from '@lib/elementToStyle';
 import { generateCode } from '@lib/generateCode';
 import { parseCode } from '@lib/parseCode';
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
@@ -95,5 +96,44 @@ describe('moving an element replaces a kept offset', () => {
         expect(moved.breakpointOverrides?.['tablet']).toMatchObject({ x: 5 });
         expect(moved.breakpointOverrides?.['tablet']?.customProperties?.['left']).toBeUndefined();
         expect(moved.customProperties['left']).toBe('50%');
+    });
+});
+describe('an element anchored by right or bottom alone', () => {
+    const rightOnly = '  position: absolute;\n  top: 20px;\n  right: 5.333cqw;';
+    it('round-trips with no left written', () => {
+        const first = roundTrip(css(rightOnly)).css;
+        expect(first).not.toMatch(/\bleft:/);
+        expect(roundTrip(first).css).toBe(first);
+    });
+    it('writes no top beside a bottom alone', () => {
+        const { css: out } = roundTrip(css('  position: absolute;\n  left: 8px;\n  bottom: 12px;'));
+        expect(out).not.toMatch(/\btop:/);
+        expect(out).toContain('bottom: 12px;');
+    });
+    it('keeps an explicit left: 0 beside right: 0, so the element still stretches', () => {
+        const { css: out, elements } = roundTrip(css('  position: absolute;\n  left: 0;\n  top: 0;\n  right: 0;'));
+        expect(elements['f88e']?.customProperties['left']).toBe('0');
+        expect(out).toContain('left: 0;');
+        expect(out.match(/\bleft:/g)).toHaveLength(1);
+    });
+    it('draws on the canvas with no left, so right places it', () => {
+        const el = roundTrip(css(rightOnly)).elements['f88e'];
+        if (el === undefined)
+            throw new Error('fixture');
+        const style = elementToStyle(el, 'none', undefined, [], null, 'scamp', false, 900);
+        expect(style.left).toBeUndefined();
+        expect(style.right).toBe('5.333cqw');
+        expect(style.top).toBe(20);
+    });
+    it('becomes left anchored when moved, and a stretched one keeps its right', () => {
+        const anchored = roundTrip(css(rightOnly)).elements['f88e'];
+        const stretched = roundTrip(css('  position: absolute;\n  left: 0;\n  top: 0;\n  right: 0;')).elements['f88e'];
+        if (anchored === undefined || stretched === undefined)
+            throw new Error('fixture');
+        const moved = applyPatchWithAxisRouting(anchored, { x: 40 }, 'desktop', null);
+        expect(moved.customProperties).not.toHaveProperty('right');
+        const movedStretch = applyPatchWithAxisRouting(stretched, { x: 40 }, 'desktop', null);
+        expect(movedStretch.customProperties['right']).toBe('0');
+        expect(movedStretch.customProperties).not.toHaveProperty('left');
     });
 });

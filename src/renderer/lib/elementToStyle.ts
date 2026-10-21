@@ -298,18 +298,24 @@ export const elementToStyle = (
           : inLayoutParent
             ? 'relative'
             : 'absolute',
+    // Anchored by `right` / `bottom` alone: no `left` / `top`, or it would
+    // win and pin the element to the left. see docs/notes/position-offsets.md
     left:
-      positionForCanvas === 'static' || positionForCanvas === 'auto'
-        ? isRoot || inLayoutParent
-          ? undefined
-          : el.x
-        : el.x,
+      el.customProperties['right'] !== undefined && el.customProperties['left'] === undefined
+        ? undefined
+        : positionForCanvas === 'static' || positionForCanvas === 'auto'
+          ? isRoot || inLayoutParent
+            ? undefined
+            : el.x
+          : el.x,
     top:
-      positionForCanvas === 'static' || positionForCanvas === 'auto'
-        ? isRoot || inLayoutParent
-          ? undefined
-          : el.y
-        : el.y,
+      el.customProperties['bottom'] !== undefined && el.customProperties['top'] === undefined
+        ? undefined
+        : positionForCanvas === 'static' || positionForCanvas === 'auto'
+          ? isRoot || inLayoutParent
+            ? undefined
+            : el.y
+          : el.y,
     width: effectiveWidth,
     height: effectiveHeight,
     // Canvas-only floor on the root's rendered height. Without this,

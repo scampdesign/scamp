@@ -258,6 +258,11 @@ export const applyDeclarations = (
 ): ScampElement => {
   let element: ScampElement = baseline;
   const customProperties: Record<string, string> = {};
+  // With `right` (or `bottom`) in the rule, `left` (`top`) is kept as
+  // written: the generator writes no `left` when there's none, so a
+  // `left: 0` beside a `right` must stay distinguishable from no `left`.
+  // see docs/notes/position-offsets.md
+  const opposite = { left: decls.some((d) => d.prop === 'right'), top: decls.some((d) => d.prop === 'bottom') };
   // What this cell's `colSpan` / `rowSpan` already implies. The
   // generator derives the placement from the attribute, so reading it
   // back into `gridColumn` would leave the model carrying the same
@@ -278,7 +283,7 @@ export const applyDeclarations = (
     // see docs/notes/position-offsets.md
     if (prop === 'left' || prop === 'top') {
       const px = parsePxOrNull(value);
-      if (px === null) customProperties[prop] = value;
+      if (px === null || opposite[prop]) customProperties[prop] = value;
       else element = { ...element, [prop === 'left' ? 'x' : 'y']: px };
       continue;
     }

@@ -150,7 +150,13 @@ const dropKeptOffsets = (
   activeBreakpointId: string,
   activeStateName: ElementStateName | null
 ): ScampElement => {
-  const keys = [...('x' in patch ? ['left'] : []), ...('y' in patch ? ['top'] : [])];
+  // An element anchored by `right` / `bottom` alone becomes left / top anchored
+  // when moved; one with both keeps the far side (`left: 0; right: 0` stretches).
+  const c = el.customProperties;
+  const keys = [
+    ...('x' in patch ? ['left', ...(c['left'] === undefined ? ['right'] : [])] : []),
+    ...('y' in patch ? ['top', ...(c['top'] === undefined ? ['bottom'] : [])] : []),
+  ];
   if (keys.length === 0) return el;
   if (activeBreakpointId === 'desktop' && activeStateName === null) {
     const custom = without(el.customProperties, keys);
