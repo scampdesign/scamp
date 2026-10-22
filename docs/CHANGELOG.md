@@ -39,6 +39,11 @@ release time.
   each variant frame grew to reach that element, which pushed it
   further out. Scamp showed **Something went wrong** with React error
   #185. Each frame now settles at the size that fits what it draws.
+- **The Variants section scrolls with the rest of the panel.** With a
+  component's root selected, the **Variants** section stayed pinned at
+  the top of the properties panel while the sections below it
+  scrolled, which left little room on a short window. Now the whole
+  panel scrolls together.
 
 ### 0.11.0 (2026-10-21)
 

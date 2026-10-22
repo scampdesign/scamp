@@ -5,7 +5,6 @@ import { PanelHeader } from './PanelHeader';
 import { PanelModeToggle } from './PanelModeToggle';
 import { StateSwitcher } from './StateSwitcher';
 import { VariantsSection } from './VariantsSection';
-import { ROOT_ELEMENT_ID } from '@lib/element';
 import { UiPanel } from './UiPanel';
 import { CssPanel } from './CssPanel';
 import { DataPanel, useViewDataCount, ViewDataSection } from './DataPanel';
@@ -115,7 +114,6 @@ export const PropertiesPanel = ({
       <PanelHeader />
       <PanelModeToggle />
       {panelMode === 'ui' && <StateSwitcher />}
-      {panelMode === 'ui' && isComponent && selectedId === ROOT_ELEMENT_ID && <VariantsSection />}
       {panelMode === 'data' ? (
         <DataPanel />
       ) : panelMode === 'ui' ? (

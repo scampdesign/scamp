@@ -139,4 +139,17 @@ test.describe('components: variants', () => {
     await expect(window.getByRole('navigation', { name: 'Component editor breadcrumb' })).toContainText('Button2');
     expect((await project.readComponent('Button2')).tsx).toContain('export default function Button2(');
   });
+
+  test('the Variants section scrolls with the rest of the panel', async ({ window }) => {
+    await expect(pageRoot(window)).toBeVisible();
+    await createComponentFromSidebar(window, 'Card');
+    await addOutlineVariant(window);
+
+    const scrollsWithSize = await variants(window).evaluate((section) => {
+      let node = section.parentElement;
+      while (node !== null && getComputedStyle(node).overflowY !== 'auto') node = node.parentElement;
+      return node?.textContent?.includes('Size') ?? false;
+    });
+    expect(scrollsWithSize).toBe(true);
+  });
 });

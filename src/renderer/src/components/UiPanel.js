@@ -21,6 +21,7 @@ import { TransitionsSection } from './sections/TransitionsSection';
 import { AnimationSection } from './sections/AnimationSection';
 import { ExportSection } from './sections/ExportSection';
 import { MultiSelectionPanel } from './MultiSelectionPanel';
+import { VariantsSection } from './VariantsSection';
 import styles from './PropertiesPanel.module.css';
 /**
  * The typed view of the properties panel. Reads the primary selected
@@ -36,6 +37,7 @@ export const UiPanel = () => {
     const elementId = useCanvasStore((s) => s.selectedElementIds[0] ?? null);
     const isMulti = useCanvasStore((s) => s.selectedElementIds.length > 1);
     const element = useCanvasStore((s) => (elementId ? s.elements[elementId] : undefined));
+    const isComponent = useCanvasStore((s) => s.activeComponent?.kind === 'component');
     const parentIsFlex = useCanvasStore((s) => {
         if (!element || !element.parentId)
             return false;
@@ -65,5 +67,5 @@ export const UiPanel = () => {
     if (isInstance) {
         return (_jsxs("div", { className: styles.uiPanelBody, children: [_jsx(ElementSection, { elementId: elementId }), _jsx(SizeSection, { elementId: elementId }), _jsx(ExportSection, {})] }));
     }
-    return (_jsxs("div", { className: styles.uiPanelBody, children: [!isRoot && _jsx(ElementSection, { elementId: elementId }), isText && _jsx(TypographySection, { elementId: elementId }), isImage && _jsx(ImageSection, { elementId: elementId }), showPosition && _jsx(PositionSection, { elementId: elementId }), _jsx(SizeSection, { elementId: elementId }), !isText && !isInput && _jsx(LayoutSection, { elementId: elementId }), (isText || isInput) && _jsx(DisplaySection, { elementId: elementId }), element.tag === 'table' && _jsx(TableStyleSection, { elementId: elementId }), _jsx(SpacingSection, { elementId: elementId, hideMargin: isRoot }), isSvg && _jsx(SvgSection, { elementId: elementId }), _jsx(BackgroundSection, { elementId: elementId }), _jsx(BorderSection, { elementId: elementId }), _jsx(ShadowsSection, { elementId: elementId }), _jsx(FiltersSection, { elementId: elementId }), _jsx(TransformSection, { elementId: elementId }), _jsx(VisibilitySection, { elementId: elementId }), _jsx(TransitionsSection, { elementId: elementId }), _jsx(AnimationSection, { elementId: elementId }), _jsx(ExportSection, {})] }));
+    return (_jsxs("div", { className: styles.uiPanelBody, children: [isRoot && isComponent && _jsx(VariantsSection, {}), !isRoot && _jsx(ElementSection, { elementId: elementId }), isText && _jsx(TypographySection, { elementId: elementId }), isImage && _jsx(ImageSection, { elementId: elementId }), showPosition && _jsx(PositionSection, { elementId: elementId }), _jsx(SizeSection, { elementId: elementId }), !isText && !isInput && _jsx(LayoutSection, { elementId: elementId }), (isText || isInput) && _jsx(DisplaySection, { elementId: elementId }), element.tag === 'table' && _jsx(TableStyleSection, { elementId: elementId }), _jsx(SpacingSection, { elementId: elementId, hideMargin: isRoot }), isSvg && _jsx(SvgSection, { elementId: elementId }), _jsx(BackgroundSection, { elementId: elementId }), _jsx(BorderSection, { elementId: elementId }), _jsx(ShadowsSection, { elementId: elementId }), _jsx(FiltersSection, { elementId: elementId }), _jsx(TransformSection, { elementId: elementId }), _jsx(VisibilitySection, { elementId: elementId }), _jsx(TransitionsSection, { elementId: elementId }), _jsx(AnimationSection, { elementId: elementId }), _jsx(ExportSection, {})] }));
 };
