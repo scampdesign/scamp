@@ -33,6 +33,12 @@ release time.
   too. It now draws and saves where `right` puts it, and the same goes
   for `bottom`. Dragging it, or anything placed with `left: 50%`, no
   longer makes it jump first.
+- **Adding a variant no longer crashes the canvas.** When a
+  component's root took its frame's width, such as
+  `width: calc(100% + 0px)`, and an element hung past the root's edge,
+  each variant frame grew to reach that element, which pushed it
+  further out. Scamp showed **Something went wrong** with React error
+  #185. Each frame now settles at the size that fits what it draws.
 
 ### 0.11.0 (2026-10-21)
 

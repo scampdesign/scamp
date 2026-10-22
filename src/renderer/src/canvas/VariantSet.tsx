@@ -40,9 +40,17 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
   // A root with only absolutely placed children is 0 tall, and what's
   // drawn hangs outside its frame. Each frame is sized to reach its
   // furthest element, measured after every render; the state only
-  // changes when a reach does, so this settles.
+  // changes when a reach does. It's measured with the min sizes off: a
+  // root that follows its frame (`auto`, a %) would otherwise grow with
+  // them, push what hangs past it further, and loop forever (React #185).
   useLayoutEffect(() => {
     const next: Record<string, { w: number; h: number }> = {};
+    const frames = [...frameRefs.current.values()];
+    const held = frames.map((frame) => [frame.style.minWidth, frame.style.minHeight] as const);
+    for (const frame of frames) {
+      frame.style.minWidth = '';
+      frame.style.minHeight = '';
+    }
     for (const [key, frame] of frameRefs.current) {
       const rect = frame.getBoundingClientRect();
       const scale = frame.offsetWidth > 0 ? rect.width / frame.offsetWidth : 1;
@@ -58,6 +66,9 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
       }
       next[key] = { w, h };
     }
+    frames.forEach((frame, i) => {
+      [frame.style.minWidth, frame.style.minHeight] = held[i] ?? ['', ''];
+    });
     const same =
       Object.keys(next).length === Object.keys(reach).length &&
       Object.entries(next).every(([k, v]) => reach[k]?.w === v.w && reach[k]?.h === v.h);
