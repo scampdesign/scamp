@@ -22,7 +22,7 @@ release time.
 
 ## Releases
 
-### Unreleased
+### 0.11.1 (2026-10-22)
 
 **Fixed**
 
