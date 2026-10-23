@@ -2,6 +2,8 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconColorSwatch } from '@tabler/icons-react';
+import { useCanvasStore } from '@store/canvasSlice';
+import { withTokenValues } from '@lib/resolveToken';
 import { usePopover } from '../../hooks/usePopover';
 import { Tooltip } from './Tooltip';
 import styles from './TokenOrNumberInput.module.css';
@@ -42,6 +44,7 @@ const formatCommit = (draft, defaultUnit) => {
 export const TokenOrNumberInput = ({ value, tokens, defaultUnit, onChange, onOpenTheme, prefix, placeholder, title, mixed = false, }) => {
     const shown = mixed ? '' : value ?? '';
     const [draft, setDraft] = useState(shown);
+    const themeTokens = useCanvasStore((s) => s.themeTokens);
     const popover = usePopover({
         position: {
             width: POPOVER_WIDTH,
@@ -125,5 +128,6 @@ export const TokenOrNumberInput = ({ value, tokens, defaultUnit, onChange, onOpe
                         popover.setOpen(false);
                         onOpenTheme();
                     }, children: "+ Add token" }))] })) : (_jsx("div", { className: styles.tokenList, children: tokens.map((token) => (_jsxs("button", { type: "button", role: "option", className: styles.tokenRow, onMouseDown: (e) => e.preventDefault(), onClick: () => selectToken(token), children: [_jsx("span", { className: styles.tokenRowIcon, "aria-hidden": "true", children: _jsx(IconColorSwatch, { size: 14, stroke: 1.75 }) }), _jsx("span", { className: styles.tokenRowName, children: token.name }), _jsx("span", { className: styles.tokenRowValue, children: token.value })] }, token.name))) })) })) : null;
-    return (_jsxs(_Fragment, { children: [title ? _jsx(Tooltip, { label: title, children: rowEl }) : rowEl, popoverEl && createPortal(popoverEl, document.body)] }));
+    const tooltip = withTokenValues(title, shown, themeTokens);
+    return (_jsxs(_Fragment, { children: [tooltip ? _jsx(Tooltip, { label: tooltip, children: rowEl }) : rowEl, popoverEl && createPortal(popoverEl, document.body)] }));
 };

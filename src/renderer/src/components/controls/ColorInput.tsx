@@ -8,7 +8,7 @@ import {
   combineShadowColor,
   splitShadowColor,
 } from '@lib/parsers';
-import { resolveTokenChain } from '@lib/resolveToken';
+import { resolveTokenChain, withTokenValues } from '@lib/resolveToken';
 import type { ScampElement } from '@lib/element';
 import type { ThemeToken } from '@shared/types';
 import { usePopover } from '../../hooks/usePopover';
@@ -231,6 +231,7 @@ export const ColorInput = ({
   defaultTab = 'color',
   mixed = false,
 }: Props): JSX.Element => {
+  const themeTokens = useCanvasStore((s) => s.themeTokens);
   const shown = mixed ? '' : value;
   const [draft, setDraft] = useState(shown);
   const [tab, setTab] = useState<PopoverTab>(defaultTab);
@@ -627,6 +628,21 @@ export const ColorInput = ({
     </div>
   );
 
+  const tokenTooltip = withTokenValues(undefined, mixed ? undefined : value, themeTokens);
+  const textEl = (
+    <input
+      type="text"
+      className={styles.colorText}
+      value={displayValue}
+      placeholder={mixed ? 'Mixed' : undefined}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commitDraft}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+      }}
+    />
+  );
+
   if (swatchOnly) {
     return (
       <div className={styles.colorSwatchOnly}>
@@ -661,17 +677,7 @@ export const ColorInput = ({
           />
         </button>
       </Tooltip>
-      <input
-        type="text"
-        className={styles.colorText}
-        value={displayValue}
-        placeholder={mixed ? 'Mixed' : undefined}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commitDraft}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') e.currentTarget.blur();
-        }}
-      />
+      {tokenTooltip ? <Tooltip label={tokenTooltip}>{textEl}</Tooltip> : textEl}
       {pickerWrap}
     </div>
   );

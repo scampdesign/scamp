@@ -11,3 +11,9 @@ import type { ThemeToken } from '@shared/types';
  * unchanged. see docs/archive/2026-07-23-design-system-plan.md
  */
 export declare const resolveTokenChain: (value: string, tokens: ReadonlyArray<ThemeToken>) => string | null;
+/**
+ * A field's tooltip with a line per token its value applies, each
+ * resolved to the value it ends at: `--space-md: 16px`. A field whose
+ * value holds no token keeps `title` as it is.
+ */
+export declare const withTokenValues: (title: string | undefined, value: string | undefined, tokens: ReadonlyArray<ThemeToken>) => string | undefined;

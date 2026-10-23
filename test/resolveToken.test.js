@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveTokenChain } from '@lib/resolveToken';
+import { resolveTokenChain, withTokenValues } from '@lib/resolveToken';
 const tokens = (map) => Object.entries(map).map(([name, value]) => ({ name, value }));
 describe('resolveTokenChain', () => {
     it('passes a concrete (non-var) value straight through', () => {
@@ -35,5 +35,35 @@ describe('resolveTokenChain', () => {
     });
     it('tolerates whitespace inside the var() call', () => {
         expect(resolveTokenChain('var( --color-primary )', tokens({ '--color-primary': '#111' }))).toBe('#111');
+    });
+});
+describe('withTokenValues', () => {
+    const t = tokens({
+        '--space-md': '16px',
+        '--color-brand': 'var(--color-blue-500)',
+        '--color-blue-500': '#3b82f6',
+    });
+    it('adds the token and the value it resolves to under the title', () => {
+        expect(withTokenValues('Gap', 'var(--space-md)', t)).toBe('Gap\n--space-md: 16px');
+    });
+    it('resolves an alias to the value at the end of its chain', () => {
+        expect(withTokenValues('Fill', 'var(--color-brand)', t)).toBe('Fill\n--color-brand: #3b82f6');
+    });
+    it('lists each token of a multi-value field once', () => {
+        expect(withTokenValues('Padding', 'var(--space-md) 8px var(--space-md) var(--color-brand)', t)).toBe('Padding\n--space-md: 16px\n--color-brand: #3b82f6');
+    });
+    it('reads a token with a fallback', () => {
+        expect(withTokenValues('Gap', 'var(--space-md, 4px)', t)).toBe('Gap\n--space-md: 16px');
+    });
+    it('says when a token is not defined', () => {
+        expect(withTokenValues('Gap', 'var(--space-xl)', t)).toBe('Gap\n--space-xl: not defined');
+    });
+    it('gives the token line alone when the field has no title', () => {
+        expect(withTokenValues(undefined, 'var(--space-md)', t)).toBe('--space-md: 16px');
+    });
+    it('keeps the title unchanged for a value with no token', () => {
+        expect(withTokenValues('Gap', '16px', t)).toBe('Gap');
+        expect(withTokenValues('Gap', undefined, t)).toBe('Gap');
+        expect(withTokenValues(undefined, '', t)).toBeUndefined();
     });
 });

@@ -5,7 +5,7 @@ import { IconColorPicker } from '@tabler/icons-react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useHistoryStore } from '@store/historySlice';
 import { combineShadowColor, splitShadowColor, } from '@lib/parsers';
-import { resolveTokenChain } from '@lib/resolveToken';
+import { resolveTokenChain, withTokenValues } from '@lib/resolveToken';
 import { usePopover } from '../../hooks/usePopover';
 import { NumberInput } from './NumberInput';
 import { Tooltip } from './Tooltip';
@@ -119,6 +119,7 @@ const isEyeDropperSupported = () => {
 const POPOVER_WIDTH = 240;
 const POPOVER_HEIGHT = 420;
 export const ColorInput = ({ value, onChange, onPreview, historyElementId, historyPropertyKey, presetColors, tokens, onOpenTheme, disableAlpha = false, swatchOnly = false, ariaLabel, defaultTab = 'color', mixed = false, }) => {
+    const themeTokens = useCanvasStore((s) => s.themeTokens);
     const shown = mixed ? '' : value;
     const [draft, setDraft] = useState(shown);
     const [tab, setTab] = useState(defaultTab);
@@ -333,11 +334,13 @@ export const ColorInput = ({ value, onChange, onPreview, historyElementId, histo
                                     popover.setOpen(false);
                                     onOpenTheme();
                                 }, children: "+ Add Tokens" }))] })) }))] })) }));
+    const tokenTooltip = withTokenValues(undefined, mixed ? undefined : value, themeTokens);
+    const textEl = (_jsx("input", { type: "text", className: styles.colorText, value: displayValue, placeholder: mixed ? 'Mixed' : undefined, onChange: (e) => setDraft(e.target.value), onBlur: commitDraft, onKeyDown: (e) => {
+            if (e.key === 'Enter')
+                e.currentTarget.blur();
+        } }));
     if (swatchOnly) {
         return (_jsxs("div", { className: styles.colorSwatchOnly, children: [_jsx(Tooltip, { label: "Pick color", children: _jsx("button", { ref: popover.triggerRef, type: "button", className: styles.colorSwatchOnlyButton, "aria-label": ariaLabel ?? 'Pick color', onClick: popover.toggle, style: { background: mixed ? 'transparent' : resolved } }) }), pickerWrap] }));
     }
-    return (_jsxs("div", { className: `${styles.colorInputRow} ${styles.colorInputRowSwatch}`, children: [_jsx(Tooltip, { label: "Pick color", children: _jsx("button", { ref: popover.triggerRef, type: "button", className: styles.colorSwatch, "aria-label": ariaLabel ?? 'Pick color', onClick: popover.toggle, children: _jsx("span", { className: styles.colorSwatchInner, style: { background: mixed ? 'transparent' : resolved } }) }) }), _jsx("input", { type: "text", className: styles.colorText, value: displayValue, placeholder: mixed ? 'Mixed' : undefined, onChange: (e) => setDraft(e.target.value), onBlur: commitDraft, onKeyDown: (e) => {
-                    if (e.key === 'Enter')
-                        e.currentTarget.blur();
-                } }), pickerWrap] }));
+    return (_jsxs("div", { className: `${styles.colorInputRow} ${styles.colorInputRowSwatch}`, children: [_jsx(Tooltip, { label: "Pick color", children: _jsx("button", { ref: popover.triggerRef, type: "button", className: styles.colorSwatch, "aria-label": ariaLabel ?? 'Pick color', onClick: popover.toggle, children: _jsx("span", { className: styles.colorSwatchInner, style: { background: mixed ? 'transparent' : resolved } }) }) }), tokenTooltip ? _jsx(Tooltip, { label: tokenTooltip, children: textEl }) : textEl, pickerWrap] }));
 };

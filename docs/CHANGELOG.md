@@ -22,6 +22,18 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Changed**
+
+- **A field's tooltip shows the token it applies and that token's
+  value.** Hold the pointer over a field in the properties panel whose
+  value is a theme token, and the tooltip adds a line such as
+  `--space-md: 16px`. A token that points at another token shows the
+  value at the end of the chain. Some fields show only the token's
+  name, or a `var()` that's hard to read in a narrow field, so you
+  can now check the value without opening the theme.
+
 ### 0.11.1 (2026-10-22)
 
 **Fixed**
