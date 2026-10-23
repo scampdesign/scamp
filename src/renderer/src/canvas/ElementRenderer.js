@@ -1,4 +1,4 @@
-import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { createElement, useContext, useEffect, useMemo, useRef, cloneElement } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID, variantKeyParts } from '@lib/element';
@@ -64,6 +64,25 @@ const renderRun = (run, index, runClass) => {
         return run.text;
     return createElement(run.tag ?? 'span', { key: `run-${index}`, className: runClass, style: runInlineStyle(run) }, run.text);
 };
+/** A component's elements at the active breakpoint, with the variants an instance picks. */
+const resolveInstanceTree = (tree, activeBreakpointId, breakpoints, instanceProps) => {
+    const axes = tree.elements[tree.rootId]?.variantAxes ?? [];
+    const keys = instanceVariantKeys(axes, instanceProps);
+    const out = {};
+    for (const [id, el] of Object.entries(tree.elements)) {
+        out[id] = layerVariants(resolveElementAtBreakpoint(el, activeBreakpointId, breakpoints), keys);
+    }
+    // The root carries each picked value, so the injected sheet's rules match too.
+    const root = out[tree.rootId];
+    if (root !== undefined && axes.length > 0) {
+        const picked = Object.fromEntries(axes.map((axis) => {
+            const value = instanceProps?.[axis.prop];
+            return [`data-${axis.prop}`, value !== undefined && axis.values.includes(value) ? value : axis.defaultValue];
+        }));
+        out[tree.rootId] = { ...root, attributes: { ...root.attributes, ...picked } };
+    }
+    return out;
+};
 const renderComponentSubtree = (element, elementsMap, parentDisplay, parentDirection, propOverrides, tokens, projectDir, projectFormat, projectPath, 
 /**
  * Threaded through every recursive call so the wrapper that
@@ -117,23 +136,46 @@ instanceSelected,
  * page-owned slot children (or an empty drop zone). see
  * docs/archive/2026-07-16-component-slots-plan.md
  */
-renderSlot, 
+renderSlot, nested, 
 /** The repeat row this subtree is rendered for. see docs/notes/view-bindings.md */
 row = null) => {
     const scope = {
         samples: elementsMap[ROOT_ELEMENT_ID]?.samples ?? {},
         row,
     };
-    // Slot composition deferred: nested instances render as placeholders.
+    // A nested instance draws its component as a page instance does, its
+    // classes prefixed by both instances. Its text belongs to the inner
+    // instance, which has no page element to write an edit to, so `''`
+    // leaves it read-only. see docs/notes/canvas-injected-stylesheet.md
     if (element.type === 'component-instance') {
-        return (_jsxs("div", { style: {
-                padding: '4px 8px',
-                background: 'var(--component-muted)',
-                border: '1px dashed var(--component)',
-                borderRadius: 4,
-                color: 'var(--text-secondary)',
-                fontSize: 12,
-            }, children: ["Nested ", element.componentName] }, element.id));
+        const name = element.componentName ?? '';
+        const tree = nested.componentTrees[name];
+        if (tree === undefined || element.missingComponent === true || nested.active.has(name))
+            return null;
+        const inner = resolveInstanceTree(tree, nested.activeBreakpointId, nested.breakpoints, resolveInstanceOverrides(element, scope));
+        const innerRoot = inner[tree.rootId];
+        if (innerRoot === undefined)
+            return null;
+        const slotCount = Object.values(tree.elements).filter((e) => typeof e.slot === 'string' && e.slot.length > 0).length;
+        const renderNestedSlot = (slotName) => {
+            const content = element.childIds
+                .filter((id) => slotCount === 1 || (elementsMap[id]?.slotName || 'children') === slotName)
+                .map((id) => elementsMap[id])
+                .filter((child) => child !== undefined)
+                .map((child) => renderComponentSubtree(child, elementsMap, 'none', undefined, propOverrides, tokens, projectDir, projectFormat, projectPath, instanceId, instanceClass, editingProp, onCommitProp, onChangeEditingProp, instanceSelected, renderSlot, nested, row))
+                .filter((c) => c !== null);
+            return { content, empty: content.length === 0 };
+        };
+        const root = {
+            ...innerRoot,
+            ...(element.widthMode !== 'auto' ? { widthMode: 'stretch', widthCustom: undefined } : {}),
+            ...(element.heightMode !== 'auto' ? { heightMode: 'stretch', heightCustom: undefined } : {}),
+        };
+        const wrapperStyle = {
+            ...elementToStyle(element, parentDisplay, parentDirection, tokens, projectDir, projectFormat, true, EMPTY_FRAME_MIN_HEIGHT),
+            ...instanceStretchStyle(element.widthMode, element.heightMode, innerRoot.widthMode, innerRoot.heightMode, parentDisplay, parentDirection),
+        };
+        return (_jsx("div", { className: styles.element, style: wrapperStyle, children: renderComponentSubtree(root, inner, parentDisplay, parentDirection, resolveInstanceOverrides(element, scope), tokens, projectDir, projectFormat, projectPath, '', `${instanceClassPrefix('', instanceClass)}${classNameFor(element)}`, null, onCommitProp, onChangeEditingProp, false, renderNestedSlot, { ...nested, active: new Set([...nested.active, name]) }) }, element.id));
     }
     const style = elementToStyle(element, parentDisplay, parentDirection, tokens, projectDir, projectFormat, 
     // Inner subtree: strip page-canvas-only affordances (the
@@ -337,7 +379,7 @@ row = null) => {
         const child = elementsMap[childId];
         if (!child)
             return null;
-        const rendered = renderComponentSubtree(child, elementsMap, childParentDisplay, childParentDirection, propOverrides, tokens, projectDir, projectFormat, projectPath, instanceId, instanceClass, editingProp, onCommitProp, onChangeEditingProp, instanceSelected, renderSlot, childRow);
+        const rendered = renderComponentSubtree(child, elementsMap, childParentDisplay, childParentDirection, propOverrides, tokens, projectDir, projectFormat, projectPath, instanceId, instanceClass, editingProp, onCommitProp, onChangeEditingProp, instanceSelected, renderSlot, nested, childRow);
         // A repeated child renders once per row; React needs a key per copy.
         return rendered && childRow !== null
             ? cloneElement(rendered, { key: `${childId}:${childRow.index}` })
@@ -488,23 +530,11 @@ export const ElementRenderer = ({ elementId, row }) => {
     const resolvedComponentElements = useMemo(() => {
         if (!componentTreeForInstance)
             return undefined;
-        const axes = componentTreeForInstance.elements[componentTreeForInstance.rootId]?.variantAxes ?? [];
-        const keys = instanceVariantKeys(axes, instanceProps);
-        const out = {};
-        for (const [id, el] of Object.entries(componentTreeForInstance.elements)) {
-            out[id] = layerVariants(resolveElementAtBreakpoint(el, activeBreakpointId, breakpoints), keys);
-        }
-        // The root carries each picked value, so the injected sheet's rules match too.
-        const root = out[componentTreeForInstance.rootId];
-        if (root !== undefined && axes.length > 0) {
-            const picked = Object.fromEntries(axes.map((axis) => {
-                const value = instanceProps?.[axis.prop];
-                return [`data-${axis.prop}`, value !== undefined && axis.values.includes(value) ? value : axis.defaultValue];
-            }));
-            out[componentTreeForInstance.rootId] = { ...root, attributes: { ...root.attributes, ...picked } };
-        }
-        return out;
+        return resolveInstanceTree(componentTreeForInstance, activeBreakpointId, breakpoints, instanceProps);
     }, [componentTreeForInstance, activeBreakpointId, breakpoints, instanceProps]);
+    // Every tree, for the components drawn inside this one; a page element
+    // that isn't an instance doesn't subscribe.
+    const componentTrees = useCanvasStore((s) => s.elements[elementId]?.type === 'component-instance' ? s.componentTrees : undefined);
     const requestComponentNavigation = useCanvasStore((s) => s.requestComponentNavigation);
     // Phase 6: per-instance inline editing. The pair is non-null when
     // a prop-text inside SOME instance is in contentEditable mode.
@@ -751,7 +781,12 @@ export const ElementRenderer = ({ elementId, row }) => {
         const inner = root && resolvedComponentElements
             ? renderComponentSubtree(root, resolvedComponentElements, 
             // Pass page-side layout context so flex/grid still applies.
-            parentDisplay, parentDirection, resolveInstanceOverrides(element, scope), themeTokens, projectDir, projectFormat, projectPath, element.id, classNameFor(element), editingPropForThis, handleCommitProp, handleChangeEditingProp, isSelected, renderSlot)
+            parentDisplay, parentDirection, resolveInstanceOverrides(element, scope), themeTokens, projectDir, projectFormat, projectPath, element.id, classNameFor(element), editingPropForThis, handleCommitProp, handleChangeEditingProp, isSelected, renderSlot, {
+                componentTrees: componentTrees ?? {},
+                activeBreakpointId,
+                breakpoints,
+                active: new Set([element.componentName ?? '']),
+            })
             : null;
         if (isEmptyComponent) {
             return (_jsxs("div", { ...wrapperProps, style: {

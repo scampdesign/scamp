@@ -24,6 +24,14 @@ release time.
 
 ### Unreleased
 
+**Fixed**
+
+- **A component inside another component draws on the page.** A
+  component placed in another component showed on the page as a purple
+  box with the inner component's name. The page now draws the inner
+  component with its own styles, size, and variant picks. To change
+  its text, open the outer component.
+
 **Changed**
 
 - **A field's tooltip shows the token it applies and that token's
