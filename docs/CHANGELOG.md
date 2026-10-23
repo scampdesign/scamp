@@ -31,6 +31,12 @@ release time.
   box with the inner component's name. The page now draws the inner
   component with its own styles, size, and variant picks. To change
   its text, open the outer component.
+- **An agent's edit to a component shows on the canvas right away.**
+  When an agent changed a component you didn't have open, the pages
+  that use it kept drawing the old version, and so did the component
+  when you opened it, until you reopened the project. The preview was
+  already right. Scamp now re-reads a file an agent changes, whether
+  or not it's open.
 
 **Changed**
 
