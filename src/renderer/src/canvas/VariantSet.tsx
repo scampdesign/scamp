@@ -1,7 +1,13 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID, type VariantAxis } from '@lib/element';
-import { variantGrid, type VariantCell } from '@lib/variantAxes';
+import {
+  MAX_VARIANT_COMBINATIONS,
+  authoredVariantGrid,
+  variantCombinationCount,
+  variantGrid,
+  type VariantCell,
+} from '@lib/variantAxes';
 
 import { ElementRenderer } from './ElementRenderer';
 import { VariantFrameContext } from './variantFrame';
@@ -32,7 +38,15 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
   const fillsWidth = useCanvasStore((s) => s.elements[ROOT_ELEMENT_ID]?.widthMode === 'stretch');
   const fillsHeight = useCanvasStore((s) => s.elements[ROOT_ELEMENT_ID]?.heightMode === 'stretch');
   const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
-  const blocks = useMemo(() => variantGrid(axes), [axes]);
+  const count = variantCombinationCount(axes);
+  const overCap = count > MAX_VARIANT_COMBINATIONS;
+  // Only past the cap does the layout read the overrides, so only then
+  // does every element edit re-lay out the set.
+  const elements = useCanvasStore((s) => (overCap ? s.elements : null));
+  const blocks = useMemo(
+    () => (elements !== null ? authoredVariantGrid(elements, activeVariantKey) : variantGrid(axes)),
+    [axes, elements, activeVariantKey]
+  );
   const setRef = useRef<HTMLDivElement>(null);
   const frameRefs = useRef(new Map<string, HTMLDivElement>());
   const [reach, setReach] = useState<Record<string, { w: number; h: number }>>({});
@@ -125,6 +139,13 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
   return (
     <div ref={setRef} className={styles.set} data-testid="variant-set">
       <div className={styles.name}>{componentName}</div>
+      {overCap && (
+        <div className={styles.notice} role="note" data-testid="variant-set-notice">
+          {componentName} has {count.toLocaleString('en-US')} combinations, more than the{' '}
+          {MAX_VARIANT_COMBINATIONS} the canvas can show. It shows each value on its own and each
+          combination that has its own styles.
+        </div>
+      )}
       {blocks.map((block, b) => (
         <div key={block.heading ?? b} className={styles.block}>
           {block.heading !== null && <div className={styles.heading}>{block.heading}</div>}

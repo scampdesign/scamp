@@ -442,3 +442,43 @@ export const variantGrid = (axes: ReadonlyArray<VariantAxis>): VariantBlock[] =>
         : first.values.map((row) => second.values.map((col) => cell({ ...extra, [first.prop]: row, [second.prop]: col }))),
   }));
 };
+
+/**
+ * The set for a component past MAX_VARIANT_COMBINATIONS, where the full
+ * grid is too many frames to draw: the default, each value of each axis
+ * on its own, then each combination a rule styles (and `activeKey`, so
+ * the frame being edited stays drawn).
+ */
+export const authoredVariantGrid = (elements: Elements, activeKey: string | null): VariantBlock[] => {
+  const axes = axesOf(elements);
+  if (axes.length === 0) return [];
+  const defaults = Object.fromEntries(axes.map((a) => [a.prop, a.defaultValue]));
+  const cell = (key: string | null, label: string): VariantCell => ({
+    key,
+    picks: { ...defaults, ...Object.fromEntries((key === null ? [] : variantKeyParts(key) ?? []).map((p) => [p.axis, p.value])) },
+    label,
+  });
+  const combos = new Set<string>();
+  for (const el of Object.values(elements)) {
+    for (const key of Object.keys(el.variantOverrides ?? {})) if (key.includes('&')) combos.add(key);
+  }
+  if (activeKey !== null && activeKey.includes('&')) combos.add(activeKey);
+  const live = [...combos].filter((key) => isVariantKeyLive(elements, key));
+  return [
+    { heading: null, rows: [[cell(null, '')]] },
+    ...axes
+      .filter((axis) => axis.values.length > 1)
+      .map((axis) => ({
+        heading: axis.prop,
+        rows: [axis.values.filter((v) => v !== axis.defaultValue).map((v) => cell(variantKey(axis.prop, v), v))],
+      })),
+    ...(live.length === 0
+      ? []
+      : [
+          {
+            heading: 'Combinations',
+            rows: [live.map((key) => cell(key, (variantKeyParts(key) ?? []).map((p) => `${p.axis}: ${p.value}`).join(' · ')))],
+          },
+        ]),
+  ];
+};
