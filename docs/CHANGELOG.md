@@ -37,6 +37,17 @@ release time.
   when you opened it, until you reopened the project. The preview was
   already right. Scamp now re-reads a file an agent changes, whether
   or not it's open.
+- **A component with no background is transparent on the canvas.** A
+  component whose root sets no `background`, such as a text field, toggle,
+  or slider, drew white on the canvas while the preview showed the
+  background behind it. The canvas now shows what's behind it too.
+- **An element in normal flow stays in flow on the canvas.** When a file
+  gives a child of a block element no `position`, the browser lays it out
+  in normal flow, but Scamp drew it at the parent's top-left corner and
+  wrote it back as `position: absolute` when it saved. A progress bar
+  inside a component, for example, overlapped the row below it and hid
+  the gap between them. Scamp now reads that child as `position: static`,
+  and keeps `display: block` on a `<progress>` or `<meter>`.
 
 **Changed**
 

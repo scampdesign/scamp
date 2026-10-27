@@ -258,6 +258,13 @@ describe('elementToStyle — theme token resolution', () => {
         expect(style0).not.toHaveProperty('backgroundColor');
         expect(style0).not.toHaveProperty('background');
     });
+    it('writes no inline background for a root left at its white default', () => {
+        // The generator never writes it, so a component on a coloured card
+        // shows the card through it in the preview.
+        const root = style(makeEl({ id: ROOT_ELEMENT_ID, parentId: null, backgroundColor: '#ffffff' }));
+        expect(root).not.toHaveProperty('backgroundColor');
+        expect(style(makeEl({ backgroundColor: '#ffffff' })).backgroundColor).toBe('#ffffff');
+    });
     it('renders a broken colour reference as transparent, not the raw var', () => {
         const tokens = [
             { name: '--color-brand-500', value: '#3b82f6' },

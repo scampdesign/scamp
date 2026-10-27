@@ -13,6 +13,7 @@ import { ELEMENT_STATES, ROOT_ELEMENT_ID, hasTypedSrcAlt, variantComboKey, varia
 import { DEFAULT_RECT_STYLES } from '../defaults';
 import { composeMaps } from '../sourceMap';
 import { TABLE_LAYOUT_TAGS } from '../tableGrid';
+import { INLINE_BY_DEFAULT } from '../tagDefaults';
 import { requireAt, requireGroup } from "../safeAccess";
 import { applyDeclarations, applyDeclarationsAsOverride, applyDeclarationsAsStateOverride, makeBaseline, makeRoot } from "./apply";
 import { parseCssDeclarations, type ParsedCss, type RawDeclaration } from "./css";
@@ -320,6 +321,7 @@ export const parseCode = (
   };
 
   const tagById = new Map(rawElements.map((r) => [r.id, r.tag]));
+  const typeById = new Map(rawElements.map((r) => [r.id, r.type]));
   const isLayoutContainer = (id: string | null): boolean => {
     if (id === null) return false;
     const cls = classById.get(id);
@@ -452,6 +454,23 @@ export const parseCode = (
         heightMode: 'stretch',
         alignSelf: DEFAULT_RECT_STYLES.alignSelf,
       };
+    }
+
+    // A rule with no `position` under a block parent is normal flow, and
+    // `auto` would draw it at 0,0. An inline tag with no `display` stays
+    // `auto`: as `static` the generator would write it `display: block`.
+    // see docs/notes/parse-flow-children.md
+    if (
+      !isRoot &&
+      raw.type !== 'component-instance' &&
+      raw.parentId !== null &&
+      typeById.get(raw.parentId) !== 'component-instance' &&
+      !isLayoutContainer(raw.parentId) &&
+      decls.length > 0 &&
+      !decls.some((d) => d.prop === 'position') &&
+      (!INLINE_BY_DEFAULT.has(raw.tag ?? '') || decls.some((d) => d.prop === 'display'))
+    ) {
+      finalElement = { ...finalElement, position: 'static' };
     }
 
     // Fold in any breakpoint overrides for this element's class.

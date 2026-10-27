@@ -5,6 +5,7 @@
 // component deps.
 import { classifyBackgroundValue } from "./backgroundValue";
 import { customPropsToStyle } from "./customProps";
+import { DEFAULT_ROOT_STYLES } from "./defaults";
 import { ROOT_ELEMENT_ID } from "./element";
 import { isColumnDirection } from "./flexAxis";
 import { tagFor } from "./generateCode";
@@ -304,7 +305,10 @@ inComponentEditor = false) => {
         // `background-color` is invalid CSS and the browser silently drops it,
         // so gradients rendered in the preview and not here.
         // see docs/notes/canvas-gradient-backgrounds.md
-        ...backgroundStyle(el.backgroundColor, isOff('background'), tokens),
+        // The generator never writes a root's white default, so the browser
+        // draws it transparent; the canvas does the same.
+        ...backgroundStyle(el.backgroundColor, isOff('background') ||
+            (el.id === ROOT_ELEMENT_ID && el.backgroundColor === DEFAULT_ROOT_STYLES.backgroundColor), tokens),
         // `border-radius` and the border longhands are NOT written here — the
         // stylesheet carries the generator's own text for them.
         //
