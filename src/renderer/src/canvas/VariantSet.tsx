@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID, type VariantAxis } from '@lib/element';
 import {
@@ -99,6 +99,13 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
     return () => ro.disconnect();
   }, [onWidth]);
 
+  // A frame picked in the Variants section can be off screen, or (past
+  // the cap) new at the end of the set: bring it into view.
+  useEffect(() => {
+    const cell = setRef.current?.querySelector('[data-variant-live="true"]');
+    cell?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [activeVariantKey]);
+
   const renderCell = (cell: VariantCell): JSX.Element => {
     const live = cell.key === activeVariantKey;
     const id = cell.key ?? '';
@@ -119,6 +126,7 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
             else frameRefs.current.set(id, node);
           }}
           className={styles.frame}
+          data-variant-frame
           style={{
             width: fillsWidth ? `${artboardWidth}px` : 'max-content',
             height: fillsHeight ? `${artboardHeight}px` : undefined,
@@ -143,7 +151,8 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
         <div className={styles.notice} role="note" data-testid="variant-set-notice">
           {componentName} has {count.toLocaleString('en-US')} combinations, more than the{' '}
           {MAX_VARIANT_COMBINATIONS} the canvas can show. It shows each value on its own and each
-          combination that has its own styles.
+          combination that has its own styles. To show another combination, select its values in the
+          Variants section.
         </div>
       )}
       {blocks.map((block, b) => (

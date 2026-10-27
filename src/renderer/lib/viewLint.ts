@@ -1,5 +1,6 @@
 import { isMappedProperty } from './cssPropertyMap';
 import { TRIGGER_LABEL, interactionError } from './variantInteractions';
+import { MAX_VARIANT_COMBINATIONS, variantCombinationCount } from './variantAxes';
 import { BIND_MARK } from './parseCode/bindings';
 import { ROOT_ELEMENT_ID, type ScampElement } from './element';
 import { classNameFor } from './generateCode/internal';
@@ -31,7 +32,8 @@ export type ViewFindingKind =
   | 'table-rowspan'
   | 'unknown-variant-value'
   | 'undeclared-variant-rule'
-  | 'variant-interaction';
+  | 'variant-interaction'
+  | 'variant-combinations';
 
 /**
  * A `problem` breaks the page, its export, or what can be reached. A
@@ -326,6 +328,16 @@ export const lintView = (input: LintInput): ViewFinding[] => {
     if (id === rootId) {
       const axes = el.variantAxes ?? [];
       const interactions = el.variantInteractions ?? [];
+      // The panel refuses this; a file edited outside Scamp can still get here.
+      const count = variantCombinationCount(axes);
+      if (count > MAX_VARIANT_COMBINATIONS) {
+        findings.push({
+          ...at,
+          kind: 'variant-combinations',
+          message: `${axes.map((a) => `${a.prop} (${a.values.length})`).join(' × ')} make ${count} combinations, more than the ${MAX_VARIANT_COMBINATIONS} a component can have, so the canvas shows only some of them.`,
+          hint: 'Remove a property or some values, or merge properties whose values are never used together into one.',
+        });
+      }
       for (const i of interactions) {
         const problem = interactionError(axes, i);
         if (problem !== null) {

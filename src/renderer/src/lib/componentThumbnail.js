@@ -2,8 +2,11 @@ import { captureIsolatedPng } from './exportCapture';
 // Sidebar thumbnail capture. see docs/notes/components-thumbnails.md
 const inFlight = new Set();
 export const COMPONENT_THUMBNAIL_UPDATED_EVENT = 'scamp:component-thumbnail-updated';
+// A component with variants is drawn as its set; the thumbnail is its
+// default frame, not the whole set, which also costs seconds to clone.
 const findCanvasFrame = () => {
-    const node = document.querySelector('[data-testid="canvas-frame"]');
+    const node = document.querySelector('[data-variant-cell=""] [data-variant-frame]') ??
+        document.querySelector('[data-testid="canvas-frame"]');
     return node instanceof HTMLElement ? node : null;
 };
 /** Fire-and-forget; never blocks the underlying save. */

@@ -243,7 +243,8 @@ component's name.
 **Note:** A component file edited outside Scamp can have more than 36
 combinations. Its set shows the default frame, one frame for each value
 on its own, and one frame for each combination that has its own styles.
-A message at the top of the set explains this.
+To show another combination, select its values in the **Variants**
+section.
 
 - The first property runs down the rows and the second across the
   columns, so a row shows one look in every size. A third property adds

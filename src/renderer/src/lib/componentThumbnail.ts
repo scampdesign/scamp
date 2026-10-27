@@ -11,8 +11,12 @@ export type ComponentThumbnailUpdatedDetail = {
   componentName: string;
 };
 
+// A component with variants is drawn as its set; the thumbnail is its
+// default frame, not the whole set, which also costs seconds to clone.
 const findCanvasFrame = (): HTMLElement | null => {
-  const node = document.querySelector('[data-testid="canvas-frame"]');
+  const node =
+    document.querySelector('[data-variant-cell=""] [data-variant-frame]') ??
+    document.querySelector('[data-testid="canvas-frame"]');
   return node instanceof HTMLElement ? node : null;
 };
 
