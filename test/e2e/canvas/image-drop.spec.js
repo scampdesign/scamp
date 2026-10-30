@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { test, expect } from '../fixtures/app';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasLocator, pageRoot } from '../fixtures/selectors';
 /**
  * Images dropped onto the canvas: a file, a URL from a browser, or a
  * browser's markup. Playwright can't drag from the OS file manager, so
@@ -44,7 +44,7 @@ const assetNames = async (dir) => fs.readdir(path.join(dir, 'assets')).catch(() 
 test('a dropped PNG file lands in assets and on the page', async ({ window, project }) => {
     await expect(pageRoot(window)).toBeVisible();
     await drop(window, { kind: 'file', name: 'dot.png', type: 'image/png', base64: PNG_BASE64 });
-    await expect(window.locator('[data-testid="canvas-frame"] img')).toHaveCount(1);
+    await expect(canvasLocator(window, 'img')).toHaveCount(1);
     await waitForSaved(window);
     const { tsx } = await readPageFiles(project.dir, project.pageName);
     expect(tsx).toMatch(/<img[^>]*src=/);
@@ -53,25 +53,25 @@ test('a dropped PNG file lands in assets and on the page', async ({ window, proj
 test('an image URL dragged from a browser is placed', async ({ window }) => {
     await expect(pageRoot(window)).toBeVisible();
     await drop(window, { kind: 'data', uriList: `# from a browser\n${PNG_DATA_URL}` });
-    await expect(window.locator('[data-testid="canvas-frame"] img')).toHaveCount(1);
+    await expect(canvasLocator(window, 'img')).toHaveCount(1);
 });
 test('a browser drag with only markup places the img it holds', async ({ window }) => {
     await expect(pageRoot(window)).toBeVisible();
     await drop(window, { kind: 'data', html: `<meta charset="utf-8"><img alt="red" src="${PNG_DATA_URL}">` });
-    await expect(window.locator('[data-testid="canvas-frame"] img')).toHaveCount(1);
+    await expect(canvasLocator(window, 'img')).toHaveCount(1);
 });
 test('a file that isn’t an image is refused with a reason', async ({ window }) => {
     await expect(pageRoot(window)).toBeVisible();
     await drop(window, { kind: 'file', name: 'notes.txt', type: 'text/plain', text: 'hello' });
     await expect(window.getByTestId('canvas-notice')).toContainText("notes.txt isn't an image");
-    await expect(window.locator('[data-testid="canvas-frame"] img')).toHaveCount(0);
+    await expect(canvasLocator(window, 'img')).toHaveCount(0);
 });
 test('a small SVG file is still inlined as an editable svg', async ({ window }) => {
     await expect(pageRoot(window)).toBeVisible();
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ff0000"/></svg>';
     await drop(window, { kind: 'file', name: 'dot.svg', type: 'image/svg+xml', text: svg });
-    await expect(window.locator('[data-testid="canvas-frame"] svg circle')).toHaveCount(1);
-    await expect(window.locator('[data-testid="canvas-frame"] img')).toHaveCount(0);
+    await expect(canvasLocator(window, 'svg circle')).toHaveCount(1);
+    await expect(canvasLocator(window, 'img')).toHaveCount(0);
 });
 test('the canvas accepts a file drag from its first dragenter, and the rest of the window refuses it', async ({ window }) => {
     await expect(pageRoot(window)).toBeVisible();
@@ -107,7 +107,7 @@ test('a PNG on disk, dragged in through Chromium, is copied into assets by its p
     await cdp.send('Input.dispatchDragEvent', { type: 'dragEnter', ...at, data });
     await cdp.send('Input.dispatchDragEvent', { type: 'dragOver', ...at, data });
     await cdp.send('Input.dispatchDragEvent', { type: 'drop', ...at, data });
-    await expect(window.locator('[data-testid="canvas-frame"] img')).toHaveCount(1);
+    await expect(canvasLocator(window, 'img')).toHaveCount(1);
     await waitForSaved(window);
     expect((await assetNames(project.dir)).some((name) => name.startsWith('from-disk'))).toBe(true);
 });

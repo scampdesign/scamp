@@ -9,6 +9,7 @@ import {
 import { useCanvasStore } from '@store/canvasSlice';
 import { classifyHref } from '@lib/linkHref';
 import styles from './LinkIndicators.module.css';
+import { canvasNodeById } from './canvasDom';
 
 type Props = {
   frameRef: RefObject<HTMLDivElement>;
@@ -80,10 +81,8 @@ export const LinkIndicators = ({ frameRef }: Props): JSX.Element | null => {
     if (!frame) return;
     const next: Indicator[] = [];
     for (const { id, href } of linked) {
-      const node: Element | null = frame.querySelector(
-        `[data-element-id="${id}"]`
-      );
-      if (!(node instanceof HTMLElement)) continue;
+      const node = canvasNodeById(id);
+      if (node === null) continue;
       // Walk the offsetParent chain to recover frame-local logical
       // pixel coordinates — same approach as `measureElementInFrame`
       // in CanvasInteractionLayer. transform: scale on the frame

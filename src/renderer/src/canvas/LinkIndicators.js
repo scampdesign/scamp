@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { classifyHref } from '@lib/linkHref';
 import styles from './LinkIndicators.module.css';
+import { canvasNodeById } from './canvasDom';
 /**
  * Floating chain icon overlay rendered inside the canvas frame on the
  * currently-selected element when that element has a non-empty
@@ -50,8 +51,8 @@ export const LinkIndicators = ({ frameRef }) => {
             return;
         const next = [];
         for (const { id, href } of linked) {
-            const node = frame.querySelector(`[data-element-id="${id}"]`);
-            if (!(node instanceof HTMLElement))
+            const node = canvasNodeById(id);
+            if (node === null)
                 continue;
             // Walk the offsetParent chain to recover frame-local logical
             // pixel coordinates — same approach as `measureElementInFrame`

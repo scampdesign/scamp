@@ -1,6 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useLayoutEffect, useState } from 'react';
-import { CANVAS_SCOPE_ATTR } from '@lib/canvasStylesheet';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useResolvedElement } from '@store/useResolvedElement';
@@ -8,6 +7,7 @@ import { extractSvgColors, replaceSvgColor } from '@renderer/src/lib/svg';
 import { ColorInput } from '../controls/ColorInput';
 import { NumberInput } from '../controls/NumberInput';
 import { Section, Row } from './Section';
+import { canvasElementById } from '../../canvas/canvasDom';
 const isConcreteColor = (value) => {
     if (!value)
         return false;
@@ -29,7 +29,7 @@ const toHex = (value) => {
 const useInheritedColor = (elementId, watch) => {
     const [color, setColor] = useState('');
     useLayoutEffect(() => {
-        const node = document.querySelector(`[${CANVAS_SCOPE_ATTR}] [data-element-id="${CSS.escape(elementId)}"]`);
+        const node = canvasElementById(elementId);
         setColor(node === null ? '' : toHex(getComputedStyle(node).color));
     }, [elementId, watch]);
     return color;

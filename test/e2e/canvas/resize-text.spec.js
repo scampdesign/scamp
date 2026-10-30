@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/app';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 /**
  * A side handle sizes one axis: narrowing a text box that hugs its
  * height leaves the height hugging, so the text wraps and the box grows.
@@ -45,17 +45,17 @@ const CSS = [
     '',
 ].join('\n');
 test.use({ projectOptions: { format: 'legacy', pageContent: { home: { tsx: TSX, css: CSS } } } });
-const center = async (window, selector) => {
-    const box = await window.locator(selector).first().boundingBox();
+const centerOf = async (locator, what) => {
+    const box = await locator.first().boundingBox();
     if (box === null)
-        throw new Error(`${selector} not on screen`);
+        throw new Error(`${what} not on screen`);
     return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 };
 /** Select an element, then drag one of its handles by (dx, dy) screen px. */
 const dragHandle = async (window, id, handle, dx, dy) => {
-    const el = await center(window, `[data-scamp-id="${id}"]`);
+    const el = await centerOf(canvasElement(window, id), id);
     await window.mouse.click(el.x, el.y);
-    const h = await center(window, `[data-handle="${handle}"]`);
+    const h = await centerOf(window.locator(`[data-handle="${handle}"]`), handle);
     await window.mouse.move(h.x, h.y);
     await window.mouse.down();
     await window.mouse.move(h.x + dx, h.y + dy, { steps: 6 });
@@ -67,7 +67,7 @@ const block = (css, className) => css.match(new RegExp(`\\.${className} \\{[^}]*
 const scaleOf = async (window) => window.locator('[data-testid="canvas-frame"]').evaluate((frame) => frame.offsetWidth > 0 ? frame.getBoundingClientRect().width / frame.offsetWidth : 1);
 test('narrowing a text box that hugs its height keeps it hugging', async ({ window, project }) => {
     await expect(pageRoot(window)).toBeVisible();
-    const label = window.locator('[data-scamp-id="label_e5f6"]');
+    const label = canvasElement(window, 'label_e5f6');
     const before = await label.evaluate((n) => ({ w: n.offsetWidth, h: n.offsetHeight }));
     const scale = await scaleOf(window);
     await dragHandle(window, 'label_e5f6', 'e', -60, 0);

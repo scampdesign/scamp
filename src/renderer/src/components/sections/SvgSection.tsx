@@ -1,6 +1,5 @@
 import { useLayoutEffect, useState } from 'react';
 
-import { CANVAS_SCOPE_ATTR } from '@lib/canvasStylesheet';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useColorPickerContext } from '@store/hooks/useColorPickerContext';
 import { useResolvedElement } from '@store/useResolvedElement';
@@ -9,6 +8,7 @@ import type { ScampElement } from '@lib/element';
 import { ColorInput } from '../controls/ColorInput';
 import { NumberInput } from '../controls/NumberInput';
 import { Section, Row } from './Section';
+import { canvasElementById } from '../../canvas/canvasDom';
 
 type Props = {
   elementId: string;
@@ -37,7 +37,7 @@ const toHex = (value: string): string => {
 const useInheritedColor = (elementId: string, watch: unknown): string => {
   const [color, setColor] = useState('');
   useLayoutEffect(() => {
-    const node = document.querySelector(`[${CANVAS_SCOPE_ATTR}] [data-element-id="${CSS.escape(elementId)}"]`);
+    const node = canvasElementById(elementId);
     setColor(node === null ? '' : toHex(getComputedStyle(node).color));
   }, [elementId, watch]);
   return color;

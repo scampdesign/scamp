@@ -1,23 +1,25 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { jsx as _jsx } from "react/jsx-runtime";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
-import { useHistoryStore } from '@store/historySlice';
-import { ROOT_ELEMENT_ID } from '@lib/element';
-import { classNameFor, generateCode } from '@lib/generateCode';
-import { collectExpandedInstances, generateHtml, INSTANCE_CLASS_SEPARATOR } from '@lib/generateHtml';
+import { generateCode } from '@lib/generateCode';
+import { collectExpandedInstances, generateHtml } from '@lib/generateHtml';
 import { assemblePageCss, rewriteCssUrls } from '@lib/htmlExportCss';
+import { isHtmlNode, setCanvasIframe } from '../canvasDom';
+import { selectionOffsetsWithin } from '../textSelectionOffsets';
+import { useCanvasTheme } from '../useCanvasTheme';
 import { iframeCanvasStats } from './iframeCanvasFlag';
 import { morphDom } from './morphDom';
 import styles from './IframeCanvas.module.css';
 /**
  * Experiment only (option C1): the open page drawn as the HTML export, in a
  * same-origin iframe with the page's real stylesheet, theme.css and fonts.
- * Selection and a move drag are drawn and handled from this document.
- * see docs/plans/canvas-rendering-options.md
+ * The canvas's interaction layer sits over it and reaches it through
+ * `canvasDom`. see docs/plans/canvas-rendering-options.md, "The full test"
  */
 const SHELL = '<!doctype html><html><head><meta charset="utf-8" />' +
-    '<style data-sheet="theme"></style><style data-sheet="page"></style></head>' +
+    '<style data-sheet="viewport"></style><style data-sheet="theme"></style><style data-sheet="page"></style></head>' +
     '<body style="margin: 0; min-height: 100vh"></body></html>';
+const FONT_LINK = 'link[data-scamp-font-import]';
 const assetUrlFor = (projectPath, legacy) => (url) => {
     if (projectPath === null)
         return url;
@@ -29,25 +31,15 @@ const assetUrlFor = (projectPath, legacy) => (url) => {
         return asset(`${base}/public${url}`);
     return url;
 };
-/** The page element a node inside the iframe belongs to. */
-const pageClassOf = (node) => {
-    for (let el = node; el !== null; el = el.parentElement) {
-        const first = el.classList[0];
-        if (first === undefined)
-            continue;
-        const cut = first.indexOf(INSTANCE_CLASS_SEPARATOR);
-        return cut === -1 ? first : first.slice(0, cut);
-    }
-    return null;
-};
-/** The node that draws a page element: itself, or an instance's expanded root. */
-const nodeFor = (doc, el) => {
-    const cls = classNameFor(el);
-    return el.type === 'component-instance'
-        ? doc.querySelector(`[class^="${CSS.escape(cls)}${INSTANCE_CLASS_SEPARATOR}"]`)
-        : doc.querySelector(`.${CSS.escape(cls)}`);
-};
-export const IframeCanvas = ({ minHeight }) => {
+/**
+ * `vh` follows the iframe's height, and the iframe is as tall as the page so
+ * the whole page shows. Pinning `vh` to the viewport height keeps a `100vh`
+ * hero the height of a window, not of the page. A lossless rewrite of one
+ * unit, like the `@media` to `@container` one the canvas does today.
+ */
+const VH_RE = /(-?\d*\.?\d+)(?:[dsl])?vh\b/g;
+const pinViewportUnits = (css) => css.replace(VH_RE, 'calc($1 * var(--scamp-vh))');
+export const IframeCanvas = ({ viewportHeight }) => {
     const elements = useCanvasStore((s) => s.elements);
     const rootId = useCanvasStore((s) => s.rootElementId);
     const breakpoints = useCanvasStore((s) => s.breakpoints);
@@ -57,11 +49,11 @@ export const IframeCanvas = ({ minHeight }) => {
     const themeCssRaw = useCanvasStore((s) => s.themeCssRaw);
     const projectPath = useCanvasStore((s) => s.projectPath);
     const legacy = useCanvasStore((s) => s.projectFormat === 'legacy');
-    const selectedIds = useCanvasStore((s) => s.selectedElementIds);
+    const editingElementId = useCanvasStore((s) => s.editingElementId);
+    const { themeCssVars } = useCanvasTheme();
+    const hostRef = useRef(null);
     const iframeRef = useRef(null);
     const [doc, setDoc] = useState(null);
-    const [height, setHeight] = useState(minHeight);
-    const [rects, setRects] = useState([]);
     const mountedAt = useRef(performance.now());
     const lastBody = useRef(null);
     const toAsset = useMemo(() => assetUrlFor(projectPath, legacy), [projectPath, legacy]);
@@ -90,41 +82,35 @@ export const IframeCanvas = ({ minHeight }) => {
                     : '',
             };
         });
-        const pageCss = rewriteCssUrls(assemblePageCss(css, instances), toAsset);
-        const body = generateHtml(elements, rootId, { componentTrees, rewriteAssetUrl: toAsset });
+        const pageCss = pinViewportUnits(rewriteCssUrls(assemblePageCss(css, instances), toAsset));
+        const body = generateHtml(elements, rootId, { componentTrees, rewriteAssetUrl: toAsset, editorIds: true });
         return { pageCss, body, buildMs: performance.now() - start };
     }, [elements, rootId, breakpoints, customMediaBlocks, pageKeyframesBlocks, componentTrees, toAsset]);
-    const themeCss = useMemo(() => rewriteCssUrls(themeCssRaw ?? '', toAsset), [themeCssRaw, toAsset]);
+    const themeCss = useMemo(() => pinViewportUnits(rewriteCssUrls(themeCssRaw ?? '', toAsset)), [themeCssRaw, toAsset]);
+    useEffect(() => () => setCanvasIframe(null), []);
     const handleLoad = () => {
         const loaded = iframeRef.current?.contentDocument ?? null;
         if (loaded === null)
             return;
-        // The app loads project fonts as <link>s in its own head; the iframe needs its own copies.
-        for (const link of document.head.querySelectorAll('link[data-scamp-font-import]')) {
-            const copy = loaded.createElement('link');
-            copy.rel = 'stylesheet';
-            copy.href = link.href;
-            loaded.head.appendChild(copy);
-        }
+        setCanvasIframe(iframeRef.current);
         setDoc(loaded);
     };
-    const measureSelection = (target) => {
-        const state = useCanvasStore.getState();
-        const next = [];
-        for (const id of state.selectedElementIds) {
-            const el = state.elements[id];
-            const node = el === undefined ? null : nodeFor(target, el);
-            if (node === null)
-                continue;
-            const r = node.getBoundingClientRect();
-            next.push({ x: r.left, y: r.top, w: r.width, h: r.height });
-        }
-        setRects(next);
+    /** As tall as the page, and never shorter than the viewport. */
+    const fitHeight = (target) => {
+        const host = hostRef.current;
+        if (host === null)
+            return;
+        host.style.height = `${viewportHeight}px`;
+        host.style.height = `${Math.max(viewportHeight, target.documentElement.scrollHeight)}px`;
     };
     useLayoutEffect(() => {
         if (doc === null)
             return;
         const start = performance.now();
+        const viewport = doc.querySelector('style[data-sheet="viewport"]');
+        const vh = `:root { --scamp-vh: ${viewportHeight / 100}px; }`;
+        if (viewport !== null && viewport.textContent !== vh)
+            viewport.textContent = vh;
         const theme = doc.querySelector('style[data-sheet="theme"]');
         const page = doc.querySelector('style[data-sheet="page"]');
         if (theme !== null && theme.textContent !== themeCss)
@@ -146,67 +132,97 @@ export const IframeCanvas = ({ minHeight }) => {
             iframeCanvasStats.firstDrawMs = performance.now() - mountedAt.current;
         else
             iframeCanvasStats.updates.push({ buildMs: built.buildMs, patchMs });
-        // shortcut: the frame only grows, since `100vh` follows the iframe; shrink on reload.
-        setHeight((h) => Math.max(h, minHeight, doc.documentElement.scrollHeight));
-        measureSelection(doc);
-    }, [doc, built, themeCss, minHeight]);
+        fitHeight(doc);
+    }, [doc, built, themeCss, viewportHeight]);
+    // The active theme's tokens, as the canvas frame carries them today.
     useLayoutEffect(() => {
-        if (doc !== null)
-            measureSelection(doc);
-    }, [doc, selectedIds]);
-    // Selection and a move drag, from this document.
-    const drag = useRef(null);
-    const handlePointerDown = (e) => {
-        if (doc === null || e.button !== 0)
+        if (doc === null)
             return;
-        const box = e.currentTarget.getBoundingClientRect();
-        const scale = e.currentTarget.offsetWidth > 0 ? box.width / e.currentTarget.offsetWidth : 1;
-        const hit = doc.elementFromPoint((e.clientX - box.left) / scale, (e.clientY - box.top) / scale);
-        const cls = pageClassOf(hit);
-        const state = useCanvasStore.getState();
-        const id = cls === null ? null : (Object.values(state.elements).find((el) => classNameFor(el) === cls)?.id ?? null);
-        if (e.shiftKey || e.metaKey || e.ctrlKey) {
-            if (id !== null)
-                state.toggleSelectElement(id);
+        const root = doc.documentElement;
+        root.removeAttribute('style');
+        for (const [name, value] of Object.entries(themeCssVars))
+            root.style.setProperty(name, value);
+    }, [doc, themeCssVars]);
+    // Project fonts load as <link>s in the app's head; the iframe keeps its own copies in step.
+    useEffect(() => {
+        if (doc === null)
             return;
-        }
-        state.selectElement(id);
-        const el = id === null ? undefined : state.elements[id];
-        const node = el === undefined ? null : nodeFor(doc, el);
-        // Only what the browser lays out as absolute moves by x / y; the model's `auto` can be either.
-        // The node is from the iframe's window, so `instanceof HTMLElement` here would always fail.
-        if (el === undefined || el.id === ROOT_ELEMENT_ID || node === null || !('style' in node))
+        const sync = () => {
+            const wanted = new Set(Array.from(document.head.querySelectorAll(FONT_LINK), (l) => l.href));
+            for (const link of doc.head.querySelectorAll('link[rel="stylesheet"]')) {
+                if (!wanted.has(link.href))
+                    link.remove();
+                else
+                    wanted.delete(link.href);
+            }
+            for (const href of wanted) {
+                const link = doc.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = href;
+                doc.head.appendChild(link);
+            }
+        };
+        sync();
+        const observer = new MutationObserver(sync);
+        observer.observe(document.head, { childList: true });
+        return () => observer.disconnect();
+    }, [doc]);
+    // Images and fonts that finish loading change the page's height.
+    useEffect(() => {
+        if (doc === null)
             return;
-        if (doc.defaultView?.getComputedStyle(node).position !== 'absolute')
+        const observer = new ResizeObserver(() => fitHeight(doc));
+        observer.observe(doc.body);
+        return () => observer.disconnect();
+    }, [doc, viewportHeight]);
+    // Text editing, in the iframe: the interaction layer stops taking pointer
+    // events while an element edits, so clicks reach the text directly.
+    useEffect(() => {
+        if (doc === null || editingElementId === null)
             return;
-        e.currentTarget.setPointerCapture(e.pointerId);
-        drag.current = { id: el.id, node: node, x0: e.clientX, y0: e.clientY, scale, dx: 0, dy: 0 };
-    };
-    const handlePointerMove = (e) => {
-        const d = drag.current;
-        if (d === null)
+        const node = doc.querySelector(`[data-element-id="${editingElementId}"]`);
+        if (!isHtmlNode(node))
             return;
-        d.dx = Math.round((e.clientX - d.x0) / d.scale);
-        d.dy = Math.round((e.clientY - d.y0) / d.scale);
-        // Optimistic: move the drawn node now; the model and the file follow on release.
-        d.node.style.translate = `${d.dx}px ${d.dy}px`;
-        if (doc !== null)
-            measureSelection(doc);
-    };
-    const handlePointerUp = () => {
-        const d = drag.current;
-        drag.current = null;
-        if (d === null || (d.dx === 0 && d.dy === 0))
-            return;
-        const state = useCanvasStore.getState();
-        const el = state.elements[d.id];
-        if (el === undefined)
-            return;
-        useHistoryStore.getState().beginHistoryTransaction();
-        state.moveElement(d.id, el.x + d.dx, el.y + d.dy);
-        useHistoryStore
-            .getState()
-            .endHistoryTransaction({ kind: 'move', elementIds: [d.id] }, useCanvasStore.getState().elements);
-    };
-    return (_jsxs("div", { className: styles.host, style: { height }, "data-testid": "iframe-canvas", children: [_jsx("iframe", { ref: iframeRef, className: styles.iframe, srcDoc: SHELL, onLoad: handleLoad, title: "Canvas" }), _jsx("div", { className: styles.layer, onPointerDown: handlePointerDown, onPointerMove: handlePointerMove, onPointerUp: handlePointerUp, children: rects.map((r, i) => (_jsx("div", { className: styles.outline, style: { left: r.x, top: r.y, width: r.w, height: r.h } }, i))) })] }));
+        const before = node.textContent ?? '';
+        const view = doc.defaultView;
+        const remember = () => {
+            const offsets = selectionOffsetsWithin(node, view?.getSelection() ?? null);
+            useCanvasStore
+                .getState()
+                .setTextSelection(offsets === null ? null : { elementId: editingElementId, ...offsets });
+        };
+        const finish = () => {
+            node.removeAttribute('contenteditable');
+            const state = useCanvasStore.getState();
+            const next = node.textContent ?? '';
+            if (next !== before)
+                state.setElementText(editingElementId, next);
+            state.setEditingElement(null);
+        };
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                node.blur();
+            }
+        };
+        node.setAttribute('contenteditable', 'true');
+        node.focus();
+        const range = doc.createRange();
+        range.selectNodeContents(node);
+        range.collapse(false);
+        view?.getSelection()?.removeAllRanges();
+        view?.getSelection()?.addRange(range);
+        node.addEventListener('blur', finish, { once: true });
+        node.addEventListener('keydown', handleKeyDown);
+        node.addEventListener('keyup', remember);
+        node.addEventListener('pointerup', remember);
+        return () => {
+            node.removeEventListener('blur', finish);
+            node.removeEventListener('keydown', handleKeyDown);
+            node.removeEventListener('keyup', remember);
+            node.removeEventListener('pointerup', remember);
+            node.removeAttribute('contenteditable');
+        };
+    }, [doc, editingElementId]);
+    return (_jsx("div", { ref: hostRef, className: styles.host, style: { height: viewportHeight }, "data-testid": "iframe-canvas", children: _jsx("iframe", { ref: iframeRef, className: styles.iframe, srcDoc: SHELL, onLoad: handleLoad, title: "Canvas" }) }));
 };

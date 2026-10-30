@@ -3,6 +3,7 @@ import { type RefObject } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID, type ScampElement } from '@lib/element';
 
+import { canvasElementsFromPoint, canvasQuery, isHtmlNode } from '../canvasDom';
 import { elementIdOf } from './canvasHitTest';
 import type { CanvasGeometry, SelectedRect } from './types';
 
@@ -47,14 +48,16 @@ export const useCanvasGeometry = (
   const measureElementInFrame = (id: string): SelectedRect | null => {
     const frame = frameRef.current;
     if (!frame) return null;
-    const node = frame.querySelector(`[data-element-id="${id}"]`);
-    if (!(node instanceof HTMLElement)) return null;
+    const node = canvasQuery(frame, `[data-element-id="${id}"]`);
+    if (!isHtmlNode(node)) return null;
 
     // Walk up the offsetParent chain to the frame, accumulating logical
     // pixel offsets. offsetLeft/Top are always unaffected by ancestor
     // `transform: scale` since transforms don't reflow layout.
     let x = 0;
     let y = 0;
+    // In the iframe the chain ends at its body, and the iframe sits at the
+    // frame's origin, so the sum is frame-local there too.
     let current: HTMLElement | null = node;
     while (current && current !== frame) {
       x += current.offsetLeft;
@@ -217,13 +220,13 @@ export const useCanvasGeometry = (
     // container we hit walking outward is the deepest one under the
     // cursor. The chrome layer has no `data-element-id`, so it's
     // skipped naturally.
-    const candidates = document.elementsFromPoint(clientX, clientY);
+    const candidates = canvasElementsFromPoint(clientX, clientY);
     for (const node of candidates) {
       // Component slot drop zone: route the drop into the owning instance
       // (the dropped element becomes page-owned slot content). The zone
       // carries `data-scamp-slot` + `data-slot-owner-id` (the instance's
       // canvas id). see docs/archive/2026-07-16-component-slots-plan.md
-      if (node instanceof HTMLElement && node.dataset['scampSlot']) {
+      if (isHtmlNode(node) && node.dataset['scampSlot']) {
         const ownerId = node.dataset['slotOwnerId'];
         if (
           ownerId &&

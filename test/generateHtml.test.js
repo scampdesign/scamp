@@ -526,3 +526,22 @@ describe('generateHtml — repeats and show flags', () => {
         expect(html).not.toContain('Default');
     });
 });
+describe('generateHtml — editor ids', () => {
+    const options = { componentTrees: { SidebarRow: sidebarRow() } };
+    it('writes no editor attributes by default, as the export needs', () => {
+        const html = render([makeRoot(['a1b2']), makeEl('a1b2')], options);
+        expect(html).not.toContain('data-element-id');
+        expect(html).not.toContain('data-scamp-id');
+    });
+    it('marks each page element with its id and its class', () => {
+        const html = render([makeRoot(['a1b2']), makeEl('a1b2')], { ...options, editorIds: true });
+        expect(html).toContain('class="root" data-element-id="root" data-scamp-id="root"');
+        expect(html).toContain('class="rect_a1b2" data-element-id="a1b2" data-scamp-id="rect_a1b2"');
+    });
+    it('gives an instance’s expanded root the instance id, and its insides none', () => {
+        const html = render([makeRoot(['i1']), instance('i1', 'inst_a024')], { ...options, editorIds: true });
+        expect(html).toContain('class="inst_a024__root" data-element-id="i1" data-scamp-id="root"');
+        expect(html).toContain('class="inst_a024__label_d3e4" data-scamp-id="label_d3e4" data-scamp-instance-id="i1" data-scamp-prop="label"');
+        expect(html.match(/data-element-id=/g)?.length).toBe(2);
+    });
+});

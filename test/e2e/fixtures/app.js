@@ -161,6 +161,9 @@ export const test = base.extend({
         const window = await app.firstWindow();
         await window.waitForLoadState('domcontentloaded');
         await dismissSentryPrompt(window);
+        if (process.env['SCAMP_E2E_IFRAME'] === '1') {
+            await window.evaluate(() => globalThis.__scampIframeCanvas.set(true));
+        }
         await use(window);
     },
 });

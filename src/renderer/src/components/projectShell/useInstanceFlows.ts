@@ -33,6 +33,7 @@ import type {
   LockPropRequest,
   SlotRemovalRequest,
 } from './types';
+import { canvasNodeById } from '../../canvas/canvasDom';
 
 type ProjectChange = (
   next: ProjectData | ((prev: ProjectData) => ProjectData)
@@ -133,11 +134,9 @@ export const useInstanceFlows = ({
     // Scope to the canvas frame — the layers-panel rows also carry
     // `data-element-id`, and a bare document query would match the (tiny)
     // sidebar row instead of the rendered canvas element.
-    const sourceNode = document.querySelector(
-      `[data-testid="canvas-frame"] [data-element-id="${elementId}"]`
-    );
+    const sourceNode = canvasNodeById(elementId);
     const measured =
-      sourceNode instanceof HTMLElement
+      sourceNode !== null
         ? { width: sourceNode.offsetWidth, height: sourceNode.offsetHeight }
         : null;
     try {

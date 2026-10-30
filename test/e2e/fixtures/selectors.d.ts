@@ -1,5 +1,11 @@
 import type { Locator, Page } from '@playwright/test';
 /**
+ * The iframe canvas experiment: with `SCAMP_E2E_IFRAME=1` the page draws in
+ * an iframe, and these helpers look inside it.
+ * see docs/plans/canvas-rendering-options.md, "The full test"
+ */
+export declare const IFRAME_CANVAS: boolean;
+/**
  * Centralized query helpers. Everything the specs look up goes
  * through here so renaming an id / restructuring the DOM only
  * touches this file.
@@ -21,6 +27,8 @@ export declare const pageRoot: (page: Page) => Locator;
  */
 export declare const canvasElement: (page: Page, className: string) => Locator;
 /** The scaled frame the canvas renders inside. */
+/** Any selector, inside the drawn page: the canvas frame today, the iframe in the experiment. */
+export declare const canvasLocator: (page: Page, selector: string) => Locator;
 export declare const canvasFrame: (page: Page) => Locator;
 /** The toolbar button for a given tool (exposed via role=button + accessible name). */
 export declare const toolButton: (page: Page, label: string) => Locator;

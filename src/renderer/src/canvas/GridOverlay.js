@@ -1,6 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useLayoutEffect, useState } from 'react';
 import styles from './GridOverlay.module.css';
+import { canvasNodeById } from './canvasDom';
 /**
  * Parse a resolved-style track list (e.g. `"100px 200px 100px"`) into
  * cumulative pixel offsets. Browsers always return resolved tracks as
@@ -37,7 +38,7 @@ const parseResolvedTracks = (raw) => {
 export const GridOverlay = ({ elementId, frameRect, scale, }) => {
     const [lines, setLines] = useState(null);
     useLayoutEffect(() => {
-        const node = document.querySelector(`[data-element-id="${elementId}"]`);
+        const node = canvasNodeById(elementId);
         if (!node) {
             setLines(null);
             return;

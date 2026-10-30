@@ -41,6 +41,12 @@ export type HtmlExportOptions = {
     rewriteHref?: (href: string) => string;
     /** Map an asset URL (`/assets/x.webp`) to a page-relative path. */
     rewriteAssetUrl?: (url: string) => string;
+    /**
+     * Write the canvas's own attributes, for a canvas that draws this markup:
+     * `data-element-id` on each page element (an instance's id on its expanded
+     * root) and `data-scamp-id` on every node. The export leaves it off.
+     */
+    editorIds?: boolean;
 };
 /**
  * Convert one captured text fragment to what JSX would actually render.

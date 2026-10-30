@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/app';
 import { drawAndSelectRect } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { pageRoot, resizeHandle } from '../fixtures/selectors';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 /**
  * Experiment (option C1): selection drawn from the parent document, click
@@ -25,10 +25,10 @@ test('the iframe canvas selects by click and moves an element by drag', async ({
         throw new Error('no iframe canvas');
     await expect.poll(() => frame.evaluate((c) => document.querySelector(`.${c}`) !== null, cls)).toBe(true);
     // Click empty page: the root is selected, not the rect.
-    const layer = window.locator('[data-testid="iframe-canvas"] > div').last();
+    const layer = iframe;
     const box = await layer.boundingBox();
     if (!box)
-        throw new Error('no layer');
+        throw new Error('no iframe');
     await window.mouse.click(box.x + box.width - 20, box.y + box.height - 20);
     // The rect's on-screen position: its iframe rect, scaled like the frame.
     const target = await frame.evaluate((c) => {
@@ -42,7 +42,7 @@ test('the iframe canvas selects by click and moves an element by drag', async ({
     const y = box.y + target.y * scale;
     await window.mouse.move(x, y);
     await window.mouse.down();
-    await expect(window.locator('[data-testid="iframe-canvas"] [class*="outline"]')).toHaveCount(1);
+    await expect(resizeHandle(window, 'se')).toBeVisible();
     await window.mouse.move(x + 50 * scale, y, { steps: 6 });
     await window.mouse.up();
     await waitForSaved(window);

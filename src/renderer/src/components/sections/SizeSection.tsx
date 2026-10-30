@@ -34,6 +34,7 @@ import {
 import { lockedSizePatch } from '@lib/aspectRatio';
 import { Section, Row } from './Section';
 import styles from './SizeSection.module.css';
+import { canvasNodeById } from '../../canvas/canvasDom';
 
 type Props = {
   elementId: string;
@@ -127,12 +128,7 @@ const useMeasuredSize = (
 
     /** Find the rendered element inside the canvas frame — NOT inside
      *  the layers panel, which mirrors the same `data-element-id`. */
-    const findCanvasNode = (): HTMLElement | null => {
-      const frame = document.querySelector('[data-testid="canvas-frame"]');
-      if (!(frame instanceof HTMLElement)) return null;
-      const node = frame.querySelector(`[data-element-id="${elementId}"]`);
-      return node instanceof HTMLElement ? node : null;
-    };
+    const findCanvasNode = (): HTMLElement | null => canvasNodeById(elementId);
 
     let observer: ResizeObserver | null = null;
     let mutationObserver: MutationObserver | null = null;

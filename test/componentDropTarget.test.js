@@ -27,6 +27,7 @@ const stubElementsFromPoint = (ids) => {
     const nodes = ids.map((id) => {
         const node = Object.create(HTMLElement.prototype);
         Object.defineProperty(node, 'dataset', { value: { elementId: id } });
+        Object.defineProperty(node, 'nodeType', { value: 1 });
         return node;
     });
     globalThis.document = {

@@ -60,6 +60,12 @@ export type HtmlExportOptions = {
   rewriteHref?: (href: string) => string;
   /** Map an asset URL (`/assets/x.webp`) to a page-relative path. */
   rewriteAssetUrl?: (url: string) => string;
+  /**
+   * Write the canvas's own attributes, for a canvas that draws this markup:
+   * `data-element-id` on each page element (an instance's id on its expanded
+   * root) and `data-scamp-id` on every node. The export leaves it off.
+   */
+  editorIds?: boolean;
 };
 
 /**
@@ -86,6 +92,8 @@ type Scope = {
    * see docs/notes/view-bindings.md
    */
   binding: BindingScope;
+  /** The page element id of the instance this scope expands, for `editorIds`. */
+  ownerInstanceId?: string;
 };
 
 /** The sample data a tree's root holds, as a scope with no row yet. */
@@ -201,6 +209,7 @@ const renderInstance = (
     slots: groupSlotContent(el, scope),
     isComponent: true,
     binding: rootBinding(tree.elements, tree.rootId),
+    ownerInstanceId: el.id,
   };
 
   // The page sizes an instance through the component's `className` prop, so
@@ -219,7 +228,8 @@ const renderInstance = (
     options,
     extraClass,
     activeComponents,
-    name
+    name,
+    el.id
   );
 };
 
@@ -236,7 +246,9 @@ const renderElement = (
   options: HtmlExportOptions,
   extraClass: string | null,
   activeComponents: ReadonlySet<string>,
-  enteringComponent?: string
+  enteringComponent?: string,
+  /** The page element this node stands for, when it isn't `el` itself: an instance's root. */
+  ownerId?: string
 ): string => {
   const active =
     enteringComponent === undefined
@@ -252,6 +264,19 @@ const renderElement = (
   if (extraClass !== null) classes.push(extraClass);
 
   const attrs = [`class="${escapeHtml(classes.join(' '))}"`];
+  if (options.editorIds === true) {
+    const elementId = ownerId ?? (scope.isComponent ? null : el.id);
+    if (elementId !== null) attrs.push(`data-element-id="${escapeHtml(elementId)}"`);
+    attrs.push(`data-scamp-id="${escapeHtml(classNameFor(el))}"`);
+    // The hit-test marks the canvas puts on an instance's prop text and slots.
+    const owner = scope.isComponent ? scope.ownerInstanceId : undefined;
+    if (owner !== undefined && el.type === 'text' && typeof el.prop === 'string' && el.prop.length > 0) {
+      attrs.push(`data-scamp-instance-id="${escapeHtml(owner)}"`, `data-scamp-prop="${escapeHtml(el.prop)}"`);
+    }
+    if (owner !== undefined && el.slot !== undefined && el.slot.length > 0) {
+      attrs.push(`data-scamp-slot="${escapeHtml(el.slot)}"`, `data-slot-owner-id="${escapeHtml(owner)}"`);
+    }
+  }
   if (el.type === 'image' && tag === 'img') {
     const src = resolveAttr(el, 'src', scope.binding) ?? el.src ?? '';
     attrs.push(`src="${escapeHtml(rewriteAsset(src, options))}"`);

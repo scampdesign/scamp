@@ -119,6 +119,7 @@ const renderInstance = (el, scope, level, options, activeComponents) => {
         slots: groupSlotContent(el, scope),
         isComponent: true,
         binding: rootBinding(tree.elements, tree.rootId),
+        ownerInstanceId: el.id,
     };
     // The page sizes an instance through the component's `className` prop, so
     // in the app the component root renders with both its own `.root` and the
@@ -127,7 +128,7 @@ const renderInstance = (el, scope, level, options, activeComponents) => {
     // Emitted only when the instance actually has a size, matching the
     // condition `generateTsx` and `elementCssChunks` both use.
     const extraClass = sizeDeclarationLines(el).length > 0 ? instanceClass : null;
-    return renderElement(root, childScope, level, options, extraClass, activeComponents, name);
+    return renderElement(root, childScope, level, options, extraClass, activeComponents, name, el.id);
 };
 /**
  * Render one element and its descendants.
@@ -135,7 +136,9 @@ const renderInstance = (el, scope, level, options, activeComponents) => {
  * `extraClass` is the page-owned class an expanded component root also
  * carries; null everywhere else.
  */
-const renderElement = (el, scope, level, options, extraClass, activeComponents, enteringComponent) => {
+const renderElement = (el, scope, level, options, extraClass, activeComponents, enteringComponent, 
+/** The page element this node stands for, when it isn't `el` itself: an instance's root. */
+ownerId) => {
     const active = enteringComponent === undefined
         ? activeComponents
         : new Set([...activeComponents, enteringComponent]);
@@ -147,6 +150,20 @@ const renderElement = (el, scope, level, options, extraClass, activeComponents, 
     if (extraClass !== null)
         classes.push(extraClass);
     const attrs = [`class="${escapeHtml(classes.join(' '))}"`];
+    if (options.editorIds === true) {
+        const elementId = ownerId ?? (scope.isComponent ? null : el.id);
+        if (elementId !== null)
+            attrs.push(`data-element-id="${escapeHtml(elementId)}"`);
+        attrs.push(`data-scamp-id="${escapeHtml(classNameFor(el))}"`);
+        // The hit-test marks the canvas puts on an instance's prop text and slots.
+        const owner = scope.isComponent ? scope.ownerInstanceId : undefined;
+        if (owner !== undefined && el.type === 'text' && typeof el.prop === 'string' && el.prop.length > 0) {
+            attrs.push(`data-scamp-instance-id="${escapeHtml(owner)}"`, `data-scamp-prop="${escapeHtml(el.prop)}"`);
+        }
+        if (owner !== undefined && el.slot !== undefined && el.slot.length > 0) {
+            attrs.push(`data-scamp-slot="${escapeHtml(el.slot)}"`, `data-slot-owner-id="${escapeHtml(owner)}"`);
+        }
+    }
     if (el.type === 'image' && tag === 'img') {
         const src = resolveAttr(el, 'src', scope.binding) ?? el.src ?? '';
         attrs.push(`src="${escapeHtml(rewriteAsset(src, options))}"`);

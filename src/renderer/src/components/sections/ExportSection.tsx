@@ -12,6 +12,7 @@ import { EnumSelect } from '../controls/EnumSelect';
 import { SegmentedControl } from '../controls/SegmentedControl';
 import { Section, Row } from './Section';
 import styles from './ExportSection.module.css';
+import { canvasNodeById } from '../../canvas/canvasDom';
 
 type Scope =
   | { kind: 'page' }
@@ -40,13 +41,7 @@ const findCanvasFrame = (): HTMLElement | null =>
  * of the rendered canvas element. Scoping to the frame guarantees we
  * grab the actual design content.
  */
-const findElementNode = (elementId: string): HTMLElement | null => {
-  const frame = findCanvasFrame();
-  if (!frame) return null;
-  return frame.querySelector<HTMLElement>(
-    `[data-element-id="${elementId}"]`
-  );
-};
+const findElementNode = (elementId: string): HTMLElement | null => canvasNodeById(elementId);
 
 /**
  * Read the live intrinsic size of a DOM node. The canvas frame and

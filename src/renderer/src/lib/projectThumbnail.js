@@ -2,6 +2,7 @@ import { viewSlugFor } from '@shared/templates';
 import { needsBackfill, thumbnailFrame, } from '@lib/thumbnailCrop';
 import { useCanvasStore } from '@store/canvasSlice';
 import { captureIsolatedPng } from './exportCapture';
+import { canvasInIframe } from '../canvas/canvasDom';
 /**
  * Start-screen thumbnail capture. The component-sidebar equivalent one
  * level down is `componentThumbnail.ts`; this differs in two ways.
@@ -54,6 +55,9 @@ const inFlight = new Set();
 const CAPTURE_IDLE_MS = 1500;
 const pending = new Map();
 const findCanvasFrame = () => {
+    // shortcut: the iframe experiment's page can't be rasterised from the frame yet; skip rather than save a blank one.
+    if (canvasInIframe())
+        return null;
     const node = document.querySelector('[data-testid="canvas-frame"]');
     return node instanceof HTMLElement ? node : null;
 };

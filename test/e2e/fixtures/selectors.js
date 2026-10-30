@@ -1,4 +1,11 @@
 /**
+ * The iframe canvas experiment: with `SCAMP_E2E_IFRAME=1` the page draws in
+ * an iframe, and these helpers look inside it.
+ * see docs/plans/canvas-rendering-options.md, "The full test"
+ */
+export const IFRAME_CANVAS = process.env['SCAMP_E2E_IFRAME'] === '1';
+const drawn = (page) => IFRAME_CANVAS ? page.frameLocator('[data-testid="iframe-canvas"] iframe') : page;
+/**
  * Centralized query helpers. Everything the specs look up goes
  * through here so renaming an id / restructuring the DOM only
  * touches this file.
@@ -12,14 +19,23 @@
  * don't match a component instance's inner root that's also rendered
  * inline on the canvas.
  */
-export const pageRoot = (page) => page.locator('[data-element-id="root"][data-scamp-id="root"]');
+export const pageRoot = (page) => 
+// A view's root is only as tall as its content, so an empty one is 0px and
+// reads as hidden; the iframe's body is the drawn page.
+IFRAME_CANVAS
+    ? drawn(page).locator('body')
+    : page.locator('[data-element-id="root"][data-scamp-id="root"]');
 /**
  * A drawn element on the canvas, by its CSS class name (e.g. `rect_a1b2`).
  * Inside the canvas frame, so a thumbnail capture's off-screen copy of the
  * page, which keeps the class names, doesn't match a second time.
  */
-export const canvasElement = (page, className) => page.locator(`[data-testid="canvas-frame"] [data-scamp-id="${className}"]`);
+export const canvasElement = (page, className) => IFRAME_CANVAS
+    ? drawn(page).locator(`[data-scamp-id="${className}"]`)
+    : page.locator(`[data-testid="canvas-frame"] [data-scamp-id="${className}"]`);
 /** The scaled frame the canvas renders inside. */
+/** Any selector, inside the drawn page: the canvas frame today, the iframe in the experiment. */
+export const canvasLocator = (page, selector) => IFRAME_CANVAS ? drawn(page).locator(selector) : page.locator(`[data-testid="canvas-frame"] ${selector}`);
 export const canvasFrame = (page) => page.locator('[data-testid="canvas-frame"]');
 /** The toolbar button for a given tool (exposed via role=button + accessible name). */
 export const toolButton = (page, label) => page.getByRole('button', { name: new RegExp(`^${label}\\s`) });
@@ -30,7 +46,7 @@ export const layersRow = (page, label) => page.locator('nav, aside').getByRole('
 /** A resize handle on the current selection overlay (nw, n, ne, e, se, s, sw, w). */
 export const resizeHandle = (page, handle) => page.locator(`[data-handle="${handle}"]`);
 /** Selectors for canvas elements whose class name begins with `prefix`. */
-export const canvasElementsByPrefix = (page, prefix) => page.locator(`[data-scamp-id^="${prefix}"]`);
+export const canvasElementsByPrefix = (page, prefix) => drawn(page).locator(`[data-scamp-id^="${prefix}"]`);
 /**
  * The components-section list in the sidebar — the `<ul>` immediately
  * following the "Components" heading. Scoping our queries here keeps

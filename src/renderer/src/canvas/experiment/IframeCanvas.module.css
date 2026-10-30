@@ -11,15 +11,3 @@
   border: 0;
   background: transparent;
 }
-
-/* Over the iframe, so pointer events stay in the app's document. */
-.layer {
-  position: absolute;
-  inset: 0;
-}
-
-.outline {
-  position: absolute;
-  pointer-events: none;
-  outline: 1.5px solid var(--accent);
-}

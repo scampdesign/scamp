@@ -8,6 +8,7 @@ import { EnumSelect } from '../controls/EnumSelect';
 import { SegmentedControl } from '../controls/SegmentedControl';
 import { Section, Row } from './Section';
 import styles from './ExportSection.module.css';
+import { canvasNodeById } from '../../canvas/canvasDom';
 const FORMAT_OPTIONS = [
     { value: 'png', label: 'PNG' },
     { value: 'svg', label: 'SVG' },
@@ -26,12 +27,7 @@ const findCanvasFrame = () => document.querySelector('[data-testid="canvas-frame
  * of the rendered canvas element. Scoping to the frame guarantees we
  * grab the actual design content.
  */
-const findElementNode = (elementId) => {
-    const frame = findCanvasFrame();
-    if (!frame)
-        return null;
-    return frame.querySelector(`[data-element-id="${elementId}"]`);
-};
+const findElementNode = (elementId) => canvasNodeById(elementId);
 /**
  * Read the live intrinsic size of a DOM node. The canvas frame and
  * its descendants are sized in CSS px regardless of the user's zoom

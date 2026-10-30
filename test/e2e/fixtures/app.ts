@@ -213,6 +213,11 @@ export const test = base.extend<ScampFixtures & ScampOptions>({
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
     await dismissSentryPrompt(window);
+    if (process.env['SCAMP_E2E_IFRAME'] === '1') {
+      await window.evaluate(() =>
+        (globalThis as unknown as { __scampIframeCanvas: { set: (on: boolean) => void } }).__scampIframeCanvas.set(true)
+      );
+    }
     await use(window);
   },
 });

@@ -572,14 +572,14 @@ export const Viewport = ({
       >
         <CanvasKeyframes />
         {useIframe ? (
-          <IframeCanvas minHeight={canvasHeight ?? viewportHeight} />
+          <IframeCanvas viewportHeight={canvasHeight ?? viewportHeight} />
         ) : (
           <>
             <CanvasPageStylesheet />
             {frameContent ?? <ElementRenderer elementId={rootElementId} />}
-            <CanvasInteractionLayer frameRef={frameRef} scale={scale} />
           </>
         )}
+        <CanvasInteractionLayer frameRef={frameRef} scale={scale} />
         {/* Component-editor artboard handles: `onResize` is only supplied in
             component mode, so these are always present there (the artboard IS
             the component) and never on a page. Drag to resize; double-click to
