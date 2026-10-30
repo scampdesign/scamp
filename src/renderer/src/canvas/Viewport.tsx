@@ -25,6 +25,8 @@ import { CanvasInteractionLayer } from './CanvasInteractionLayer';
 import { CanvasBoundaryOverlay } from './CanvasBoundaryOverlay';
 import { useCanvasTheme } from './useCanvasTheme';
 import styles from './Viewport.module.css';
+import { IframeCanvas } from './experiment/IframeCanvas';
+import { useIframeCanvasFlag } from './experiment/iframeCanvasFlag';
 
 // Padding subtracted from the scroll container's inner width when
 // computing fit-to-width zoom. Mirrors the artboard's horizontal
@@ -141,6 +143,12 @@ export const Viewport = ({
   // own box, so a ResizeObserver on the frame alone wouldn't fire.
   const elements = useCanvasStore((s) => s.elements);
   const activeTool = useCanvasStore((s) => s.activeTool);
+  // Experiment: pages only; the component editor keeps the current canvas.
+  const iframeFlag = useIframeCanvasFlag((s) => s.on);
+  const editingComponent = useCanvasStore((s) => s.activeComponent?.kind === 'component');
+  const useIframe = iframeFlag && !editingComponent && frameContent === undefined;
+  // The page's viewport height: what `100vh` means, as the preview's window would give it.
+  const viewportHeight = useCanvasStore((s) => s.canvasMinHeight);
   const userZoom = useCanvasStore((s) => s.userZoom);
   const setFitScale = useCanvasStore((s) => s.setFitScale);
   const { themeCssVars, themeFontFamily } = useCanvasTheme();
@@ -563,9 +571,15 @@ export const Viewport = ({
         }}
       >
         <CanvasKeyframes />
-        <CanvasPageStylesheet />
-        {frameContent ?? <ElementRenderer elementId={rootElementId} />}
-        <CanvasInteractionLayer frameRef={frameRef} scale={scale} />
+        {useIframe ? (
+          <IframeCanvas minHeight={canvasHeight ?? viewportHeight} />
+        ) : (
+          <>
+            <CanvasPageStylesheet />
+            {frameContent ?? <ElementRenderer elementId={rootElementId} />}
+            <CanvasInteractionLayer frameRef={frameRef} scale={scale} />
+          </>
+        )}
         {/* Component-editor artboard handles: `onResize` is only supplied in
             component mode, so these are always present there (the artboard IS
             the component) and never on a page. Drag to resize; double-click to

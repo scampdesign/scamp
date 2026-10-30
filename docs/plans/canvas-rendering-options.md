@@ -423,6 +423,134 @@ the code. We do not release this test.
 If we continue, the migration gets its own plan. That plan uses the
 phases of option B and the render step of C1.
 
+## Results of the test
+
+We ran steps 1 to 6 on 2026-10-30, on the `exp/canvas-rendering`
+branch. The code is in `src/renderer/src/canvas/experiment/`. The
+measurements are in `test/e2e/parity/iframe-c1*.spec.ts`.
+
+**Decision: continue (go), after you test the drag manually.**
+
+### Parity
+
+- All 14 parity fixtures pass in the iframe. Geometry and computed
+  styles agree with the browser.
+- A new fixture, `viewport-height-units`, also passes. It uses `50vh`.
+  The current canvas fails it: there, `vh` is the height of the app
+  window.
+- **We found a divergence in the current canvas.** The canvas draws the
+  root of each view at 900px or more. The preview draws the root at the
+  height of its content. This occurs because the scampjs templates
+  give no `min-height: 100vh` to a view root ("the shell's `body` owns
+  the viewport"). The canvas adds its own height floor. You see this
+  difference when a view root has a background color. The iframe draws
+  the view correctly.
+- **The parity oracle must use the saved file.** When a project opens,
+  Scamp can write the seeded file again. For example, a page becomes a
+  view, and the view root loses `min-height: 100vh`. The test oracle
+  now renders the saved CSS, because the preview renders the saved CSS.
+
+### Speed
+
+Each page had 96 to 1,001 elements. "Edit to paint" is the time from a
+background change in the store to the second animation frame. It
+includes the work of the full app and at least one frame wait.
+
+| Page | Elements | Edit to paint now (p50) | Edit to paint in the iframe (p50) | Build and patch in the iframe |
+|---|---|---|---|---|
+| Ruixen (imported) | 206 | 82 ms | 33 ms | 8.9 ms |
+| Gainwix (imported) | 218 | 73 ms | 35 ms | 7.6 ms |
+| Resova Health (imported) | 221 | 53 ms | 33 ms | 5.6 ms |
+| glitch Songs | 96 | 29 ms | 23 ms | 3.7 ms |
+| Synthetic | 1,001 | 100 ms | 47 ms | 8.3 ms |
+
+- **The iframe is faster than the current canvas on each page:** 1.3 to
+  2.5 times, at the median.
+- **A style change** costs 3.7 to 8.9 ms to build and patch. This is
+  less than one frame (16 ms). The markup does not change, so there is
+  no DOM patch.
+- **A change to the markup** (add, delete, text) costs more. Before we
+  skipped the patch for style changes, a patch on the Ruixen page took
+  12.6 ms, plus 7 ms to build. That is approximately 20 ms, more than
+  one frame. The patch is simple now. It matches children by position.
+  A keyed patch, or a patch of only the changed subtree, can make it
+  faster.
+- **The first draw** takes 43 to 56 ms.
+- **Memory:** the iframe uses 14 to 60 MB more than the current canvas.
+  This measurement is not exact, because the old canvas is not released
+  immediately.
+
+### 30 frames under one transform
+
+| Page in each frame | Time to load | Memory added | Pan at 0.25 zoom (p50 / p95) | All frames on the screen at 0.2 zoom (p50 / p95) |
+|---|---|---|---|---|
+| glitch Songs | 0.36 s | 41 MB | 8.3 / 11 ms | 8.4 / 50 ms |
+| Synthetic, 1,001 elements | 0.69 s | 133 MB | 8.4 / 18 ms | 16.7 / 49 ms |
+
+- The test display runs at 120 Hz, so one frame is 8.3 ms.
+- Pan at 0.25 zoom is smooth.
+- With all 30 frames on the screen at 0.2 zoom, some frames are slow
+  (p95 49 to 50 ms). The thumbnail fallback below 0.2 zoom, from the
+  workspace plan, is necessary.
+
+### Selection and drag
+
+- Click to select works through the iframe. The hit test is
+  synchronous. It uses `contentDocument.elementFromPoint`.
+- The selection outline is in the parent document. It follows the zoom.
+- A drag moves the drawn node with `translate` first. On release, it
+  writes one `moveElement` in one history step. The file changes by the
+  correct number of pixels. A delete removes the node from the iframe.
+- **You must judge how the drag feels.** A test cannot do this.
+
+### Problems that the test found
+
+- **Objects from the iframe fail `instanceof` checks.** A node in the
+  iframe belongs to the window of the iframe. Its `HTMLElement` and
+  `Element` are not the ones in the app window. Thus `instanceof`
+  checks are always false. This stopped the drag. It also stopped the
+  DOM patch inside elements, and no test found that until we added the
+  delete check. In the migration, use `nodeType` checks or the
+  constructors of the iframe window. Add a lint rule for this.
+- **The height of the iframe can only increase.** `100vh` in the iframe
+  follows the height of the iframe. If the iframe gets its height from
+  its content, the two change each other. The test lets the height
+  increase only. The migration needs a better rule: for example, a
+  fixed viewport height, and a separate height for the content.
+
+### Comparison with the go and stop conditions
+
+| Condition | Result |
+|---|---|
+| Each parity fixture passes, with the new fixtures | **Yes**, 15 of 15 |
+| A property change paints in one frame on the large page | **Yes** for style changes (3.7 to 8.9 ms). **Almost** for markup changes (about 20 ms on the Ruixen page) |
+| The drag feels the same as the current drag | **Not known.** You must test it |
+| 30 frames pan and zoom at 60 frames per second, or the thumbnail fallback is sufficient | **Yes** at 0.25 zoom. Below 0.2 zoom, use the thumbnail fallback |
+| Stop: the diff cannot keep up | Did not occur |
+| Stop: selection cannot be synchronous | Did not occur |
+
+### What the test does not do
+
+The iframe mode is a test. It is not a complete canvas. It does not
+have these items:
+
+- The draw tools, the resize handles, text editing, and reorder of
+  flow children.
+- The component editor. The component editor uses the current canvas.
+- Changes to the light or dark theme while the iframe is open.
+- Fonts that load after the iframe opens.
+
+### How to try it
+
+1. Run `npm run dev` on the `exp/canvas-rendering` branch.
+2. Open a project, and open a page or a view.
+3. Open the developer tools (**Ctrl+Shift+I**), and type
+   `__scampIframeCanvas.set(true)` in the console.
+4. Click elements, and drag an absolute element. Compare it with the
+   current canvas: type `__scampIframeCanvas.set(false)`.
+
+The setting stays after a restart. Set it to `false` when you finish.
+
 ## Open questions
 
 1. **One iframe or more?** Now the canvas shows one breakpoint at a
