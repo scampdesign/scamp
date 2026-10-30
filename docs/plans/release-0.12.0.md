@@ -18,11 +18,10 @@ integration tests pass; full e2e 609 passed, 2 failed, 2 skipped
 
 ## Flaky, not blocking
 
-- [ ] `canvas/select-move-resize: clicking a rect selects it…` failed
-  once and passed three reruns. The locator found two elements with
-  the same `data-scamp-id`, the second outside the canvas, which looks
-  like a thumbnail capture's copy of the page caught mid-capture. To
-  make the spec steady, scope `canvasElement` to the canvas frame.
+- [x] `canvas/select-move-resize: clicking a rect selects it…` failed
+  once and passed three reruns. The locator found a thumbnail
+  capture's off-screen copy of the page too. `canvasElement` now
+  matches inside the canvas frame only (`fix/e2e-canvas-element`).
 
 ## Manual testing
 
@@ -47,12 +46,14 @@ integration tests pass; full e2e 609 passed, 2 failed, 2 skipped
 
 ## Release
 
-- [ ] Merge `fix/root-background` into `main`.
-- [ ] `npm version 0.12.0 --no-git-tag-version`, which updates
+- [x] Merge `fix/root-background` into `main`.
+- [x] `npm version 0.12.0 --no-git-tag-version`, which updates
   `package.json` and `package-lock.json`.
-- [ ] In `docs/CHANGELOG.md`, rename `### Unreleased` to
-  `### 0.12.0 (<date>)`.
-- [ ] Commit as `release: 0.12.0`.
+- [x] In `docs/CHANGELOG.md`, rename `### Unreleased` to
+  `### 0.12.0 (2026-10-30)`. If you tag on another day, change the
+  date to the tag date.
+- [x] Commit as `release: 0.12.0`. If a fix lands after it, add it
+  to the 0.12.0 notes before tagging.
 - [ ] Push `main`, then tag `v0.12.0` and push the tag. The tag starts
   `.github/workflows/release.yml`.
 - [ ] Watch the workflow through the `verify-feed` job.
@@ -61,11 +62,10 @@ integration tests pass; full e2e 609 passed, 2 failed, 2 skipped
 
 ## Cleanup
 
-- [ ] Delete the merged branches: `feat/token-tooltips`,
-  `fix/multi-select`, `feat/onboarding`, and
-  `fix/right-anchored-offsets`.
-- [ ] Drop the two stashes that are now committed:
-  "feat/onboarding: tutorial work (uncommitted)" and
-  "feat/token-tooltips: agent variant guidance (uncommitted)".
-- [ ] Remove the `../scamp-release` worktree, and check out `main` in
+- [x] Delete the merged branches: `feat/token-tooltips`,
+  `fix/multi-select`, `feat/onboarding`, `fix/right-anchored-offsets`,
+  `fix/root-background`, and `fix/e2e-canvas-element`. They were local
+  only.
+- [x] Drop the two stashes that are now committed.
+- [x] Remove the `../scamp-release` worktree, and check out `main` in
   the usual checkout.

@@ -22,7 +22,7 @@ release time.
 
 ## Releases
 
-### Unreleased
+### 0.12.0 (2026-10-30)
 
 **Added**
 
@@ -79,6 +79,13 @@ release time.
   background behind it. The canvas now shows what's behind it too. A
   page or component whose file sets a white background keeps it, on
   the canvas and when Scamp saves the file.
+
+  If a component that looked white on the canvas now looks
+  see-through, its file doesn't set a background, and your app has
+  always drawn it see-through. Scamp doesn't change your files for
+  this. To make it white, select its root and set its background in
+  the **Background** section. Before this release, Scamp didn't save
+  a white root background; it now does.
 - **An element in normal flow stays in flow on the canvas.** When a file
   gives a child of a block element no `position`, the browser lays it out
   in normal flow, but Scamp drew it at the parent's top-left corner and
