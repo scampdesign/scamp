@@ -1,0 +1,24 @@
+.spotlight {
+  position: fixed;
+  z-index: 1500;
+  pointer-events: none;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-md);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--accent-muted);
+  }
+  50% {
+    box-shadow: 0 0 0 6px var(--accent-muted);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight {
+    animation: none;
+  }
+}

@@ -13,6 +13,7 @@ import { useFontsStore } from '@store/fontsSlice';
 import { useAgentStore } from '@store/agentSlice';
 import { endAgentTurnHistory } from './syncBridge/agentToolResponder';
 import { useAuthStore } from '@store/authSlice';
+import { useOnboardingStore } from '@store/onboardingSlice';
 import type { ProjectData } from '@shared/types';
 
 type View = 'start' | 'project' | 'settings';
@@ -218,6 +219,11 @@ export const App = (): JSX.Element => {
     };
   }, []);
 
+  // Tutorial progress, for the start screen's offer and the Learn section.
+  useEffect(() => {
+    void useOnboardingStore.getState().load();
+  }, []);
+
   // Warm the system-font list on app start. The call is cheap on a
   // warm session and falls back to a baseline list if the Local Font
   // Access API isn't available.
@@ -268,6 +274,10 @@ export const App = (): JSX.Element => {
     return (
       <SettingsPage
         onBack={() => setView(project ? 'project' : 'start')}
+        onProjectOpened={(p) => {
+          setProject(p);
+          setView('project');
+        }}
       />
     );
   }

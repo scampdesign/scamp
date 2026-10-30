@@ -5,6 +5,8 @@ import { errorMessage } from "@shared/errorMessage";
 import { formatLastOpened } from "@lib/formatLastOpened";
 import { projectDisplayName } from "@lib/projectDisplayName";
 import { basename } from "../lib/path";
+import { startTutorial } from "../lib/startTutorial";
+import { useOnboardingStore } from "@store/onboardingSlice";
 import { CreateProjectModal } from "./CreateProjectModal";
 import { AccountPanel } from "./startScreen/AccountPanel";
 import { ProjectCardThumb } from "./startScreen/ProjectCardThumb";
@@ -20,6 +22,8 @@ export const StartScreen = ({ onProjectOpened, onOpenSettings, }) => {
     const [settings, setSettings] = useState(null);
     const [error, setError] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    // Set when the first-run folder pick lands, if the tutorial was never offered.
+    const [offerTutorial, setOfferTutorial] = useState(false);
     // Card is the default view; the choice is remembered across launches.
     const [viewMode, setViewMode] = useState(readStoredView);
     const changeView = (next) => {
@@ -41,6 +45,7 @@ export const StartScreen = ({ onProjectOpened, onOpenSettings, }) => {
     const defaultFolder = settings?.defaultProjectsFolder ?? null;
     const handlePickDefaultFolder = async () => {
         setError(null);
+        const firstRun = defaultFolder === null;
         try {
             const result = await window.scamp.chooseFolder();
             if (result.canceled || !result.path)
@@ -54,10 +59,28 @@ export const StartScreen = ({ onProjectOpened, onOpenSettings, }) => {
             }
             // The folder changed — re-scan so its projects show.
             await refreshProjects();
+            if (firstRun && !useOnboardingStore.getState().offered)
+                setOfferTutorial(true);
         }
         catch (e) {
             setError(errorMessage(e));
         }
+    };
+    const handleTakeTutorial = async () => {
+        if (!defaultFolder)
+            return;
+        setError(null);
+        try {
+            useOnboardingStore.getState().answerOffer(true);
+            onProjectOpened(await startTutorial(defaultFolder));
+        }
+        catch (e) {
+            setError(errorMessage(e));
+        }
+    };
+    const handleSkipTutorial = () => {
+        useOnboardingStore.getState().answerOffer(false);
+        setOfferTutorial(false);
     };
     const handleCreateProject = async (name) => {
         if (!defaultFolder)
@@ -106,6 +129,9 @@ export const StartScreen = ({ onProjectOpened, onOpenSettings, }) => {
         // First-run: no default folder yet.
         if (settings && !defaultFolder) {
             return (_jsxs("div", { className: styles.welcomeState, children: [_jsx("h2", { className: styles.welcomeHeading, children: "Welcome to Scamp" }), _jsx("p", { className: styles.welcomeText, children: "Pick a default folder where new projects will live. Each project gets its own subfolder inside it. You can change this later." }), _jsx("button", { className: styles.welcomeButton, onClick: handlePickDefaultFolder, type: "button", children: "Choose Folder" })] }));
+        }
+        if (offerTutorial) {
+            return (_jsxs("div", { className: styles.welcomeState, "data-testid": "tutorial-offer", children: [_jsx("h2", { className: styles.welcomeHeading, children: "Learn the basics" }), _jsx("p", { className: styles.welcomeText, children: "The tutorial creates a project called scamp-tutorial and walks you through five short lessons: drawing, layout, editing the code, components, and tokens. You can start it later from Settings." }), _jsxs("div", { className: styles.welcomeActions, children: [_jsx("button", { className: styles.welcomeButton, onClick: () => void handleTakeTutorial(), type: "button", children: "Take the tutorial" }), _jsx("button", { className: styles.welcomeSecondary, onClick: handleSkipTutorial, type: "button", children: "Skip" })] })] }));
         }
         const now = Date.now();
         const lastOpenedLabel = (project) => project.lastOpened

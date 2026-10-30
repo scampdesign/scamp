@@ -37,6 +37,7 @@ describe('parseSettingsBlob', () => {
       consentVersion: 0,
       installId: null,
       theme: 'light',
+      onboarding: { offered: false, hidden: true, completed: [] },
     });
   });
 
@@ -61,6 +62,30 @@ describe('parseSettingsBlob', () => {
     );
     expect(r.defaultProjectsFolder).toBeNull();
     expect(r.sentryOptIn).toBeNull();
+  });
+
+  describe('onboarding', () => {
+    it('reads a missing field as hidden and not offered, so an existing install never sees it unasked', () => {
+      expect(parseSettingsBlob('{"defaultProjectsFolder":"/work"}').onboarding).toEqual({
+        offered: false,
+        hidden: true,
+        completed: [],
+      });
+    });
+
+    it('reads through progress, keeping order and dropping repeats and non-strings', () => {
+      const blob = JSON.stringify({ onboarding: { offered: true, hidden: false, completed: ['draw', 7, 'layout', 'draw'] } });
+      expect(parseSettingsBlob(blob).onboarding).toEqual({ offered: true, hidden: false, completed: ['draw', 'layout'] });
+    });
+
+    it('falls back to the default for a malformed field', () => {
+      expect(parseSettingsBlob('{"onboarding":"yes"}').onboarding).toEqual(DEFAULT_SETTINGS.onboarding);
+      expect(parseSettingsBlob('{"onboarding":{"hidden":"no","completed":"draw"}}').onboarding).toEqual({
+        offered: false,
+        hidden: true,
+        completed: [],
+      });
+    });
   });
 
   it('defaults theme to dark when the key is missing', () => {

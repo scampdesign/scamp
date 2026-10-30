@@ -24,6 +24,34 @@ release time.
 
 ### Unreleased
 
+**Added**
+
+- **A tutorial teaches the basics by doing them.** After you choose a
+  projects folder for the first time, Scamp offers a tutorial project
+  and a **Learn** checklist with five short lessons: drawing, layout,
+  editing the code, components, and tokens. Each lesson is checked off
+  when you do it. You can skip it, hide the checklist, or start over
+  from **Settings**. If you already use Scamp, you don't see it unless
+  you start it from **Settings**.
+
+**Changed**
+
+- **A field's tooltip shows the token it applies and that token's
+  value.** Hold the pointer over a field in the properties panel whose
+  value is a theme token, and the tooltip adds a line such as
+  `--space-md: 16px`. A token that points at another token shows the
+  value at the end of the chain. Some fields show only the token's
+  name, or a `var()` that's hard to read in a narrow field, so you
+  can now check the value without opening the theme.
+- **Cmd-click adds to the selection, and Shift-click selects a range of
+  layers.** Selecting more than one element used Shift-click everywhere,
+  which isn't how most apps work. Now Cmd-click (macOS) or Ctrl-click
+  (Windows and Linux) adds an element to the selection or removes it,
+  on the canvas and in the layers panel. In the layers panel,
+  Shift-click selects every layer at the same level from the selected
+  one to the one you click, without their children. On the canvas,
+  Shift-click still adds or removes an element.
+
 **Fixed**
 
 - **A component with a large variant set opens without freezing.** A
@@ -56,25 +84,6 @@ release time.
   inside a component, for example, overlapped the row below it and hid
   the gap between them. Scamp now reads that child as `position: static`,
   and keeps `display: block` on a `<progress>` or `<meter>`.
-
-**Changed**
-
-- **A field's tooltip shows the token it applies and that token's
-  value.** Hold the pointer over a field in the properties panel whose
-  value is a theme token, and the tooltip adds a line such as
-  `--space-md: 16px`. A token that points at another token shows the
-  value at the end of the chain. Some fields show only the token's
-  name, or a `var()` that's hard to read in a narrow field, so you
-  can now check the value without opening the theme.
-
-- **Cmd-click adds to the selection, and Shift-click selects a range of
-  layers.** Selecting more than one element used Shift-click everywhere,
-  which isn't how most apps work. Now Cmd-click (macOS) or Ctrl-click
-  (Windows and Linux) adds an element to the selection or removes it,
-  on the canvas and in the layers panel. In the layers panel,
-  Shift-click selects every layer at the same level from the selected
-  one to the one you click, without their children. On the canvas,
-  Shift-click still adds or removes an element.
 
 ### 0.11.1 (2026-10-22)
 

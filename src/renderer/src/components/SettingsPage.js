@@ -1,14 +1,20 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useCallback, useEffect, useState } from 'react';
 import { IconMoon, IconSun } from '@tabler/icons-react';
+import { errorMessage } from '@shared/errorMessage';
+import { useOnboardingStore } from '@store/onboardingSlice';
 import { applyAppTheme } from '../lib/applyAppTheme';
+import { startTutorial } from '../lib/startTutorial';
 import { AiProviderSection } from './AiProviderSection';
 import { SegmentedControl } from './controls/SegmentedControl';
 import { Tooltip } from './controls/Tooltip';
 import styles from './SettingsPage.module.css';
-export const SettingsPage = ({ onBack }) => {
+export const SettingsPage = ({ onBack, onProjectOpened }) => {
     const [settings, setSettings] = useState(null);
     const [version, setVersion] = useState(null);
+    const [tutorialError, setTutorialError] = useState(null);
+    const learnHidden = useOnboardingStore((s) => s.hidden);
+    const setLearnHidden = useOnboardingStore((s) => s.setHidden);
     const refresh = useCallback(async () => {
         const next = await window.scamp.getSettings();
         setSettings(next);
@@ -45,9 +51,21 @@ export const SettingsPage = ({ onBack }) => {
         await window.scamp.reinitSentry(optedIn);
         setSettings(next);
     };
+    const handleStartTutorial = async (folder) => {
+        setTutorialError(null);
+        try {
+            onProjectOpened(await startTutorial(folder));
+        }
+        catch (e) {
+            setTutorialError(errorMessage(e));
+        }
+    };
     if (!settings)
         return _jsx("div", { className: styles.page });
-    return (_jsxs("div", { className: styles.page, children: [_jsxs("div", { className: styles.header, children: [_jsx("button", { className: styles.backButton, onClick: onBack, type: "button", children: "\u2190 Back" }), _jsx("h1", { className: styles.headerTitle, children: "Settings" })] }), _jsxs("div", { className: styles.body, children: [_jsxs("div", { className: styles.section, children: [_jsx("h2", { className: styles.sectionTitle, children: "General" }), _jsxs("div", { className: styles.row, children: [_jsx("span", { className: styles.rowLabel, children: "Default folder" }), _jsxs("div", { className: styles.rowControl, children: [settings.defaultProjectsFolder ? (_jsx(Tooltip, { label: settings.defaultProjectsFolder, children: _jsx("span", { className: styles.folderPath, children: settings.defaultProjectsFolder }) })) : (_jsx("span", { className: styles.folderNone, children: "Not set" })), _jsx("button", { className: styles.smallButton, onClick: handlePickFolder, type: "button", children: settings.defaultProjectsFolder ? 'Change' : 'Choose' }), settings.defaultProjectsFolder && (_jsx("button", { className: styles.smallButton, onClick: handleClearFolder, type: "button", children: "Clear" }))] })] })] }), _jsxs("div", { className: styles.section, children: [_jsx("h2", { className: styles.sectionTitle, children: "Appearance" }), _jsxs("div", { className: styles.row, children: [_jsxs("div", { className: styles.rowLabel, children: [_jsx("div", { children: "Theme" }), _jsx("div", { className: styles.rowHint, children: "Changes Scamp\u2019s interface only \u2014 your project\u2019s design is unaffected." })] }), _jsx("div", { className: styles.rowControl, children: _jsx("div", { className: styles.themeToggle, children: _jsx(SegmentedControl, { value: settings.theme, options: [
+    const folder = settings.defaultProjectsFolder;
+    return (_jsxs("div", { className: styles.page, children: [_jsxs("div", { className: styles.header, children: [_jsx("button", { className: styles.backButton, onClick: onBack, type: "button", children: "\u2190 Back" }), _jsx("h1", { className: styles.headerTitle, children: "Settings" })] }), _jsxs("div", { className: styles.body, children: [_jsxs("div", { className: styles.section, children: [_jsx("h2", { className: styles.sectionTitle, children: "General" }), _jsxs("div", { className: styles.row, children: [_jsx("span", { className: styles.rowLabel, children: "Default folder" }), _jsxs("div", { className: styles.rowControl, children: [settings.defaultProjectsFolder ? (_jsx(Tooltip, { label: settings.defaultProjectsFolder, children: _jsx("span", { className: styles.folderPath, children: settings.defaultProjectsFolder }) })) : (_jsx("span", { className: styles.folderNone, children: "Not set" })), _jsx("button", { className: styles.smallButton, onClick: handlePickFolder, type: "button", children: settings.defaultProjectsFolder ? 'Change' : 'Choose' }), settings.defaultProjectsFolder && (_jsx("button", { className: styles.smallButton, onClick: handleClearFolder, type: "button", children: "Clear" }))] })] })] }), _jsxs("div", { className: styles.section, "data-testid": "settings-tutorial", children: [_jsx("h2", { className: styles.sectionTitle, children: "Tutorial" }), _jsxs("div", { className: styles.row, children: [_jsxs("div", { className: styles.rowLabel, children: [_jsx("div", { children: "Learn the basics" }), _jsx("div", { className: styles.rowHint, children: folder
+                                                    ? 'Creates a tutorial project in your default folder and walks you through drawing, layout, components, and tokens.'
+                                                    : 'Choose a default folder first. The tutorial creates its project there.' }), tutorialError && _jsx("div", { className: styles.rowHint, children: tutorialError })] }), _jsx("div", { className: styles.rowControl, children: _jsx("button", { className: styles.smallButton, type: "button", disabled: !folder, onClick: () => folder && void handleStartTutorial(folder), children: "Start the tutorial" }) })] }), _jsxs("div", { className: styles.row, children: [_jsxs("div", { className: styles.rowLabel, children: [_jsx("div", { children: "Learn checklist" }), _jsx("div", { className: styles.rowHint, children: "Shows your tutorial progress in the sidebar of every project." })] }), _jsxs("div", { className: styles.rowControl, children: [_jsx("button", { type: "button", className: `${styles.smallButton} ${!learnHidden ? styles.smallButtonActive : ''}`, "aria-pressed": !learnHidden, onClick: () => setLearnHidden(false), children: "Show" }), _jsx("button", { type: "button", className: `${styles.smallButton} ${learnHidden ? styles.smallButtonActive : ''}`, "aria-pressed": learnHidden, onClick: () => setLearnHidden(true), children: "Hide" })] })] })] }), _jsxs("div", { className: styles.section, children: [_jsx("h2", { className: styles.sectionTitle, children: "Appearance" }), _jsxs("div", { className: styles.row, children: [_jsxs("div", { className: styles.rowLabel, children: [_jsx("div", { children: "Theme" }), _jsx("div", { className: styles.rowHint, children: "Changes Scamp\u2019s interface only \u2014 your project\u2019s design is unaffected." })] }), _jsx("div", { className: styles.rowControl, children: _jsx("div", { className: styles.themeToggle, children: _jsx(SegmentedControl, { value: settings.theme, options: [
                                                     {
                                                         value: 'dark',
                                                         label: _jsx(IconMoon, { size: 16, stroke: 1.75 }),

@@ -45,6 +45,9 @@ import { PageSidebar } from './projectShell/PageSidebar';
 import { ComponentSidebar } from './projectShell/ComponentSidebar';
 import { SidebarRail } from './projectShell/SidebarRail';
 import { AgentPanel } from './agent/AgentPanel';
+import { LearnPanel } from './projectShell/LearnPanel';
+import { TutorialReturn } from './projectShell/TutorialReturn';
+import { TutorialSpotlight } from './projectShell/TutorialSpotlight';
 import { ThemeSectionNav } from './projectShell/ThemeSectionNav';
 import { ProjectModals } from './projectShell/ProjectModals';
 import { useCanvasKeyboardShortcuts } from './projectShell/useCanvasKeyboardShortcuts';
@@ -56,6 +59,7 @@ import { useRoutes } from './projectShell/useRoutes';
 import { useFrameworkUpdate } from './projectShell/useFrameworkUpdate';
 import { allUnroutedViews, RoutesSection } from './projectShell/RoutesSection';
 import { useAppLogStore } from '@store/appLogSlice';
+import { useOnboardingStore, watchHistoryForLessons } from '@store/onboardingSlice';
 import { useWebsiteImport } from './projectShell/useWebsiteImport';
 import { useHtmlExport } from './projectShell/useHtmlExport';
 import { useFontLinkReconciler, useProjectTheme, } from './projectShell/useProjectFonts';
@@ -185,7 +189,11 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
     const signedIn = useIsSignedIn();
     // The agent is for signed-in users; signing out mid-session falls back
     // to the default section rather than leaving an empty panel.
-    const sidebarSection = storedSidebarSection === 'agent' && !signedIn ? 'pages' : storedSidebarSection;
+    const learnHidden = useOnboardingStore((s) => s.hidden);
+    const sidebarSection = (storedSidebarSection === 'agent' && !signedIn) || (storedSidebarSection === 'learn' && learnHidden)
+        ? 'pages'
+        : storedSidebarSection;
+    useEffect(() => watchHistoryForLessons(), []);
     const setSidebarSection = useCanvasStore((s) => s.setSidebarSection);
     // Once the user opens the terminal we keep TerminalPanel mounted for
     // the lifetime of the project, even when the panel is hidden, so any
@@ -298,7 +306,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
                 }, onDismiss: () => handleProjectConfigChange({
                     ...projectConfig,
                     nextjsMigrationDismissed: true,
-                }) })), _jsxs("div", { className: styles.body, children: [_jsx(SidebarRail, { section: sidebarSection, onSelectSection: (next) => {
+                }) })), _jsx(TutorialSpotlight, {}), _jsxs("div", { className: styles.body, children: [_jsx(SidebarRail, { section: sidebarSection, onSelectSection: (next) => {
                             setShowProjectSettings(false);
                             setShowThemePanel(false);
                             setSidebarSection(next);
@@ -308,7 +316,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
                         }, onOpenSettings: () => {
                             setShowThemePanel(false);
                             setShowProjectSettings(true);
-                        }, designSystemOpen: showThemePanel, settingsOpen: showProjectSettings, agentAvailable: signedIn }), _jsxs("div", { className: styles.bodyContent, children: [_jsx("aside", { className: `${styles.sidebar} ${sidebarSection === 'agent' && !showThemePanel ? styles.sidebarWide : ''}`, children: showThemePanel ? (_jsx(ThemeSectionNav, {})) : (_jsxs(_Fragment, { children: [sidebarSection === 'history' && (_jsx(HistoryPanel, { projectPath: project.path })), sidebarSection === 'agent' && _jsx(AgentPanel, {}), sidebarSection === 'pages' && (_jsxs(_Fragment, { children: [_jsx(PageSidebar, { projectPath: project.path, pageLayout: projectConfig.pageLayout, onPageLayoutChange: handlePageLayoutChange, pages: project.pages, views: project.components.filter((c) => componentKindOf(c) === 'view'), existingPageNames: existingPageNames, pageEdit: pageEdit, pageEditError: pageEditError, pageEditBusy: pageEditBusy, isEditingPage: isEditingPage, activePageName: activePageName, activeComponent: activeComponent, setPageEdit: setPageEdit, setPageEditError: setPageEditError, resetPageEdit: resetPageEdit, handleAddPage: handleAddPage, handleDuplicatePage: handleDuplicatePage, handleRenamePage: handleRenamePage, openPageMenu: openPageMenu, openView: (name) => openComponent(name, null, 'view'), openViewMenu: openComponentMenu, handleRenameView: async (name, slug) => {
+                        }, designSystemOpen: showThemePanel, settingsOpen: showProjectSettings, agentAvailable: signedIn, learnAvailable: !learnHidden }), _jsxs("div", { className: styles.bodyContent, children: [_jsx("aside", { className: `${styles.sidebar} ${sidebarSection === 'agent' && !showThemePanel ? styles.sidebarWide : ''}`, children: showThemePanel ? (_jsx(ThemeSectionNav, {})) : (_jsxs(_Fragment, { children: [sidebarSection === 'history' && (_jsx(HistoryPanel, { projectPath: project.path })), sidebarSection === 'agent' && _jsx(AgentPanel, {}), sidebarSection === 'learn' && _jsx(LearnPanel, {}), sidebarSection === 'pages' && (_jsxs(_Fragment, { children: [_jsx(PageSidebar, { projectPath: project.path, pageLayout: projectConfig.pageLayout, onPageLayoutChange: handlePageLayoutChange, pages: project.pages, views: project.components.filter((c) => componentKindOf(c) === 'view'), existingPageNames: existingPageNames, pageEdit: pageEdit, pageEditError: pageEditError, pageEditBusy: pageEditBusy, isEditingPage: isEditingPage, activePageName: activePageName, activeComponent: activeComponent, setPageEdit: setPageEdit, setPageEditError: setPageEditError, resetPageEdit: resetPageEdit, handleAddPage: handleAddPage, handleDuplicatePage: handleDuplicatePage, handleRenamePage: handleRenamePage, openPageMenu: openPageMenu, openView: (name) => openComponent(name, null, 'view'), openViewMenu: openComponentMenu, handleRenameView: async (name, slug) => {
                                                         const ok = await handleRenameView(name, slug);
                                                         resetPageEdit();
                                                         return ok;
@@ -317,7 +325,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
                                                             projectPath: project.path,
                                                             breakpoints: projectConfig.breakpoints,
                                                         });
-                                                    }, onImportReact: () => setReactImportOpen(true) }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] })), sidebarSection === 'components' && (_jsxs(_Fragment, { children: [_jsx(ComponentSidebar, { components: project.components, projectPath: project.path, componentEdit: componentEdit, componentEditError: componentEditError, renamingComponent: renamingComponent, creatingComponent: creatingComponent, activeComponent: activeComponent, setComponentEdit: setComponentEdit, setComponentEditError: setComponentEditError, handleAddComponent: handleAddComponent, handleRenameComponent: handleRenameComponent, openComponent: openComponent, openComponentMenu: openComponentMenu }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] }))] })) }), showThemePanel ? (_jsx(ThemePanel, { projectPath: project.path })) : (_jsxs(_Fragment, { children: [_jsx(CanvasArea, { activeComponent: activeComponent, activePageName: activePageName, projectConfig: projectConfig, artboardScrollRef: artboardScrollRef, onProjectConfigChange: handleProjectConfigChange, onExitComponentEditor: exitComponentEditor }), _jsx(PropertiesPanel, { migrationNotice: project.format === 'nextjs' && !projectConfig.scampMigrationDismissed ? (_jsx(ScampMigrationNotice, { project: project, convertPages: convertAllPagesToViews, onMigrated: (next) => {
+                                                    }, onImportReact: () => setReactImportOpen(true) }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] })), sidebarSection === 'components' && (_jsxs(_Fragment, { children: [_jsx(ComponentSidebar, { components: project.components, projectPath: project.path, componentEdit: componentEdit, componentEditError: componentEditError, renamingComponent: renamingComponent, creatingComponent: creatingComponent, activeComponent: activeComponent, setComponentEdit: setComponentEdit, setComponentEditError: setComponentEditError, handleAddComponent: handleAddComponent, handleRenameComponent: handleRenameComponent, openComponent: openComponent, openComponentMenu: openComponentMenu }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] })), sidebarSection !== 'learn' && !learnHidden && (_jsx(TutorialReturn, { onShow: () => setSidebarSection('learn') }))] })) }), showThemePanel ? (_jsx(ThemePanel, { projectPath: project.path })) : (_jsxs(_Fragment, { children: [_jsx(CanvasArea, { activeComponent: activeComponent, activePageName: activePageName, projectConfig: projectConfig, artboardScrollRef: artboardScrollRef, onProjectConfigChange: handleProjectConfigChange, onExitComponentEditor: exitComponentEditor }), _jsx(PropertiesPanel, { migrationNotice: project.format === 'nextjs' && !projectConfig.scampMigrationDismissed ? (_jsx(ScampMigrationNotice, { project: project, convertPages: convertAllPagesToViews, onMigrated: (next) => {
                                                 onProjectChange?.(next);
                                                 setActivePageName(null);
                                                 const firstView = next.components.find((c) => c.kind === 'view');
