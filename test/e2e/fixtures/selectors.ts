@@ -18,9 +18,13 @@ import type { Locator, Page } from '@playwright/test';
 export const pageRoot = (page: Page): Locator =>
   page.locator('[data-element-id="root"][data-scamp-id="root"]');
 
-/** A drawn element on the canvas, by its CSS class name (e.g. `rect_a1b2`). */
+/**
+ * A drawn element on the canvas, by its CSS class name (e.g. `rect_a1b2`).
+ * Inside the canvas frame, so a thumbnail capture's off-screen copy of the
+ * page, which keeps the class names, doesn't match a second time.
+ */
 export const canvasElement = (page: Page, className: string): Locator =>
-  page.locator(`[data-scamp-id="${className}"]`);
+  page.locator(`[data-testid="canvas-frame"] [data-scamp-id="${className}"]`);
 
 /** The scaled frame the canvas renders inside. */
 export const canvasFrame = (page: Page): Locator =>
