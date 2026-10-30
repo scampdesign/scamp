@@ -342,6 +342,20 @@ describe('parseCode — root handling', () => {
     expect(root?.minHeight).toBe('1200px');
     expect(root?.customProperties).toEqual({});
   });
+
+  it('reads a root with no background as transparent, the way a browser draws it', () => {
+    const tsx = `<div data-scamp-id="root" className={styles.root}></div>`;
+    const { elements } = parseCode(tsx, `.root {\n  width: 100%;\n}`);
+    expect(elements[ROOT_ELEMENT_ID]?.backgroundColor).toBe('transparent');
+  });
+
+  it('keeps a white root background through a save', () => {
+    const tsx = `<div data-scamp-id="root" className={styles.root}></div>`;
+    const { elements } = parseCode(tsx, `.root {\n  background: #ffffff;\n}`);
+    expect(elements[ROOT_ELEMENT_ID]?.backgroundColor).toBe('#ffffff');
+    const { css } = generateCode({ elements, rootId: ROOT_ELEMENT_ID, pageName: 'home' });
+    expect(css).toMatch(/\.root \{[^}]*background: #ffffff;/);
+  });
 });
 
 describe('parseCode — attribute bag', () => {

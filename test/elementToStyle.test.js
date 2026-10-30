@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { elementToStyle, canvasRenderTag, CANVAS_SKIP_ATTRS_BY_TAG, } from '@lib/elementToStyle';
-import { DEFAULT_RECT_STYLES } from '@lib/defaults';
+import { DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from '@lib/defaults';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 const makeEl = (overrides = {}) => ({
     ...DEFAULT_RECT_STYLES,
@@ -258,12 +258,12 @@ describe('elementToStyle — theme token resolution', () => {
         expect(style0).not.toHaveProperty('backgroundColor');
         expect(style0).not.toHaveProperty('background');
     });
-    it('writes no inline background for a root left at its white default', () => {
-        // The generator never writes it, so a component on a coloured card
-        // shows the card through it in the preview.
-        const root = style(makeEl({ id: ROOT_ELEMENT_ID, parentId: null, backgroundColor: '#ffffff' }));
-        expect(root).not.toHaveProperty('backgroundColor');
-        expect(style(makeEl({ backgroundColor: '#ffffff' })).backgroundColor).toBe('#ffffff');
+    it('draws a root at its default transparent, and a root the file makes white as white', () => {
+        // A component on a coloured card shows the card through it, as in the preview.
+        const blank = style(makeEl({ id: ROOT_ELEMENT_ID, parentId: null, backgroundColor: DEFAULT_ROOT_STYLES.backgroundColor }));
+        expect(blank.backgroundColor ?? 'transparent').toBe('transparent');
+        const white = style(makeEl({ id: ROOT_ELEMENT_ID, parentId: null, backgroundColor: '#ffffff' }));
+        expect(white.backgroundColor).toBe('#ffffff');
     });
     it('renders a broken colour reference as transparent, not the raw var', () => {
         const tokens = [

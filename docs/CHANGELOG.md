@@ -76,7 +76,9 @@ release time.
 - **A component with no background is transparent on the canvas.** A
   component whose root sets no `background`, such as a text field, toggle,
   or slider, drew white on the canvas while the preview showed the
-  background behind it. The canvas now shows what's behind it too.
+  background behind it. The canvas now shows what's behind it too. A
+  page or component whose file sets a white background keeps it, on
+  the canvas and when Scamp saves the file.
 - **An element in normal flow stays in flow on the canvas.** When a file
   gives a child of a block element no `position`, the browser lays it out
   in normal flow, but Scamp drew it at the parent's top-left corner and

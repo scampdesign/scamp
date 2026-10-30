@@ -141,7 +141,9 @@ export const DEFAULT_ROOT_STYLES = {
    * panel or per-breakpoint by setting a different `minHeight`.
    */
   minHeight: '100vh' as string,
-  backgroundColor: '#ffffff',
+  // What a browser draws for a root with no background; the canvas frame
+  // supplies the white behind it.
+  backgroundColor: 'transparent',
   borderRadius: [0, 0, 0, 0] as SpaceTuple,
   borderWidth: [0, 0, 0, 0] as SpaceTuple,
   borderStyle: 'none' as const,
