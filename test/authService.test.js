@@ -130,7 +130,14 @@ describe('signing in', () => {
         // The listener must be closed whatever happened, or the fixed port is
         // held and every later sign-in reports port-unavailable.
         await signIn(deps({ fetchImpl: async () => ({ ok: false, status: 400, text: async () => '{}' }) }));
-        expect(await signIn(deps())).toEqual({ status: 'signed-in', user, persisted: true });
+        // `close` can resolve a moment before the OS frees the socket, which
+        // read as port-unavailable on CI. Held for good is the bug; briefly isn't.
+        let second = await signIn(deps());
+        for (let i = 0; i < 20 && second.status === 'failed'; i++) {
+            await new Promise((r) => setTimeout(r, 50));
+            second = await signIn(deps());
+        }
+        expect(second).toEqual({ status: 'signed-in', user, persisted: true });
     });
 });
 describe('status', () => {
