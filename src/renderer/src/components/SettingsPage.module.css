@@ -124,6 +124,15 @@
   background: var(--bg-hover);
 }
 
+.smallButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.smallButton:disabled:hover {
+  background: var(--border-strong);
+}
+
 /* Constrain the segmented control so it doesn't stretch (its base is
    `flex: 1 1 0`). Two icon segments. */
 .themeToggle {

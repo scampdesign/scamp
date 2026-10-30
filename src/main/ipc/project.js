@@ -4,6 +4,7 @@ import { basename, dirname, join } from 'path';
 import { IPC } from '@shared/ipcChannels';
 import { DEFAULT_THEME_CSS } from '@shared/agentMd';
 import { validateProjectName } from '@shared/projectName';
+import { TUTORIAL_HOME_CSS, TUTORIAL_HOME_TSX } from '@shared/templates/tutorialProject';
 import { addRecentProject, updateRecentProjectFormat, } from './recentProjects';
 import { getSettings } from './settings';
 import { watchProject } from '../watcher';
@@ -83,12 +84,21 @@ const readProject = async (folderPath) => {
         ...(hasDatabase !== undefined ? { hasDatabase } : {}),
     };
 };
+const folderExists = (path) => fs.access(path).then(() => true, () => false);
+/** `base`, or `base-2`, `base-3`, … — the first that isn't a folder in `parentPath`. */
+const freeProjectName = async (parentPath, base) => {
+    for (let n = 1;; n += 1) {
+        const name = n === 1 ? base : `${base}-${n}`;
+        if (!(await folderExists(join(parentPath, name))))
+            return name;
+    }
+};
 const createProject = async (args) => {
     // Re-validate the name on the main side — never trust the renderer.
     const result = validateProjectName(args.name);
     if (!result.ok)
         throw new Error(result.error);
-    const name = result.value;
+    const tutorial = args.template === 'tutorial';
     // The parent must exist; we don't auto-create it because that's the
     // user's "default projects folder" and creating it silently would mask
     // a misconfiguration.
@@ -103,6 +113,8 @@ const createProject = async (args) => {
             throw e;
         throw new Error(`Parent folder does not exist: ${args.parentPath}`);
     }
+    // A second run of the tutorial gets a fresh project rather than an error.
+    const name = tutorial ? await freeProjectName(args.parentPath, result.value) : result.value;
     const projectPath = join(args.parentPath, name);
     // Refuse to write into a folder that already exists. The user can pick
     // a different name; we never want to silently merge into a stranger's
@@ -120,6 +132,10 @@ const createProject = async (args) => {
     const format = args.format ?? 'scamp';
     if (format === 'scamp') {
         await scaffoldScampProject(projectPath, name);
+        if (tutorial) {
+            await fs.writeFile(join(projectPath, 'views', 'Home', 'Home.tsx'), TUTORIAL_HOME_TSX, 'utf-8');
+            await fs.writeFile(join(projectPath, 'views', 'Home', 'Home.module.css'), TUTORIAL_HOME_CSS, 'utf-8');
+        }
     }
     else {
         await scaffoldNextjsProject(projectPath, name);

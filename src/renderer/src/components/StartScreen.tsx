@@ -5,6 +5,8 @@ import { errorMessage } from "@shared/errorMessage"
 import { formatLastOpened } from "@lib/formatLastOpened"
 import { projectDisplayName } from "@lib/projectDisplayName"
 import { basename } from "../lib/path"
+import { startTutorial } from "../lib/startTutorial"
+import { useOnboardingStore } from "@store/onboardingSlice"
 import { CreateProjectModal } from "./CreateProjectModal"
 import { AccountPanel } from "./startScreen/AccountPanel"
 import { ProjectCardThumb } from "./startScreen/ProjectCardThumb"
@@ -33,6 +35,8 @@ export const StartScreen = ({
   const [settings, setSettings] = useState<Settings | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  // Set when the first-run folder pick lands, if the tutorial was never offered.
+  const [offerTutorial, setOfferTutorial] = useState(false)
   // Card is the default view; the choice is remembered across launches.
   const [viewMode, setViewMode] = useState<ViewMode>(readStoredView)
   const changeView = (next: ViewMode): void => {
@@ -59,6 +63,7 @@ export const StartScreen = ({
 
   const handlePickDefaultFolder = async (): Promise<void> => {
     setError(null)
+    const firstRun = defaultFolder === null
     try {
       const result = await window.scamp.chooseFolder()
       if (result.canceled || !result.path) return
@@ -70,9 +75,26 @@ export const StartScreen = ({
       }
       // The folder changed — re-scan so its projects show.
       await refreshProjects()
+      if (firstRun && !useOnboardingStore.getState().offered) setOfferTutorial(true)
     } catch (e) {
       setError(errorMessage(e))
     }
+  }
+
+  const handleTakeTutorial = async (): Promise<void> => {
+    if (!defaultFolder) return
+    setError(null)
+    try {
+      useOnboardingStore.getState().answerOffer(true)
+      onProjectOpened(await startTutorial(defaultFolder))
+    } catch (e) {
+      setError(errorMessage(e))
+    }
+  }
+
+  const handleSkipTutorial = (): void => {
+    useOnboardingStore.getState().answerOffer(false)
+    setOfferTutorial(false)
   }
 
   const handleCreateProject = async (name: string): Promise<void> => {
@@ -137,6 +159,36 @@ export const StartScreen = ({
           >
             Choose Folder
           </button>
+        </div>
+      )
+    }
+
+    if (offerTutorial) {
+      return (
+        <div className={styles.welcomeState} data-testid="tutorial-offer">
+          <h2 className={styles.welcomeHeading}>Learn the basics</h2>
+          <p className={styles.welcomeText}>
+            The tutorial creates a project called scamp-tutorial and walks
+            you through five short lessons: drawing, layout, editing the
+            code, components, and tokens. You can start it later from
+            Settings.
+          </p>
+          <div className={styles.welcomeActions}>
+            <button
+              className={styles.welcomeButton}
+              onClick={() => void handleTakeTutorial()}
+              type="button"
+            >
+              Take the tutorial
+            </button>
+            <button
+              className={styles.welcomeSecondary}
+              onClick={handleSkipTutorial}
+              type="button"
+            >
+              Skip
+            </button>
+          </div>
         </div>
       )
     }

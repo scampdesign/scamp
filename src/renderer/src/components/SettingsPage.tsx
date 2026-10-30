@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { IconMoon, IconSun } from '@tabler/icons-react';
-import type { AppTheme, Settings } from '@shared/types';
+import type { AppTheme, ProjectData, Settings } from '@shared/types';
+import { errorMessage } from '@shared/errorMessage';
+import { useOnboardingStore } from '@store/onboardingSlice';
 import { applyAppTheme } from '../lib/applyAppTheme';
+import { startTutorial } from '../lib/startTutorial';
 import { AiProviderSection } from './AiProviderSection';
 import { SegmentedControl } from './controls/SegmentedControl';
 import { Tooltip } from './controls/Tooltip';
@@ -9,11 +12,16 @@ import styles from './SettingsPage.module.css';
 
 type Props = {
   onBack: () => void;
+  /** Open a project made here: the tutorial's. */
+  onProjectOpened: (project: ProjectData) => void;
 };
 
-export const SettingsPage = ({ onBack }: Props): JSX.Element => {
+export const SettingsPage = ({ onBack, onProjectOpened }: Props): JSX.Element => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [version, setVersion] = useState<string | null>(null);
+  const [tutorialError, setTutorialError] = useState<string | null>(null);
+  const learnHidden = useOnboardingStore((s) => s.hidden);
+  const setLearnHidden = useOnboardingStore((s) => s.setHidden);
 
   const refresh = useCallback(async (): Promise<void> => {
     const next = await window.scamp.getSettings();
@@ -57,7 +65,17 @@ export const SettingsPage = ({ onBack }: Props): JSX.Element => {
     setSettings(next);
   };
 
+  const handleStartTutorial = async (folder: string): Promise<void> => {
+    setTutorialError(null);
+    try {
+      onProjectOpened(await startTutorial(folder));
+    } catch (e) {
+      setTutorialError(errorMessage(e));
+    }
+  };
+
   if (!settings) return <div className={styles.page} />;
+  const folder = settings.defaultProjectsFolder;
 
   return (
     <div className={styles.page}>
@@ -99,6 +117,57 @@ export const SettingsPage = ({ onBack }: Props): JSX.Element => {
                   Clear
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.section} data-testid="settings-tutorial">
+          <h2 className={styles.sectionTitle}>Tutorial</h2>
+          <div className={styles.row}>
+            <div className={styles.rowLabel}>
+              <div>Learn the basics</div>
+              <div className={styles.rowHint}>
+                {folder
+                  ? 'Creates a tutorial project in your default folder and walks you through drawing, layout, components, and tokens.'
+                  : 'Choose a default folder first. The tutorial creates its project there.'}
+              </div>
+              {tutorialError && <div className={styles.rowHint}>{tutorialError}</div>}
+            </div>
+            <div className={styles.rowControl}>
+              <button
+                className={styles.smallButton}
+                type="button"
+                disabled={!folder}
+                onClick={() => folder && void handleStartTutorial(folder)}
+              >
+                Start the tutorial
+              </button>
+            </div>
+          </div>
+          <div className={styles.row}>
+            <div className={styles.rowLabel}>
+              <div>Learn checklist</div>
+              <div className={styles.rowHint}>
+                Shows your tutorial progress in the sidebar of every project.
+              </div>
+            </div>
+            <div className={styles.rowControl}>
+              <button
+                type="button"
+                className={`${styles.smallButton} ${!learnHidden ? styles.smallButtonActive : ''}`}
+                aria-pressed={!learnHidden}
+                onClick={() => setLearnHidden(false)}
+              >
+                Show
+              </button>
+              <button
+                type="button"
+                className={`${styles.smallButton} ${learnHidden ? styles.smallButtonActive : ''}`}
+                aria-pressed={learnHidden}
+                onClick={() => setLearnHidden(true)}
+              >
+                Hide
+              </button>
             </div>
           </div>
         </div>

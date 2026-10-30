@@ -3,6 +3,7 @@ import {
   IconComponents,
   IconPalette,
   IconHistory,
+  IconSchool,
   IconSettings,
   IconSparkles,
 } from '@tabler/icons-react';
@@ -29,6 +30,8 @@ type Props = {
   settingsOpen: boolean;
   /** Offer the Scamp Agent — signed-in users only. */
   agentAvailable: boolean;
+  /** Offer the tutorial's checklist — unless the user hid or skipped it. */
+  learnAvailable: boolean;
 };
 
 /**
@@ -45,6 +48,7 @@ export const SidebarRail = ({
   designSystemOpen,
   settingsOpen,
   agentAvailable,
+  learnAvailable,
 }: Props): JSX.Element => {
   const railButton = (
     key: string,
@@ -109,6 +113,14 @@ export const SidebarRail = ({
           <IconSparkles size={ICON_SIZE} />,
           sectionActive && section === 'agent',
           () => onSelectSection('agent')
+        )}
+      {learnAvailable &&
+        railButton(
+          'learn',
+          'Learn',
+          <IconSchool size={ICON_SIZE} />,
+          sectionActive && section === 'learn',
+          () => onSelectSection('learn')
         )}
       {railButton(
         'settings',

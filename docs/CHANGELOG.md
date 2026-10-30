@@ -22,6 +22,18 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Added**
+
+- **A tutorial teaches the basics by doing them.** After you choose a
+  projects folder for the first time, Scamp offers a tutorial project
+  and a **Learn** checklist with five short lessons: drawing, layout,
+  editing the code, components, and tokens. Each lesson is checked off
+  when you do it. You can skip it, hide the checklist, or start over
+  from **Settings**. If you already use Scamp, you don't see it unless
+  you start it from **Settings**.
+
 ### 0.11.1 (2026-10-22)
 
 **Fixed**

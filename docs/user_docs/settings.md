@@ -16,6 +16,15 @@ Choose where Scamp creates new projects. Scamp stores every new project
 as a subfolder of this directory. You can change the folder at any time;
 existing projects aren't moved.
 
+### Tutorial
+
+- **Start the tutorial** creates a new tutorial project in your default
+  projects folder, opens it, and starts the **Learn** checklist over. A
+  second tutorial project is named `scamp-tutorial-2`, and so on. You
+  need a default projects folder first.
+- **Learn checklist** shows or hides the checklist in the sidebar of
+  every project. Your progress is kept either way.
+
 ### Privacy
 
 **Send anonymous crash reports and usage counts**: Scamp asks once, on

@@ -45,6 +45,9 @@ import { PageSidebar } from './projectShell/PageSidebar';
 import { ComponentSidebar } from './projectShell/ComponentSidebar';
 import { SidebarRail } from './projectShell/SidebarRail';
 import { AgentPanel } from './agent/AgentPanel';
+import { LearnPanel } from './projectShell/LearnPanel';
+import { TutorialReturn } from './projectShell/TutorialReturn';
+import { TutorialSpotlight } from './projectShell/TutorialSpotlight';
 import { ThemeSectionNav } from './projectShell/ThemeSectionNav';
 import { ProjectModals } from './projectShell/ProjectModals';
 import { useCanvasKeyboardShortcuts } from './projectShell/useCanvasKeyboardShortcuts';
@@ -56,6 +59,7 @@ import { useRoutes } from './projectShell/useRoutes';
 import { useFrameworkUpdate } from './projectShell/useFrameworkUpdate';
 import { allUnroutedViews, RoutesSection } from './projectShell/RoutesSection';
 import { useAppLogStore } from '@store/appLogSlice';
+import { useOnboardingStore, watchHistoryForLessons } from '@store/onboardingSlice';
 import { useWebsiteImport } from './projectShell/useWebsiteImport';
 import { useHtmlExport } from './projectShell/useHtmlExport';
 import {
@@ -290,8 +294,12 @@ export const ProjectShell = ({
   const signedIn = useIsSignedIn();
   // The agent is for signed-in users; signing out mid-session falls back
   // to the default section rather than leaving an empty panel.
+  const learnHidden = useOnboardingStore((s) => s.hidden);
   const sidebarSection =
-    storedSidebarSection === 'agent' && !signedIn ? 'pages' : storedSidebarSection;
+    (storedSidebarSection === 'agent' && !signedIn) || (storedSidebarSection === 'learn' && learnHidden)
+      ? 'pages'
+      : storedSidebarSection;
+  useEffect(() => watchHistoryForLessons(), []);
   const setSidebarSection = useCanvasStore((s) => s.setSidebarSection);
 
   // Once the user opens the terminal we keep TerminalPanel mounted for
@@ -464,6 +472,7 @@ export const ProjectShell = ({
           }
         />
       )}
+      <TutorialSpotlight />
       <div className={styles.body}>
         <SidebarRail
           section={sidebarSection}
@@ -483,6 +492,7 @@ export const ProjectShell = ({
           designSystemOpen={showThemePanel}
           settingsOpen={showProjectSettings}
           agentAvailable={signedIn}
+          learnAvailable={!learnHidden}
         />
         <div className={styles.bodyContent}>
         <aside
@@ -498,6 +508,7 @@ export const ProjectShell = ({
             <HistoryPanel projectPath={project.path} />
           )}
           {sidebarSection === 'agent' && <AgentPanel />}
+          {sidebarSection === 'learn' && <LearnPanel />}
           {sidebarSection === 'pages' && (
             <>
           <PageSidebar
@@ -572,6 +583,9 @@ export const ProjectShell = ({
             <ElementTree />
           </div>
             </>
+          )}
+          {sidebarSection !== 'learn' && !learnHidden && (
+            <TutorialReturn onShow={() => setSidebarSection('learn')} />
           )}
             </>
           )}

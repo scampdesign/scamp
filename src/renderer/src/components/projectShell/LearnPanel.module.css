@@ -1,0 +1,149 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.progress {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.finished {
+  margin: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--info-text);
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-md);
+}
+
+.finished p {
+  margin: 0 0 6px;
+}
+
+.lessons {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.lesson {
+  padding: 8px 12px;
+}
+
+.lessonOpen {
+  background: var(--bg-raised);
+}
+
+.lessonHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.lessonHead:hover .lessonTitle {
+  text-decoration: underline;
+}
+
+.check {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.checkDone {
+  flex-shrink: 0;
+  color: var(--status-success);
+}
+
+.lessonTitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.lesson[data-done='true'] .lessonTitle {
+  color: var(--text-secondary);
+}
+
+.optional {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.lessonBody {
+  padding: 6px 0 2px 24px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.steps {
+  margin: 0 0 8px;
+  padding-left: 16px;
+}
+
+.steps p {
+  margin: 0 0 4px;
+}
+
+.why {
+  margin: 0 0 8px;
+  color: var(--text-tertiary);
+}
+
+.docsLink {
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--accent-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.docsLink:hover {
+  text-decoration: underline;
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.footerHint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}

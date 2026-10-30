@@ -494,6 +494,27 @@
   background: #2563eb;
 }
 
+.welcomeActions {
+  display: flex;
+  gap: 12px;
+}
+
+.welcomeSecondary {
+  padding: 10px 24px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+.welcomeSecondary:hover {
+  background: var(--bg-hover);
+}
+
 /* ---- Error ---- */
 
 .error {

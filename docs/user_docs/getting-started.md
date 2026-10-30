@@ -35,6 +35,30 @@ a different folder. You can also change or clear the folder in
    your default projects folder.
 3. The project opens with a blank canvas and one page named `home`.
 
+## Take the tutorial
+
+The first time you open Scamp, after you choose a default projects
+folder, Scamp offers a short tutorial.
+
+1. Click **Take the tutorial**. Scamp creates a project named
+   `scamp-tutorial` in your default folder and opens it with the
+   **Learn** checklist in the sidebar.
+2. Follow each lesson. A lesson is checked off when you do it, however
+   you do it:
+   - **Draw, and it's code**: draw a rectangle.
+   - **Lay it out**: group two elements into a flex container.
+   - **The code is the design**: change a value in the CSS editor or in
+     the `.module.css` file.
+   - **Make it reusable**: create a component and place it on the page.
+   - **Use your tokens**: set a color from your theme's tokens.
+   - **Work with an agent** (optional): have the Scamp Agent or your own
+     agent change the page.
+
+To skip the tutorial, click **Skip**. To start it later, or to start
+over in a new project, go to **Settings**, and then in the **Tutorial**
+section, click **Start the tutorial**. To hide the checklist, click
+**Hide Learn** at the bottom of it.
+
 ## The project folder
 
 Scamp stores projects in a default folder that you can change in

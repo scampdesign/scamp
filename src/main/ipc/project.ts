@@ -13,6 +13,7 @@ import type {
 } from '@shared/types';
 import { DEFAULT_THEME_CSS } from '@shared/agentMd';
 import { validateProjectName } from '@shared/projectName';
+import { TUTORIAL_HOME_CSS, TUTORIAL_HOME_TSX } from '@shared/templates/tutorialProject';
 import {
   addRecentProject,
   updateRecentProjectFormat,
@@ -116,11 +117,25 @@ const readProject = async (folderPath: string): Promise<ProjectData> => {
   };
 };
 
+const folderExists = (path: string): Promise<boolean> =>
+  fs.access(path).then(
+    () => true,
+    () => false
+  );
+
+/** `base`, or `base-2`, `base-3`, … — the first that isn't a folder in `parentPath`. */
+const freeProjectName = async (parentPath: string, base: string): Promise<string> => {
+  for (let n = 1; ; n += 1) {
+    const name = n === 1 ? base : `${base}-${n}`;
+    if (!(await folderExists(join(parentPath, name)))) return name;
+  }
+};
+
 const createProject = async (args: CreateProjectArgs): Promise<ProjectData> => {
   // Re-validate the name on the main side — never trust the renderer.
   const result = validateProjectName(args.name);
   if (!result.ok) throw new Error(result.error);
-  const name = result.value;
+  const tutorial = args.template === 'tutorial';
 
   // The parent must exist; we don't auto-create it because that's the
   // user's "default projects folder" and creating it silently would mask
@@ -135,6 +150,8 @@ const createProject = async (args: CreateProjectArgs): Promise<ProjectData> => {
     throw new Error(`Parent folder does not exist: ${args.parentPath}`);
   }
 
+  // A second run of the tutorial gets a fresh project rather than an error.
+  const name = tutorial ? await freeProjectName(args.parentPath, result.value) : result.value;
   const projectPath = join(args.parentPath, name);
 
   // Refuse to write into a folder that already exists. The user can pick
@@ -153,6 +170,10 @@ const createProject = async (args: CreateProjectArgs): Promise<ProjectData> => {
   const format: ProjectFormat = args.format ?? 'scamp';
   if (format === 'scamp') {
     await scaffoldScampProject(projectPath, name);
+    if (tutorial) {
+      await fs.writeFile(join(projectPath, 'views', 'Home', 'Home.tsx'), TUTORIAL_HOME_TSX, 'utf-8');
+      await fs.writeFile(join(projectPath, 'views', 'Home', 'Home.module.css'), TUTORIAL_HOME_CSS, 'utf-8');
+    }
   } else {
     await scaffoldNextjsProject(projectPath, name);
   }

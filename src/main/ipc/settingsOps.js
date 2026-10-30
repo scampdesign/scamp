@@ -7,9 +7,27 @@ export const DEFAULT_SETTINGS = {
     consentVersion: 0,
     installId: null,
     theme: 'dark',
+    onboarding: { offered: false, hidden: true, completed: [] },
 };
 /** Keep only the two themes we ship; anything else falls back to dark. */
 const parseTheme = (value) => value === 'light' ? 'light' : 'dark';
+/**
+ * Missing (any install from before the tutorial) reads as hidden: only
+ * the first-run screen offers it, so existing users never see it unasked.
+ */
+const parseOnboarding = (value) => {
+    if (!value || typeof value !== 'object')
+        return { ...DEFAULT_SETTINGS.onboarding, completed: [] };
+    const obj = value;
+    const completed = Array.isArray(obj['completed'])
+        ? obj['completed'].filter((id) => typeof id === 'string')
+        : [];
+    return {
+        offered: obj['offered'] === true,
+        hidden: obj['hidden'] !== false,
+        completed: [...new Set(completed)],
+    };
+};
 /**
  * Parse a Settings JSON blob with migration / defaulting. Pure so the
  * sync startup read and the async IPC read share one source of truth,
@@ -43,5 +61,6 @@ export const parseSettingsBlob = (raw) => {
             ? installId
             : null,
         theme: parseTheme(obj['theme']),
+        onboarding: parseOnboarding(obj['onboarding']),
     };
 };

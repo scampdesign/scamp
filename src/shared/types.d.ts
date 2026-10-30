@@ -211,9 +211,22 @@ export type Settings = {
      * project canvas renders with their own CSS regardless.
      */
     theme: AppTheme;
+    onboarding: OnboardingSettings;
 };
 /** The app-chrome color themes Scamp ships. */
 export type AppTheme = 'dark' | 'light';
+/**
+ * The tutorial and its Learn checklist. Per user, not per project.
+ * see docs/plans/onboarding-plan.md
+ */
+export type OnboardingSettings = {
+    /** The first-run screen has offered the tutorial, taken or skipped. */
+    offered: boolean;
+    /** The Learn checklist is hidden: skipped, hidden by the user, or an install from before it. */
+    hidden: boolean;
+    /** Lesson ids done, in the order they were done. */
+    completed: string[];
+};
 /**
  * Per-project configuration persisted as `scamp.config.json` at the
  * project root. Holds settings that are scoped to one project rather
@@ -514,6 +527,12 @@ export type CreateProjectArgs = {
      * tests and for the frozen Next.js path. see docs/notes/nextjs-sunset.md
      */
     format?: 'nextjs' | 'scamp';
+    /**
+     * `tutorial` seeds the home view with the tutorial's content, and takes
+     * the first free name from `name` (`scamp-tutorial`, `scamp-tutorial-2`, …)
+     * rather than refusing an existing folder.
+     */
+    template?: 'tutorial';
 };
 export type OpenProjectArgs = {
     folderPath: string;

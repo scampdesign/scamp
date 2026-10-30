@@ -256,7 +256,7 @@ export type BottomPanel = 'code' | 'terminal' | 'none';
  * rail, so they aren't sidebar-panel sections.) Per-session preference —
  * not persisted to disk. see docs/archive/2026-07-20-icon-sidebar-nav-plan.md
  */
-export type SidebarSection = 'pages' | 'components' | 'history' | 'agent';
+export type SidebarSection = 'pages' | 'components' | 'history' | 'agent' | 'learn';
 
 /** Properties panel display mode. 'data' is component-scoped. */
 export type PanelMode = 'ui' | 'css' | 'data';

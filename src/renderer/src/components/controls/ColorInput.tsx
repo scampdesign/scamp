@@ -497,6 +497,7 @@ export const ColorInput = ({
               <button
                 type="button"
                 className={`${styles.pickerTab} ${tab === 'tokens' ? styles.pickerTabActive : ''}`}
+                data-picker-tab="tokens"
                 onClick={() => setTab('tokens')}
               >
                 Tokens
