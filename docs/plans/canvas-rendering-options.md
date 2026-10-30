@@ -551,6 +551,79 @@ have these items:
 
 The setting stays after a restart. Set it to `false` when you finish.
 
+## The full test (plan)
+
+You tried the drag, and it feels correct. The next step is a full test:
+all of the canvas works in the iframe, behind the same flag. Then you
+can design with it for some days and compare.
+
+### The method: one seam, not new interactions
+
+The current interaction code gets the canvas DOM through a small number
+of functions:
+
+- `canvasHitTest.ts`: `document.elementsFromPoint` and
+  `[data-element-id]`.
+- `useCanvasGeometry.ts`: `frameRef`, `querySelector`, and
+  `getBoundingClientRect`.
+- `reparentDrop.ts`: `elementsFromPoint`.
+
+Thus we do not write the interactions again. We do these steps:
+
+1. **Put the editor IDs in the markup.** Add an option to `generateHtml`
+   that writes `data-element-id` on each page element, and the instance
+   ID on the expanded root of each instance. The export does not use
+   the option.
+2. **Make one seam for the canvas DOM.** A module, `canvasDom.ts`, gives
+   the canvas document, a hit test at a client point, and the frame
+   element. When the flag is on, it uses the iframe document and changes
+   client coordinates to iframe coordinates (subtract the iframe offset,
+   divide by the zoom). The three files above use the seam.
+3. **Use the current interaction layer over the iframe.** Mount
+   `CanvasInteractionLayer`, `SelectionOverlay`, the draw preview, and
+   the drop indicators in the frame, over the iframe, as now. Remove the
+   test selection and drag from `IframeCanvas.tsx`. Draw, move, resize,
+   reorder, reparent, marquee, image drop, and component drop then use
+   the seam.
+4. **Text editing in the iframe.** When an element is in edit mode, set
+   `contentEditable` on its node in the iframe and focus it. Commit the
+   text on blur, as `ElementRenderer` does. Read the text selection with
+   the `getSelection()` of the iframe. Do the same for the prop text of
+   an instance. Do not patch the DOM of an element while it is in edit
+   mode.
+5. **Update the other DOM users.** These files read the canvas DOM
+   directly: `SizeSection.tsx`, `ExportSection.tsx`, `SvgSection.tsx`,
+   `GridOverlay.tsx`, `LinkIndicators.tsx`, `useInstanceFlows.ts`,
+   `exportCapture.ts`, `projectThumbnail.ts`, and
+   `componentThumbnail.ts`. Each one uses the seam.
+6. **Fix the height rule.** The iframe gets a fixed viewport height (the
+   canvas height of the page, 900px by default). The frame gets the
+   height of the content. The two do not change each other.
+7. **Theme and fonts.** Apply the light or dark theme attribute in the
+   iframe. Copy a font link into the iframe when the project adds it.
+8. **The component editor and variant sets.** Each variant frame is one
+   iframe. This is the last step, because it has the most special
+   cases.
+
+### How we measure it
+
+- **The full e2e suite with the flag on.** A second Playwright project
+  sets the flag before each test. Every canvas spec that passes now
+  must pass with the flag on. This is the safety net. We run it after
+  step 3 to see what fails, and then after each step.
+- **The parity fixtures** in `iframe-c1.spec.ts` continue to run.
+- **The speed measurements** run again after step 3, because the
+  interaction layer adds work.
+- **You** design with the flag on, and say what feels different.
+
+### Rules for this work
+
+- The code stays behind the flag. The current canvas does not change.
+- Do not use `instanceof` with nodes from the iframe. Use `nodeType`,
+  or the constructors of the iframe window.
+- Do not merge to `main`. This stays on `exp/canvas-rendering` until you
+  decide.
+
 ## Open questions
 
 1. **One iframe or more?** Now the canvas shows one breakpoint at a
