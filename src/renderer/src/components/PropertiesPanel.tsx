@@ -28,7 +28,8 @@ const SHORTCUTS: ReadonlyArray<{ keys: string; description: string }> = [
   { keys: 'Cmd+-', description: 'Zoom out' },
   { keys: 'Cmd+0', description: 'Reset zoom' },
   { keys: 'Double-click', description: 'Edit text / Rename layer' },
-  { keys: 'Shift+click', description: 'Multi-select' },
+  { keys: 'Cmd+click', description: 'Add to selection' },
+  { keys: 'Shift+click', description: 'Select a range of layers' },
 ];
 
 const ShortcutsTable = (): JSX.Element => (

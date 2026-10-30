@@ -179,7 +179,8 @@ export type CanvasState = {
     /**
      * The currently selected elements, in selection order. The first entry
      * is the "primary" selection that the properties panel and resize
-     * handles use; additional entries come from shift-clicking. Empty when
+     * handles use; additional entries come from Cmd/Ctrl+click, Shift+click,
+     * or a marquee. Empty when
      * nothing is selected.
      */
     selectedElementIds: string[];
@@ -458,6 +459,8 @@ export type CanvasState = {
     selectElement: (id: string | null) => void;
     /** Toggle an element's membership in the current selection. */
     toggleSelectElement: (id: string) => void;
+    /** Replace the selection with these elements, the first one primary. */
+    selectElements: (ids: ReadonlyArray<string>) => void;
     createRectangle: (input: NewRectInput) => string;
     createText: (input: NewTextInput) => string;
     createImage: (input: NewImageInput) => string;

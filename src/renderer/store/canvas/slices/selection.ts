@@ -73,6 +73,7 @@ export const createSelectionSlice: StateCreator<
   | 'setTool'
   | 'selectElement'
   | 'toggleSelectElement'
+  | 'selectElements'
   | 'setEditingElement'
   | 'setEditingInstanceProp'
 >
@@ -111,6 +112,13 @@ export const createSelectionSlice: StateCreator<
       }
       return { selectedElementIds: [...state.selectedElementIds, id] };
     }),
+
+  selectElements: (ids) =>
+    set((state) => ({
+      selectedElementIds: [...ids],
+      textSelection:
+        ids.length === 1 && ids[0] === state.textSelection?.elementId ? state.textSelection : null,
+    })),
 
   setEditingElement: (id) =>
     set((state) => ({

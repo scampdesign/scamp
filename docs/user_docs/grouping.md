@@ -4,8 +4,9 @@ Group selected elements into a flex container to organize your layout.
 
 ## Group elements
 
-1. Select two or more sibling elements, by Shift-clicking them or by
-   dragging a marquee around them.
+1. Select two or more sibling elements, by Cmd-clicking (macOS) or
+   Ctrl-clicking (Windows and Linux) them, or by dragging a marquee
+   around them.
 2. Press **Cmd+G** (macOS) or **Ctrl+G** (Windows and Linux).
 
 A new rectangle wraps the selected elements. The group has the

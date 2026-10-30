@@ -12,6 +12,7 @@ import {
   flattenTree,
   hasChildRows,
   hasCollapsedAncestor,
+  rowRange,
 } from '@lib/treeRows';
 
 /**
@@ -254,5 +255,34 @@ describe('hasCollapsedAncestor', () => {
 
   it('is false when nothing is collapsed', () => {
     expect(hasCollapsedAncestor(tree(), 'leaf', {})).toBe(false);
+  });
+});
+
+describe('rowRange', () => {
+  const rows = flattenTree(tree(), ROOT_ELEMENT_ID);
+
+  it('takes the siblings between the two, and not their children', () => {
+    expect(rowRange(rows, 'outer', 'sibling')).toEqual(['outer', 'sibling']);
+  });
+
+  it('keeps the anchor first when the run goes up the tree', () => {
+    expect(rowRange(rows, 'sibling', 'outer')).toEqual(['sibling', 'outer']);
+  });
+
+  it('is just the row when anchor and target are the same', () => {
+    expect(rowRange(rows, 'leaf', 'leaf')).toEqual(['leaf']);
+  });
+
+  it('is just the target when the two are at different levels', () => {
+    expect(rowRange(rows, 'outer', 'leaf')).toEqual(['leaf']);
+    expect(rowRange(rows, 'inner', 'sibling')).toEqual(['sibling']);
+    expect(rowRange(rows, ROOT_ELEMENT_ID, 'outer')).toEqual(['outer']);
+  });
+
+  it('falls back to the target when the anchor is off screen, and to nothing when the target is', () => {
+    const folded = flattenTree(tree(), ROOT_ELEMENT_ID, { outer: true });
+    expect(rowRange(folded, 'leaf', 'sibling')).toEqual(['sibling']);
+    expect(rowRange(folded, 'sibling', 'leaf')).toEqual([]);
+    expect(rowRange(rows, '', 'sibling')).toEqual(['sibling']);
   });
 });

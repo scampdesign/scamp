@@ -100,9 +100,10 @@ export const CanvasInteractionLayer = ({ frameRef, scale }) => {
     const handlePointerDown = (e) => {
         if (e.button !== 0)
             return;
-        // Shift is multi-select here, not the browser's extend-text-selection,
-        // which would otherwise select the app's text from the last caret.
-        if (e.shiftKey)
+        // Shift and Cmd/Ctrl add to the selection here; Shift would otherwise
+        // extend the browser's text selection from the last caret.
+        const additive = e.shiftKey || e.metaKey || e.ctrlKey;
+        if (additive)
             e.preventDefault();
         // Another frame of the variant set: make it the live one and select
         // what was clicked in it, in one press. see docs/plans/component-variants-plan.md
@@ -125,13 +126,13 @@ export const CanvasInteractionLayer = ({ frameRef, scale }) => {
         // Select tool
         const hitId = hitTest(e.clientX, e.clientY);
         if (!hitId) {
-            // Plain click on empty canvas clears selection. Shift+click never
+            // Plain click on empty canvas clears selection. A modifier click never
             // clears so the user can keep building up a multi-select set.
-            if (!e.shiftKey)
+            if (!additive)
                 selectElement(null);
             return;
         }
-        if (e.shiftKey) {
+        if (additive) {
             toggleSelectElement(hitId);
             return;
         }
