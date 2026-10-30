@@ -1104,6 +1104,8 @@ Everything Scamp does today. Each entry links to its user documentation.
 
 - Draw rectangles, text, images, and form inputs; select, move, resize,
   and nudge with arrow keys. [Canvas](user_docs/canvas.md)
+- Select several elements with Cmd-click, or Shift-click a range of
+  sibling layers. [Layers panel](user_docs/layers-panel.md)
 - Change an element's HTML tag without breaking its CSS class, plus
   tag-specific attributes, `<select>` and `<option>`, and inline SVG.
   [Elements](user_docs/elements.md)
@@ -1245,6 +1247,8 @@ Everything Scamp does today. Each entry links to its user documentation.
 
 ### The app itself
 
+- A tutorial project with a **Learn** checklist that teaches the basics
+  by doing them. [Get started](user_docs/getting-started.md)
 - A built-in terminal panel. [Terminal](user_docs/terminal.md)
 - App and per-project settings, including the privacy toggle.
   [Settings](user_docs/settings.md)
