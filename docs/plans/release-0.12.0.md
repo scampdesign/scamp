@@ -9,21 +9,12 @@ integration tests pass; full e2e 609 passed, 2 failed, 2 skipped
 
 ## Blockers
 
-- [ ] **A page root that sets `background: #ffffff` draws transparent on
-  the canvas.** `parity: table-rows-and-cells` fails every time. It
-  passes on `v0.11.1`. Cause: `149f75e3` paints a root whose background
-  equals the white default as transparent, because the generator never
-  writes that default. The parser reads a missing background and an
-  explicit `#ffffff` as the same white, so an explicit white root
-  diverges. The generator also drops an explicit white on save, so the
-  model loses it either way.
-  - Smallest fix for the release: limit the transparent rule to
-    component roots, the case `149f75e3` was for. Pages draw white as
-    they did in 0.11.1.
-  - Lasting fix: make the root's default background `transparent`,
-    which is what the browser draws, and drop the special case. It
-    touches every page's canvas and the round-trip tests, so it's
-    better after the release.
+- [x] **A page root that sets `background: #ffffff` drew transparent on
+  the canvas.** Fixed on `fix/root-background`: the root's default
+  background is now `transparent`, what a browser draws, and the canvas
+  special case from `149f75e3` is gone. An explicit white is kept and
+  written back. Page exports and thumbnails still get white behind a
+  transparent page, from the canvas frame and the thumbnail backfill.
 
 ## Flaky, not blocking
 
@@ -56,8 +47,7 @@ integration tests pass; full e2e 609 passed, 2 failed, 2 skipped
 
 ## Release
 
-- [ ] Fix the blocker, and rerun `test/e2e/parity/parity.spec.ts` and
-  `test/e2e/components/component-canvas-parity.spec.ts`.
+- [ ] Merge `fix/root-background` into `main`.
 - [ ] `npm version 0.12.0 --no-git-tag-version`, which updates
   `package.json` and `package-lock.json`.
 - [ ] In `docs/CHANGELOG.md`, rename `### Unreleased` to

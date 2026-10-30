@@ -268,8 +268,9 @@ describe('makeVariantDefault', () => {
     const after = makeVariantDefault(parse(withCombo), 'variant', 'outline');
     const { tsx, css } = generate(after);
     expect(tsx).toContain('variant = "outline"');
-    expect(css).toMatch(/\.root \{[^}]*background: transparent;/);
-    expect(css).toContain('.root[data-variant="default"]');
+    // Outline's `transparent` is the root's own default, so the base rule leaves it out.
+    expect(css).not.toMatch(/\.root \{[^}]*background:/);
+    expect(css).toMatch(/\.root\[data-variant="default"\] \{[^}]*background: var\(--color-accent\);/);
     const reloaded = parseCode(tsx, css, { breakpoints: DEFAULT_BREAKPOINTS, isComponent: true }).elements;
     expect(looks(reloaded)).toEqual(looks(after));
   });
