@@ -11,6 +11,7 @@ import {
   addVariantAxis,
   addVariantValue,
   authoredVariantGrid,
+  combinationLimitError,
   instanceVariantKeys,
   isVariantKeyLive,
   makeVariantDefault,
@@ -221,6 +222,16 @@ describe('the combination limit', () => {
     expect(variantCombinationCount(root(toned)?.variantAxes ?? [])).toBe(MAX_VARIANT_COMBINATIONS);
     expect(addVariantValue(toned, 'tone', 'e', null)).toBe(toned);
     expect(addVariantAxis(elements, { prop: 'tone', values: ['a', 'b', 'c', 'd', 'e'], defaultValue: 'a' })).toBe(elements);
+  });
+
+  it('lets a set already past the limit (a file edited outside Scamp) make edits that do not grow it', () => {
+    const big: VariantAxis[] = [AXES[0] as VariantAxis, AXES[1] as VariantAxis, { prop: 'tone', values: ['a', 'b', 'c', 'd', 'e'], defaultValue: 'a' }];
+    const renamed = big.map((a) => (a.prop === 'tone' ? { ...a, values: ['a', 'b', 'c', 'd', 'f'] } : a));
+    expect(combinationLimitError(big, renamed)).toBeNull();
+    expect(combinationLimitError(big, big.slice(0, 2))).toBeNull();
+    expect(combinationLimitError(big, [...big.slice(0, 2), { prop: 'tone', values: ['a', 'b', 'c', 'd', 'e', 'f'], defaultValue: 'a' }])).toBe(
+      'That makes 54 combinations; a component can have up to 36.'
+    );
   });
 });
 

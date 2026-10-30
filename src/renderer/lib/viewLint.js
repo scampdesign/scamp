@@ -260,7 +260,7 @@ export const lintView = (input) => {
                     ...at,
                     kind: 'variant-combinations',
                     message: `${axes.map((a) => `${a.prop} (${a.values.length})`).join(' × ')} make ${count} combinations, more than the ${MAX_VARIANT_COMBINATIONS} a component can have, so the canvas shows only some of them.`,
-                    hint: 'Remove a property or some values, or merge properties whose values are never used together into one.',
+                    hint: 'Move a part with its own states (a menu, a popover) into its own component and place an instance, or merge properties whose values never occur together into one.',
                 });
             }
             for (const i of interactions) {

@@ -1848,6 +1848,25 @@ combination of values side by side when the component is opened.
   is hidden with \`display: none\` in the others.
 - A component can have up to 36 combinations of values.
 
+**Keep the set small.** The axes multiply: \`color\` (5) × \`state\` (3)
+× \`exit\` (2) is 30 frames, and four open-or-closed menus on top make
+480. Count before you add an axis, and aim for a dozen or fewer.
+
+- **A part with its own states is its own component.** A dropdown, a
+  popover, or a confirm step inside a larger component gets its own
+  component, with its own \`state\` axis and its trigger inside it, and
+  the parent places an instance. The click handler changes the nearest
+  root that has the axis, so the nested one opens and closes itself and
+  adds nothing to the parent's set.
+- **States that never happen together are one axis.** Two menus that
+  close each other are \`open: "none" | "input" | "output"\`, not two
+  \`closed | open\` axes.
+- **Content is not a variant.** Different text, a list, or an image is a
+  prop, a repeat, or a slot. An axis is for a different look.
+- **Don't combine axes for looks nobody designs.** Style each value on
+  its own, and add a combination rule only for a pair that really looks
+  different together.
+
 Declare each **axis** as a prop typed as a union of string literals,
 default it, and bind it on the root as \`data-<prop>\`:
 
@@ -1936,6 +1955,11 @@ matching block holding width / height / margin only — and nothing
 else. Never style a component's internals from a page; edit the
 component. Default-slot content goes between the tags; named slots are
 passed as \`header={<…/>}\`.
+
+A component places another component's instance the same way, with
+the import in the component's own file. Build a large component from
+smaller ones: each part keeps its own variants, and the parent's set
+stays small.
 
 Showcase pages are welcome *in addition* — build them out of instances
 so the showcase and the real site share one source.

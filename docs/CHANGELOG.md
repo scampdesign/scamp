@@ -26,6 +26,14 @@ release time.
 
 **Fixed**
 
+- **A component with a large variant set opens without freezing.** A
+  component whose variant properties make more than 36 combinations
+  used to draw every one of them, and a set like that could freeze
+  Scamp or close it. Scamp now draws only the frames the file defines,
+  with a notice that the set is past the limit. To see any other
+  combination, select its values in the **Variants** section. Saving a
+  large set is faster too, and **Checks** warns when a component is
+  past the limit.
 - **A component inside another component draws on the page.** A
   component placed in another component showed on the page as a purple
   box with the inner component's name. The page now draws the inner

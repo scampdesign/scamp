@@ -102,6 +102,14 @@ describe('editVariants: add_property', () => {
     const ctx = context(ok(editVariants(context(), { action: 'add_property', property: 'one', values: many('a') })).elements);
     expect(error(editVariants(ctx, { action: 'add_property', property: 'two', values: many('b') }))).toContain('49 combinations');
   });
+
+  it('says how to split a set instead of growing it past the limit', () => {
+    const many = (prefix: string): string[] => Array.from({ length: 7 }, (_, i) => `${prefix}${i}`);
+    const ctx = context(ok(editVariants(context(), { action: 'add_property', property: 'one', values: many('a') })).elements);
+    expect(error(editVariants(ctx, { action: 'add_property', property: 'two', values: many('b') }))).toContain(
+      'into its own component with its own state property'
+    );
+  });
 });
 
 describe('editVariants: values', () => {
