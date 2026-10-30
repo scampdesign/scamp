@@ -41,6 +41,14 @@ export declare const hasChildRows: (el: ScampElement) => boolean;
  */
 export declare const flattenTree: (elements: Record<string, ScampElement>, rootId: string, collapsed?: CollapsedIds) => TreeRow[];
 /**
+ * The siblings from `anchorId` to `targetId`, inclusive, in tree order —
+ * what Shift+click selects. Children of the rows in between stay out. The
+ * anchor comes first, since the first selected element is the primary one.
+ * When the two aren't siblings, or the anchor isn't on screen, it's just
+ * the target; a target that isn't on screen gives nothing.
+ */
+export declare const rowRange: (rows: ReadonlyArray<TreeRow>, anchorId: string, targetId: string) => string[];
+/**
  * Every id beneath `id`, excluding `id` itself — the subtree that
  * Alt+click collapses or expands in one go.
  */

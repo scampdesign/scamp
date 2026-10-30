@@ -11,6 +11,7 @@ import {
   flattenTree,
   hasChildRows,
   hasCollapsedAncestor,
+  rowRange,
 } from '@lib/treeRows';
 import { Tooltip } from './controls/Tooltip';
 import styles from './ElementTree.module.css';
@@ -253,8 +254,16 @@ const Row = ({
         style={{ paddingLeft: 22 + depth * INDENT_PX }}
         onClick={(e) => {
           if (renaming) return;
-          if (e.shiftKey) toggleSelectElement(element.id);
-          else selectElement(element.id);
+          if (e.metaKey || e.ctrlKey) {
+            toggleSelectElement(element.id);
+          } else if (e.shiftKey) {
+            // From the primary selection to here, as the tree shows it now.
+            const s = useCanvasStore.getState();
+            const rows = flattenTree(s.elements, s.rootElementId, s.collapsedIds);
+            s.selectElements(rowRange(rows, s.selectedElementIds[0] ?? element.id, element.id));
+          } else {
+            selectElement(element.id);
+          }
         }}
         onContextMenu={(e) => {
           if (renaming) return;

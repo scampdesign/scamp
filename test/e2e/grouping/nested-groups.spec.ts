@@ -20,7 +20,7 @@ test.describe('grouping: nested groups', () => {
     if (!firstClass || !secondClass) throw new Error('failed to create rects');
 
     await layersRowByClass(window, firstClass).click();
-    await layersRowByClass(window, secondClass).click({ modifiers: ['Shift'] });
+    await layersRowByClass(window, secondClass).click({ modifiers: ['ControlOrMeta'] });
     await window.keyboard.press('ControlOrMeta+g');
     await waitForSaved(window);
 
@@ -48,7 +48,7 @@ test.describe('grouping: nested groups', () => {
 
     // Cmd+G on G1 + the sibling rect makes a new wrapper around them.
     await layersRowByClass(window, wrapperClassA!).click();
-    await layersRowByClass(window, wrapperClassB!).click({ modifiers: ['Shift'] });
+    await layersRowByClass(window, wrapperClassB!).click({ modifiers: ['ControlOrMeta'] });
     await window.keyboard.press('ControlOrMeta+g');
     await waitForSaved(window);
 

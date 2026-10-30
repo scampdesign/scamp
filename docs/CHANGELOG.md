@@ -22,6 +22,19 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Changed**
+
+- **Cmd-click adds to the selection, and Shift-click selects a range of
+  layers.** Selecting more than one element used Shift-click everywhere,
+  which isn't how most apps work. Now Cmd-click (macOS) or Ctrl-click
+  (Windows and Linux) adds an element to the selection or removes it,
+  on the canvas and in the layers panel. In the layers panel,
+  Shift-click selects every layer at the same level from the selected
+  one to the one you click, without their children. On the canvas,
+  Shift-click still adds or removes an element.
+
 ### 0.11.1 (2026-10-22)
 
 **Fixed**

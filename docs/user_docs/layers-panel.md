@@ -12,8 +12,14 @@ code. Nested elements appear indented under their parents.
 
 - Click an element to select it. The element highlights on the canvas,
   and its properties appear in the [properties panel](properties-panel.md).
-- Shift-click to select multiple elements. A change you make in the
-  properties panel then applies to every selected element it fits:
+- Cmd-click (macOS) or Ctrl-click (Windows and Linux) to add an element
+  to the selection, or to remove one.
+- Shift-click to select every layer from the selected one to the one you
+  click, at the same level. Their children aren't included. If the two
+  layers have different parents, Shift-click selects only the one you
+  click.
+- With more than one element selected, a change you make in the
+  properties panel applies to every selected element it fits:
   Typography changes only the text elements, and a component instance
   takes only a size. A field the selected elements disagree on reads
   **Mixed**; type a value to set it on all of them. Sections that edit

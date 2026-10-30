@@ -31,6 +31,14 @@ A complete reference of the keyboard shortcuts in Scamp.
 | **Arrow keys** | Nudge the selected element by 1 px |
 | **Shift+Arrow** | Nudge by 10 px |
 
+## Selection
+
+| Shortcut | Action |
+|---|---|
+| **Cmd+click** | Add an element to the selection, or remove it, on the canvas or in the layers panel |
+| **Shift+click** in the layers panel | Select every layer at the same level from the selected one to the one you click |
+| **Shift+click** on the canvas | Add an element to the selection, or remove it |
+
 ## Zoom
 
 | Shortcut | Action |

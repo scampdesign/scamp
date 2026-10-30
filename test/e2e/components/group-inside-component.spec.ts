@@ -36,7 +36,7 @@ test.describe('components: Cmd+G inside the component editor', () => {
     if (!firstClass || !secondClass) throw new Error('did not create two rects');
 
     await layersRowByClass(window, firstClass).click();
-    await layersRowByClass(window, secondClass).click({ modifiers: ['Shift'] });
+    await layersRowByClass(window, secondClass).click({ modifiers: ['ControlOrMeta'] });
 
     await window.keyboard.press('ControlOrMeta+g');
     await waitForSaved(window);
@@ -91,7 +91,7 @@ test.describe('components: Cmd+G inside the component editor', () => {
       name: /^Card$/,
     });
     await layersInstanceRow.last().click();
-    await layersRowByClass(window, rectClass).click({ modifiers: ['Shift'] });
+    await layersRowByClass(window, rectClass).click({ modifiers: ['ControlOrMeta'] });
 
     await window.keyboard.press('ControlOrMeta+g');
     await waitForSaved(window);

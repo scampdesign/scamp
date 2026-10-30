@@ -27,7 +27,8 @@ const SHORTCUTS = [
     { keys: 'Cmd+-', description: 'Zoom out' },
     { keys: 'Cmd+0', description: 'Reset zoom' },
     { keys: 'Double-click', description: 'Edit text / Rename layer' },
-    { keys: 'Shift+click', description: 'Multi-select' },
+    { keys: 'Cmd+click', description: 'Add to selection' },
+    { keys: 'Shift+click', description: 'Select a range of layers' },
 ];
 const ShortcutsTable = () => (_jsx("table", { className: styles.shortcutsTable, children: _jsx("tbody", { children: SHORTCUTS.map((s) => (_jsxs("tr", { children: [_jsx("td", { className: styles.shortcutKeys, children: s.keys }), _jsx("td", { className: styles.shortcutDesc, children: s.description })] }, s.keys))) }) }));
 export const PropertiesPanel = ({ routesSection, migrationNotice, }) => {

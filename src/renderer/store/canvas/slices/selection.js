@@ -29,6 +29,10 @@ export const createSelectionSlice = (set) => ({
         }
         return { selectedElementIds: [...state.selectedElementIds, id] };
     }),
+    selectElements: (ids) => set((state) => ({
+        selectedElementIds: [...ids],
+        textSelection: ids.length === 1 && ids[0] === state.textSelection?.elementId ? state.textSelection : null,
+    })),
     setEditingElement: (id) => set((state) => ({
         editingElementId: id,
         // LEAVING edit mode keeps the selection, because reaching the

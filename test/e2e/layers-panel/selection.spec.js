@@ -23,6 +23,23 @@ test.describe('layers panel: selection', () => {
         await layersRowByClass(window, cls).click();
         await expect(resizeHandle(window, 'se')).toBeVisible();
     });
+    test('Shift-click selects the run of rows, and Cmd-click takes one out', async ({ window }) => {
+        await expect(pageRoot(window)).toBeVisible();
+        for (const x of [60, 200, 340]) {
+            await selectTool(window, 'r');
+            await dragInFrame(window, { x, y: 80 }, { x: x + 100, y: 160 });
+        }
+        await waitForSaved(window);
+        const rects = canvasElementsByPrefix(window, 'rect_');
+        const [first, second, third] = await Promise.all([0, 1, 2].map((i) => rects.nth(i).getAttribute('data-scamp-id')));
+        if (!first || !second || !third)
+            throw new Error('did not create three rects');
+        await layersRowByClass(window, first).click();
+        await layersRowByClass(window, third).click({ modifiers: ['Shift'] });
+        await expect(window.getByTestId('multi-select-note')).toContainText('3 elements selected');
+        await layersRowByClass(window, second).click({ modifiers: ['ControlOrMeta'] });
+        await expect(window.getByTestId('multi-select-note')).toContainText('2 elements selected');
+    });
     test('layer rows appear in DFS order (Page first, then children)', async ({ window, }) => {
         await expect(pageRoot(window)).toBeVisible();
         await selectTool(window, 'r');

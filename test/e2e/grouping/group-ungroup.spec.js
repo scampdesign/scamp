@@ -17,9 +17,9 @@ test.describe('grouping: Cmd+G / Cmd+Shift+G', () => {
         const secondClass = await canvasElementsByPrefix(window, 'rect_').nth(1).getAttribute('data-scamp-id');
         if (!firstClass || !secondClass)
             throw new Error('did not create two rects');
-        // Multi-select: click first row, shift-click second row.
+        // Multi-select: click first row, Cmd-click second row.
         await layersRowByClass(window, firstClass).click();
-        await layersRowByClass(window, secondClass).click({ modifiers: ['Shift'] });
+        await layersRowByClass(window, secondClass).click({ modifiers: ['ControlOrMeta'] });
         // Cmd+G — ProjectShell's handler groups the current selection.
         await window.keyboard.press('ControlOrMeta+g');
         await waitForSaved(window);
@@ -47,7 +47,7 @@ test.describe('grouping: Cmd+G / Cmd+Shift+G', () => {
         if (!firstClass || !secondClass)
             throw new Error('failed to create rects');
         await layersRowByClass(window, firstClass).click();
-        await layersRowByClass(window, secondClass).click({ modifiers: ['Shift'] });
+        await layersRowByClass(window, secondClass).click({ modifiers: ['ControlOrMeta'] });
         await window.keyboard.press('ControlOrMeta+g');
         await waitForSaved(window);
         await expect(canvasElementsByPrefix(window, 'rect_')).toHaveCount(3);

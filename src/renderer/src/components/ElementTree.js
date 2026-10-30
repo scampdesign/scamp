@@ -6,7 +6,7 @@ import { classNameFor } from '@lib/generateCode';
 import { canContainChildren } from '@lib/insertParent';
 import { resolveDropZone } from '@lib/dropZones';
 import { ROOT_ELEMENT_ID, slugifyName } from '@lib/element';
-import { ancestorIds, descendantIds, flattenTree, hasChildRows, hasCollapsedAncestor, } from '@lib/treeRows';
+import { ancestorIds, descendantIds, flattenTree, hasChildRows, hasCollapsedAncestor, rowRange, } from '@lib/treeRows';
 import { Tooltip } from './controls/Tooltip';
 import styles from './ElementTree.module.css';
 /**
@@ -158,10 +158,18 @@ const Row = ({ element, depth, dragOver, setDragOver, showToggle, collapsed, has
                     style: { paddingLeft: 22 + depth * INDENT_PX }, onClick: (e) => {
                         if (renaming)
                             return;
-                        if (e.shiftKey)
+                        if (e.metaKey || e.ctrlKey) {
                             toggleSelectElement(element.id);
-                        else
+                        }
+                        else if (e.shiftKey) {
+                            // From the primary selection to here, as the tree shows it now.
+                            const s = useCanvasStore.getState();
+                            const rows = flattenTree(s.elements, s.rootElementId, s.collapsedIds);
+                            s.selectElements(rowRange(rows, s.selectedElementIds[0] ?? element.id, element.id));
+                        }
+                        else {
                             selectElement(element.id);
+                        }
                     }, onContextMenu: (e) => {
                         if (renaming)
                             return;

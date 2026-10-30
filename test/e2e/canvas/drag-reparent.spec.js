@@ -92,7 +92,7 @@ test.describe('canvas: drag to reparent', () => {
         if (!firstClass || !secondClass)
             throw new Error('need two rects');
         await layersRowByClass(window, firstClass).click();
-        await layersRowByClass(window, secondClass).click({ modifiers: ['Shift'] });
+        await layersRowByClass(window, secondClass).click({ modifiers: ['ControlOrMeta'] });
         await window.keyboard.press('ControlOrMeta+g');
         await waitForSaved(window);
         // Drag the second (now-flex) child out into empty page-root space.

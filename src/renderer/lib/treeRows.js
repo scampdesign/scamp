@@ -43,6 +43,28 @@ export const flattenTree = (elements, rootId, collapsed = {}) => {
     return rows;
 };
 /**
+ * The siblings from `anchorId` to `targetId`, inclusive, in tree order —
+ * what Shift+click selects. Children of the rows in between stay out. The
+ * anchor comes first, since the first selected element is the primary one.
+ * When the two aren't siblings, or the anchor isn't on screen, it's just
+ * the target; a target that isn't on screen gives nothing.
+ */
+export const rowRange = (rows, anchorId, targetId) => {
+    const els = rows.flatMap((r) => (r.kind === 'element' ? [r.element] : []));
+    const to = els.findIndex((e) => e.id === targetId);
+    const target = els[to];
+    if (target === undefined)
+        return [];
+    const from = els.findIndex((e) => e.id === anchorId);
+    if (from === -1 || els[from]?.parentId !== target.parentId)
+        return [targetId];
+    const run = els
+        .slice(Math.min(from, to), Math.max(from, to) + 1)
+        .filter((e) => e.parentId === target.parentId && e.id !== anchorId)
+        .map((e) => e.id);
+    return [anchorId, ...run];
+};
+/**
  * Every id beneath `id`, excluding `id` itself — the subtree that
  * Alt+click collapses or expands in one go.
  */
