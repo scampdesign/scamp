@@ -9,6 +9,8 @@ import { VARIANT_VALUE_RE } from './element';
 import { classNameFor } from './generateCode';
 import { addVariantAxis, addVariantValue, axesOf, combinationLimitError, makeVariantDefault, removeVariantAxis, removeVariantValue, variantAxisError, variantValueError, } from './variantAxes';
 import { addVariantInteraction, interactionError, interactionsOf, removeVariantInteraction } from './variantInteractions';
+/** What to do instead of growing a set past the limit. */
+const SPLIT_ADVICE = 'Move a part with its own states (a menu, a popover) into its own component with its own state property, and place an instance; or merge properties whose values never occur together into one.';
 export const VARIANT_ACTIONS = [
     'add_property',
     'remove_property',
@@ -88,7 +90,7 @@ export const editVariants = (ctx, args) => {
         const axis = { prop, values, defaultValue: values[0] };
         const limit = combinationLimitError(axes, [...axes, axis]);
         if (limit !== null)
-            return fail(limit);
+            return fail(`${limit} ${SPLIT_ADVICE}`);
         return done(ctx, addVariantAxis(ctx.elements, axis), `Added the ${prop} property: ${values.join(', ')}`, [
             `${axis.defaultValue} is the default: its look is the elements' own styles. Style each other value with scamp_set_styles and "variant".`,
         ]);
@@ -112,7 +114,7 @@ export const editVariants = (ctx, args) => {
             const grown = axes.map((a) => (a.prop === prop ? { ...a, values: [...a.values, value] } : a));
             const limit = combinationLimitError(axes, grown);
             if (limit !== null)
-                return fail(limit);
+                return fail(`${limit} ${SPLIT_ADVICE}`);
             const copyFrom = str(args['copy_from']);
             if (copyFrom !== null && !axis.values.includes(copyFrom))
                 return fail(`"copy_from" must be a ${prop} value: ${axis.values.join(', ')}.`);

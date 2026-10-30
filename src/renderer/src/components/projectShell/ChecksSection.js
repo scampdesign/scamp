@@ -36,6 +36,7 @@ const KIND_ORDER = [
     'unknown-variant-value',
     'undeclared-variant-rule',
     'variant-interaction',
+    'variant-combinations',
     // Notes, after every problem. see docs/archive/2026-10-13-checks-cleanup-plan.md
     'not-panel-editable',
     'side-not-typed',
@@ -57,6 +58,7 @@ const KIND_LABEL = {
     'unknown-variant-value': 'Instances set to a value their component lacks',
     'variant-interaction': 'Interactions that can’t work as written',
     'undeclared-variant-rule': 'Variant rules for values the props type lacks',
+    'variant-combinations': 'Components with too many variant combinations',
 };
 /** How many of each kind to list before saying "and N more". */
 const MAX_PER_KIND = 6;

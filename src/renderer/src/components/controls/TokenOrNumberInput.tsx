@@ -2,6 +2,8 @@ import { type KeyboardEvent, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconColorSwatch } from '@tabler/icons-react';
 import type { ThemeToken } from '@shared/types';
+import { useCanvasStore } from '@store/canvasSlice';
+import { withTokenValues } from '@lib/resolveToken';
 import { usePopover } from '../../hooks/usePopover';
 import { Tooltip } from './Tooltip';
 import styles from './TokenOrNumberInput.module.css';
@@ -83,6 +85,7 @@ export const TokenOrNumberInput = ({
 }: Props): JSX.Element => {
   const shown = mixed ? '' : value ?? '';
   const [draft, setDraft] = useState<string>(shown);
+  const themeTokens = useCanvasStore((s) => s.themeTokens);
 
   const popover = usePopover<HTMLButtonElement>({
     position: {
@@ -251,9 +254,11 @@ export const TokenOrNumberInput = ({
     </div>
   ) : null;
 
+  const tooltip = withTokenValues(title, shown, themeTokens);
+
   return (
     <>
-      {title ? <Tooltip label={title}>{rowEl}</Tooltip> : rowEl}
+      {tooltip ? <Tooltip label={tooltip}>{rowEl}</Tooltip> : rowEl}
       {popoverEl && createPortal(popoverEl, document.body)}
     </>
   );

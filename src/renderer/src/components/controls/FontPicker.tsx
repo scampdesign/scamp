@@ -10,6 +10,8 @@ import { IconColorSwatch } from '@tabler/icons-react';
 import { filterFonts } from '@lib/fontFilter';
 import { formatFontValue, quoteFamilyName } from '@lib/fontFallback';
 import { useFontsStore, type AvailableFont } from '@store/fontsSlice';
+import { useCanvasStore } from '@store/canvasSlice';
+import { withTokenValues } from '@lib/resolveToken';
 import type { ThemeToken } from '@shared/types';
 import { usePopover } from '../../hooks/usePopover';
 import { Tooltip } from './Tooltip';
@@ -105,6 +107,7 @@ export const FontPicker = ({
   mixed = false,
 }: Props): JSX.Element => {
   const [query, setQuery] = useState('');
+  const themeTokens = useCanvasStore((s) => s.themeTokens);
   const [activeIndex, setActiveIndex] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
 
@@ -341,9 +344,11 @@ export const FontPicker = ({
     </button>
   );
 
+  const tooltip = withTokenValues(title, mixed ? undefined : value, themeTokens);
+
   return (
     <>
-      {title ? <Tooltip label={title}>{triggerEl}</Tooltip> : triggerEl}
+      {tooltip ? <Tooltip label={tooltip}>{triggerEl}</Tooltip> : triggerEl}
       {popover.open && popover.position && (
         <div
           ref={popover.popoverRef}

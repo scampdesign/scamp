@@ -16,6 +16,7 @@
 /* The set's own words are Scamp's, not the design's; the frames keep the
    project's font. */
 .name,
+.notice,
 .heading,
 .label {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -28,6 +29,13 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--component);
+}
+
+.notice {
+  max-width: 480px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
 }
 
 .block {

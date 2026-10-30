@@ -7,7 +7,7 @@ import { ROOT_ELEMENT_ID, type BreakpointOverride, type PropertyGroup, type Scam
 import { formatAnimationShorthand, formatBoxShadowShorthand, formatFilterList, formatTransformList, formatTransitionShorthand } from "../parsers";
 import { CUSTOM_PROP_TO_GROUP } from "../propertyGroups";
 import { formatSpaceShorthand, formatSpaceValue, hasAutoSide, isZeroSpaceTuple, spaceValueEquals } from "../spaceValue";
-import { getTagDefaultPadding, paddingEquals } from "../tagDefaults";
+import { INLINE_BY_DEFAULT, getTagDefaultPadding, paddingEquals } from "../tagDefaults";
 import { isColumnDirection, selfAlignForParent } from "../flexAxis";
 import { tagFor } from "./internal";
 
@@ -56,21 +56,6 @@ export const fillHeightKind = (
   if (isColumnDirection(parent.flexDirection)) return 'flex';
   return el.alignSelf === 'auto' || el.alignSelf === 'stretch' ? 'align-self' : null;
 };
-
-/**
- * Tags a browser lays out inline unless told otherwise, and that
- * Scamp's own reset does not already force to block.
- *
- * `a`, `button` and the replaced media tags are absent on purpose:
- * `theme.css` sets those to `display: block` itself, so spelling it
- * out again would be noise on every one of them.
- * see docs/notes/import-inline-spans.md
- */
-const INLINE_BY_DEFAULT: ReadonlySet<string> = new Set([
-  'span', 'em', 'i', 'b', 'strong', 'u', 's', 'small', 'sub', 'sup',
-  'mark', 'abbr', 'cite', 'q', 'code', 'kbd', 'samp', 'var', 'time',
-  'del', 'ins', 'label',
-]);
 
 export const sizeDeclarationLines = (
   el: ScampElement,

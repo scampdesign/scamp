@@ -5,6 +5,9 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { useCanvasStore } from '@store/canvasSlice';
+import { withTokenValues } from '@lib/resolveToken';
+
 import { Tooltip } from './Tooltip';
 import styles from './Controls.module.css';
 
@@ -90,6 +93,7 @@ export const PrefixSuffixInput = ({
 }: Props): JSX.Element => {
   const shown = mixed ? '' : value;
   const [draft, setDraft] = useState(shown);
+  const themeTokens = useCanvasStore((s) => s.themeTokens);
 
   useEffect(() => {
     setDraft(shown);
@@ -155,5 +159,6 @@ export const PrefixSuffixInput = ({
     </div>
   );
 
-  return title ? <Tooltip label={title}>{row}</Tooltip> : row;
+  const tooltip = withTokenValues(title, shown, themeTokens);
+  return tooltip ? <Tooltip label={tooltip}>{row}</Tooltip> : row;
 };

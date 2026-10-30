@@ -54,6 +54,10 @@ test.describe('properties panel: spacing token picker', () => {
     // Field shows the var() in the shorthand input.
     await expect(paddingInput).toHaveValue('var(--space-md)');
 
+    // The tooltip names the token and the value it applies.
+    await paddingInput.hover();
+    await expect(window.getByRole('tooltip')).toContainText('--space-md: 16px');
+
     // File on disk has the var() value emitted into padding.
     const { css } = await readPageFiles(project.dir, project.pageName);
     expect(css).toMatch(

@@ -31,3 +31,18 @@ export const resolveTokenChain = (value, tokens) => {
     }
     return null;
 };
+const VAR_NAME_RE = /var\(\s*(--[\w-]+)/g;
+/**
+ * A field's tooltip with a line per token its value applies, each
+ * resolved to the value it ends at: `--space-md: 16px`. A field whose
+ * value holds no token keeps `title` as it is.
+ */
+export const withTokenValues = (title, value, tokens) => {
+    if (value === undefined)
+        return title;
+    const names = [...new Set([...value.matchAll(VAR_NAME_RE)].map((m) => m[1] ?? ''))];
+    if (names.length === 0)
+        return title;
+    const lines = names.map((name) => `${name}: ${resolveTokenChain(`var(${name})`, tokens) ?? 'not defined'}`);
+    return [title, ...lines].filter((line) => line !== undefined).join('\n');
+};

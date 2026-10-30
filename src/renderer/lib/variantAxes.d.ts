@@ -79,4 +79,11 @@ export type VariantBlock = {
  * each further axis, stacked. Every combination is a frame.
  */
 export declare const variantGrid: (axes: ReadonlyArray<VariantAxis>) => VariantBlock[];
+/**
+ * The set for a component past MAX_VARIANT_COMBINATIONS, where the full
+ * grid is too many frames to draw: the default, each value of each axis
+ * on its own, then each combination a rule styles (and `activeKey`, so
+ * the frame being edited stays drawn).
+ */
+export declare const authoredVariantGrid: (elements: Elements, activeKey: string | null) => VariantBlock[];
 export {};

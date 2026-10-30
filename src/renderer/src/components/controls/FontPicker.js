@@ -4,6 +4,8 @@ import { IconColorSwatch } from '@tabler/icons-react';
 import { filterFonts } from '@lib/fontFilter';
 import { formatFontValue, quoteFamilyName } from '@lib/fontFallback';
 import { useFontsStore } from '@store/fontsSlice';
+import { useCanvasStore } from '@store/canvasSlice';
+import { withTokenValues } from '@lib/resolveToken';
 import { usePopover } from '../../hooks/usePopover';
 import { Tooltip } from './Tooltip';
 import styles from './FontPicker.module.css';
@@ -40,6 +42,7 @@ const primaryFamily = (value) => {
 };
 export const FontPicker = ({ value, fonts, fontTokens = [], onChange, title, mixed = false, }) => {
     const [query, setQuery] = useState('');
+    const themeTokens = useCanvasStore((s) => s.themeTokens);
     const [activeIndex, setActiveIndex] = useState(0);
     const [scrollTop, setScrollTop] = useState(0);
     const searchRef = useRef(null);
@@ -238,7 +241,8 @@ export const FontPicker = ({ value, fonts, fontTokens = [], onChange, title, mix
         style: !mixed && triggerLabel && !triggerIsToken
             ? { fontFamily: quoteFamilyName(triggerLabel) }
             : undefined, children: [!mixed && triggerIsToken && (_jsx("span", { className: styles.triggerIcon, "aria-hidden": "true", children: _jsx(IconColorSwatch, { size: 14, stroke: 1.75 }) })), _jsx("span", { className: `${styles.triggerLabel} ${triggerLabel && !mixed ? '' : styles.triggerPlaceholder}`, children: mixed ? 'Mixed' : triggerLabel ?? 'System font' }), _jsx("span", { className: styles.triggerCaret, children: "\u25BE" })] }));
-    return (_jsxs(_Fragment, { children: [title ? _jsx(Tooltip, { label: title, children: triggerEl }) : triggerEl, popover.open && popover.position && (_jsxs("div", { ref: popover.popoverRef, className: styles.popover, style: {
+    const tooltip = withTokenValues(title, mixed ? undefined : value, themeTokens);
+    return (_jsxs(_Fragment, { children: [tooltip ? _jsx(Tooltip, { label: tooltip, children: triggerEl }) : triggerEl, popover.open && popover.position && (_jsxs("div", { ref: popover.popoverRef, className: styles.popover, style: {
                     left: popover.position.left,
                     top: popover.position.top,
                     bottom: popover.position.bottom,

@@ -22,6 +22,51 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Fixed**
+
+- **A component with a large variant set opens without freezing.** A
+  component whose variant properties make more than 36 combinations
+  used to draw every one of them, and a set like that could freeze
+  Scamp or close it. Scamp now draws only the frames the file defines,
+  with a notice that the set is past the limit. To see any other
+  combination, select its values in the **Variants** section. Saving a
+  large set is faster too, and **Checks** warns when a component is
+  past the limit.
+- **A component inside another component draws on the page.** A
+  component placed in another component showed on the page as a purple
+  box with the inner component's name. The page now draws the inner
+  component with its own styles, size, and variant picks. To change
+  its text, open the outer component.
+- **An agent's edit to a component shows on the canvas right away.**
+  When an agent changed a component you didn't have open, the pages
+  that use it kept drawing the old version, and so did the component
+  when you opened it, until you reopened the project. The preview was
+  already right. Scamp now re-reads a file an agent changes, whether
+  or not it's open.
+- **A component with no background is transparent on the canvas.** A
+  component whose root sets no `background`, such as a text field, toggle,
+  or slider, drew white on the canvas while the preview showed the
+  background behind it. The canvas now shows what's behind it too.
+- **An element in normal flow stays in flow on the canvas.** When a file
+  gives a child of a block element no `position`, the browser lays it out
+  in normal flow, but Scamp drew it at the parent's top-left corner and
+  wrote it back as `position: absolute` when it saved. A progress bar
+  inside a component, for example, overlapped the row below it and hid
+  the gap between them. Scamp now reads that child as `position: static`,
+  and keeps `display: block` on a `<progress>` or `<meter>`.
+
+**Changed**
+
+- **A field's tooltip shows the token it applies and that token's
+  value.** Hold the pointer over a field in the properties panel whose
+  value is a theme token, and the tooltip adds a line such as
+  `--space-md: 16px`. A token that points at another token shows the
+  value at the end of the chain. Some fields show only the token's
+  name, or a `var()` that's hard to read in a narrow field, so you
+  can now check the value without opening the theme.
+
 ### 0.11.1 (2026-10-22)
 
 **Fixed**

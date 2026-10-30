@@ -1,5 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState, } from 'react';
+import { useCanvasStore } from '@store/canvasSlice';
+import { withTokenValues } from '@lib/resolveToken';
 import { Tooltip } from './Tooltip';
 import styles from './Controls.module.css';
 /**
@@ -13,6 +15,7 @@ import styles from './Controls.module.css';
 export const PrefixSuffixInput = ({ value, onCommit, onDraftChange, prefix, dataPrefix, suffix, flushPrefix = false, placeholder, inputMode = 'text', title, disabled = false, onArrow, stopKeyPropagation = false, inputRef, inputClassName, spellCheck = false, autoCapitalize, autoCorrect, computed = false, mixed = false, }) => {
     const shown = mixed ? '' : value;
     const [draft, setDraft] = useState(shown);
+    const themeTokens = useCanvasStore((s) => s.themeTokens);
     useEffect(() => {
         setDraft(shown);
     }, [shown]);
@@ -44,5 +47,6 @@ export const PrefixSuffixInput = ({ value, onCommit, onDraftChange, prefix, data
                     setDraft(shown);
                 }, onKeyDown: handleKeyDown }), suffix !== undefined &&
                 (typeof suffix === 'string' ? (_jsx("span", { className: styles.inputSuffix, children: suffix })) : (suffix))] }));
-    return title ? _jsx(Tooltip, { label: title, children: row }) : row;
+    const tooltip = withTokenValues(title, shown, themeTokens);
+    return tooltip ? _jsx(Tooltip, { label: tooltip, children: row }) : row;
 };

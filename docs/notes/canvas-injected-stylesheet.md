@@ -134,9 +134,18 @@ because the two strings look similar enough to be confused again.
 
 ### Nested instances
 
-They render as a placeholder on the canvas rather than being expanded, so
-prefixes are only ever one level deep. `collectExpandedInstances` still
-emits rules for nested ones; they simply go unused.
+A component inside a component is expanded on the canvas too, and its
+classes carry both instances' prefixes: `inst_a024__inst_b11__root`. The
+canvas builds that by passing the composed class
+(`inst_a024__inst_b11`) as the nested call's `instanceClass`, which
+`instanceClassPrefix` turns into the same string
+`collectExpandedInstances` gives the stylesheet. A component already open
+on the branch is skipped, so a cycle stops.
+
+Text inside a nested instance is read-only on the page: its props belong
+to the inner instance, which has no page element to write an edit to, so
+it renders with an empty `instanceId` and the prop-text hit test passes
+over it.
 
 see docs/plans/canvas-preview-parity-plan.md
 

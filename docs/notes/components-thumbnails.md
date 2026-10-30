@@ -16,7 +16,7 @@ Every successful component save captures a small PNG of the canvas and writes it
 
 1. `syncBridge.writeIfDirty` finishes its `dispatchPageWrite` for a `target.kind === 'component'`.
 2. We `requestAnimationFrame(...)` so the canvas commits the latest paint before `html-to-image` rasterises it.
-3. `captureAndPersistComponentThumbnail` finds the `[data-testid="canvas-frame"]` node, reads its intrinsic `offsetWidth/Height` (the helper internally resets `transform: scale` for the duration so output matches the design size, not the visible zoom), and calls `capturePng({ scale: 1 })`.
+3. `captureAndPersistComponentThumbnail` finds the default frame of the variant set (`[data-variant-cell=""] [data-variant-frame]`) when the component has variants, else the `[data-testid="canvas-frame"]` node. Capturing the whole set cloned every frame's computed styles: about 3.5 seconds of blocked UI per save for a 36-frame set. It reads its intrinsic `offsetWidth/Height` (the helper internally resets `transform: scale` for the duration so output matches the design size, not the visible zoom), and calls `capturePng({ scale: 1 })`.
 4. Ships the data URL via `window.scamp.writeComponentThumbnail`.
 5. Main decodes the base64 PNG and writes it under `.scamp/component-thumbs/<Name>.png`, creating the directory tree if missing.
 6. On success, the renderer dispatches a `scamp:component-thumbnail-updated` custom event so the sidebar's `ComponentSidebarItem` can re-fetch and refresh its `<img>` source.

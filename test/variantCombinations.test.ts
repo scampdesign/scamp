@@ -10,6 +10,8 @@ import {
   MAX_VARIANT_COMBINATIONS,
   addVariantAxis,
   addVariantValue,
+  authoredVariantGrid,
+  combinationLimitError,
   instanceVariantKeys,
   isVariantKeyLive,
   makeVariantDefault,
@@ -221,6 +223,16 @@ describe('the combination limit', () => {
     expect(addVariantValue(toned, 'tone', 'e', null)).toBe(toned);
     expect(addVariantAxis(elements, { prop: 'tone', values: ['a', 'b', 'c', 'd', 'e'], defaultValue: 'a' })).toBe(elements);
   });
+
+  it('lets a set already past the limit (a file edited outside Scamp) make edits that do not grow it', () => {
+    const big: VariantAxis[] = [AXES[0] as VariantAxis, AXES[1] as VariantAxis, { prop: 'tone', values: ['a', 'b', 'c', 'd', 'e'], defaultValue: 'a' }];
+    const renamed = big.map((a) => (a.prop === 'tone' ? { ...a, values: ['a', 'b', 'c', 'd', 'f'] } : a));
+    expect(combinationLimitError(big, renamed)).toBeNull();
+    expect(combinationLimitError(big, big.slice(0, 2))).toBeNull();
+    expect(combinationLimitError(big, [...big.slice(0, 2), { prop: 'tone', values: ['a', 'b', 'c', 'd', 'e', 'f'], defaultValue: 'a' }])).toBe(
+      'That makes 54 combinations; a component can have up to 36.'
+    );
+  });
 });
 
 describe('makeVariantDefault', () => {
@@ -302,6 +314,40 @@ describe('variantGrid', () => {
 
   it('draws nothing without axes', () => {
     expect(variantGrid([])).toEqual([]);
+  });
+});
+
+describe('authoredVariantGrid', () => {
+  const keys = (blocks: ReturnType<typeof authoredVariantGrid>): Array<Array<string | null>> =>
+    blocks.map((b) => b.rows.flat().map((c) => c.key));
+
+  it('draws the default, then each value on its own, one block per axis', () => {
+    const blocks = authoredVariantGrid(parse(CSS), null);
+    expect(blocks.map((b) => b.heading)).toEqual([null, 'variant', 'size']);
+    expect(keys(blocks)).toEqual([[null], ['variant=outline', 'variant=secondary'], ['size=small', 'size=large']]);
+    expect(blocks[1]?.rows[0]?.[0]?.picks).toEqual({ variant: 'outline', size: 'medium' });
+  });
+
+  it('adds each combination a rule styles, and no other', () => {
+    const blocks = authoredVariantGrid(parse(withCombo), null);
+    expect(blocks.at(-1)?.heading).toBe('Combinations');
+    expect(keys(blocks).at(-1)).toEqual(['variant=outline&size=small']);
+    expect(blocks.at(-1)?.rows[0]?.[0]?.label).toBe('variant: outline · size: small');
+    expect(blocks.flatMap((b) => b.rows.flat())).toHaveLength(6);
+  });
+
+  it('keeps the frame being edited drawn when no rule styles it yet', () => {
+    expect(keys(authoredVariantGrid(parse(CSS), 'variant=secondary&size=large')).at(-1)).toEqual(['variant=secondary&size=large']);
+  });
+
+  it('drops a combination key whose values the axes no longer have', () => {
+    expect(keys(authoredVariantGrid(parse(CSS), 'variant=ghost&size=large')).map((k) => k[0])).toEqual([null, 'variant=outline', 'size=small']);
+  });
+
+  it('draws nothing without axes', () => {
+    const elements = parse(CSS);
+    const bare = { ...elements, [ROOT_ELEMENT_ID]: { ...(root(elements) as ScampElement), variantAxes: [] } };
+    expect(authoredVariantGrid(bare, null)).toEqual([]);
   });
 });
 

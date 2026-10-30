@@ -155,6 +155,28 @@ describe('editing interactions', () => {
         expect(root(makeVariantDefault(withHover, 'variant', 'secondary'))?.variantInteractions).toEqual([HOVER]);
     });
 });
+describe('combination limit check', () => {
+    const findings = (elements) => lintView({ elements, rootId: ROOT_ELEMENT_ID, themeTokens: [] })
+        .filter((f) => f.kind === 'variant-combinations')
+        .map((f) => f.message);
+    const withAxes = (axes) => {
+        const elements = button();
+        return { ...elements, [ROOT_ELEMENT_ID]: { ...root(elements), variantAxes: axes } };
+    };
+    const axis = (prop, n) => {
+        const values = Array.from({ length: n }, (_, i) => `v${i}`);
+        return { prop, values, defaultValue: 'v0' };
+    };
+    it('flags properties that multiply past the cap, naming each one', () => {
+        expect(findings(withAxes([axis('tone', 5), axis('size', 3), axis('mode', 3)]))).toEqual([
+            'tone (5) × size (3) × mode (3) make 45 combinations, more than the 36 a component can have, so the canvas shows only some of them.',
+        ]);
+    });
+    it('says nothing at the cap or without axes', () => {
+        expect(findings(withAxes([axis('tone', 4), axis('size', 3), axis('mode', 3)]))).toEqual([]);
+        expect(findings(withAxes([]))).toEqual([]);
+    });
+});
 describe('checks', () => {
     const findings = (elements) => lintView({ elements, rootId: ROOT_ELEMENT_ID, themeTokens: [] })
         .filter((f) => f.kind === 'variant-interaction')

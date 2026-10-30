@@ -31,3 +31,13 @@ export declare const getTagDefaultPadding: (tag: string | undefined) => SpaceTup
 /** Byte-equality on the four-tuple. Delegates to `spaceTupleEquals`
  *  so token-form values compare structurally. */
 export declare const paddingEquals: (a: SpaceTuple, b: SpaceTuple) => boolean;
+/**
+ * Tags a browser lays out inline unless told otherwise, and that
+ * Scamp's own reset does not already force to block.
+ *
+ * `a`, `button` and the replaced media tags are absent on purpose:
+ * `theme.css` sets those to `display: block` itself, so spelling it
+ * out again would be noise on every one of them.
+ * see docs/notes/import-inline-spans.md
+ */
+export declare const INLINE_BY_DEFAULT: ReadonlySet<string>;

@@ -99,7 +99,7 @@ export const App = () => {
     // re-mounts without needing `project` in the dependency array
     // (which would otherwise re-subscribe on every project change).
     useEffect(() => {
-        const off = window.scamp.onProjectPagesChanged(() => {
+        const refresh = () => {
             setProject((current) => {
                 if (!current)
                     return current;
@@ -169,8 +169,24 @@ export const App = () => {
                 })();
                 return current;
             });
+        };
+        const offPages = window.scamp.onProjectPagesChanged(refresh);
+        // An outside edit to a file that isn't open: the open one reloads
+        // through the sync bridge, but anything else (a component its pages
+        // draw) only reaches the canvas once the project is re-read.
+        const offFiles = window.scamp.onFileChanged((payload) => {
+            if (payload.ownWriteId !== undefined)
+                return;
+            const { activePage, activeComponent } = useCanvasStore.getState();
+            const open = activeComponent ?? activePage;
+            if (open !== null && (payload.path === open.tsxPath || payload.path === open.cssPath))
+                return;
+            refresh();
         });
-        return off;
+        return () => {
+            offPages();
+            offFiles();
+        };
     }, []);
     // Warm the system-font list on app start. The call is cheap on a
     // warm session and falls back to a baseline list if the Local Font

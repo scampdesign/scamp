@@ -1,8 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
-import { variantGrid } from '@lib/variantAxes';
+import { MAX_VARIANT_COMBINATIONS, authoredVariantGrid, variantCombinationCount, variantGrid, } from '@lib/variantAxes';
 import { ElementRenderer } from './ElementRenderer';
 import { VariantFrameContext } from './variantFrame';
 import styles from './VariantSet.module.css';
@@ -21,7 +21,12 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
     const fillsWidth = useCanvasStore((s) => s.elements[ROOT_ELEMENT_ID]?.widthMode === 'stretch');
     const fillsHeight = useCanvasStore((s) => s.elements[ROOT_ELEMENT_ID]?.heightMode === 'stretch');
     const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
-    const blocks = useMemo(() => variantGrid(axes), [axes]);
+    const count = variantCombinationCount(axes);
+    const overCap = count > MAX_VARIANT_COMBINATIONS;
+    // Only past the cap does the layout read the overrides, so only then
+    // does every element edit re-lay out the set.
+    const elements = useCanvasStore((s) => (overCap ? s.elements : null));
+    const blocks = useMemo(() => (elements !== null ? authoredVariantGrid(elements, activeVariantKey) : variantGrid(axes)), [axes, elements, activeVariantKey]);
     const setRef = useRef(null);
     const frameRefs = useRef(new Map());
     const [reach, setReach] = useState({});
@@ -74,6 +79,12 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
         ro.observe(node);
         return () => ro.disconnect();
     }, [onWidth]);
+    // A frame picked in the Variants section can be off screen, or (past
+    // the cap) new at the end of the set: bring it into view.
+    useEffect(() => {
+        const cell = setRef.current?.querySelector('[data-variant-live="true"]');
+        cell?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }, [activeVariantKey]);
     const renderCell = (cell) => {
         const live = cell.key === activeVariantKey;
         const id = cell.key ?? '';
@@ -82,7 +93,7 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
                             frameRefs.current.delete(id);
                         else
                             frameRefs.current.set(id, node);
-                    }, className: styles.frame, style: {
+                    }, className: styles.frame, "data-variant-frame": true, style: {
                         width: fillsWidth ? `${artboardWidth}px` : 'max-content',
                         height: fillsHeight ? `${artboardHeight}px` : undefined,
                         // Not along a side the root fills: growing the frame would grow
@@ -91,5 +102,5 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
                         minHeight: reach[id] !== undefined && !fillsHeight ? `${reach[id].h}px` : undefined,
                     }, children: _jsx(VariantFrameContext.Provider, { value: { variantKey: cell.key, displayOnly: !live }, children: _jsx(ElementRenderer, { elementId: ROOT_ELEMENT_ID }) }) })] }, cell.key ?? 'default'));
     };
-    return (_jsxs("div", { ref: setRef, className: styles.set, "data-testid": "variant-set", children: [_jsx("div", { className: styles.name, children: componentName }), blocks.map((block, b) => (_jsxs("div", { className: styles.block, children: [block.heading !== null && _jsx("div", { className: styles.heading, children: block.heading }), block.rows.map((row, r) => (_jsx("div", { className: styles.row, children: row.map(renderCell) }, r)))] }, block.heading ?? b)))] }));
+    return (_jsxs("div", { ref: setRef, className: styles.set, "data-testid": "variant-set", children: [_jsx("div", { className: styles.name, children: componentName }), overCap && (_jsxs("div", { className: styles.notice, role: "note", "data-testid": "variant-set-notice", children: [componentName, " has ", count.toLocaleString('en-US'), " combinations, more than the", ' ', MAX_VARIANT_COMBINATIONS, " the canvas can show. It shows each value on its own and each combination that has its own styles. To show another combination, select its values in the Variants section."] })), blocks.map((block, b) => (_jsxs("div", { className: styles.block, children: [block.heading !== null && _jsx("div", { className: styles.heading, children: block.heading }), block.rows.map((row, r) => (_jsx("div", { className: styles.row, children: row.map(renderCell) }, r)))] }, block.heading ?? b)))] }));
 };
