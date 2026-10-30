@@ -344,6 +344,7 @@ export const PageSidebar = ({
         activeComponent !== null && activeComponent.name === view.name;
       return (
         <li key={`view:${view.name}`}>
+          <Tooltip label={row.slug} onlyWhenTruncated>
           <button
             className={`${styles.pageButton} ${isActive ? styles.pageActive : ''} ${
               selected.has(row.slug) ? styles.pageSelected : ''
@@ -361,6 +362,7 @@ export const PageSidebar = ({
           >
             {row.slug}
           </button>
+          </Tooltip>
         </li>
       );
     }
@@ -423,6 +425,7 @@ export const PageSidebar = ({
     }
     return (
       <li key={page.name}>
+        <Tooltip label={page.name} onlyWhenTruncated>
         <button
           className={`${styles.pageButton} ${
             activeComponent === null &&
@@ -465,6 +468,7 @@ export const PageSidebar = ({
         >
           {page.name}
         </button>
+        </Tooltip>
       </li>
     );
   };

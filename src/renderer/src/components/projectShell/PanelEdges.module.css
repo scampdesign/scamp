@@ -1,0 +1,9 @@
+/* Straddles the sidebar's right border. */
+.sidebarEdge {
+  right: -3px;
+}
+
+/* Straddles the bottom panel's top border. */
+.bottomEdge {
+  top: -3px;
+}

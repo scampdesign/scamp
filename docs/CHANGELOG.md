@@ -22,6 +22,26 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Added**
+
+- **You can resize the left panel.** Drag its right edge to make the
+  layers panel and the page and component lists wider, so long names
+  aren't cut off. Double-click the edge to return to the default width.
+  Scamp remembers the width for every project on this computer.
+- **You can hide the left panel.** Click the button of the open section
+  in the sidebar, or press **Cmd+B**, to give the canvas more room.
+  Click it or press **Cmd+B** again to show the panel at the same width.
+- **You can resize the code panel and the terminal.** Drag the top edge
+  to make them taller or shorter. They share one height.
+
+**Changed**
+
+- **A layer's tooltip shows its full name.** Hold the pointer over a
+  layer to see its name above its CSS class. A page or component whose
+  name is cut off shows its full name in a tooltip too.
+
 ### 0.12.0 (2026-10-30)
 
 **Added**

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useAuthStore } from '@store/authSlice';
 import { useHistoryStore } from '@store/historySlice';
+import { usePanelSizesStore } from '@store/panelSizesSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { clampToParent } from '@lib/bounds';
 import { resolveInsertParent } from '@lib/insertParent';
@@ -63,6 +64,14 @@ export const useCanvasKeyboardShortcuts = (
       if ((e.metaKey || e.ctrlKey) && e.key === '`') {
         e.preventDefault();
         keyDeps.current.toggleTerminalPanel();
+        return;
+      }
+
+      // Cmd/Ctrl+B — fold the left panel away, or back (matches VS Code).
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === 'b' || e.key === 'B')) {
+        if (isEditableTarget(e.target)) return;
+        e.preventDefault();
+        usePanelSizesStore.getState().toggleSidebarCollapsed();
         return;
       }
 

@@ -52,6 +52,9 @@ A complete reference of the keyboard shortcuts in Scamp.
 | Shortcut | Action |
 |---|---|
 | **Ctrl+`** | Show or hide the built-in terminal |
+| **Cmd+B** | Show or hide the left panel |
+| **Left** or **Right** arrow on the left panel's focused edge | Make the panel narrower or wider |
+| **Up** or **Down** arrow on the bottom panel's focused edge | Make the panel taller or shorter |
 | **Cmd+P** | Open [preview mode](preview.md) |
 
 ## Panel actions

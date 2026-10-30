@@ -1,0 +1,52 @@
+/* A 6px hit area straddling the panel's border; the parent positions it. */
+.handle {
+  position: absolute;
+  z-index: 5;
+  touch-action: none;
+}
+
+.vertical {
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+}
+
+.horizontal {
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: row-resize;
+}
+
+/* The line drawn over the panel's own 1px border. */
+.handle::after {
+  content: '';
+  position: absolute;
+  background: transparent;
+  transition: background 0.1s;
+}
+
+.vertical::after {
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 2px;
+}
+
+.horizontal::after {
+  left: 0;
+  right: 0;
+  top: 2px;
+  height: 2px;
+}
+
+.handle:hover::after,
+.handle:focus-visible::after,
+.dragging::after {
+  background: var(--accent);
+}
+
+.handle:focus-visible {
+  outline: none;
+}

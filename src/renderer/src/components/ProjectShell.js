@@ -60,6 +60,11 @@ import { useFrameworkUpdate } from './projectShell/useFrameworkUpdate';
 import { allUnroutedViews, RoutesSection } from './projectShell/RoutesSection';
 import { useAppLogStore } from '@store/appLogSlice';
 import { useOnboardingStore, watchHistoryForLessons } from '@store/onboardingSlice';
+import { usePanelSizesStore } from '@store/panelSizesSlice';
+import { clampBottomHeight, drawnSidebarWidth } from '@lib/panelSizes';
+import { useWindowSize } from '../hooks/useWindowSize';
+import { SidebarEdge } from './projectShell/SidebarEdge';
+import { BottomPanelEdge } from './projectShell/BottomPanelEdge';
 import { useWebsiteImport } from './projectShell/useWebsiteImport';
 import { useHtmlExport } from './projectShell/useHtmlExport';
 import { useFontLinkReconciler, useProjectTheme, } from './projectShell/useProjectFonts';
@@ -195,11 +200,27 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
         : storedSidebarSection;
     useEffect(() => watchHistoryForLessons(), []);
     const setSidebarSection = useCanvasStore((s) => s.setSidebarSection);
+    const windowSize = useWindowSize();
+    const storedSidebarWidth = usePanelSizesStore((s) => s.sidebarWidth);
+    const sidebarCollapsed = usePanelSizesStore((s) => s.sidebarCollapsed);
+    const bottomPanelHeight = clampBottomHeight(usePanelSizesStore((s) => s.bottomPanelHeight), windowSize.height);
+    // Anything that switches the section wants it seen, so a switch opens a
+    // collapsed panel. Skips the mount run, which would undo a saved collapse.
+    const lastSection = useRef(storedSidebarSection);
+    useEffect(() => {
+        if (lastSection.current === storedSidebarSection)
+            return;
+        lastSection.current = storedSidebarSection;
+        const sizes = usePanelSizesStore.getState();
+        if (sizes.sidebarCollapsed)
+            sizes.setSidebarCollapsed(false);
+    }, [storedSidebarSection]);
     // Once the user opens the terminal we keep TerminalPanel mounted for
     // the lifetime of the project, even when the panel is hidden, so any
     // long-running pty processes (Claude Code, dev servers, watches…)
     // survive being toggled out of view.
     const [showThemePanel, setShowThemePanel] = useState(false);
+    const sidebarDrawnWidth = drawnSidebarWidth(storedSidebarWidth, windowSize.width, sidebarSection === 'agent' && !showThemePanel);
     const setOpenThemePanel = useCanvasStore((s) => s.setOpenThemePanel);
     useEffect(() => {
         setOpenThemePanel(() => setShowThemePanel(true));
@@ -307,8 +328,16 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
                     ...projectConfig,
                     nextjsMigrationDismissed: true,
                 }) })), _jsx(TutorialSpotlight, {}), _jsxs("div", { className: styles.body, children: [_jsx(SidebarRail, { section: sidebarSection, onSelectSection: (next) => {
+                            const overlayOpen = showProjectSettings || showThemePanel;
                             setShowProjectSettings(false);
                             setShowThemePanel(false);
+                            // The open section's own button folds the panel away, and back.
+                            if (next === sidebarSection && !overlayOpen) {
+                                usePanelSizesStore.getState().toggleSidebarCollapsed();
+                                return;
+                            }
+                            if (sidebarCollapsed)
+                                usePanelSizesStore.getState().setSidebarCollapsed(false);
                             setSidebarSection(next);
                         }, onOpenDesignSystem: () => {
                             setShowProjectSettings(false);
@@ -316,16 +345,16 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
                         }, onOpenSettings: () => {
                             setShowThemePanel(false);
                             setShowProjectSettings(true);
-                        }, designSystemOpen: showThemePanel, settingsOpen: showProjectSettings, agentAvailable: signedIn, learnAvailable: !learnHidden }), _jsxs("div", { className: styles.bodyContent, children: [_jsx("aside", { className: `${styles.sidebar} ${sidebarSection === 'agent' && !showThemePanel ? styles.sidebarWide : ''}`, children: showThemePanel ? (_jsx(ThemeSectionNav, {})) : (_jsxs(_Fragment, { children: [sidebarSection === 'history' && (_jsx(HistoryPanel, { projectPath: project.path })), sidebarSection === 'agent' && _jsx(AgentPanel, {}), sidebarSection === 'learn' && _jsx(LearnPanel, {}), sidebarSection === 'pages' && (_jsxs(_Fragment, { children: [_jsx(PageSidebar, { projectPath: project.path, pageLayout: projectConfig.pageLayout, onPageLayoutChange: handlePageLayoutChange, pages: project.pages, views: project.components.filter((c) => componentKindOf(c) === 'view'), existingPageNames: existingPageNames, pageEdit: pageEdit, pageEditError: pageEditError, pageEditBusy: pageEditBusy, isEditingPage: isEditingPage, activePageName: activePageName, activeComponent: activeComponent, setPageEdit: setPageEdit, setPageEditError: setPageEditError, resetPageEdit: resetPageEdit, handleAddPage: handleAddPage, handleDuplicatePage: handleDuplicatePage, handleRenamePage: handleRenamePage, openPageMenu: openPageMenu, openView: (name) => openComponent(name, null, 'view'), openViewMenu: openComponentMenu, handleRenameView: async (name, slug) => {
-                                                        const ok = await handleRenameView(name, slug);
-                                                        resetPageEdit();
-                                                        return ok;
-                                                    }, persistActiveSource: persistActiveSource, setActiveComponentState: setActiveComponentState, setActivePageName: setActivePageName, onImportWebsite: () => {
-                                                        void window.scamp.openImport({
-                                                            projectPath: project.path,
-                                                            breakpoints: projectConfig.breakpoints,
-                                                        });
-                                                    }, onImportReact: () => setReactImportOpen(true) }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] })), sidebarSection === 'components' && (_jsxs(_Fragment, { children: [_jsx(ComponentSidebar, { components: project.components, projectPath: project.path, componentEdit: componentEdit, componentEditError: componentEditError, renamingComponent: renamingComponent, creatingComponent: creatingComponent, activeComponent: activeComponent, setComponentEdit: setComponentEdit, setComponentEditError: setComponentEditError, handleAddComponent: handleAddComponent, handleRenameComponent: handleRenameComponent, openComponent: openComponent, openComponentMenu: openComponentMenu }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] })), sidebarSection !== 'learn' && !learnHidden && (_jsx(TutorialReturn, { onShow: () => setSidebarSection('learn') }))] })) }), showThemePanel ? (_jsx(ThemePanel, { projectPath: project.path })) : (_jsxs(_Fragment, { children: [_jsx(CanvasArea, { activeComponent: activeComponent, activePageName: activePageName, projectConfig: projectConfig, artboardScrollRef: artboardScrollRef, onProjectConfigChange: handleProjectConfigChange, onExitComponentEditor: exitComponentEditor }), _jsx(PropertiesPanel, { migrationNotice: project.format === 'nextjs' && !projectConfig.scampMigrationDismissed ? (_jsx(ScampMigrationNotice, { project: project, convertPages: convertAllPagesToViews, onMigrated: (next) => {
+                        }, designSystemOpen: showThemePanel, settingsOpen: showProjectSettings, agentAvailable: signedIn, learnAvailable: !learnHidden, sidebarCollapsed: sidebarCollapsed && !showThemePanel }), _jsxs("div", { className: styles.bodyContent, children: [(!sidebarCollapsed || showThemePanel) && (_jsxs("aside", { className: styles.sidebar, style: { width: sidebarDrawnWidth }, "data-testid": "sidebar-panel", children: [showThemePanel ? (_jsx(ThemeSectionNav, {})) : (_jsxs(_Fragment, { children: [sidebarSection === 'history' && (_jsx(HistoryPanel, { projectPath: project.path })), sidebarSection === 'agent' && _jsx(AgentPanel, {}), sidebarSection === 'learn' && _jsx(LearnPanel, {}), sidebarSection === 'pages' && (_jsxs(_Fragment, { children: [_jsx(PageSidebar, { projectPath: project.path, pageLayout: projectConfig.pageLayout, onPageLayoutChange: handlePageLayoutChange, pages: project.pages, views: project.components.filter((c) => componentKindOf(c) === 'view'), existingPageNames: existingPageNames, pageEdit: pageEdit, pageEditError: pageEditError, pageEditBusy: pageEditBusy, isEditingPage: isEditingPage, activePageName: activePageName, activeComponent: activeComponent, setPageEdit: setPageEdit, setPageEditError: setPageEditError, resetPageEdit: resetPageEdit, handleAddPage: handleAddPage, handleDuplicatePage: handleDuplicatePage, handleRenamePage: handleRenamePage, openPageMenu: openPageMenu, openView: (name) => openComponent(name, null, 'view'), openViewMenu: openComponentMenu, handleRenameView: async (name, slug) => {
+                                                            const ok = await handleRenameView(name, slug);
+                                                            resetPageEdit();
+                                                            return ok;
+                                                        }, persistActiveSource: persistActiveSource, setActiveComponentState: setActiveComponentState, setActivePageName: setActivePageName, onImportWebsite: () => {
+                                                            void window.scamp.openImport({
+                                                                projectPath: project.path,
+                                                                breakpoints: projectConfig.breakpoints,
+                                                            });
+                                                        }, onImportReact: () => setReactImportOpen(true) }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] })), sidebarSection === 'components' && (_jsxs(_Fragment, { children: [_jsx(ComponentSidebar, { components: project.components, projectPath: project.path, componentEdit: componentEdit, componentEditError: componentEditError, renamingComponent: renamingComponent, creatingComponent: creatingComponent, activeComponent: activeComponent, setComponentEdit: setComponentEdit, setComponentEditError: setComponentEditError, handleAddComponent: handleAddComponent, handleRenameComponent: handleRenameComponent, openComponent: openComponent, openComponentMenu: openComponentMenu }), _jsxs("div", { className: `${styles.sidebarSection} ${styles.sidebarLayers}`, "data-testid": "layers-panel", children: [_jsx("h2", { className: styles.sidebarTitle, children: "Layers" }), _jsx(ElementTree, {})] })] })), sidebarSection !== 'learn' && !learnHidden && (_jsx(TutorialReturn, { onShow: () => setSidebarSection('learn') }))] })), _jsx(SidebarEdge, { width: sidebarDrawnWidth, windowWidth: windowSize.width })] })), showThemePanel ? (_jsx(ThemePanel, { projectPath: project.path })) : (_jsxs(_Fragment, { children: [_jsx(CanvasArea, { activeComponent: activeComponent, activePageName: activePageName, projectConfig: projectConfig, artboardScrollRef: artboardScrollRef, onProjectConfigChange: handleProjectConfigChange, onExitComponentEditor: exitComponentEditor }), _jsx(PropertiesPanel, { migrationNotice: project.format === 'nextjs' && !projectConfig.scampMigrationDismissed ? (_jsx(ScampMigrationNotice, { project: project, convertPages: convertAllPagesToViews, onMigrated: (next) => {
                                                 onProjectChange?.(next);
                                                 setActivePageName(null);
                                                 const firstView = next.components.find((c) => c.kind === 'view');
@@ -366,7 +395,7 @@ export const ProjectShell = ({ project, onClose, onProjectChange, onSwitchProjec
                                         keys: devVars?.keys ?? [],
                                         onOpen: () => void window.scamp.openDevVars({ projectPath: project.path }),
                                     }
-                                    : undefined }))] })] }), bottomPanel === 'code' && _jsx(CodePanel, { showTheme: showThemePanel }), terminalEverOpened && (_jsx(TerminalPanel, { cwd: project.path, hidden: bottomPanel !== 'terminal' }, project.path)), _jsx(ProjectModals, { components: project.components, instanceFlows: instanceFlows, pageMenu: pageMenu, buildMenuItems: buildMenuItems, moveItemsFor: (slug) => {
+                                    : undefined }))] })] }), _jsxs("div", { className: styles.bottomPanels, "data-testid": "bottom-panels", style: bottomPanel === 'none' ? undefined : { height: bottomPanelHeight }, children: [bottomPanel !== 'none' && (_jsx(BottomPanelEdge, { height: bottomPanelHeight, windowHeight: windowSize.height })), bottomPanel === 'code' && _jsx(CodePanel, { showTheme: showThemePanel }), terminalEverOpened && (_jsx(TerminalPanel, { cwd: project.path, hidden: bottomPanel !== 'terminal' }, project.path))] }), _jsx(ProjectModals, { components: project.components, instanceFlows: instanceFlows, pageMenu: pageMenu, buildMenuItems: buildMenuItems, moveItemsFor: (slug) => {
                     const slugs = [
                         ...project.pages.map((p) => p.name),
                         ...project.components.filter((c) => componentKindOf(c) === 'view').map((c) => viewSlugFor(c.name)),

@@ -111,7 +111,8 @@ test.describe('delete: no page references the component', () => {
         await clickContextMenuItem(window, 'Delete component…');
         await waitForConfirmDialog(window, /Delete component "Button"/);
         await confirmDialog(window, /Delete component/);
-        expect(await project.componentExists('Button')).toBe(false);
+        // The confirm closes before the folder is gone.
+        await expect.poll(() => project.componentExists('Button')).toBe(false);
         const homeAfter = await project.readPage('home');
         expect(homeAfter.tsx).toBe(homeBefore.tsx);
         expect(homeAfter.css).toBe(homeBefore.css);

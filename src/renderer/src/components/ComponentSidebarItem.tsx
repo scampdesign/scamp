@@ -4,6 +4,7 @@ import {
   COMPONENT_THUMBNAIL_UPDATED_EVENT,
   type ComponentThumbnailUpdatedDetail,
 } from '../lib/componentThumbnail';
+import { Tooltip } from './controls/Tooltip';
 import styles from './ComponentSidebarItem.module.css';
 import projectStyles from './ProjectShell.module.css';
 
@@ -82,7 +83,9 @@ export const ComponentSidebarItem = ({
       ) : (
         <span className={styles.placeholder} aria-hidden="true" />
       )}
-      <span className={styles.label}>{componentName}</span>
+      <Tooltip label={componentName} onlyWhenTruncated>
+        <span className={styles.label}>{componentName}</span>
+      </Tooltip>
     </button>
   );
 };

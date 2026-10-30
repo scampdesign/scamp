@@ -18,7 +18,7 @@ const VIEWPORT_INSET = 12;
  * The wrapper clones the child and attaches hover/focus handlers — it
  * doesn't add an extra DOM node, so layout of the trigger is preserved.
  */
-export const Tooltip = ({ label, header, children, delay = 400, placement = 'auto', }) => {
+export const Tooltip = ({ label, header, children, delay = 400, placement = 'auto', onlyWhenTruncated = false, }) => {
     // An explicit `header` prop always wins; otherwise fall back to the
     // `Name — description` convention baked into most label strings.
     const parts = splitTooltipLabel(label);
@@ -83,6 +83,9 @@ export const Tooltip = ({ label, header, children, delay = 400, placement = 'aut
     const handleEnter = () => {
         if (timerRef.current !== null)
             window.clearTimeout(timerRef.current);
+        const node = triggerRef.current;
+        if (onlyWhenTruncated && node !== null && node.scrollWidth <= node.clientWidth)
+            return;
         timerRef.current = window.setTimeout(show, delay);
     };
     const handleLeave = () => {

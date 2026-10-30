@@ -60,6 +60,11 @@ import { useFrameworkUpdate } from './projectShell/useFrameworkUpdate';
 import { allUnroutedViews, RoutesSection } from './projectShell/RoutesSection';
 import { useAppLogStore } from '@store/appLogSlice';
 import { useOnboardingStore, watchHistoryForLessons } from '@store/onboardingSlice';
+import { usePanelSizesStore } from '@store/panelSizesSlice';
+import { clampBottomHeight, drawnSidebarWidth } from '@lib/panelSizes';
+import { useWindowSize } from '../hooks/useWindowSize';
+import { SidebarEdge } from './projectShell/SidebarEdge';
+import { BottomPanelEdge } from './projectShell/BottomPanelEdge';
 import { useWebsiteImport } from './projectShell/useWebsiteImport';
 import { useHtmlExport } from './projectShell/useHtmlExport';
 import {
@@ -302,11 +307,33 @@ export const ProjectShell = ({
   useEffect(() => watchHistoryForLessons(), []);
   const setSidebarSection = useCanvasStore((s) => s.setSidebarSection);
 
+  const windowSize = useWindowSize();
+  const storedSidebarWidth = usePanelSizesStore((s) => s.sidebarWidth);
+  const sidebarCollapsed = usePanelSizesStore((s) => s.sidebarCollapsed);
+  const bottomPanelHeight = clampBottomHeight(
+    usePanelSizesStore((s) => s.bottomPanelHeight),
+    windowSize.height
+  );
+  // Anything that switches the section wants it seen, so a switch opens a
+  // collapsed panel. Skips the mount run, which would undo a saved collapse.
+  const lastSection = useRef(storedSidebarSection);
+  useEffect(() => {
+    if (lastSection.current === storedSidebarSection) return;
+    lastSection.current = storedSidebarSection;
+    const sizes = usePanelSizesStore.getState();
+    if (sizes.sidebarCollapsed) sizes.setSidebarCollapsed(false);
+  }, [storedSidebarSection]);
+
   // Once the user opens the terminal we keep TerminalPanel mounted for
   // the lifetime of the project, even when the panel is hidden, so any
   // long-running pty processes (Claude Code, dev servers, watches…)
   // survive being toggled out of view.
   const [showThemePanel, setShowThemePanel] = useState(false);
+  const sidebarDrawnWidth = drawnSidebarWidth(
+    storedSidebarWidth,
+    windowSize.width,
+    sidebarSection === 'agent' && !showThemePanel
+  );
   const setOpenThemePanel = useCanvasStore((s) => s.setOpenThemePanel);
   useEffect(() => {
     setOpenThemePanel(() => setShowThemePanel(true));
@@ -477,8 +504,15 @@ export const ProjectShell = ({
         <SidebarRail
           section={sidebarSection}
           onSelectSection={(next) => {
+            const overlayOpen = showProjectSettings || showThemePanel;
             setShowProjectSettings(false);
             setShowThemePanel(false);
+            // The open section's own button folds the panel away, and back.
+            if (next === sidebarSection && !overlayOpen) {
+              usePanelSizesStore.getState().toggleSidebarCollapsed();
+              return;
+            }
+            if (sidebarCollapsed) usePanelSizesStore.getState().setSidebarCollapsed(false);
             setSidebarSection(next);
           }}
           onOpenDesignSystem={() => {
@@ -493,13 +527,11 @@ export const ProjectShell = ({
           settingsOpen={showProjectSettings}
           agentAvailable={signedIn}
           learnAvailable={!learnHidden}
+          sidebarCollapsed={sidebarCollapsed && !showThemePanel}
         />
         <div className={styles.bodyContent}>
-        <aside
-          className={`${styles.sidebar} ${
-            sidebarSection === 'agent' && !showThemePanel ? styles.sidebarWide : ''
-          }`}
-        >
+        {(!sidebarCollapsed || showThemePanel) && (
+        <aside className={styles.sidebar} style={{ width: sidebarDrawnWidth }} data-testid="sidebar-panel">
           {showThemePanel ? (
             <ThemeSectionNav />
           ) : (
@@ -589,7 +621,9 @@ export const ProjectShell = ({
           )}
             </>
           )}
+          <SidebarEdge width={sidebarDrawnWidth} windowWidth={windowSize.width} />
         </aside>
+        )}
         {showThemePanel ? (
           <ThemePanel projectPath={project.path} />
         ) : (
@@ -700,6 +734,14 @@ export const ProjectShell = ({
         )}
         </div>
       </div>
+      <div
+        className={styles.bottomPanels}
+        data-testid="bottom-panels"
+        style={bottomPanel === 'none' ? undefined : { height: bottomPanelHeight }}
+      >
+      {bottomPanel !== 'none' && (
+        <BottomPanelEdge height={bottomPanelHeight} windowHeight={windowSize.height} />
+      )}
       {bottomPanel === 'code' && <CodePanel showTheme={showThemePanel} />}
       {/*
        * The terminal panel mounts on first open and stays mounted until
@@ -714,6 +756,7 @@ export const ProjectShell = ({
           hidden={bottomPanel !== 'terminal'}
         />
       )}
+      </div>
       <ProjectModals
         components={project.components}
         instanceFlows={instanceFlows}

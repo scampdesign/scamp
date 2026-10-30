@@ -1,7 +1,8 @@
 .panel {
   display: flex;
   flex-direction: column;
-  height: 280px;
+  flex: 1;
+  min-height: 0;
   background: var(--bg-canvas);
   border-top: 1px solid var(--border);
   flex-shrink: 0;

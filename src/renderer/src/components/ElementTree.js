@@ -54,6 +54,13 @@ const labelFor = (el) => {
     return 'Rectangle';
 };
 const truncate = (s, n) => (s.length > n ? `${s.slice(0, n)}…` : s);
+/** The row's name with nothing cut: the tooltip's heading. */
+const fullLabelFor = (el) => {
+    const text = (el.text ?? '').trim();
+    return el.type === 'text' && !el.name && el.id !== ROOT_ELEMENT_ID && text.length > 0
+        ? `Text · ${text}`
+        : labelFor(el);
+};
 /**
  * Decide whether the cursor's vertical position over a row means
  * "before", "after", or "inside".
@@ -151,7 +158,7 @@ const Row = ({ element, depth, dragOver, setDragOver, showToggle, collapsed, has
                         return;
                     }
                     toggleCollapsed(element.id);
-                }, onPointerDown: (e) => e.stopPropagation(), children: collapsed ? (_jsx(IconChevronRight, { size: 12 })) : (_jsx(IconChevronDown, { size: 12 })) })), collapsed && hasSelectedInside && (_jsx("span", { className: styles.hiddenSelection, "data-testid": "hidden-selection-dot", "aria-hidden": true })), _jsx(Tooltip, { label: `.${classNameFor(element)}`, children: _jsxs("button", { type: "button", className: `${styles.row} ${isSelected ? styles.rowSelected : ''}`, 
+                }, onPointerDown: (e) => e.stopPropagation(), children: collapsed ? (_jsx(IconChevronRight, { size: 12 })) : (_jsx(IconChevronDown, { size: 12 })) })), collapsed && hasSelectedInside && (_jsx("span", { className: styles.hiddenSelection, "data-testid": "hidden-selection-dot", "aria-hidden": true })), _jsx(Tooltip, { header: fullLabelFor(element), label: `.${classNameFor(element)}`, children: _jsxs("button", { type: "button", className: `${styles.row} ${isSelected ? styles.rowSelected : ''}`, 
                     // Leaves room for the disclosure triangle at every depth, including
                     // on rows that don't have one — so labels stay on a single line
                     // down the tree instead of jogging left for childless rows.

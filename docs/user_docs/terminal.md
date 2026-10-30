@@ -8,6 +8,10 @@ leaving the app.
 To show or hide the terminal panel, press **Ctrl+`** (backtick), or
 click the terminal icon on the right of the canvas toolbar.
 
+To make the panel taller or shorter, drag its top edge. Double-click the
+edge to return to the default height. The terminal and the code panel
+share one height.
+
 ## Use the terminal
 
 The terminal opens in your project directory. Use it to do the

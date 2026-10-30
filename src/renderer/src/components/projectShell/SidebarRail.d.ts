@@ -16,6 +16,8 @@ type Props = {
     agentAvailable: boolean;
     /** Offer the tutorial's checklist — unless the user hid or skipped it. */
     learnAvailable: boolean;
+    /** The panel is folded away, so no section shows as open. */
+    sidebarCollapsed: boolean;
 };
 /**
  * The project view's left icon rail (VS Code activity-bar style). Pages,
@@ -23,5 +25,5 @@ type Props = {
  * launch their existing overlays (rework into inline panels is a follow-up).
  * see docs/archive/2026-07-20-icon-sidebar-nav-plan.md
  */
-export declare const SidebarRail: ({ section, onSelectSection, onOpenDesignSystem, onOpenSettings, designSystemOpen, settingsOpen, agentAvailable, learnAvailable, }: Props) => JSX.Element;
+export declare const SidebarRail: ({ section, onSelectSection, onOpenDesignSystem, onOpenSettings, designSystemOpen, settingsOpen, agentAvailable, learnAvailable, sidebarCollapsed, }: Props) => JSX.Element;
 export {};
