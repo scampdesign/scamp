@@ -13,8 +13,12 @@
  * inline on the canvas.
  */
 export const pageRoot = (page) => page.locator('[data-element-id="root"][data-scamp-id="root"]');
-/** A drawn element on the canvas, by its CSS class name (e.g. `rect_a1b2`). */
-export const canvasElement = (page, className) => page.locator(`[data-scamp-id="${className}"]`);
+/**
+ * A drawn element on the canvas, by its CSS class name (e.g. `rect_a1b2`).
+ * Inside the canvas frame, so a thumbnail capture's off-screen copy of the
+ * page, which keeps the class names, doesn't match a second time.
+ */
+export const canvasElement = (page, className) => page.locator(`[data-testid="canvas-frame"] [data-scamp-id="${className}"]`);
 /** The scaled frame the canvas renders inside. */
 export const canvasFrame = (page) => page.locator('[data-testid="canvas-frame"]');
 /** The toolbar button for a given tool (exposed via role=button + accessible name). */

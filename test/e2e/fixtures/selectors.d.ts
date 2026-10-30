@@ -14,7 +14,11 @@ import type { Locator, Page } from '@playwright/test';
  * inline on the canvas.
  */
 export declare const pageRoot: (page: Page) => Locator;
-/** A drawn element on the canvas, by its CSS class name (e.g. `rect_a1b2`). */
+/**
+ * A drawn element on the canvas, by its CSS class name (e.g. `rect_a1b2`).
+ * Inside the canvas frame, so a thumbnail capture's off-screen copy of the
+ * page, which keeps the class names, doesn't match a second time.
+ */
 export declare const canvasElement: (page: Page, className: string) => Locator;
 /** The scaled frame the canvas renders inside. */
 export declare const canvasFrame: (page: Page) => Locator;
