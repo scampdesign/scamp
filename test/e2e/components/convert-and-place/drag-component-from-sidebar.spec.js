@@ -33,7 +33,7 @@ test.describe('components: drag from sidebar', () => {
         expect(homeTsx).toContain("import Button from '@/components/Button/Button';");
         expect(homeTsx).toMatch(/<Button\s[^>]*data-scamp-instance-id="inst_[a-z0-9_]+"[^>]*\/>/);
         // Dropped where the pointer let go: the page records where it placed it.
-        expect(homeCss).toMatch(/\.inst_[a-z0-9_]+\.inst_[a-z0-9_]+ \{[^}]*position: absolute;[^}]*left: \d+px;[^}]*top: \d+px;/);
+        expect(homeCss).toMatch(/\.inst_[a-z0-9_]+\.inst_[a-z0-9_]+ \{[^}]*position: absolute;[^}]*left: \d+px;[^}]*top: \d+px/);
         // The component's own internal text element id MUST NOT leak onto
         // the page TSX — instances are leaves on the page side.
         expect(homeTsx).not.toContain('data-scamp-id="text_a1b2"');

@@ -49,6 +49,12 @@ release time.
   preview more closely. For this release you can switch back to the
   previous canvas: open the developer tools, and in the console enter
   `__scampIframeCanvas.set(false)`.
+- **A box that scrolls in your page scrolls on the canvas.** An element
+  with `overflow: auto`, such as a table's container, showed its
+  scrollbars on the canvas, but the mouse wheel moved the canvas instead.
+  Now the wheel scrolls the box under the pointer, and once it reaches
+  the end, the canvas. Hold **Shift** to scroll sideways. The canvas
+  draws these scrollbars lighter, and doesn't save where you scrolled.
 
 **Fixed**
 

@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { useCanvasStore, selectIsRatioLocked } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
+import { CANVAS_SCROLL_EVENT } from './canvasDom';
 import { SelectionOverlay } from './SelectionOverlay';
 import { DrawPreview } from './DrawPreview';
 import { GridOverlay } from './GridOverlay';
@@ -92,6 +93,13 @@ export const CanvasInteractionLayer = ({ frameRef, scale }: Props): JSX.Element 
   // Re-measure the selected element from the DOM whenever anything that
   // could move it changes. useLayoutEffect runs after layout/render but
   // before paint, so the overlay never visibly lags the element.
+  // A scroll container in the page scrolling moves the selection too.
+  const [pageScroll, setPageScroll] = useState(0);
+  useEffect(() => {
+    const handleScroll = (): void => setPageScroll((n) => n + 1);
+    window.addEventListener(CANVAS_SCROLL_EVENT, handleScroll);
+    return () => window.removeEventListener(CANVAS_SCROLL_EVENT, handleScroll);
+  }, []);
   useLayoutEffect(() => {
     if (!selectedElementId) {
       setSelectedRect(null);
@@ -101,7 +109,7 @@ export const CanvasInteractionLayer = ({ frameRef, scale }: Props): JSX.Element 
     // We deliberately depend on `elements` so any change to the canvas
     // (move, resize, panel edit, file reload) re-measures the selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedElementId, elements, scale]);
+  }, [selectedElementId, elements, scale, pageScroll]);
 
   // Escape abandons a drag in flight: the element goes back where it
   // started and nothing is committed. Listening on window rather than the

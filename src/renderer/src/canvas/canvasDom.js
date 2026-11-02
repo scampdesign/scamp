@@ -74,7 +74,39 @@ export const offsetIn = (node, frame) => {
         y += current.offsetTop;
         current = current.offsetParent ?? current.ownerDocument.defaultView?.frameElement ?? null;
     }
+    // A scrolled ancestor moves what's inside it, whether or not it is an offsetParent.
+    for (let a = node.parentElement; isHtmlNode(a) && a !== frame;) {
+        x -= a.scrollLeft;
+        y -= a.scrollTop;
+        a = a.parentElement ?? a.ownerDocument.defaultView?.frameElement ?? null;
+    }
     return { x, y };
+};
+/** Fired on the app's window when a scroll container inside the drawn page scrolls. */
+export const CANVAS_SCROLL_EVENT = 'scamp:canvas-scroll';
+const SCROLLS = new Set(['auto', 'scroll', 'overlay']);
+/** Whether `el` scrolls along an axis and has room left in the direction of `delta`. */
+const hasScrollRoom = (el, overflow, delta, at, client, total) => delta !== 0 && SCROLLS.has(overflow) && (delta > 0 ? at + client < total - 1 : at > 0);
+/**
+ * The page's scroll container under a client point that can still scroll by
+ * (`dx`, `dy`): the innermost, as a browser picks it. Null when none can, so
+ * the canvas pans instead. see docs/notes/iframe-canvas.md
+ */
+export const canvasScrollTargetAt = (clientX, clientY, dx, dy) => {
+    const hit = canvasElementsFromPoint(clientX, clientY).find((node) => node.closest('[data-element-id]') !== null);
+    for (let el = hit ?? null; isHtmlNode(el); el = el.parentElement) {
+        // The page ends at the iframe's body, or (legacy canvas) at the frame.
+        if (el.tagName === 'BODY' || el.dataset['testid'] === 'canvas-frame')
+            return null;
+        const style = el.ownerDocument.defaultView?.getComputedStyle(el);
+        if (style === undefined)
+            return null;
+        if (hasScrollRoom(el, style.overflowY, dy, el.scrollTop, el.clientHeight, el.scrollHeight) ||
+            hasScrollRoom(el, style.overflowX, dx, el.scrollLeft, el.clientWidth, el.scrollWidth)) {
+            return el;
+        }
+    }
+    return null;
 };
 /** The page's nodes under a client point, topmost first. */
 export const canvasElementsFromPoint = (clientX, clientY) => {

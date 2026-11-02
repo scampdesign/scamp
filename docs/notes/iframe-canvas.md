@@ -78,6 +78,22 @@ draw.
   text selected on entry, committed on blur. An instance's prop text edits
   the same way, Enter commits, Escape restores.
 
+## Scroll containers
+
+An element with `overflow: auto` scrolls in the iframe as in the preview,
+scrollbars included, but the interaction layer over the iframe takes every
+pointer and wheel event. So `Viewport`'s wheel handler (no zoom key held)
+asks `canvasScrollTargetAt` for the innermost scroll container under the
+pointer that still has room in that direction, and scrolls it; with none,
+the canvas pans. The scroll is in the page's own pixels, divided by the
+zoom, and never saved.
+
+The selection follows: `offsetIn` subtracts every scrolled ancestor's
+offset, and `IframeCanvas` fires `CANVAS_SCROLL_EVENT` on the app's window
+when the page scrolls, so the interaction layer re-measures. The editor
+sheet only recolours scrollbars (`scrollbar-color`), never resizes them:
+the system's width is what the preview lays out with.
+
 ## Captures
 
 Thumbnails rasterise a copy of the iframe's document (`canvasSnapshotHtml`,

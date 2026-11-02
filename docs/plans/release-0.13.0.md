@@ -22,6 +22,8 @@ the iframe canvas; `SCAMP_E2E_LEGACY_CANVAS=1` runs it on the fallback.
   save of a page with a placed instance.
 - **The project cover stays the home page**, and **the HTML export draws
   an instance's variant**.
+- **Scroll containers scroll on the canvas** under the wheel, then the
+  canvas pans; their scrollbars are drawn lighter (`fix/canvas-scroll-containers`).
 - **Resizable and hideable panels** (`docs/plans/resizable-sidebar-plan.md`).
 
 ## Blockers
@@ -55,6 +57,10 @@ the iframe canvas; `SCAMP_E2E_LEGACY_CANVAS=1` runs it on the fallback.
   placed instances, save a page, and read the diff: placed instances gain
   a `.inst_….inst_…` rule with `position`, `left` and `top`; instances in a
   row, a column or the flow don't change.
+- [ ] **Scroll containers.** In riq-frontend's `AdminAudit` view, the
+  wheel over the table scrolls it, then the canvas once it reaches the
+  end; Shift scrolls sideways; a row selected inside it keeps its outline
+  while it scrolls; the scrollbars look lighter than the system's.
 - [ ] **The fallback.** `__scampIframeCanvas.set(false)` switches to the
   legacy canvas and survives a restart; `set(true)` switches back.
 - [ ] **Resizable panels.** Drag the left panel's edge (200 to 480px) and

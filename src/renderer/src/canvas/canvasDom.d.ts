@@ -32,6 +32,14 @@ export declare const offsetIn: (node: HTMLElement, frame: HTMLElement) => {
     x: number;
     y: number;
 };
+/** Fired on the app's window when a scroll container inside the drawn page scrolls. */
+export declare const CANVAS_SCROLL_EVENT = "scamp:canvas-scroll";
+/**
+ * The page's scroll container under a client point that can still scroll by
+ * (`dx`, `dy`): the innermost, as a browser picks it. Null when none can, so
+ * the canvas pans instead. see docs/notes/iframe-canvas.md
+ */
+export declare const canvasScrollTargetAt: (clientX: number, clientY: number, dx: number, dy: number) => HTMLElement | null;
 /** The page's nodes under a client point, topmost first. */
 export declare const canvasElementsFromPoint: (clientX: number, clientY: number) => Element[];
 /** The first node matching `selector` in the page: in `scope` today, in the iframe when it draws. */
