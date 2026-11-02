@@ -6,6 +6,7 @@ import { generateComponentFromSubtree } from '@lib/extractComponent';
 import { filterUsagesWithPropOverride, findInstanceUsagesAcrossPages, findInstancesWithSlotContent, groupUsagesByPage, } from '@lib/componentUsage';
 import { CONVERT_TO_COMPONENT_EVENT, DETACH_INSTANCE_EVENT, REQUEST_REMOVE_SLOT_EVENT, } from '../ElementContextMenu';
 import { REQUEST_LOCK_PROP_EVENT, } from '../DataPanel';
+import { canvasNodeById } from '../../canvas/canvasDom';
 /**
  * Owns the multi-file component-instance flows that ProjectShell drives
  * through confirmation modals: convert-to-component, lock-prop-with-
@@ -49,8 +50,8 @@ export const useInstanceFlows = ({ project, onProjectChange, projectConfig, onPr
         // Scope to the canvas frame — the layers-panel rows also carry
         // `data-element-id`, and a bare document query would match the (tiny)
         // sidebar row instead of the rendered canvas element.
-        const sourceNode = document.querySelector(`[data-testid="canvas-frame"] [data-element-id="${elementId}"]`);
-        const measured = sourceNode instanceof HTMLElement
+        const sourceNode = canvasNodeById(elementId);
+        const measured = sourceNode !== null
             ? { width: sourceNode.offsetWidth, height: sourceNode.offsetHeight }
             : null;
         try {

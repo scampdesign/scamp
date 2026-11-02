@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/app';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasLocator, pageRoot } from '../fixtures/selectors';
 import { PARITY_FIXTURES, type ParityFixture } from './fixtures';
 import {
   compareGeometry,
@@ -96,10 +96,6 @@ const runParityCheck = async (
       // affordances (the min-height floor) the browser has no counterpart
       // for, and the root is the thing both sides genuinely share.
       await hideCanvasChrome(window);
-      const canvasPng = await window
-        .locator('[data-scamp-id="root"]')
-        .first()
-        .screenshot();
       const shot = await screenshotInBrowser(
         browser,
         {
@@ -109,6 +105,7 @@ const runParityCheck = async (
         },
         { width: Math.round(rootWidth ?? 0), height: 900 }
       );
+      const canvasPng = await canvasLocator(window, '[data-scamp-id="root"]').first().screenshot();
       const diff = await comparePixels(shot.page, canvasPng, shot.png);
       await shot.page.close();
       expect(

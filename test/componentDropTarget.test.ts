@@ -35,6 +35,7 @@ const stubElementsFromPoint = (ids: ReadonlyArray<string>): void => {
   const nodes = ids.map((id) => {
     const node = Object.create(HTMLElement.prototype) as HTMLElement;
     Object.defineProperty(node, 'dataset', { value: { elementId: id } });
+    Object.defineProperty(node, 'nodeType', { value: 1 });
     return node;
   });
   (globalThis as { document?: unknown }).document = {

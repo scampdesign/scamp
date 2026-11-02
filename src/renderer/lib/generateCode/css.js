@@ -4,7 +4,7 @@ import { isGridTable, tableCaptionRule, tableSubgridRule } from '../tableGrid';
 import { tableStyleRules } from '../tableStyle';
 import { aliasSelectors } from "../variantInteractions";
 import { ELEMENT_STATES, orderedVariantKeys, variantKeyParts } from "../element";
-import { breakpointOverrideLines, elementDeclarationLines, sizeDeclarationLines } from "./declarations";
+import { breakpointOverrideLines, elementDeclarationLines, instanceRuleLines } from "./declarations";
 import { classNameFor, computeElementsNeedingPositioningContext } from "./internal";
 import { DESKTOP_BREAKPOINT_ID } from "@shared/types";
 /** True when the override object has any field set — used to decide
@@ -86,11 +86,11 @@ const elementCssChunks = (el, parent, mustEstablishPositioningContext = false) =
     // lands last. Doubling lifts the page rule to (0,2,0) so a size set
     // on the instance reliably beats the component's own width/height.
     if (el.type === 'component-instance') {
-        const sizeLines = sizeDeclarationLines(el, parent);
-        if (sizeLines.length === 0)
+        const ruleLines = instanceRuleLines(el, parent);
+        if (ruleLines.length === 0)
             return [];
         const cls = classNameFor(el);
-        const body = sizeLines.map((line) => `  ${line}`).join('\n');
+        const body = ruleLines.map((line) => `  ${line}`).join('\n');
         return [`.${cls}.${cls} {\n${body}\n}`];
     }
     const chunks = [];

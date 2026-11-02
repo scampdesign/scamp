@@ -1,6 +1,7 @@
 # Rendering the canvas in an iframe — Plan
 
-Status: **proposed** — for review. Premise verified; scope not yet agreed.
+Status: **superseded** by [canvas-rendering-options.md](canvas-rendering-options.md),
+which shipped the iframe canvas (2026-11-02). Phase D below is still to do.
 
 ## Why this, and why now
 

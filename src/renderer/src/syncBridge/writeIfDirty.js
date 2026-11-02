@@ -332,6 +332,7 @@ export const makeWriteIfDirty = (ctx) => (elements, rootElementId, target, custo
                 captureAndPersistProjectThumbnail({
                     projectPath,
                     pageName: thumbName,
+                    cssPath: target.cssPath,
                 });
             });
         }

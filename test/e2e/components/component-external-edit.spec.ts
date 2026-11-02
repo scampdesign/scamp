@@ -3,7 +3,7 @@ import * as path from 'path';
 
 import { test, expect } from '../fixtures/app';
 import { openComponentsSection } from '../fixtures/components';
-import { canvasFrame, componentSidebarItem, pageRoot } from '../fixtures/selectors';
+import { canvasContent, componentSidebarItem, pageRoot } from '../fixtures/selectors';
 
 /**
  * An agent edits a component that isn't open. The page drawing it, and
@@ -84,5 +84,5 @@ test('an outside edit to a component that is not open reaches the page and the e
 
   await openComponentsSection(window);
   await componentSidebarItem(window, 'Card').click();
-  await expect(canvasFrame(window).getByText('Hello').locator('..')).toHaveCSS('background-color', 'rgb(0, 0, 255)');
+  await expect(canvasContent(window).getByText('Hello').locator('..')).toHaveCSS('background-color', 'rgb(0, 0, 255)');
 });

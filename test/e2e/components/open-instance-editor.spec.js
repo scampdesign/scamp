@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/app';
-import { canvasFrame, pageRoot } from '../fixtures/selectors';
+import { canvasContent, pageRoot } from '../fixtures/selectors';
 /**
  * Double-clicking a component instance on the canvas opens that
  * component's editor, and the way back is the view it was opened from.
@@ -85,11 +85,11 @@ test('double-clicking an instance opens its component, and the breadcrumb and Es
     // Back to the view it was opened from, through the breadcrumb.
     await breadcrumb.getByRole('button', { name: 'Home' }).click();
     await expect(breadcrumb).toHaveCount(0);
-    await expect(canvasFrame(window).getByText('Inside the card')).toBeVisible();
+    await expect(canvasContent(window).getByText('Inside the card')).toBeVisible();
     // And again, back with Esc.
     await dblclickAt(window, pageRoot(window).getByText('Inside the card'));
     await expect(breadcrumb).toBeVisible();
     await window.keyboard.press('Escape');
     await expect(breadcrumb).toHaveCount(0);
-    await expect(canvasFrame(window).getByText('Inside the card')).toBeVisible();
+    await expect(canvasContent(window).getByText('Inside the card')).toBeVisible();
 });

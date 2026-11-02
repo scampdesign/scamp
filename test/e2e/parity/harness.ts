@@ -37,8 +37,9 @@ export const MEASURE_SCRIPT = `(() => {
   // a page root and a component root are both "root". Qualify by the
   // owning instance so the two don't collide — and so both sides key the
   // same way, since the browser document marks instances the same way.
+  // A prop text carries the attribute too, for the canvas's hit test; it isn't an instance.
   const instanceOf = (el) => {
-    const host = el.closest('[data-scamp-instance-id]');
+    const host = el.closest('[data-scamp-instance-id]:not([data-scamp-prop])');
     return host ? host.getAttribute('data-scamp-instance-id') : null;
   };
   const read = (el) => {
@@ -47,8 +48,12 @@ export const MEASURE_SCRIPT = `(() => {
     const inst = instanceOf(el);
     return inst ? inst + '/' + own : own;
   };
+  // The iframe canvas draws the page in a document of its own;
+  // the oracle's plain document has no such iframe.
+  const canvasIframe = document.querySelector('[data-testid="iframe-canvas"] iframe');
+  const doc = (canvasIframe && canvasIframe.contentDocument) || document;
   const nodes = Array.from(
-    document.querySelectorAll('[data-scamp-id], [class]')
+    doc.querySelectorAll('[data-scamp-id], [class]')
   ).filter((el) => {
     const key = read(el);
     return typeof key === 'string' && key.length > 0;
@@ -379,6 +384,15 @@ export const hideCanvasChrome = async (page: Page): Promise<void> => {
       [${CANVAS_SCOPE_ATTR}] [class*="nteractionLayer"],
       [${CANVAS_SCOPE_ATTR}] [class*="andle"] { visibility: hidden !important; }
     `,
+  });
+  // The iframe canvas draws its outlines inside the page, from marks.
+  await page.evaluate(() => {
+    const doc = document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument;
+    if (!doc) return;
+    const style = doc.createElement('style');
+    style.textContent =
+      '[data-scamp-selected], [data-scamp-editing], [data-scamp-prop-edit] { outline: none !important; }';
+    doc.head.appendChild(style);
   });
 };
 

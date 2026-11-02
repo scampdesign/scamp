@@ -25,6 +25,9 @@ import { CanvasInteractionLayer } from './CanvasInteractionLayer';
 import { CanvasBoundaryOverlay } from './CanvasBoundaryOverlay';
 import { useCanvasTheme } from './useCanvasTheme';
 import styles from './Viewport.module.css';
+import { canvasQuery, canvasQueryAll, clientRectOf, isHtmlNode, offsetIn } from './canvasDom';
+import { IframeCanvas } from './IframeCanvas';
+import { useIframeCanvasFlag } from './iframeCanvasFlag';
 
 // Padding subtracted from the scroll container's inner width when
 // computing fit-to-width zoom. Mirrors the artboard's horizontal
@@ -141,6 +144,11 @@ export const Viewport = ({
   // own box, so a ResizeObserver on the frame alone wouldn't fire.
   const elements = useCanvasStore((s) => s.elements);
   const activeTool = useCanvasStore((s) => s.activeTool);
+  // The page, the component's artboard, and (in `VariantSet`) each variant frame draw in an iframe;
+  // off is the legacy fallback for this release. see docs/notes/iframe-canvas.md
+  const iframeFlag = useIframeCanvasFlag((s) => s.on);
+  // The page's viewport height: what `100vh` means, as the preview's window would give it.
+  const viewportHeight = useCanvasStore((s) => s.canvasMinHeight);
   const userZoom = useCanvasStore((s) => s.userZoom);
   const setFitScale = useCanvasStore((s) => s.setFitScale);
   const { themeCssVars, themeFontFamily } = useCanvasTheme();
@@ -271,8 +279,8 @@ export const Viewport = ({
     // by their transform-free layout box instead.
     // see src/renderer/src/canvas/animatedExtent.ts
     const isAnimated = animatedSubtreePredicate(frame);
-    for (const node of frame.querySelectorAll('[data-element-id]')) {
-      if (!(node instanceof HTMLElement)) continue;
+    for (const node of canvasQueryAll(frame, '[data-element-id]')) {
+      if (!isHtmlNode(node)) continue;
       let nodeRight: number;
       let nodeBottom: number;
       if (isAnimated(node)) {
@@ -281,7 +289,7 @@ export const Viewport = ({
         nodeRight = edges.right;
         nodeBottom = edges.bottom;
       } else {
-        const r = node.getBoundingClientRect();
+        const r = clientRectOf(node);
         nodeRight = (r.right - frameRect.left) / appliedScale;
         nodeBottom = (r.bottom - frameRect.top) / appliedScale;
       }
@@ -335,20 +343,12 @@ export const Viewport = ({
     let right = 0;
     let bottom = 0;
     let found = false;
-    for (const node of frame.querySelectorAll('[data-element-id]')) {
-      if (!(node instanceof HTMLElement)) continue;
+    for (const node of canvasQueryAll(frame, '[data-element-id]')) {
+      if (!isHtmlNode(node)) continue;
       if (node.dataset['elementId'] === rootElementId) continue;
       found = true;
-      // Accumulate the element's offset up the offsetParent chain to the
-      // frame — logical (unscaled) coordinates, matching measureElementInFrame.
-      let offLeft = 0;
-      let offTop = 0;
-      let cur: HTMLElement | null = node;
-      while (cur && cur !== frame) {
-        offLeft += cur.offsetLeft;
-        offTop += cur.offsetTop;
-        cur = cur.offsetParent as HTMLElement | null;
-      }
+      // Logical (unscaled) coordinates, matching measureElementInFrame.
+      const { x: offLeft, y: offTop } = offsetIn(node, frame);
       const cs = getComputedStyle(node);
       const marginRight = parseFloat(cs.marginRight) || 0;
       const marginBottom = parseFloat(cs.marginBottom) || 0;
@@ -362,14 +362,11 @@ export const Viewport = ({
     // padded header) must NOT push the canvas past the root's edge. For
     // non-fixed axes the root fills the canvas, so hug to the content bounds
     // plus the root's own padding (breathing room). see docs/archive/2026-07-17-component-canvas-sizing-plan.md
-    const rootNode = frame.querySelector(`[data-element-id="${rootElementId}"]`);
+    const rootNode = canvasQuery(frame, `[data-element-id="${rootElementId}"]`);
     const rootEl = elements[rootElementId];
-    const rs =
-      rootNode instanceof HTMLElement ? getComputedStyle(rootNode) : null;
-    const widthFixed =
-      rootEl?.widthMode === 'fixed' && rootNode instanceof HTMLElement;
-    const heightFixed =
-      rootEl?.heightMode === 'fixed' && rootNode instanceof HTMLElement;
+    const rs = isHtmlNode(rootNode) ? getComputedStyle(rootNode) : null;
+    const widthFixed = rootEl?.widthMode === 'fixed' && isHtmlNode(rootNode);
+    const heightFixed = rootEl?.heightMode === 'fixed' && isHtmlNode(rootNode);
     const width = widthFixed
       ? (rootNode as HTMLElement).offsetWidth
       : right + (rs ? parseFloat(rs.paddingRight) || 0 : 0);
@@ -563,8 +560,16 @@ export const Viewport = ({
         }}
       >
         <CanvasKeyframes />
-        <CanvasPageStylesheet />
-        {frameContent ?? <ElementRenderer elementId={rootElementId} />}
+        {!iframeFlag && <CanvasPageStylesheet />}
+        {frameContent ??
+          (iframeFlag ? (
+            <IframeCanvas
+              viewportHeight={canvasHeight ?? viewportHeight}
+              overflowWidth={clipContent ? undefined : frameW}
+            />
+          ) : (
+            <ElementRenderer elementId={rootElementId} />
+          ))}
         <CanvasInteractionLayer frameRef={frameRef} scale={scale} />
         {/* Component-editor artboard handles: `onResize` is only supplied in
             component mode, so these are always present there (the artboard IS

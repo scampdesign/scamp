@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/app';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 import { switchBreakpoint } from '../fixtures/breakpoints';
 import { commitInput, panelInputByPrefix, panelSection } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 /**
  * With several elements selected, a panel change reaches each one it
  * fits, as one undo step. see docs/archive/2026-10-14-multi-select-edit-plan.md
@@ -55,7 +55,7 @@ const CSS = [
 ].join('\n');
 test.use({ projectOptions: { format: 'legacy', pageContent: { home: { tsx: TSX, css: CSS } } } });
 const click = async (window, id, shift = false) => {
-    const box = await window.locator(`[data-scamp-id="${id}"]`).boundingBox();
+    const box = await canvasElement(window, id).boundingBox();
     if (box === null)
         throw new Error(`${id} not on screen`);
     if (shift)

@@ -20,16 +20,18 @@ test('styling from the panel applies to the selection, not the element', async (
     const at = frameToClient(metrics, { x: 210, y: 205 });
     await window.mouse.dblclick(at.x, at.y);
     await window.evaluate(() => {
-        const node = document.querySelector('[data-scamp-id^="text_"]');
+        // The iframe canvas draws the text, and holds its selection, in its own document.
+        const doc = (document.querySelector('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? document);
+        const node = doc.querySelector('[data-scamp-id^="text_"]');
         const first = node?.firstChild;
         if (!first)
             throw new Error('no text node');
-        const range = document.createRange();
+        const range = doc.createRange();
         range.setStart(first, 10);
         range.setEnd(first, 14);
         // `document`, not `window`: inside `evaluate` the identifier
         // `window` is the Playwright Page from the enclosing scope.
-        const selection = document.getSelection();
+        const selection = doc.getSelection();
         selection?.removeAllRanges();
         selection?.addRange(range);
         node?.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));

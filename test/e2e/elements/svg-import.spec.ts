@@ -1,14 +1,14 @@
 import { test, expect, stubOpenDialog, writeFixtureSvg } from '../fixtures/app';
 import { dragInFrame, selectTool } from '../fixtures/canvas';
 import { panelSection } from '../fixtures/panel';
-import { canvasElementsByPrefix, canvasFrame, pageRoot } from '../fixtures/selectors';
+import { canvasElementsByPrefix, canvasLocator, pageRoot } from '../fixtures/selectors';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 
 // The canvas SVG element: a real <svg> carrying a data-scamp-id. Editor
 // chrome (selection lock badge, tabler icons) also renders <svg>s, but
 // only canvas elements carry data-scamp-id — so this is unambiguous.
 const canvasSvg = (page: import('@playwright/test').Page) =>
-  canvasFrame(page).locator('svg[data-scamp-id]');
+  canvasLocator(page, 'svg[data-scamp-id]');
 
 /** Open the image tool WITHOUT clearing the current selection (unlike the
  *  keyboard shortcut, which clicks the canvas first). */

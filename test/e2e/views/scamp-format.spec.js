@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/app';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { openComponentsSection, openPagesSection } from '../fixtures/components';
-import { componentSidebarItem, pageRoot, pageSidebarItem } from '../fixtures/selectors';
+import { canvasElement, canvasLocator, componentSidebarItem, pageRoot, pageSidebarItem } from '../fixtures/selectors';
 import { waitForSaved } from '../fixtures/assertions';
 const FIXTURE = path.resolve(__dirname, '../../../node_modules/scampjs/fixtures/contract-0');
 test.use({ projectOptions: { sourceDir: FIXTURE, name: 'contract-0' } });
@@ -30,8 +30,8 @@ test('the contract fixture opens as a scamp project and is left byte-identical',
     await pageSidebarItem(window, 'lobby').click();
     await expect(pageRoot(window)).toBeVisible();
     // Two players in the samples → two LinkCard instances; the waiting note shows.
-    await expect(window.locator('[data-scamp-instance-id="inst_2c40"]')).toHaveCount(2);
-    await expect(window.locator('[data-scamp-id="waiting_note_e1f5"]')).toHaveCount(1);
+    await expect(canvasLocator(window, '[data-scamp-instance-id="inst_2c40"]')).toHaveCount(2);
+    await expect(canvasElement(window, 'waiting_note_e1f5')).toHaveCount(1);
     await waitForSaved(window);
     expect(await project.readFile('views/Lobby/Lobby.tsx')).toBe(before);
     expect(await project.readFile('views/Lobby/Lobby.module.css')).toBe(beforeCss);

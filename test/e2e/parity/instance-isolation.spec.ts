@@ -76,8 +76,10 @@ test.describe('canvas: page styles stay out of component instances', () => {
     await expect(pageRoot(window)).toBeVisible();
 
     const measured = await window.evaluate(() => {
-      const inner = document.querySelector(
-        '[data-scamp-instance-id] [data-scamp-id="root"]'
+      // The iframe canvas draws in its own document, with no instance wrapper.
+      const drawn = document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument;
+      const inner = (drawn ?? document).querySelector(
+        '[data-scamp-instance-id] [data-scamp-id="root"], [data-scamp-instance-id][data-scamp-id="root"]'
       );
       if (!inner) return null;
       const el = inner as HTMLElement;

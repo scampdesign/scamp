@@ -1,5 +1,6 @@
 import { useLayoutEffect, useState } from 'react';
 import styles from './GridOverlay.module.css';
+import { canvasNodeById } from './canvasDom';
 
 type Props = {
   /** The selected grid container's `data-element-id`. */
@@ -62,9 +63,7 @@ export const GridOverlay = ({
   const [lines, setLines] = useState<Lines | null>(null);
 
   useLayoutEffect(() => {
-    const node = document.querySelector(
-      `[data-element-id="${elementId}"]`
-    ) as HTMLElement | null;
+    const node = canvasNodeById(elementId);
     if (!node) {
       setLines(null);
       return;

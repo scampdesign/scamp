@@ -5,9 +5,9 @@ import { generateCode } from '@lib/generateCode';
 import { DEFAULT_BREAKPOINTS } from '@shared/types';
 import { parseCode } from '@lib/parseCode';
 /**
- * A component instance owns exactly one thing on the page it sits on: its
- * size. It carries that as a page CSS class forwarded to the component's
- * root through the `className` prop.
+ * A component instance owns two things on the page it sits on: its size,
+ * and where the page places it. It carries them as a page CSS class
+ * forwarded to the component's root through the `className` prop.
  * see docs/notes/components-data-model.md
  */
 const makeRoot = (childIds) => ({
@@ -28,6 +28,7 @@ const makeInstance = (overrides = {}) => ({
     ...DEFAULT_RECT_STYLES,
     id: 'c7d7',
     type: 'component-instance',
+    position: 'static',
     parentId: ROOT_ELEMENT_ID,
     childIds: [],
     widthMode: 'auto',
@@ -83,6 +84,60 @@ describe('component instance size — generateCode', () => {
     it('emits no size rule for an instance whose only styling is a prop override', () => {
         const { css } = generatePage(makeInstance({ propOverrides: { label: 'Go' } }));
         expect(css).not.toContain('inst_c7d7');
+    });
+});
+describe('component instance placement', () => {
+    // A dropped or dragged instance is `auto` at its x / y: out of the
+    // page's flow, like any element the canvas places.
+    const placed = () => makeInstance({ position: 'auto', x: 120, y: 80 });
+    it('writes the position of an instance the page places', () => {
+        const { css } = generatePage(placed());
+        expect(css).toContain('.inst_c7d7.inst_c7d7 {\n  position: absolute;\n  left: 120px;\n  top: 80px;\n}');
+    });
+    it('forwards the class of a placed instance, so its root takes the position', () => {
+        const { tsx } = generatePage(placed());
+        expect(tsx).toContain('<Button data-scamp-instance-id="inst_c7d7" className={styles.inst_c7d7} />');
+    });
+    it('writes size and position in one rule', () => {
+        const { css } = generatePage(makeInstance({ position: 'auto', x: 10, y: 20, widthMode: 'fixed', widthValue: 200 }));
+        expect(css).toContain('.inst_c7d7.inst_c7d7 {\n  width: 200px;\n  position: absolute;\n  left: 10px;\n  top: 20px;\n}');
+    });
+    it('round-trips a placed instance back to the same place', () => {
+        const instance = placed();
+        const { tsx, css } = generatePage(instance);
+        expect(parseCode(tsx, css).elements['c7d7']).toEqual(instance);
+    });
+    it('writes no position for an instance its flex parent lays out', () => {
+        const { css } = generateCode({
+            elements: {
+                [ROOT_ELEMENT_ID]: { ...makeRoot(['c7d7']), display: 'flex' },
+                c7d7: makeInstance({ position: 'auto', x: 120, y: 80 }),
+            },
+            rootId: ROOT_ELEMENT_ID,
+            pageName: 'profile',
+        });
+        expect(css).not.toContain('inst_c7d7');
+    });
+    it('reads an instance the file leaves in the flow as static, and writes it back unchanged', () => {
+        const tsx = [
+            "import styles from './profile.module.css';",
+            "import Button from '@/components/Button/Button';",
+            '',
+            'export default function Profile() {',
+            '  return (',
+            '    <div data-scamp-id="root" className={styles.root}>',
+            '      <Button data-scamp-instance-id="inst_c7d7" />',
+            '    </div>',
+            '  );',
+            '}',
+            '',
+        ].join('\n');
+        const css = '.root {\n  width: 100%;\n  min-height: 100vh;\n  position: relative;\n}\n';
+        const parsed = parseCode(tsx, css);
+        const instance = parsed.elements['c7d7'];
+        expect(instance?.position).toBe('static');
+        const again = generateCode({ elements: parsed.elements, rootId: ROOT_ELEMENT_ID, pageName: 'profile' });
+        expect(again.css).not.toContain('inst_c7d7');
     });
 });
 describe('component instance size — round-trip', () => {

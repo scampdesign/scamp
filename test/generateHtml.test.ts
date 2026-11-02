@@ -75,6 +75,7 @@ const instance = (
 ): ScampElement =>
   makeEl(id, {
     type: 'component-instance',
+    position: 'static',
     componentName: 'SidebarRow',
     instanceId,
     // Matches `makeComponentInstance`: an instance has no intrinsic size,
@@ -343,6 +344,7 @@ describe('generateHtml — nested components', () => {
       makeRoot(['n1']),
       makeEl('n1', {
         type: 'component-instance',
+        position: 'static',
         componentName: 'SidebarRow',
         instanceId: 'inst_b111',
         // As above: a real instance is auto on both axes.
@@ -371,6 +373,7 @@ describe('generateHtml — nested components', () => {
         makeRoot(['n1']),
         makeEl('n1', {
           type: 'component-instance',
+          position: 'static',
           componentName: 'Loop',
           instanceId: 'inst_c222',
         }),
@@ -391,6 +394,7 @@ describe('collectExpandedInstances', () => {
       makeRoot(['n1']),
       makeEl('n1', {
         type: 'component-instance',
+        position: 'static',
         componentName: 'SidebarRow',
         instanceId: 'inst_b111',
         // As above: a real instance is auto on both axes.
@@ -467,6 +471,7 @@ describe('collectExpandedInstances', () => {
         makeRoot(['n1']),
         makeEl('n1', {
           type: 'component-instance',
+          position: 'static',
           componentName: 'Loop',
           instanceId: 'inst_c222',
         }),
@@ -648,6 +653,7 @@ describe('generateHtml — repeats and show flags', () => {
       { ...makeRoot(['inst']), samples: { cards: [{ title: 'First' }, { title: 'Second' }] } },
       makeEl('inst', {
         type: 'component-instance',
+        position: 'static',
         componentName: 'Card',
         instanceId: 'inst_inst',
         propOverrides: {},
@@ -659,5 +665,88 @@ describe('generateHtml — repeats and show flags', () => {
     expect(html).toContain('>First</h2>');
     expect(html).toContain('>Second</h2>');
     expect(html).not.toContain('Default');
+  });
+});
+
+describe('generateHtml — instance variants', () => {
+  const withAxes = (): ComponentTree => {
+    const tree = sidebarRow();
+    const root = tree.elements[ROOT_ELEMENT_ID];
+    if (root === undefined) throw new Error('no root');
+    tree.elements[ROOT_ELEMENT_ID] = {
+      ...root,
+      variantAxes: [{ prop: 'variant', values: ['default', 'outline'], defaultValue: 'default' }],
+    };
+    return tree;
+  };
+  const options = { componentTrees: { SidebarRow: withAxes() } };
+
+  it('writes the picked value on the expanded root', () => {
+    const html = render([makeRoot(['i1']), instance('i1', 'inst_a024', { propOverrides: { variant: 'outline' } })], options);
+    expect(html).toContain('<div class="inst_a024__root" data-variant="outline">');
+  });
+
+  it('writes the default when the instance picks none', () => {
+    const html = render([makeRoot(['i1']), instance('i1', 'inst_a024')], options);
+    expect(html).toContain('<div class="inst_a024__root" data-variant="default">');
+  });
+
+  it('falls back to the default for a value the axis does not have', () => {
+    const html = render([makeRoot(['i1']), instance('i1', 'inst_a024', { propOverrides: { variant: 'ghost' } })], options);
+    expect(html).toContain('data-variant="default"');
+    expect(html).not.toContain('ghost');
+  });
+});
+
+describe('generateHtml — editor ids', () => {
+  const options = { componentTrees: { SidebarRow: sidebarRow() } };
+
+  it('writes no editor attributes by default, as the export needs', () => {
+    const html = render([makeRoot(['a1b2']), makeEl('a1b2')], options);
+    expect(html).not.toContain('data-element-id');
+    expect(html).not.toContain('data-scamp-id');
+  });
+
+  it('marks each page element with its id and its class', () => {
+    const html = render([makeRoot(['a1b2']), makeEl('a1b2')], { ...options, editorIds: true });
+    expect(html).toContain('class="root" data-element-id="root" data-scamp-id="root"');
+    expect(html).toContain('class="rect_a1b2" data-element-id="a1b2" data-scamp-id="rect_a1b2"');
+  });
+
+  it('gives an instance’s expanded root the instance id, and its insides none', () => {
+    const html = render([makeRoot(['i1']), instance('i1', 'inst_a024')], { ...options, editorIds: true });
+    expect(html).toContain('class="inst_a024__root" data-element-id="i1" data-scamp-id="root" data-scamp-instance-id="inst_a024"');
+    expect(html).toContain(
+      'class="inst_a024__label_d3e4" data-scamp-id="label_d3e4" data-scamp-instance-id="i1" data-scamp-prop="label"'
+    );
+    expect(html.match(/data-element-id=/g)?.length).toBe(2);
+  });
+
+  it('keeps the prop-text mark on a root that is itself a prop text', () => {
+    const textRoot: ComponentTree = {
+      rootId: ROOT_ELEMENT_ID,
+      elements: asMap([makeEl(ROOT_ELEMENT_ID, { type: 'text', prop: 'label', text: 'Home', parentId: null })]),
+    };
+    const html = render([makeRoot(['i1']), instance('i1', 'inst_a024')], {
+      ...options,
+      componentTrees: { SidebarRow: textRoot },
+      editorIds: true,
+    });
+    expect(html).toContain('data-scamp-instance-id="i1" data-scamp-prop="label"');
+    expect(html.match(/data-scamp-instance-id=/g)?.length).toBe(1);
+  });
+});
+
+describe('generateHtml — instance placement', () => {
+  const options = { componentTrees: { SidebarRow: sidebarRow() } };
+
+  it('gives a placed instance its page class, so its root takes the position', () => {
+    const html = render([makeRoot(['i1']), instance('i1', 'inst_a024', { position: 'auto', x: 40, y: 30 })], options);
+    expect(html).toContain('<div class="inst_a024__root inst_a024">');
+  });
+
+  it('leaves an instance in the flow without the page class', () => {
+    const html = render([makeRoot(['i1']), instance('i1', 'inst_a024')], options);
+    expect(html).toContain('<div class="inst_a024__root">');
   });
 });

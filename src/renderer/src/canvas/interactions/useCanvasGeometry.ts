@@ -3,6 +3,7 @@ import { type RefObject } from 'react';
 import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID, type ScampElement } from '@lib/element';
 
+import { canvasElementsFromPoint, canvasQuery, clientRectOf, isHtmlNode, offsetIn } from '../canvasDom';
 import { elementIdOf } from './canvasHitTest';
 import type { CanvasGeometry, SelectedRect } from './types';
 
@@ -47,20 +48,10 @@ export const useCanvasGeometry = (
   const measureElementInFrame = (id: string): SelectedRect | null => {
     const frame = frameRef.current;
     if (!frame) return null;
-    const node = frame.querySelector(`[data-element-id="${id}"]`);
-    if (!(node instanceof HTMLElement)) return null;
+    const node = canvasQuery(frame, `[data-element-id="${id}"]`);
+    if (!isHtmlNode(node)) return null;
 
-    // Walk up the offsetParent chain to the frame, accumulating logical
-    // pixel offsets. offsetLeft/Top are always unaffected by ancestor
-    // `transform: scale` since transforms don't reflow layout.
-    let x = 0;
-    let y = 0;
-    let current: HTMLElement | null = node;
-    while (current && current !== frame) {
-      x += current.offsetLeft;
-      y += current.offsetTop;
-      current = current.offsetParent as HTMLElement | null;
-    }
+    const { x, y } = offsetIn(node, frame);
 
     // A component-instance wrapper is structurally 0-sized on at least one
     // axis: the component renders with absolute positioning, so its content
@@ -80,7 +71,7 @@ export const useCanvasGeometry = (
       let maxR = -Infinity;
       let maxB = -Infinity;
       for (const desc of node.querySelectorAll('*')) {
-        const r = desc.getBoundingClientRect();
+        const r = clientRectOf(desc);
         if (r.width === 0 && r.height === 0) continue;
         minL = Math.min(minL, r.left);
         minT = Math.min(minT, r.top);
@@ -217,13 +208,13 @@ export const useCanvasGeometry = (
     // container we hit walking outward is the deepest one under the
     // cursor. The chrome layer has no `data-element-id`, so it's
     // skipped naturally.
-    const candidates = document.elementsFromPoint(clientX, clientY);
+    const candidates = canvasElementsFromPoint(clientX, clientY);
     for (const node of candidates) {
       // Component slot drop zone: route the drop into the owning instance
       // (the dropped element becomes page-owned slot content). The zone
       // carries `data-scamp-slot` + `data-slot-owner-id` (the instance's
       // canvas id). see docs/archive/2026-07-16-component-slots-plan.md
-      if (node instanceof HTMLElement && node.dataset['scampSlot']) {
+      if (isHtmlNode(node) && node.dataset['scampSlot']) {
         const ownerId = node.dataset['slotOwnerId'];
         if (
           ownerId &&

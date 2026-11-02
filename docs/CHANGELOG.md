@@ -22,6 +22,35 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Changed**
+
+- **The canvas draws your page the way a browser does.** Scamp now draws
+  the page from the same HTML and CSS it writes, in a document of its
+  own, as the preview does. Breakpoint rules (`@media`) apply at the
+  canvas width, `vh` and `vw` units measure the page, and your page's
+  styles can't mix with Scamp's own, so what you design matches the
+  preview more closely. For this release you can switch back to the
+  previous canvas: open the developer tools, and in the console enter
+  `__scampIframeCanvas.set(false)`.
+
+**Fixed**
+
+- **A component instance you move stays where you put it.** Dragging an
+  instance moved it on the canvas, but the page's files didn't record
+  the move, so it went back when you reopened the page and in the
+  preview. Scamp now writes the instance's `position`, `left`, and `top`
+  to the page's CSS. The first time you save a page with a placed
+  instance, its CSS gains that rule. An instance in a row, a column, or
+  the page's flow doesn't change.
+- **The project's cover on the projects screen shows its home page.** If
+  you saved the home page and opened another page within about a second,
+  the other page could become the cover and stay there.
+- **The HTML export draws an instance in its variant.** An instance set to
+  a variant, such as `variant="outline"`, exported in the component's
+  default look.
+
 ### 0.12.0 (2026-10-30)
 
 **Added**

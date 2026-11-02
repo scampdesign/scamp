@@ -44,7 +44,7 @@ test.describe('text runs', () => {
 
     // Style "alongside" through the same store call the panel makes.
     const styled = await window.evaluate(() => {
-      const el = document.querySelector('[data-scamp-id^="text_"]');
+      const el = (document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? document).querySelector('[data-scamp-id^="text_"]');
       return el?.getAttribute('data-element-id') ?? null;
     });
     expect(styled).not.toBeNull();

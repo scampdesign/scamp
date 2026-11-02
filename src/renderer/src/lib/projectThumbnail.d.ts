@@ -40,6 +40,8 @@ export type CaptureProjectThumbnailInputs = {
     projectPath: string;
     /** The page that was just saved. Anything but home is ignored. */
     pageName: string;
+    /** Its CSS file, which the canvas must still be showing when the capture runs. */
+    cssPath: string;
 };
 /** Fire-and-forget; never blocks the underlying save. */
 export declare const captureAndPersistProjectThumbnail: (inputs: CaptureProjectThumbnailInputs) => void;

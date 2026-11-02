@@ -54,6 +54,15 @@ found on its first run are fixed: the `align-items` default
 closed when the canvas started loading the page's own stylesheet
 ([note](canvas-injected-stylesheet.md)).
 
+## The iframe canvas
+
+The canvas side is measured inside the canvas iframe (`MEASURE_SCRIPT`
+falls back to `document` on the oracle's page, which has none, and on the
+legacy canvas, `SCAMP_E2E_LEGACY_CANVAS=1`). Every field is compared: the
+iframe draws the legacy canvas's canvas-only root floor, so a view root
+whose saved CSS has no `min-height` still measures as the oracle's `100vh`
+one does. see docs/notes/iframe-canvas.md
+
 ## Fixtures must not depend on text metrics
 
 The canvas runs in Electron's Chromium and the oracle in a standalone

@@ -4,6 +4,7 @@
 // found, reparent on release. The destination logic — gap-line + insert
 // index for flow targets, drop point for absolute targets — lives here so
 // neither hook duplicates it. see docs/plans/canvas-drag-reparent-plan.md
+import { canvasElementsFromPoint } from '../canvasDom';
 import type { ScampElement } from '@lib/element';
 import { isColumnDirection } from '@lib/flexAxis';
 import { wouldCreateComponentCycle } from '@lib/componentUsage';
@@ -106,7 +107,7 @@ export const flowIndicator = (
 
   const siblingIds = parent.childIds.filter((id) => id !== draggedId);
   let hitSiblingId: string | null = null;
-  for (const node of document.elementsFromPoint(clientX, clientY)) {
+  for (const node of canvasElementsFromPoint(clientX, clientY)) {
     const id = elementIdOf(node);
     if (id && siblingIds.includes(id)) {
       hitSiblingId = id;

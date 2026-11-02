@@ -1,0 +1,161 @@
+import { test, expect } from '../fixtures/app';
+import { IFRAME_CANVAS, pageRoot } from '../fixtures/selectors';
+import { PARITY_FIXTURES } from './fixtures';
+import { compareComputed, compareGeometry, computedInBrowser, describeComputed, describeDivergences, launchTruthBrowser, measure, measureInBrowser, } from './harness';
+/**
+ * Every parity fixture on the iframe canvas, measured against the browser
+ * drawing the SAVED file (`parity.spec.ts` uses the fixture's own CSS). The
+ * canvas-only root floor is set aside first, since the file never has it.
+ * see docs/notes/iframe-canvas.md
+ */
+const TOLERANCE_PX = 1;
+const page = (body) => `import styles from './home.module.css';
+
+export default function Home() {
+  return (
+${body}
+  );
+}
+`;
+/** Fails on today's canvas: `vh` there is the app window's height, not the artboard's. */
+const VIEWPORT_UNITS = {
+    name: 'viewport-height-units',
+    why: 'A `vh` height follows the viewport. On the canvas the viewport is the Electron window; in an iframe it is the artboard.',
+    tsx: page(`    <div data-scamp-id="root" className={styles.root}>
+      <div data-scamp-id="half_v001" className={styles.half_v001} />
+    </div>`),
+    html: `    <div class="root">
+      <div class="half_v001"></div>
+    </div>`,
+    css: `.root {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
+.half_v001 {
+  width: 200px;
+  height: 50vh;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  background: #333333;
+}
+`,
+};
+const FIXTURES = [...PARITY_FIXTURES, VIEWPORT_UNITS];
+/** `inst_a024__root` is the oracle's `inst_a024/root`. */
+const KEY_SCRIPT = `
+  const keyOf = (el) => {
+    const first = el.classList[0];
+    if (!first) return null;
+    const parts = first.split('__');
+    return parts.length > 1 ? parts[parts.length - 2] + '/' + parts[parts.length - 1] : first;
+  };`;
+const MEASURE_IFRAME = `(() => {${KEY_SCRIPT}
+  const nodes = Array.from(document.querySelectorAll('[class]'));
+  const root = nodes.find((el) => keyOf(el) === 'root');
+  if (!root) return null;
+  const rootRect = root.getBoundingClientRect();
+  const out = {};
+  for (const el of nodes) {
+    const key = keyOf(el);
+    if (!key || out[key] || !/^[a-z][a-z0-9_]*([/][a-z][a-z0-9_]*)?$/i.test(key)) continue;
+    const r = el.getBoundingClientRect();
+    out[key] = { x: r.left - rootRect.left, y: r.top - rootRect.top, w: r.width, h: r.height };
+  }
+  return out;
+})()`;
+const COMPUTED_IFRAME = (props) => `(() => {${KEY_SCRIPT}
+  const props = ${JSON.stringify(props)};
+  const out = {};
+  for (const el of document.querySelectorAll('[class]')) {
+    const key = keyOf(el);
+    if (!key || out[key] || !/^[a-z][a-z0-9_]*$/i.test(key)) continue;
+    const cs = getComputedStyle(el);
+    const entry = {};
+    for (const p of props) entry[p] = cs.getPropertyValue(p).trim();
+    out[key] = entry;
+  }
+  return out;
+})()`;
+const iframeCanvas = async (window) => {
+    await window.evaluate(() => globalThis.__scampIframeCanvas.set(true));
+    const handle = await window.locator('[data-testid="iframe-canvas"] iframe').elementHandle();
+    const frame = await handle?.contentFrame();
+    if (!frame)
+        throw new Error('no iframe canvas');
+    await expect.poll(() => frame.evaluate(() => document.querySelector('.root') !== null)).toBe(true);
+    return frame;
+};
+/**
+ * The browser renders the page's CSS as saved, which is what the preview
+ * loads. The app may rewrite a seeded file when it opens it (a page becomes
+ * a view, and its root loses `min-height: 100vh`), and the canvas must match
+ * the file the preview runs, not the fixture as written.
+ */
+const truthFor = async (fixture, savedCss, themeCss, width) => {
+    const browser = await launchTruthBrowser();
+    try {
+        const css = fixture.components ? fixture.css : savedCss;
+        const source = { html: fixture.html, css: `${css}\n${fixture.truthCss ?? ''}`, themeCss };
+        const viewport = { width, height: 900 };
+        return {
+            geometry: await measureInBrowser(browser, source, viewport),
+            computed: fixture.computed ? await computedInBrowser(browser, source, viewport, fixture.computed) : null,
+        };
+    }
+    finally {
+        await browser.close();
+    }
+};
+for (const fixture of FIXTURES) {
+    test.describe(`iframe C1: ${fixture.name}`, () => {
+        test.use({
+            projectOptions: {
+                ...(fixture.components
+                    ? {
+                        format: 'nextjs',
+                        components: fixture.components.map((c) => ({ name: c.name, tsxContent: c.tsx, cssContent: c.css })),
+                    }
+                    : {}),
+                pageContent: { home: { tsx: fixture.tsx, css: fixture.css } },
+            },
+        });
+        test('the iframe canvas matches the browser', async ({ window, project }) => {
+            await expect(pageRoot(window)).toBeVisible();
+            const today = await measure(window);
+            const frame = await iframeCanvas(window);
+            // The truth here is the saved file; the root's 900px floor is the
+            // canvas's own, as on today's canvas, and the file never says so.
+            await frame.evaluate(() => {
+                const root = document.querySelector('[data-element-id="root"]');
+                if (root)
+                    root.style.minHeight = '';
+            });
+            const mine = (await frame.evaluate(MEASURE_IFRAME));
+            if (mine === null)
+                throw new Error('no root in the iframe');
+            const width = Math.round(mine['root']?.w ?? 0);
+            const saved = await project.readPage('home');
+            const truth = await truthFor(fixture, saved.css, await project.readTheme(), width);
+            const todayDiffs = compareGeometry(today, truth.geometry, TOLERANCE_PX);
+            test.info().annotations.push({
+                type: 'today',
+                description: todayDiffs.length === 0 ? 'today matches' : describeDivergences(todayDiffs),
+            });
+            const diffs = compareGeometry(mine, truth.geometry, TOLERANCE_PX);
+            expect(diffs, describeDivergences(diffs)).toEqual([]);
+            if (fixture.computed && truth.computed) {
+                const computed = (await frame.evaluate(COMPUTED_IFRAME(fixture.computed)));
+                const cdiffs = compareComputed(computed, truth.computed);
+                expect(cdiffs, describeComputed(cdiffs)).toEqual([]);
+            }
+            // Only on the legacy canvas is the "today" side something other than the iframe.
+            if (fixture === VIEWPORT_UNITS && !IFRAME_CANVAS) {
+                // The point of the fixture: today's canvas gets this wrong.
+                expect(todayDiffs.length, 'today’s canvas diverges on vh').toBeGreaterThan(0);
+            }
+        });
+    });
+}

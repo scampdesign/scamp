@@ -57,6 +57,29 @@ export const fillHeightKind = (
   return el.alignSelf === 'auto' || el.alignSelf === 'stretch' ? 'align-self' : null;
 };
 
+/**
+ * A component instance's page rule: its size, and where the page places it.
+ * Placement is written only for an instance out of its parent's flow
+ * (`position: auto` in a parent that doesn't lay it out, or an explicit
+ * `absolute` / `fixed`): in a flex or grid parent, or a slot, the layout
+ * places it, as it does any element. Empty when the page sets neither, so
+ * an instance at its own size in the flow keeps a bare tag.
+ */
+export const instanceRuleLines = (
+  el: ScampElement,
+  parent?: ScampElement | null
+): string[] => {
+  const parentDisplay = effectiveDisplay(parent ?? null);
+  const inLayoutParent =
+    parentDisplay === 'flex' || parentDisplay === 'grid' || parent?.type === 'component-instance';
+  const placed =
+    el.position === 'auto' ? !inLayoutParent : el.position === 'absolute' || el.position === 'fixed';
+  const sizeLines = sizeDeclarationLines(el, parent);
+  if (!placed) return sizeLines;
+  const keyword = el.position === 'auto' ? 'absolute' : el.position;
+  return [...sizeLines, `position: ${keyword};`, `left: ${el.x}px;`, `top: ${el.y}px;`];
+};
+
 export const sizeDeclarationLines = (
   el: ScampElement,
   parent?: ScampElement | null

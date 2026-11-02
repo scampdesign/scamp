@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/app';
 import { dragInFrame, selectTool } from '../fixtures/canvas';
 import { drawAndSelectRect, panelSection, } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasLocator, pageRoot } from '../fixtures/selectors';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 test.describe('elements: list context defaults', () => {
     test('drawing a rect inside a <ul> defaults its tag to <li>', async ({ window, project, }) => {
@@ -15,7 +15,7 @@ test.describe('elements: list context defaults', () => {
         await selectTool(window, 'r');
         await dragInFrame(window, { x: 120, y: 120 }, { x: 300, y: 240 });
         // Pick the nested rect by excluding the outer's own data-scamp-id.
-        const nestedRect = window.locator(`[data-scamp-id^="rect_"]:not([data-scamp-id="${outerClass}"])`).first();
+        const nestedRect = canvasLocator(window, `[data-scamp-id^="rect_"]:not([data-scamp-id="${outerClass}"])`).first();
         await nestedRect.waitFor();
         const nestedClass = await nestedRect.getAttribute('data-scamp-id');
         if (!nestedClass || nestedClass === outerClass) {

@@ -8,6 +8,7 @@ import { EnumSelect } from '../controls/EnumSelect';
 import { SegmentedControl } from '../controls/SegmentedControl';
 import { Section, Row } from './Section';
 import styles from './ExportSection.module.css';
+import { canvasNodeById, canvasQuery, isHtmlNode } from '../../canvas/canvasDom';
 const FORMAT_OPTIONS = [
     { value: 'png', label: 'PNG' },
     { value: 'svg', label: 'SVG' },
@@ -17,7 +18,12 @@ const SCALE_OPTIONS = [
     { value: '2', label: '2×' },
     { value: '3', label: '3×' },
 ];
-const findCanvasFrame = () => document.querySelector('[data-testid="canvas-frame"]');
+// The iframe canvas draws the page inside the frame, in its own body.
+const findCanvasFrame = () => {
+    const frame = document.querySelector('[data-testid="canvas-frame"]');
+    const body = canvasQuery(frame, 'body');
+    return isHtmlNode(body) ? body : frame;
+};
 /**
  * Look up an element node by id, *scoped to the canvas frame*. The
  * layers panel (`ElementTree`) also tags its rows with
@@ -26,12 +32,7 @@ const findCanvasFrame = () => document.querySelector('[data-testid="canvas-frame
  * of the rendered canvas element. Scoping to the frame guarantees we
  * grab the actual design content.
  */
-const findElementNode = (elementId) => {
-    const frame = findCanvasFrame();
-    if (!frame)
-        return null;
-    return frame.querySelector(`[data-element-id="${elementId}"]`);
-};
+const findElementNode = (elementId) => canvasNodeById(elementId);
 /**
  * Read the live intrinsic size of a DOM node. The canvas frame and
  * its descendants are sized in CSS px regardless of the user's zoom

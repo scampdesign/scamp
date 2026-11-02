@@ -1,3 +1,7 @@
+// Pure DOM hit-testing for the canvas interaction layer. We rely on
+// `document.elementsFromPoint` rather than maintaining a parallel quadtree
+// — the canvas DOM is small and React's render is the source of truth.
+import { canvasElementsFromPoint, framedElementsFromPoint, hasDataset, isHtmlNode } from '../canvasDom';
 /**
  * Read a node's `data-element-id`, for both HTML and SVG elements. An
  * inline `<svg>` on the canvas is an `SVGElement`, not an `HTMLElement`,
@@ -5,9 +9,7 @@
  * making the svg unhittable by `elementsFromPoint` (can't click-select it,
  * can't target it while dragging). Both element kinds carry `dataset`.
  */
-export const elementIdOf = (node) => node instanceof HTMLElement || node instanceof SVGElement
-    ? node.dataset['elementId']
-    : undefined;
+export const elementIdOf = (node) => hasDataset(node) ? node.dataset['elementId'] : undefined;
 /**
  * Hit-test the cursor against existing elements. Returns the deepest
  * `data-element-id` under the point.
@@ -23,7 +25,7 @@ const owningElementId = (node) => {
     return owner === null ? undefined : elementIdOf(owner);
 };
 export const hitTest = (clientX, clientY) => {
-    const candidates = document.elementsFromPoint(clientX, clientY);
+    const candidates = canvasElementsFromPoint(clientX, clientY);
     for (const node of candidates) {
         const id = owningElementId(node);
         if (id)
@@ -38,7 +40,7 @@ export const hitTest = (clientX, clientY) => {
  * land on one of those first.
  */
 export const instanceAt = (clientX, clientY, isInstance) => {
-    for (const node of document.elementsFromPoint(clientX, clientY)) {
+    for (const node of canvasElementsFromPoint(clientX, clientY)) {
         const id = owningElementId(node);
         if (id !== undefined && isInstance(id))
             return id;
@@ -56,9 +58,9 @@ export const instanceAt = (clientX, clientY, isInstance) => {
  * see docs/archive/2026-07-16-component-slots-plan.md
  */
 export const slotZoneAt = (clientX, clientY) => {
-    const candidates = document.elementsFromPoint(clientX, clientY);
+    const candidates = canvasElementsFromPoint(clientX, clientY);
     for (const node of candidates) {
-        if (!(node instanceof HTMLElement)) {
+        if (!isHtmlNode(node)) {
             // An SVG page element under the cursor blocks slot routing too.
             if (elementIdOf(node))
                 return null;
@@ -83,9 +85,9 @@ export const slotZoneAt = (clientX, clientY) => {
  * of the instance we actually clicked.
  */
 export const propTextHitTest = (clientX, clientY) => {
-    const candidates = document.elementsFromPoint(clientX, clientY);
+    const candidates = canvasElementsFromPoint(clientX, clientY);
     for (const node of candidates) {
-        if (!(node instanceof HTMLElement))
+        if (!isHtmlNode(node))
             continue;
         const instanceId = node.dataset['scampInstanceId'];
         const propName = node.dataset['scampProp'];
@@ -120,8 +122,10 @@ export const inactiveVariantCellAt = (clientX, clientY) => {
         if (cell.dataset['variantLive'] === 'true')
             return null;
         const key = cell.dataset['variantCell'] ?? '';
-        const owner = node.closest('[data-scamp-id]');
-        const className = owner !== null && cell.contains(owner) ? owner.getAttribute('data-scamp-id') : null;
+        // With the iframe canvas the frame is an iframe: look under the point inside it.
+        const inside = node instanceof HTMLIFrameElement ? framedElementsFromPoint(node, clientX, clientY)[0] : undefined;
+        const owner = (inside ?? node).closest('[data-scamp-id]');
+        const className = owner !== null && (inside !== undefined || cell.contains(owner)) ? owner.getAttribute('data-scamp-id') : null;
         return { key: key === '' ? null : key, className };
     }
     return null;

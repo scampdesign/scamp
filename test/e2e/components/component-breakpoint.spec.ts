@@ -8,7 +8,7 @@ import { waitForSaved } from '../fixtures/assertions';
 import { switchBreakpoint } from '../fixtures/breakpoints';
 import { openComponentsSection } from '../fixtures/components';
 import { commitInput, panelInputByPrefix } from '../fixtures/panel';
-import { canvasFrame, componentSidebarItem, pageRoot } from '../fixtures/selectors';
+import { canvasContent, canvasFrame, componentSidebarItem, pageRoot } from '../fixtures/selectors';
 
 /**
  * The component editor has its own breakpoint. It opens at Desktop
@@ -119,12 +119,13 @@ test('the component editor has its own breakpoint, and the page gets its back', 
   await openComponentsSection(window);
   await componentSidebarItem(window, 'Nav').click();
   const frame = canvasFrame(window);
-  await expect(frame.getByText('Dashboard')).toBeVisible();
+  const content = canvasContent(window);
+  await expect(content.getByText('Dashboard')).toBeVisible();
 
   // It opens at Desktop, not at the page's Tablet.
   await expect(sizeButton(window)).toHaveAttribute('data-active-breakpoint', 'desktop');
   await expect(sizeButton(window)).toHaveText(/^Desktop · \d+ × \d+/);
-  const atDesktop = await labelOffset(frame);
+  const atDesktop = await labelOffset(content);
   const frameWidth = (await frame.boundingBox())?.width;
 
   // Tablet applies the component's tablet rule, and the canvas keeps its size.
@@ -134,12 +135,12 @@ test('the component editor has its own breakpoint, and the page gets its back', 
   // Esc closes the popover and stays in the editor.
   await window.keyboard.press('Escape');
   await expect(window.getByTestId('canvas-size-popover')).toHaveCount(0);
-  await expect(frame.getByText('Dashboard')).toBeVisible();
-  await expect.poll(() => labelOffset(frame)).toBe(atDesktop + 23);
+  await expect(content.getByText('Dashboard')).toBeVisible();
+  await expect.poll(() => labelOffset(content)).toBe(atDesktop + 23);
   expect((await frame.boundingBox())?.width).toBe(frameWidth);
 
   // An edit at Tablet lands in the component's tablet block.
-  const item = frame.locator('[data-scamp-id="item_0002"]');
+  const item = content.locator('[data-scamp-id="item_0002"]');
   const box = await item.boundingBox();
   if (box === null) throw new Error('item not on screen');
   await window.mouse.click(box.x + box.width - 4, box.y + box.height / 2);

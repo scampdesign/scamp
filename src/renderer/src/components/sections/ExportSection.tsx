@@ -12,6 +12,7 @@ import { EnumSelect } from '../controls/EnumSelect';
 import { SegmentedControl } from '../controls/SegmentedControl';
 import { Section, Row } from './Section';
 import styles from './ExportSection.module.css';
+import { canvasNodeById, canvasQuery, isHtmlNode } from '../../canvas/canvasDom';
 
 type Scope =
   | { kind: 'page' }
@@ -29,8 +30,12 @@ const SCALE_OPTIONS: ReadonlyArray<{ value: '1' | '2' | '3'; label: string }> = 
   { value: '3', label: '3×' },
 ];
 
-const findCanvasFrame = (): HTMLElement | null =>
-  document.querySelector<HTMLElement>('[data-testid="canvas-frame"]');
+// The iframe canvas draws the page inside the frame, in its own body.
+const findCanvasFrame = (): HTMLElement | null => {
+  const frame = document.querySelector<HTMLElement>('[data-testid="canvas-frame"]');
+  const body = canvasQuery(frame, 'body');
+  return isHtmlNode(body) ? body : frame;
+};
 
 /**
  * Look up an element node by id, *scoped to the canvas frame*. The
@@ -40,13 +45,7 @@ const findCanvasFrame = (): HTMLElement | null =>
  * of the rendered canvas element. Scoping to the frame guarantees we
  * grab the actual design content.
  */
-const findElementNode = (elementId: string): HTMLElement | null => {
-  const frame = findCanvasFrame();
-  if (!frame) return null;
-  return frame.querySelector<HTMLElement>(
-    `[data-element-id="${elementId}"]`
-  );
-};
+const findElementNode = (elementId: string): HTMLElement | null => canvasNodeById(elementId);
 
 /**
  * Read the live intrinsic size of a DOM node. The canvas frame and

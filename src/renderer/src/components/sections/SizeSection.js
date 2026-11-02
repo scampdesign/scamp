@@ -17,6 +17,7 @@ import { combineTypedWithType, rawForType, sizeTypeLabel, sizeTypeOf, } from '@l
 import { lockedSizePatch } from '@lib/aspectRatio';
 import { Section, Row } from './Section';
 import styles from './SizeSection.module.css';
+import { canvasNodeById } from '../../canvas/canvasDom';
 // "Hug" (fit-content) and "Auto" size to content, which a plain (non
 // flex/grid) rectangle can't do — disable those types there.
 const CONTENT_DISABLED_TYPES = new Set(['hug', 'auto']);
@@ -88,13 +89,7 @@ const useMeasuredSize = (elementId, widthMode, heightMode) => {
         };
         /** Find the rendered element inside the canvas frame — NOT inside
          *  the layers panel, which mirrors the same `data-element-id`. */
-        const findCanvasNode = () => {
-            const frame = document.querySelector('[data-testid="canvas-frame"]');
-            if (!(frame instanceof HTMLElement))
-                return null;
-            const node = frame.querySelector(`[data-element-id="${elementId}"]`);
-            return node instanceof HTMLElement ? node : null;
-        };
+        const findCanvasNode = () => canvasNodeById(elementId);
         let observer = null;
         let mutationObserver = null;
         const attach = () => {

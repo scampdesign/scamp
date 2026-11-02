@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures/app';
 import { panelSection } from './fixtures/panel';
-import { pageRoot } from './fixtures/selectors';
+import { canvasElement, pageRoot } from './fixtures/selectors';
 
 /**
  * The Checks section: what the open view got wrong, where the person who
@@ -83,7 +83,8 @@ test.describe('a view with an undeclared token', () => {
       'data-panel-mode',
       'empty'
     );
-    await expect(window.locator('[data-scamp-id="card_a1b2"]')).toHaveClass(/selected/);
+    // Selected: outlined, on today's canvas and on the iframe canvas alike.
+    await expect(canvasElement(window, 'card_a1b2')).toHaveCSS('outline-style', 'solid');
   });
 });
 

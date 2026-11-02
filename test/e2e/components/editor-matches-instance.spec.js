@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/app';
 import { openComponentsSection } from '../fixtures/components';
-import { canvasFrame, componentSidebarItem, pageRoot } from '../fixtures/selectors';
+import { canvasContent, componentSidebarItem, pageRoot } from '../fixtures/selectors';
 /**
  * The component editor draws a component the way an instance of it draws
  * on a page. Both cases came from an imported React sidebar: its tablet
@@ -112,7 +112,7 @@ test('the component editor lays a component out as its instance does', async ({ 
     const onPage = await offsetIn(window, instance.locator('[data-scamp-id="item_0002"]'), instance.locator('[data-scamp-id="label_0003"]'));
     await openComponentsSection(window);
     await componentSidebarItem(window, 'Nav').click();
-    const editor = canvasFrame(window);
+    const editor = canvasContent(window);
     await expect(editor.getByText('Resova iQ')).toBeVisible();
     // The tablet rule doesn't apply at Desktop, however narrow the component's own frame.
     const inEditor = await offsetIn(window, editor.locator('[data-scamp-id="item_0002"]'), editor.locator('[data-scamp-id="label_0003"]'));

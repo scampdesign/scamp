@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../fixtures/app';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 import { panelInputByPrefix, panelSection } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 
 /**
  * Inline, inline-block, contents, list-item, inline-flex and inline-grid
@@ -48,7 +48,7 @@ const CSS = [
 test.use({ projectOptions: { format: 'legacy', pageContent: { home: { tsx: TSX, css: CSS } } } });
 
 const select = async (window: Page, id: string): Promise<void> => {
-  const box = await window.locator(`[data-scamp-id="${id}"]`).boundingBox();
+  const box = await canvasElement(window, id).boundingBox();
   if (box === null) throw new Error(`${id} not on screen`);
   await window.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 };

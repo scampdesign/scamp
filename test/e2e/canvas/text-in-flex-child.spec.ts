@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/app';
 import { clickInFrame, selectTool } from '../fixtures/canvas';
 import { drawAndSelectRect } from '../fixtures/panel';
-import { canvasElementsByPrefix, pageRoot } from '../fixtures/selectors';
+import { canvasElement, canvasElementsByPrefix, pageRoot } from '../fixtures/selectors';
 import { waitForSaved } from '../fixtures/assertions';
 
 // A new project's home page: a centred flex column.
@@ -33,7 +33,7 @@ test('placing text inside a box drawn into a flex root keeps the box where it is
   await expect(pageRoot(window)).toBeVisible();
   const box = await drawAndSelectRect(window, { x: 400, y: 400 }, { x: 1000, y: 530 });
   await waitForSaved(window);
-  const boxNode = window.locator(`[data-scamp-id="${box}"]`);
+  const boxNode = canvasElement(window, box);
   const before = await boxNode.boundingBox();
 
   await selectTool(window, 't');

@@ -4,6 +4,8 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { MAX_VARIANT_COMBINATIONS, authoredVariantGrid, variantCombinationCount, variantGrid, } from '@lib/variantAxes';
 import { ElementRenderer } from './ElementRenderer';
+import { IframeCanvas } from './IframeCanvas';
+import { useIframeCanvasFlag } from './iframeCanvasFlag';
 import { VariantFrameContext } from './variantFrame';
 import styles from './VariantSet.module.css';
 const EMPTY_AXES = [];
@@ -21,6 +23,7 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
     const fillsWidth = useCanvasStore((s) => s.elements[ROOT_ELEMENT_ID]?.widthMode === 'stretch');
     const fillsHeight = useCanvasStore((s) => s.elements[ROOT_ELEMENT_ID]?.heightMode === 'stretch');
     const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
+    const iframeFlag = useIframeCanvasFlag((s) => s.on);
     const count = variantCombinationCount(axes);
     const overCap = count > MAX_VARIANT_COMBINATIONS;
     // Only past the cap does the layout read the overrides, so only then
@@ -100,7 +103,7 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
                         // the root, move what hangs past it, and grow the frame again.
                         minWidth: reach[id] !== undefined && !fillsWidth ? `${reach[id].w}px` : undefined,
                         minHeight: reach[id] !== undefined && !fillsHeight ? `${reach[id].h}px` : undefined,
-                    }, children: _jsx(VariantFrameContext.Provider, { value: { variantKey: cell.key, displayOnly: !live }, children: _jsx(ElementRenderer, { elementId: ROOT_ELEMENT_ID }) }) })] }, cell.key ?? 'default'));
+                    }, children: iframeFlag ? (_jsx(IframeCanvas, { viewportHeight: artboardHeight, variant: { key: cell.key, live, hugWidth: !fillsWidth, hugHeight: !fillsHeight } })) : (_jsx(VariantFrameContext.Provider, { value: { variantKey: cell.key, displayOnly: !live }, children: _jsx(ElementRenderer, { elementId: ROOT_ELEMENT_ID }) })) })] }, cell.key ?? 'default'));
     };
     return (_jsxs("div", { ref: setRef, className: styles.set, "data-testid": "variant-set", children: [_jsx("div", { className: styles.name, children: componentName }), overCap && (_jsxs("div", { className: styles.notice, role: "note", "data-testid": "variant-set-notice", children: [componentName, " has ", count.toLocaleString('en-US'), " combinations, more than the", ' ', MAX_VARIANT_COMBINATIONS, " the canvas can show. It shows each value on its own and each combination that has its own styles. To show another combination, select its values in the Variants section."] })), blocks.map((block, b) => (_jsxs("div", { className: styles.block, children: [block.heading !== null && _jsx("div", { className: styles.heading, children: block.heading }), block.rows.map((row, r) => (_jsx("div", { className: styles.row, children: row.map(renderCell) }, r)))] }, block.heading ?? b)))] }));
 };

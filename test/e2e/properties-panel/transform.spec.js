@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/app';
 import { commitInput, drawAndSelectRect, panelInputByPrefix, panelSection } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 test.describe('properties panel: transform', () => {
     test('"+ Add transform" emits a no-op translate, and editing X writes the offset', async ({ window, project, }) => {
@@ -23,7 +23,7 @@ test.describe('properties panel: transform', () => {
         await expect(pageRoot(window)).toBeVisible();
         const className = await drawAndSelectRect(window, { x: 100, y: 100 }, { x: 260, y: 200 });
         await waitForSaved(window);
-        const box = window.locator(`[data-scamp-id="${className}"]`).first();
+        const box = canvasElement(window, className).first();
         const before = await box.boundingBox();
         const section = panelSection(window, 'Transform');
         await section.getByRole('button', { name: 'Transform' }).click();

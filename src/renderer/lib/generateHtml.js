@@ -18,7 +18,7 @@
  */
 import { expandChildren, resolveAttr, resolveInstanceOverrides, resolveText as resolveRowText, } from './bindingEval';
 import { svgSourceToHtml } from './svgJsx';
-import { sizeDeclarationLines } from './generateCode/declarations';
+import { instanceRuleLines } from './generateCode/declarations';
 import { classNameFor, escapeHtml, tagFor } from './generateCode/internal';
 import { hasRunStyle, isStyled, runClassName, runsOf } from './textRuns';
 /**
@@ -119,6 +119,8 @@ const renderInstance = (el, scope, level, options, activeComponents) => {
         slots: groupSlotContent(el, scope),
         isComponent: true,
         binding: rootBinding(tree.elements, tree.rootId),
+        ownerInstanceId: el.id,
+        ownerInstanceMark: el.instanceId ?? '',
     };
     // The page sizes an instance through the component's `className` prop, so
     // in the app the component root renders with both its own `.root` and the
@@ -126,8 +128,17 @@ const renderInstance = (el, scope, level, options, activeComponents) => {
     // keeps the cascade identical and lets the page's rule ship unchanged.
     // Emitted only when the instance actually has a size, matching the
     // condition `generateTsx` and `elementCssChunks` both use.
-    const extraClass = sizeDeclarationLines(el).length > 0 ? instanceClass : null;
-    return renderElement(root, childScope, level, options, extraClass, activeComponents, name);
+    const extraClass = instanceRuleLines(el, el.parentId === null ? null : scope.elements[el.parentId]).length > 0
+        ? instanceClass
+        : null;
+    // The root carries each variant value the instance picks, as the component's
+    // TSX writes it, so the `.root[data-<axis>]` rules match.
+    const axes = root.variantAxes ?? [];
+    const picked = Object.fromEntries(axes.map((axis) => {
+        const value = childScope.propValues[axis.prop];
+        return [`data-${axis.prop}`, value !== undefined && axis.values.includes(value) ? value : axis.defaultValue];
+    }));
+    return renderElement(axes.length > 0 ? { ...root, attributes: { ...root.attributes, ...picked } } : root, childScope, level, options, extraClass, activeComponents, name, el.id);
 };
 /**
  * Render one element and its descendants.
@@ -135,7 +146,9 @@ const renderInstance = (el, scope, level, options, activeComponents) => {
  * `extraClass` is the page-owned class an expanded component root also
  * carries; null everywhere else.
  */
-const renderElement = (el, scope, level, options, extraClass, activeComponents, enteringComponent) => {
+const renderElement = (el, scope, level, options, extraClass, activeComponents, enteringComponent, 
+/** The page element this node stands for, when it isn't `el` itself: an instance's root. */
+ownerId) => {
     const active = enteringComponent === undefined
         ? activeComponents
         : new Set([...activeComponents, enteringComponent]);
@@ -147,6 +160,25 @@ const renderElement = (el, scope, level, options, extraClass, activeComponents, 
     if (extraClass !== null)
         classes.push(extraClass);
     const attrs = [`class="${escapeHtml(classes.join(' '))}"`];
+    if (options.editorIds === true) {
+        const elementId = ownerId ?? (scope.isComponent ? null : el.id);
+        if (elementId !== null)
+            attrs.push(`data-element-id="${escapeHtml(elementId)}"`);
+        attrs.push(`data-scamp-id="${escapeHtml(classNameFor(el))}"`);
+        // The hit-test marks the canvas puts on an instance's prop text and slots.
+        const owner = scope.isComponent ? scope.ownerInstanceId : undefined;
+        const prop = el.type === 'text' && typeof el.prop === 'string' && el.prop.length > 0 ? el.prop : null;
+        // Today's canvas marks an instance's box this way; the iframe's is its root. A prop text's mark wins.
+        if (ownerId !== undefined && (owner === undefined || prop === null)) {
+            attrs.push(`data-scamp-instance-id="${escapeHtml(scope.ownerInstanceMark ?? '')}"`);
+        }
+        if (owner !== undefined && prop !== null) {
+            attrs.push(`data-scamp-instance-id="${escapeHtml(owner)}"`, `data-scamp-prop="${escapeHtml(prop)}"`);
+        }
+        if (owner !== undefined && el.slot !== undefined && el.slot.length > 0) {
+            attrs.push(`data-scamp-slot="${escapeHtml(el.slot)}"`, `data-slot-owner-id="${escapeHtml(owner)}"`);
+        }
+    }
     if (el.type === 'image' && tag === 'img') {
         const src = resolveAttr(el, 'src', scope.binding) ?? el.src ?? '';
         attrs.push(`src="${escapeHtml(rewriteAsset(src, options))}"`);

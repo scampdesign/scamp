@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/app';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasLocator, pageRoot } from '../fixtures/selectors';
 import { PARITY_FIXTURES } from './fixtures';
 import { compareGeometry, comparePixels, describeDivergences, launchTruthBrowser, measure, compareComputed, computedInBrowser, describeComputed, hideCanvasChrome, measureComputed, measureInBrowser, screenshotInBrowser, } from './harness';
 /**
@@ -56,15 +56,12 @@ const runParityCheck = async (fixture, window, themeCss) => {
             // affordances (the min-height floor) the browser has no counterpart
             // for, and the root is the thing both sides genuinely share.
             await hideCanvasChrome(window);
-            const canvasPng = await window
-                .locator('[data-scamp-id="root"]')
-                .first()
-                .screenshot();
             const shot = await screenshotInBrowser(browser, {
                 html: fixture.html,
                 css: `${fixture.css}\n${fixture.truthCss ?? ''}`,
                 themeCss,
             }, { width: Math.round(rootWidth ?? 0), height: 900 });
+            const canvasPng = await canvasLocator(window, '[data-scamp-id="root"]').first().screenshot();
             const diff = await comparePixels(shot.page, canvasPng, shot.png);
             await shot.page.close();
             expect(diff.differingFraction, `canvas and browser paint differently for "${fixture.name}": ` +

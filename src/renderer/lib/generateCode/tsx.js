@@ -4,7 +4,7 @@ import { PASSTHROUGH_PROP, rootClassNameAttribute } from "../classNamePassthroug
 import { ROOT_ELEMENT_ID } from "../element";
 import { hasRunStyle, isStyled, runClassName, runsOf, textFromRuns } from "../textRuns";
 import { collectViewProps, isRowPath, propsTypeSource, viewEventNames, } from "../viewProps";
-import { sizeDeclarationLines } from "./declarations";
+import { instanceRuleLines } from "./declarations";
 import { classNameFor, escapeJsx, jsxText, tagFor } from "./internal";
 const componentNameFromPage = (pageName) => {
     const parts = pageName.split(/[-_]/).filter((part) => part.length > 0);
@@ -131,11 +131,12 @@ const renderElement = (el, elements, level, isComponent, repeatRow) => {
         const attrs = [
             `data-scamp-instance-id="${escapeJsx(el.instanceId ?? '')}"`,
         ];
-        // The page's size class, forwarded to the component's root via its
-        // `className` prop. Only emitted when the instance actually has a
-        // size — `elementCssChunks` skips the rule in that case too, so the
-        // two stay in step and a default-sized instance keeps a bare tag.
-        if (sizeDeclarationLines(el).length > 0) {
+        // The page's class (size and placement), forwarded to the component's
+        // root via its `className` prop. Only emitted when that rule has
+        // something in it — `elementCssChunks` skips the rule otherwise too, so
+        // the two stay in step and an instance at its own size in the flow
+        // keeps a bare tag.
+        if (instanceRuleLines(el, el.parentId === null ? null : elements[el.parentId]).length > 0) {
             attrs.push(`className={styles.${classNameFor(el)}}`);
         }
         // A repeated instance carries the row key; bound props emit as

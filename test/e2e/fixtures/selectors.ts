@@ -1,4 +1,27 @@
-import type { Locator, Page } from '@playwright/test';
+import type { FrameLocator, Locator, Page } from '@playwright/test';
+
+/**
+ * The canvas draws the page in an iframe, and these helpers look inside it.
+ * `SCAMP_E2E_LEGACY_CANVAS=1` runs the suite on the legacy fallback instead,
+ * for as long as it exists. see docs/notes/iframe-canvas.md
+ */
+export const IFRAME_CANVAS = process.env['SCAMP_E2E_LEGACY_CANVAS'] !== '1';
+
+// In a variant set every frame is an iframe; the live one is the editable page.
+const drawn = (page: Page): Page | FrameLocator =>
+  IFRAME_CANVAS
+    ? page.frameLocator('[data-testid="iframe-canvas"]:not([data-variant-live="false"] *) > iframe')
+    : page;
+
+/** The drawn page as a whole: the iframe's body, or the canvas frame on the legacy fallback. */
+export const canvasContent = (page: Page): Locator =>
+  IFRAME_CANVAS ? drawn(page).locator('body') : page.locator('[data-testid="canvas-frame"]');
+
+/** Nodes inside one frame of the variant set, by its key ('' for the default look). */
+export const inVariantCell = (page: Page, key: string, selector: string): Locator => {
+  const cell = page.locator(`[data-variant-cell="${key}"]`);
+  return IFRAME_CANVAS ? cell.frameLocator('iframe').locator(selector) : cell.locator(selector);
+};
 
 /**
  * Centralized query helpers. Everything the specs look up goes
@@ -16,7 +39,11 @@ import type { Locator, Page } from '@playwright/test';
  * inline on the canvas.
  */
 export const pageRoot = (page: Page): Locator =>
-  page.locator('[data-element-id="root"][data-scamp-id="root"]');
+  // A view's root is only as tall as its content, so an empty one is 0px and
+  // reads as hidden; the iframe's body is the drawn page.
+  IFRAME_CANVAS
+    ? drawn(page).locator('body')
+    : page.locator('[data-element-id="root"][data-scamp-id="root"]');
 
 /**
  * A drawn element on the canvas, by its CSS class name (e.g. `rect_a1b2`).
@@ -24,9 +51,15 @@ export const pageRoot = (page: Page): Locator =>
  * page, which keeps the class names, doesn't match a second time.
  */
 export const canvasElement = (page: Page, className: string): Locator =>
-  page.locator(`[data-testid="canvas-frame"] [data-scamp-id="${className}"]`);
+  IFRAME_CANVAS
+    ? drawn(page).locator(`[data-scamp-id="${className}"]`)
+    : page.locator(`[data-testid="canvas-frame"] [data-scamp-id="${className}"]`);
 
 /** The scaled frame the canvas renders inside. */
+/** Any selector, inside the drawn page: the iframe, or the canvas frame on the legacy fallback. */
+export const canvasLocator = (page: Page, selector: string): Locator =>
+  IFRAME_CANVAS ? drawn(page).locator(selector) : page.locator(`[data-testid="canvas-frame"] ${selector}`);
+
 export const canvasFrame = (page: Page): Locator =>
   page.locator('[data-testid="canvas-frame"]');
 
@@ -50,7 +83,7 @@ export const resizeHandle = (
 
 /** Selectors for canvas elements whose class name begins with `prefix`. */
 export const canvasElementsByPrefix = (page: Page, prefix: string): Locator =>
-  page.locator(`[data-scamp-id^="${prefix}"]`);
+  drawn(page).locator(`[data-scamp-id^="${prefix}"]`);
 
 /**
  * The components-section list in the sidebar — the `<ul>` immediately

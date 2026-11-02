@@ -1,3 +1,10 @@
+// Shared cross-parent reparent resolution for the canvas drag paths.
+// Both the move drag (absolute elements) and the reorder drag (flex
+// children) hit-test for a DIFFERENT container under the cursor and, if
+// found, reparent on release. The destination logic — gap-line + insert
+// index for flow targets, drop point for absolute targets — lives here so
+// neither hook duplicates it. see docs/plans/canvas-drag-reparent-plan.md
+import { canvasElementsFromPoint } from '../canvasDom';
 import { isColumnDirection } from '@lib/flexAxis';
 import { wouldCreateComponentCycle } from '@lib/componentUsage';
 import { resolveDropZone } from '@lib/dropZones';
@@ -72,7 +79,7 @@ draggedId, clientX, clientY, geometry) => {
     const containerRect = geometry.measureElementInFrame(parent.id);
     const siblingIds = parent.childIds.filter((id) => id !== draggedId);
     let hitSiblingId = null;
-    for (const node of document.elementsFromPoint(clientX, clientY)) {
+    for (const node of canvasElementsFromPoint(clientX, clientY)) {
         const id = elementIdOf(node);
         if (id && siblingIds.includes(id)) {
             hitSiblingId = id;

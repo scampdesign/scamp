@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures/app';
 import { panelSection } from './fixtures/panel';
-import { pageRoot } from './fixtures/selectors';
+import { canvasElement, pageRoot } from './fixtures/selectors';
 /**
  * The Checks section: what the open view got wrong, where the person who
  * has to fix it can see it.
@@ -73,7 +73,8 @@ test.describe('a view with an undeclared token', () => {
         // The panel leaves its empty (view-level) mode, which is what
         // "an element is now selected" looks like from outside.
         await expect(window.locator('[data-testid="properties-panel"]')).not.toHaveAttribute('data-panel-mode', 'empty');
-        await expect(window.locator('[data-scamp-id="card_a1b2"]')).toHaveClass(/selected/);
+        // Selected: outlined, on today's canvas and on the iframe canvas alike.
+        await expect(canvasElement(window, 'card_a1b2')).toHaveCSS('outline-style', 'solid');
     });
 });
 test.describe('a view with nothing wrong', () => {

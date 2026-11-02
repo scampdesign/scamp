@@ -7,7 +7,7 @@ import {
   openElementContextMenu,
 } from '../fixtures/components';
 import { frameToClient, measureFrame, selectTool } from '../fixtures/canvas';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasLocator, pageRoot } from '../fixtures/selectors';
 import { waitForSaved } from '../fixtures/assertions';
 
 // Backlog-6 story 4: component slots. Covers defining a slot in the
@@ -95,7 +95,7 @@ export default function Card({ children }: CardProps) {
     await dragComponentToCanvas(window, 'Card', drop.x, drop.y);
 
     // The instance renders its slot as a drop zone.
-    const slot = window.locator('[data-scamp-slot]').first();
+    const slot = canvasLocator(window, '[data-scamp-slot]').first();
     await expect(slot).toBeVisible();
     const box = await slot.boundingBox();
     if (!box) throw new Error('slot drop zone has no bounding box');

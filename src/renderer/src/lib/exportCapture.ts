@@ -2,6 +2,7 @@ import { toPng, toSvg } from 'html-to-image';
 
 import { buildFontEmbedCss } from './embedFonts';
 import elementStyles from '../canvas/ElementRenderer.module.css';
+import { EDITOR_MARKS, canvasSnapshotHtml } from '../canvas/IframeCanvas';
 
 /**
  * Inputs for a single capture. The caller resolves the right DOM
@@ -66,7 +67,6 @@ const withChromeClassesHidden = async <T>(
     elementStyles.textEditing,
     elementStyles.propEditAffordance,
   ].filter((c): c is string => typeof c === 'string' && c.length > 0);
-  if (chromeClassNames.length === 0) return fn();
 
   // Capture every element in the subtree (including the root) that
   // currently carries any chrome class, and the specific classes
@@ -75,6 +75,16 @@ const withChromeClassesHidden = async <T>(
   // restore (rare, but cheap insurance).
   const restorations: Array<{ el: Element; classes: string[] }> = [];
   const candidates: Element[] = [node, ...node.querySelectorAll('*')];
+  // The iframe canvas marks its outlines with attributes instead.
+  const marks: Array<{ el: Element; attr: string; value: string }> = [];
+  for (const el of candidates) {
+    for (const attr of EDITOR_MARKS) {
+      const value = el.getAttribute(attr);
+      if (value === null) continue;
+      marks.push({ el, attr, value });
+      el.removeAttribute(attr);
+    }
+  }
   for (const el of candidates) {
     const stripped: string[] = [];
     for (const cls of chromeClassNames) {
@@ -92,6 +102,7 @@ const withChromeClassesHidden = async <T>(
     for (const { el, classes } of restorations) {
       el.classList.add(...classes);
     }
+    for (const { el, attr, value } of marks) el.setAttribute(attr, value);
   }
 };
 
@@ -180,6 +191,38 @@ export const capturePng = async (
   );
 };
 
+/** Rasterise `html` in an off-screen iframe of `width` × `height`. */
+const captureDocumentPng = async (
+  html: string,
+  width: number,
+  height: number,
+  backgroundColor: string | null
+): Promise<string | null> => {
+  const shot = document.createElement('iframe');
+  shot.setAttribute('aria-hidden', 'true');
+  shot.style.cssText = `position:fixed;top:0;left:-100000px;width:${width}px;height:${height}px;border:0;pointer-events:none;`;
+  const loaded = new Promise<void>((resolve) => shot.addEventListener('load', () => resolve(), { once: true }));
+  shot.srcdoc = html;
+  document.body.appendChild(shot);
+  try {
+    await loaded;
+    const doc = shot.contentDocument;
+    if (doc === null) return null;
+    await doc.fonts.ready;
+    const fontEmbedCss = await buildFontEmbedCss(doc.body);
+    return await toPng(doc.body, {
+      width,
+      height,
+      pixelRatio: 1,
+      cacheBust: false,
+      ...(fontEmbedCss.length > 0 ? { fontEmbedCSS: fontEmbedCss } : { skipFonts: true }),
+      ...(backgroundColor !== null ? { backgroundColor } : {}),
+    });
+  } finally {
+    shot.remove();
+  }
+};
+
 /**
  * Capture without touching the live canvas.
  *
@@ -206,6 +249,13 @@ export const captureIsolatedPng = async (inputs: {
   const width = inputs.node.offsetWidth;
   const height = inputs.node.offsetHeight;
   if (width === 0 || height === 0) return null;
+
+  // The iframe canvas: its nodes need its own stylesheets, so the
+  // copy is a document of its own rather than a clone in this one.
+  const drawn = inputs.node.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument;
+  if (drawn !== null && drawn !== undefined) {
+    return captureDocumentPng(canvasSnapshotHtml(drawn), width, height, inputs.backgroundColor);
+  }
 
   // The off-screen placement goes on a WRAPPER, never on the captured node
   // itself. `html-to-image` serialises the node with its own inline styles

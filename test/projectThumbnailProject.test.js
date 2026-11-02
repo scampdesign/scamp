@@ -43,9 +43,11 @@ beforeEach(() => {
 afterEach(() => {
     vi.useRealTimers();
 });
+const HOME = { name: 'home', tsxPath: '/p/app/page.tsx', cssPath: '/p/app/page.module.css' };
+const ABOUT = { name: 'about', tsxPath: '/p/app/about/page.tsx', cssPath: '/p/app/about/page.module.css' };
 const scheduleFor = (projectPath) => {
-    useCanvasStore.setState({ projectPath });
-    captureAndPersistProjectThumbnail({ projectPath, pageName: 'home' });
+    useCanvasStore.setState({ projectPath, activePage: HOME, activeComponent: null });
+    captureAndPersistProjectThumbnail({ projectPath, pageName: 'home', cssPath: HOME.cssPath });
 };
 describe('a scheduled project thumbnail', () => {
     it('does not photograph a project that replaced the one it was scheduled for', async () => {
@@ -66,6 +68,14 @@ describe('a scheduled project thumbnail', () => {
         scheduleFor('/tmp/alpha');
         await vi.advanceTimersByTimeAsync(5000);
         expect(captured.calls).toHaveLength(1);
+    });
+    it('does not photograph another page opened inside the debounce', async () => {
+        // Home saved, then About opened: the canvas now shows About, which
+        // would otherwise be filed as the project's cover.
+        scheduleFor('/tmp/alpha');
+        useCanvasStore.setState({ activePage: ABOUT });
+        await vi.advanceTimersByTimeAsync(5000);
+        expect(captured.calls).toEqual([]);
     });
     it('lets the close path through, since it flushes before the unmount', () => {
         // The store still says alpha here: the flush runs before
