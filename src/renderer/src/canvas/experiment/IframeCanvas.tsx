@@ -7,6 +7,7 @@ import { assemblePageCss, rewriteCssUrls } from '@lib/htmlExportCss';
 import { mediaForViewport } from '@lib/canvasStylesheet';
 import { variantKeyParts } from '@lib/element';
 
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { isHtmlNode, releaseCanvasIframe, setCanvasIframe } from '../canvasDom';
 import { selectionOffsetsWithin } from '../textSelectionOffsets';
 import { useCanvasTheme } from '../useCanvasTheme';
@@ -23,10 +24,23 @@ import styles from './IframeCanvas.module.css';
 
 const SHELL =
   '<!doctype html><html><head><meta charset="utf-8" />' +
-  '<style data-sheet="viewport"></style><style data-sheet="theme"></style><style data-sheet="page"></style></head>' +
+  '<style data-sheet="viewport"></style><style data-sheet="theme"></style><style data-sheet="page"></style>' +
+  '<style data-sheet="chrome"></style></head>' +
   '<body style="margin: 0; min-height: 100vh"></body></html>';
 
 const FONT_LINK = 'link[data-scamp-font-import]';
+
+const SELECTED_ATTR = 'data-scamp-selected';
+
+/**
+ * The editor's marks on the drawn page, as `.element.selected` draws them on
+ * today's canvas. Colors come from the app's chrome, which the iframe can't see.
+ */
+const chromeCss = (accent: string, component: string): string =>
+  // The iframe is as tall as the page, and today's canvas (a div) never scrolls: content past the edge mustn't add scrollbars.
+  'html { overflow: hidden !important; }\n' +
+  `[${SELECTED_ATTR}] { outline: 2px solid ${accent} !important; outline-offset: -2px !important; }\n` +
+  `[${SELECTED_ATTR}][data-scamp-instance-id] { outline-color: ${component} !important; }`;
 
 const PAGE_BODY_STYLE = 'margin: 0; min-height: 100vh';
 
@@ -95,6 +109,8 @@ export const IframeCanvas = ({ viewportHeight, variant }: Props): JSX.Element =>
   const projectPath = useCanvasStore((s) => s.projectPath);
   const legacy = useCanvasStore((s) => s.projectFormat === 'legacy');
   const editingElementId = useCanvasStore((s) => s.editingElementId);
+  const selectedElementIds = useCanvasStore((s) => s.selectedElementIds);
+  const appTheme = useAppTheme();
   // A component's frame is its own size, not a viewport; its `@media` follow
   // the breakpoint picked instead, as today's canvas does.
   const mediaWidth = useCanvasStore((s) =>
@@ -208,6 +224,23 @@ export const IframeCanvas = ({ viewportHeight, variant }: Props): JSX.Element =>
     else iframeCanvasStats.updates.push({ buildMs: built.buildMs, patchMs });
     fitHeight(doc);
   }, [doc, built, themeCss, viewportHeight, bodyStyle, rootId, variant?.key]);
+
+  // Selection outlines. Runs after the patch above, which drops attributes the markup doesn't have.
+  useLayoutEffect(() => {
+    if (doc === null) return;
+    for (const node of doc.querySelectorAll(`[${SELECTED_ATTR}]`)) node.removeAttribute(SELECTED_ATTR);
+    if (!live) return;
+    for (const id of selectedElementIds) {
+      doc.querySelector(`[data-element-id="${CSS.escape(id)}"]`)?.setAttribute(SELECTED_ATTR, '');
+    }
+  }, [doc, built, bodyStyle, selectedElementIds, live]);
+
+  useLayoutEffect(() => {
+    const sheet = doc?.querySelector('style[data-sheet="chrome"]');
+    if (sheet === null || sheet === undefined) return;
+    const app = getComputedStyle(document.documentElement);
+    sheet.textContent = chromeCss(app.getPropertyValue('--accent').trim(), app.getPropertyValue('--component').trim());
+  }, [doc, appTheme]);
 
   // The active theme's tokens, as the canvas frame carries them today.
   useLayoutEffect(() => {
