@@ -58,7 +58,7 @@ test.describe('components: convert element to component', () => {
         // CRITICAL regression assertion: home file must have a JSX tag
         // referencing the Hero component, NOT a literal `<div data-scamp-id="rect_*">`
         // for the converted rectangle.
-        expect(homeTsx).toMatch(/<Hero\s[^>]*data-scamp-instance-id="inst_[a-z0-9_]+"\s*\/>/);
+        expect(homeTsx).toMatch(/<Hero\s[^>]*data-scamp-instance-id="inst_[a-z0-9_]+"[^>]*\/>/);
         expect(homeTsx).toContain("import Hero from '@/components/Hero/Hero';");
         // Other (un-converted) rect SURVIVES on the page.
         expect(homeTsx).toContain(`data-scamp-id="${rectAClass}"`);

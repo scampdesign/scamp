@@ -394,8 +394,12 @@ export const Viewport = ({
     measureFrame();
     const ro = new ResizeObserver(measureFrame);
     ro.observe(frame);
+    // The iframe canvas draws after its own load, and widens to show what
+    // runs past the canvas, neither of which resizes the frame.
+    const iframeHost = frame.querySelector('[data-testid="iframe-canvas"]');
+    if (iframeHost !== null) ro.observe(iframeHost);
     return () => ro.disconnect();
-  }, [measureFrame]);
+  }, [measureFrame, iframeFlag]);
   // Horizontal overflow doesn't change the frame's own box, so the
   // ResizeObserver above won't fire on it — re-measure on tree / size
   // changes too.
