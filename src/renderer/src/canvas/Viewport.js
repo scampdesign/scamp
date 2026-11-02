@@ -14,7 +14,7 @@ import { CanvasInteractionLayer } from './CanvasInteractionLayer';
 import { CanvasBoundaryOverlay } from './CanvasBoundaryOverlay';
 import { useCanvasTheme } from './useCanvasTheme';
 import styles from './Viewport.module.css';
-import { canvasQuery, canvasQueryAll, clientRectOf, isHtmlNode, offsetIn } from './canvasDom';
+import { canvasQuery, canvasQueryAll, canvasScrollTargetAt, clientRectOf, isHtmlNode, offsetIn } from './canvasDom';
 import { IframeCanvas } from './IframeCanvas';
 import { useIframeCanvasFlag } from './iframeCanvasFlag';
 // Padding subtracted from the scroll container's inner width when
@@ -132,8 +132,22 @@ export const Viewport = ({ canvasWidth, canvasHeight, heightIsFixed = false, cli
         if (!container)
             return;
         const handleWheel = (e) => {
-            if (!(e.ctrlKey || e.metaKey))
+            if (!(e.ctrlKey || e.metaKey)) {
+                // A scroll container in the page scrolls first, as in the browser;
+                // the canvas pans once it can't. Shift+wheel scrolls sideways.
+                const sideways = e.shiftKey && e.deltaX === 0;
+                const dx = sideways ? e.deltaY : e.deltaX;
+                const dy = sideways ? 0 : e.deltaY;
+                const target = canvasScrollTargetAt(e.clientX, e.clientY, dx, dy);
+                if (target === null)
+                    return;
+                e.preventDefault();
+                const state = useCanvasStore.getState();
+                // In the page's own pixels, so it scrolls at screen speed at any zoom.
+                const zoom = state.userZoom ?? state.fitScale;
+                target.scrollBy({ left: dx / zoom, top: dy / zoom });
                 return;
+            }
             e.preventDefault();
             const state = useCanvasStore.getState();
             const old = state.userZoom ?? state.fitScale;

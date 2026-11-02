@@ -8,7 +8,7 @@ import { mediaForViewport } from '@lib/canvasStylesheet';
 import { variantKeyParts } from '@lib/element';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { animatedSubtreePredicate, layoutEdges } from './animatedExtent';
-import { isHtmlNode, releaseCanvasIframe, setCanvasIframe } from './canvasDom';
+import { CANVAS_SCROLL_EVENT, isHtmlNode, releaseCanvasIframe, setCanvasIframe } from './canvasDom';
 import { selectionOffsetsWithin } from './textSelectionOffsets';
 import { useCanvasTheme } from './useCanvasTheme';
 import { iframeCanvasStats } from './iframeCanvasFlag';
@@ -36,7 +36,11 @@ export const EDITOR_MARKS = [SELECTED_ATTR, EDITING_ATTR, PROP_EDIT_ATTR];
  */
 // The iframe is as tall as the page, and today's canvas (a div) never scrolls: content past the edge mustn't add scrollbars.
 const NO_SCROLL_CSS = 'html { overflow: hidden !important; }\n';
-const chromeCss = (accent, component) => NO_SCROLL_CSS +
+// A scroll container's scrollbar, quieter than the system's but the same
+// width, which is what the preview lays out with. Never in the file.
+const scrollbarCss = (muted) => `body * { scrollbar-color: color-mix(in srgb, ${muted} 45%, transparent) transparent; }\n`;
+const chromeCss = (accent, component, muted) => NO_SCROLL_CSS +
+    scrollbarCss(muted) +
     `[${SELECTED_ATTR}] { outline: 2px solid ${accent} !important; outline-offset: -2px !important; }\n` +
     `[${SELECTED_ATTR}][data-scamp-instance-id] { outline-color: ${component} !important; }\n` +
     `[${EDITING_ATTR}] { outline: 1px dashed ${accent} !important; outline-offset: 2px !important; cursor: text; }\n` +
@@ -280,7 +284,7 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }) => {
         if (sheet === null || sheet === undefined)
             return;
         const app = getComputedStyle(document.documentElement);
-        sheet.textContent = chromeCss(app.getPropertyValue('--accent').trim(), app.getPropertyValue('--component').trim());
+        sheet.textContent = chromeCss(app.getPropertyValue('--accent').trim(), app.getPropertyValue('--component').trim(), app.getPropertyValue('--text-secondary').trim());
     }, [doc, appTheme]);
     // The active theme's tokens, as the canvas frame carries them today.
     useLayoutEffect(() => {
@@ -350,6 +354,16 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }) => {
             view.removeEventListener('keyup', forward);
         };
     }, [doc]);
+    // A scroll container in the page moved what's inside it: the overlays re-measure.
+    useEffect(() => {
+        if (doc === null || !live)
+            return;
+        const report = () => {
+            window.dispatchEvent(new Event(CANVAS_SCROLL_EVENT));
+        };
+        doc.addEventListener('scroll', report, { capture: true, passive: true });
+        return () => doc.removeEventListener('scroll', report, { capture: true });
+    }, [doc, live]);
     // Images and fonts that finish loading change the page's height.
     useEffect(() => {
         if (doc === null)
