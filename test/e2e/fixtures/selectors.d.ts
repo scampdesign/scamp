@@ -5,6 +5,10 @@ import type { Locator, Page } from '@playwright/test';
  * see docs/plans/canvas-rendering-options.md, "The full test"
  */
 export declare const IFRAME_CANVAS: boolean;
+/** The drawn page as a whole: the canvas frame today, the iframe's body in the experiment. */
+export declare const canvasContent: (page: Page) => Locator;
+/** Nodes inside one frame of the variant set, by its key ('' for the default look). */
+export declare const inVariantCell: (page: Page, key: string, selector: string) => Locator;
 /**
  * Centralized query helpers. Everything the specs look up goes
  * through here so renaming an id / restructuring the DOM only

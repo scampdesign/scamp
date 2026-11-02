@@ -4,8 +4,10 @@ import { useCanvasStore } from '@store/canvasSlice';
 import { generateCode } from '@lib/generateCode';
 import { collectExpandedInstances, generateHtml } from '@lib/generateHtml';
 import { assemblePageCss, rewriteCssUrls } from '@lib/htmlExportCss';
+import { mediaForViewport } from '@lib/canvasStylesheet';
+import { variantKeyParts } from '@lib/element';
 
-import { isHtmlNode, setCanvasIframe } from '../canvasDom';
+import { isHtmlNode, releaseCanvasIframe, setCanvasIframe } from '../canvasDom';
 import { selectionOffsetsWithin } from '../textSelectionOffsets';
 import { useCanvasTheme } from '../useCanvasTheme';
 import { iframeCanvasStats } from './iframeCanvasFlag';
@@ -26,9 +28,40 @@ const SHELL =
 
 const FONT_LINK = 'link[data-scamp-font-import]';
 
+const PAGE_BODY_STYLE = 'margin: 0; min-height: 100vh';
+
+/** One frame of a variant set. see docs/plans/component-variants-plan.md, phase 6 */
+export type IframeVariant = {
+  /** The look it draws (`size=large&tone=muted`), or null for the default. */
+  key: string | null;
+  /** The frame being edited; the others are only looked at. */
+  live: boolean;
+  /** Sides the frame hugs the component along, rather than taking the artboard's size. */
+  hugWidth: boolean;
+  hugHeight: boolean;
+};
+
 type Props = {
   /** The page's viewport height: what `100vh` means, as the preview's window gives it. */
   viewportHeight: number;
+  /** Set for a frame of the component editor's variant set; absent for a page or an artboard. */
+  variant?: IframeVariant;
+};
+
+/** How far the drawn nodes reach, in the iframe's own pixels: a root can be 0 tall with what hangs past it. */
+const contentExtent = (doc: Document): { w: number; h: number } => {
+  const body = doc.body.getBoundingClientRect();
+  let w = body.right;
+  let h = body.bottom;
+  for (const node of doc.body.querySelectorAll('[data-scamp-id]')) {
+    const r = node.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) continue;
+    // A closed menu's panel is there but hidden: the frame hugs what shows.
+    if (doc.defaultView?.getComputedStyle(node).visibility === 'hidden') continue;
+    w = Math.max(w, r.right);
+    h = Math.max(h, r.bottom);
+  }
+  return { w: Math.ceil(w), h: Math.ceil(h) };
 };
 
 const assetUrlFor =
@@ -51,7 +84,7 @@ const assetUrlFor =
 const VH_RE = /(-?\d*\.?\d+)(?:[dsl])?vh\b/g;
 const pinViewportUnits = (css: string): string => css.replace(VH_RE, 'calc($1 * var(--scamp-vh))');
 
-export const IframeCanvas = ({ viewportHeight }: Props): JSX.Element => {
+export const IframeCanvas = ({ viewportHeight, variant }: Props): JSX.Element => {
   const elements = useCanvasStore((s) => s.elements);
   const rootId = useCanvasStore((s) => s.rootElementId);
   const breakpoints = useCanvasStore((s) => s.breakpoints);
@@ -62,7 +95,18 @@ export const IframeCanvas = ({ viewportHeight }: Props): JSX.Element => {
   const projectPath = useCanvasStore((s) => s.projectPath);
   const legacy = useCanvasStore((s) => s.projectFormat === 'legacy');
   const editingElementId = useCanvasStore((s) => s.editingElementId);
+  // A component's frame is its own size, not a viewport; its `@media` follow
+  // the breakpoint picked instead, as today's canvas does.
+  const mediaWidth = useCanvasStore((s) =>
+    s.activeComponent?.kind === 'component'
+      ? s.breakpoints.find((b) => b.id === s.activeBreakpointId)?.width
+      : undefined
+  );
   const { themeCssVars } = useCanvasTheme();
+  const live = variant?.live ?? true;
+  const hugWidth = variant?.hugWidth === true;
+  const hugHeight = variant?.hugHeight === true;
+  const bodyStyle = variant === undefined ? PAGE_BODY_STYLE : `margin: 0;${hugWidth ? ' width: max-content;' : ''}${hugHeight ? '' : ' min-height: 100vh;'}`;
 
   const hostRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -97,26 +141,41 @@ export const IframeCanvas = ({ viewportHeight }: Props): JSX.Element => {
           : '',
       };
     });
-    const pageCss = pinViewportUnits(rewriteCssUrls(assemblePageCss(css, instances), toAsset));
+    const assembled = assemblePageCss(css, instances);
+    const sized = mediaWidth === undefined ? assembled : mediaForViewport(assembled, mediaWidth);
+    const pageCss = pinViewportUnits(rewriteCssUrls(sized, toAsset));
     const body = generateHtml(elements, rootId, { componentTrees, rewriteAssetUrl: toAsset, editorIds: true });
     return { pageCss, body, buildMs: performance.now() - start };
-  }, [elements, rootId, breakpoints, customMediaBlocks, pageKeyframesBlocks, componentTrees, toAsset]);
+  }, [elements, rootId, breakpoints, customMediaBlocks, pageKeyframesBlocks, componentTrees, toAsset, mediaWidth]);
 
   const themeCss = useMemo(() => pinViewportUnits(rewriteCssUrls(themeCssRaw ?? '', toAsset)), [themeCssRaw, toAsset]);
 
-  useEffect(() => () => setCanvasIframe(null), []);
+  // Only the editable frame answers the interaction layer's hit tests.
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (doc === null || !live || iframe === null) return;
+    setCanvasIframe(iframe);
+    return () => releaseCanvasIframe(iframe);
+  }, [doc, live]);
 
   const handleLoad = (): void => {
     const loaded = iframeRef.current?.contentDocument ?? null;
     if (loaded === null) return;
-    setCanvasIframe(iframeRef.current);
     setDoc(loaded);
   };
 
-  /** As tall as the page, and never shorter than the viewport. */
+  /** As tall as the page and never shorter than the viewport; a variant frame hugs the component instead. */
   const fitHeight = (target: Document): void => {
     const host = hostRef.current;
     if (host === null) return;
+    if (hugWidth || hugHeight) {
+      const reach = contentExtent(target);
+      if (hugWidth) host.style.width = `${reach.w}px`;
+      if (hugHeight) {
+        host.style.height = `${reach.h}px`;
+        return;
+      }
+    }
     host.style.height = `${viewportHeight}px`;
     host.style.height = `${Math.max(viewportHeight, target.documentElement.scrollHeight)}px`;
   };
@@ -132,20 +191,23 @@ export const IframeCanvas = ({ viewportHeight }: Props): JSX.Element => {
     if (theme !== null && theme.textContent !== themeCss) theme.textContent = themeCss;
     if (page !== null && page.textContent !== built.pageCss) page.textContent = built.pageCss;
     // A style-only edit leaves the markup as it was, so there's nothing to patch.
-    if (lastBody.current !== built.body) {
-      lastBody.current = built.body;
+    if (lastBody.current !== built.body + bodyStyle) {
+      lastBody.current = built.body + bodyStyle;
       const next = doc.createElement('body');
-      next.setAttribute('style', 'margin: 0; min-height: 100vh');
+      next.setAttribute('style', bodyStyle);
       const template = doc.createElement('template');
       template.innerHTML = built.body;
       next.append(template.content);
       morphDom(doc.body, next);
+      // A variant draws as an instance with those props would: `data-<axis>` on the root.
+      const root = doc.querySelector(`[data-element-id="${CSS.escape(rootId)}"]`);
+      for (const { axis, value } of variantKeyParts(variant?.key ?? '') ?? []) root?.setAttribute(`data-${axis}`, value);
     }
     const patchMs = performance.now() - start;
     if (iframeCanvasStats.firstDrawMs === null) iframeCanvasStats.firstDrawMs = performance.now() - mountedAt.current;
     else iframeCanvasStats.updates.push({ buildMs: built.buildMs, patchMs });
     fitHeight(doc);
-  }, [doc, built, themeCss, viewportHeight]);
+  }, [doc, built, themeCss, viewportHeight, bodyStyle, rootId, variant?.key]);
 
   // The active theme's tokens, as the canvas frame carries them today.
   useLayoutEffect(() => {
@@ -183,12 +245,12 @@ export const IframeCanvas = ({ viewportHeight }: Props): JSX.Element => {
     const observer = new ResizeObserver(() => fitHeight(doc));
     observer.observe(doc.body);
     return () => observer.disconnect();
-  }, [doc, viewportHeight]);
+  }, [doc, viewportHeight, hugWidth, hugHeight]);
 
   // Text editing, in the iframe: the interaction layer stops taking pointer
   // events while an element edits, so clicks reach the text directly.
   useEffect(() => {
-    if (doc === null || editingElementId === null) return;
+    if (doc === null || editingElementId === null || !live) return;
     const node = doc.querySelector(`[data-element-id="${editingElementId}"]`);
     if (!isHtmlNode(node)) return;
     const before = node.textContent ?? '';
@@ -230,7 +292,7 @@ export const IframeCanvas = ({ viewportHeight }: Props): JSX.Element => {
       node.removeEventListener('pointerup', remember);
       node.removeAttribute('contenteditable');
     };
-  }, [doc, editingElementId]);
+  }, [doc, editingElementId, live]);
 
   return (
     <div ref={hostRef} className={styles.host} style={{ height: viewportHeight }} data-testid="iframe-canvas">

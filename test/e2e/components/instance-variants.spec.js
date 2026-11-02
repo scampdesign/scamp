@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/app';
 import { panelSection } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { IFRAME_CANVAS, canvasLocator, pageRoot } from '../fixtures/selectors';
 import { waitForSaved } from '../fixtures/assertions';
 /**
  * Picking a component variant on an instance: the panel's select writes
@@ -62,8 +62,9 @@ test.use({
 test.describe('components: an instance’s variant', () => {
     test('the panel picks a value, the file names it, and the canvas draws it', async ({ window, project }) => {
         await expect(pageRoot(window)).toBeVisible();
-        const instance = window.locator('[data-scamp-instance-id="inst_a1b2"]');
-        const inner = instance.locator('[data-scamp-id="root"]');
+        const instance = canvasLocator(window, '[data-scamp-instance-id="inst_a1b2"]');
+        // The iframe canvas draws no wrapper: the instance is the component's root.
+        const inner = IFRAME_CANVAS ? instance : instance.locator('[data-scamp-id="root"]');
         await expect(inner).toHaveCSS('background-color', 'rgb(255, 0, 0)');
         // The interaction layer takes the click, so click where the instance is.
         const box = await instance.boundingBox();

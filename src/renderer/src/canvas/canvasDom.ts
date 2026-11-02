@@ -11,9 +11,17 @@
 
 let liveIframe: HTMLIFrameElement | null = null;
 
-/** Called by the iframe canvas when it mounts and unmounts. */
-export const setCanvasIframe = (iframe: HTMLIFrameElement | null): void => {
+/**
+ * Called by the iframe that draws the editable page: the page's, or the live
+ * frame of a variant set. The set's other frames are only looked at.
+ */
+export const setCanvasIframe = (iframe: HTMLIFrameElement): void => {
   liveIframe = iframe;
+};
+
+/** Called when `iframe` stops being the live one; a no-op if another took over. */
+export const releaseCanvasIframe = (iframe: HTMLIFrameElement | null): void => {
+  if (liveIframe === iframe) liveIframe = null;
 };
 
 const iframeDocument = (): Document | null => liveIframe?.contentDocument ?? null;
@@ -33,16 +41,58 @@ export const isHtmlNode = (node: unknown): node is HTMLElement =>
 export const hasDataset = (node: unknown): node is HTMLElement | SVGElement =>
   typeof node === 'object' && node !== null && (node as Node).nodeType === 1 && 'dataset' in node;
 
+/** The nodes in `iframe` under a client point, topmost first; none outside it. */
+export const framedElementsFromPoint = (iframe: HTMLIFrameElement, clientX: number, clientY: number): Element[] => {
+  const doc = iframe.contentDocument;
+  if (doc === null) return [];
+  const rect = iframe.getBoundingClientRect();
+  const scale = iframe.offsetWidth > 0 ? rect.width / iframe.offsetWidth : 1;
+  const x = (clientX - rect.left) / scale;
+  const y = (clientY - rect.top) / scale;
+  if (x < 0 || y < 0 || x > iframe.offsetWidth || y > iframe.offsetHeight) return [];
+  return doc.elementsFromPoint(x, y);
+};
+
+/** A node's box in the app window's client space, from either document. */
+export const clientRectOf = (node: Element): Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom' | 'width' | 'height'> => {
+  const r = node.getBoundingClientRect();
+  const iframe = node.ownerDocument.defaultView?.frameElement ?? null;
+  if (!isHtmlNode(iframe)) return r;
+  const outer = iframe.getBoundingClientRect();
+  const scale = iframe.offsetWidth > 0 ? outer.width / iframe.offsetWidth : 1;
+  return {
+    left: outer.left + r.left * scale,
+    top: outer.top + r.top * scale,
+    right: outer.left + r.right * scale,
+    bottom: outer.top + r.bottom * scale,
+    width: r.width * scale,
+    height: r.height * scale,
+  };
+};
+
+/**
+ * A node's layout offset from `frame`, in logical px: transforms (the zoom,
+ * an element's own) don't count. From an iframe, the chain ends at its body
+ * and carries on from the iframe, which can sit anywhere in the frame.
+ */
+export const offsetIn = (node: HTMLElement, frame: HTMLElement): { x: number; y: number } => {
+  let x = 0;
+  let y = 0;
+  let current: Element | null = node;
+  while (isHtmlNode(current) && current !== frame) {
+    x += current.offsetLeft;
+    y += current.offsetTop;
+    current = current.offsetParent ?? current.ownerDocument.defaultView?.frameElement ?? null;
+  }
+  return { x, y };
+};
+
 /** The page's nodes under a client point, topmost first. */
 export const canvasElementsFromPoint = (clientX: number, clientY: number): Element[] => {
   const doc = iframeDocument();
   if (liveIframe === null || doc === null) return document.elementsFromPoint(clientX, clientY);
-  const rect = liveIframe.getBoundingClientRect();
-  const scale = liveIframe.offsetWidth > 0 ? rect.width / liveIframe.offsetWidth : 1;
-  const x = (clientX - rect.left) / scale;
-  const y = (clientY - rect.top) / scale;
-  if (x < 0 || y < 0 || x > liveIframe.offsetWidth || y > liveIframe.offsetHeight) return [];
-  const hits = doc.elementsFromPoint(x, y);
+  const hits = framedElementsFromPoint(liveIframe, clientX, clientY);
+  if (hits.length === 0) return hits;
   // The whole drawn page is the root's to draw into, as the canvas's floor
   // makes it today; a view's root itself is only as tall as its content.
   const root = doc.querySelector('[data-element-id="root"]');

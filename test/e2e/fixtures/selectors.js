@@ -4,7 +4,17 @@
  * see docs/plans/canvas-rendering-options.md, "The full test"
  */
 export const IFRAME_CANVAS = process.env['SCAMP_E2E_IFRAME'] === '1';
-const drawn = (page) => IFRAME_CANVAS ? page.frameLocator('[data-testid="iframe-canvas"] iframe') : page;
+// In a variant set every frame is an iframe; the live one is the editable page.
+const drawn = (page) => IFRAME_CANVAS
+    ? page.frameLocator('[data-testid="iframe-canvas"]:not([data-variant-live="false"] *) > iframe')
+    : page;
+/** The drawn page as a whole: the canvas frame today, the iframe's body in the experiment. */
+export const canvasContent = (page) => IFRAME_CANVAS ? drawn(page).locator('body') : page.locator('[data-testid="canvas-frame"]');
+/** Nodes inside one frame of the variant set, by its key ('' for the default look). */
+export const inVariantCell = (page, key, selector) => {
+    const cell = page.locator(`[data-variant-cell="${key}"]`);
+    return IFRAME_CANVAS ? cell.frameLocator('iframe').locator(selector) : cell.locator(selector);
+};
 /**
  * Centralized query helpers. Everything the specs look up goes
  * through here so renaming an id / restructuring the DOM only

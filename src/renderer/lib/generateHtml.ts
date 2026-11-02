@@ -94,6 +94,8 @@ type Scope = {
   binding: BindingScope;
   /** The page element id of the instance this scope expands, for `editorIds`. */
   ownerInstanceId?: string;
+  /** That instance's `instanceId`, which today's canvas marks its box with. */
+  ownerInstanceMark?: string;
 };
 
 /** The sample data a tree's root holds, as a scope with no row yet. */
@@ -210,6 +212,7 @@ const renderInstance = (
     isComponent: true,
     binding: rootBinding(tree.elements, tree.rootId),
     ownerInstanceId: el.id,
+    ownerInstanceMark: el.instanceId ?? '',
   };
 
   // The page sizes an instance through the component's `className` prop, so
@@ -221,8 +224,18 @@ const renderInstance = (
   const extraClass =
     sizeDeclarationLines(el).length > 0 ? instanceClass : null;
 
+  // The root carries each variant value the instance picks, as the component's
+  // TSX writes it, so the `.root[data-<axis>]` rules match.
+  const axes = root.variantAxes ?? [];
+  const picked = Object.fromEntries(
+    axes.map((axis) => {
+      const value = childScope.propValues[axis.prop];
+      return [`data-${axis.prop}`, value !== undefined && axis.values.includes(value) ? value : axis.defaultValue];
+    })
+  );
+
   return renderElement(
-    root,
+    axes.length > 0 ? { ...root, attributes: { ...root.attributes, ...picked } } : root,
     childScope,
     level,
     options,
@@ -270,8 +283,13 @@ const renderElement = (
     attrs.push(`data-scamp-id="${escapeHtml(classNameFor(el))}"`);
     // The hit-test marks the canvas puts on an instance's prop text and slots.
     const owner = scope.isComponent ? scope.ownerInstanceId : undefined;
-    if (owner !== undefined && el.type === 'text' && typeof el.prop === 'string' && el.prop.length > 0) {
-      attrs.push(`data-scamp-instance-id="${escapeHtml(owner)}"`, `data-scamp-prop="${escapeHtml(el.prop)}"`);
+    const prop = el.type === 'text' && typeof el.prop === 'string' && el.prop.length > 0 ? el.prop : null;
+    // Today's canvas marks an instance's box this way; the iframe's is its root. A prop text's mark wins.
+    if (ownerId !== undefined && (owner === undefined || prop === null)) {
+      attrs.push(`data-scamp-instance-id="${escapeHtml(scope.ownerInstanceMark ?? '')}"`);
+    }
+    if (owner !== undefined && prop !== null) {
+      attrs.push(`data-scamp-instance-id="${escapeHtml(owner)}"`, `data-scamp-prop="${escapeHtml(prop)}"`);
     }
     if (owner !== undefined && el.slot !== undefined && el.slot.length > 0) {
       attrs.push(`data-scamp-slot="${escapeHtml(el.slot)}"`, `data-slot-owner-id="${escapeHtml(owner)}"`);

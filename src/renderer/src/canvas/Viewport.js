@@ -14,6 +14,7 @@ import { CanvasInteractionLayer } from './CanvasInteractionLayer';
 import { CanvasBoundaryOverlay } from './CanvasBoundaryOverlay';
 import { useCanvasTheme } from './useCanvasTheme';
 import styles from './Viewport.module.css';
+import { canvasQuery, canvasQueryAll, clientRectOf, isHtmlNode, offsetIn } from './canvasDom';
 import { IframeCanvas } from './experiment/IframeCanvas';
 import { useIframeCanvasFlag } from './experiment/iframeCanvasFlag';
 // Padding subtracted from the scroll container's inner width when
@@ -71,10 +72,8 @@ export const Viewport = ({ canvasWidth, canvasHeight, heightIsFixed = false, cli
     // own box, so a ResizeObserver on the frame alone wouldn't fire.
     const elements = useCanvasStore((s) => s.elements);
     const activeTool = useCanvasStore((s) => s.activeTool);
-    // Experiment: pages only; the component editor keeps the current canvas.
+    // Experiment: the page, the component's artboard, and (in `VariantSet`) each variant frame draw in an iframe.
     const iframeFlag = useIframeCanvasFlag((s) => s.on);
-    const editingComponent = useCanvasStore((s) => s.activeComponent?.kind === 'component');
-    const useIframe = iframeFlag && !editingComponent && frameContent === undefined;
     // The page's viewport height: what `100vh` means, as the preview's window would give it.
     const viewportHeight = useCanvasStore((s) => s.canvasMinHeight);
     const userZoom = useCanvasStore((s) => s.userZoom);
@@ -195,9 +194,10 @@ export const Viewport = ({ canvasWidth, canvasHeight, heightIsFixed = false, cli
         // and with it the fit zoom, on every edit. Those elements are measured
         // by their transform-free layout box instead.
         // see src/renderer/src/canvas/animatedExtent.ts
+        // shortcut: animations inside the iframe canvas aren't in `document.getAnimations()`, so they're measured as they move; fix if the experiment ships.
         const isAnimated = animatedSubtreePredicate(frame);
-        for (const node of frame.querySelectorAll('[data-element-id]')) {
-            if (!(node instanceof HTMLElement))
+        for (const node of canvasQueryAll(frame, '[data-element-id]')) {
+            if (!isHtmlNode(node))
                 continue;
             let nodeRight;
             let nodeBottom;
@@ -209,7 +209,7 @@ export const Viewport = ({ canvasWidth, canvasHeight, heightIsFixed = false, cli
                 nodeBottom = edges.bottom;
             }
             else {
-                const r = node.getBoundingClientRect();
+                const r = clientRectOf(node);
                 nodeRight = (r.right - frameRect.left) / appliedScale;
                 nodeBottom = (r.bottom - frameRect.top) / appliedScale;
             }
@@ -251,22 +251,14 @@ export const Viewport = ({ canvasWidth, canvasHeight, heightIsFixed = false, cli
         let right = 0;
         let bottom = 0;
         let found = false;
-        for (const node of frame.querySelectorAll('[data-element-id]')) {
-            if (!(node instanceof HTMLElement))
+        for (const node of canvasQueryAll(frame, '[data-element-id]')) {
+            if (!isHtmlNode(node))
                 continue;
             if (node.dataset['elementId'] === rootElementId)
                 continue;
             found = true;
-            // Accumulate the element's offset up the offsetParent chain to the
-            // frame — logical (unscaled) coordinates, matching measureElementInFrame.
-            let offLeft = 0;
-            let offTop = 0;
-            let cur = node;
-            while (cur && cur !== frame) {
-                offLeft += cur.offsetLeft;
-                offTop += cur.offsetTop;
-                cur = cur.offsetParent;
-            }
+            // Logical (unscaled) coordinates, matching measureElementInFrame.
+            const { x: offLeft, y: offTop } = offsetIn(node, frame);
             const cs = getComputedStyle(node);
             const marginRight = parseFloat(cs.marginRight) || 0;
             const marginBottom = parseFloat(cs.marginBottom) || 0;
@@ -281,11 +273,11 @@ export const Viewport = ({ canvasWidth, canvasHeight, heightIsFixed = false, cli
         // padded header) must NOT push the canvas past the root's edge. For
         // non-fixed axes the root fills the canvas, so hug to the content bounds
         // plus the root's own padding (breathing room). see docs/archive/2026-07-17-component-canvas-sizing-plan.md
-        const rootNode = frame.querySelector(`[data-element-id="${rootElementId}"]`);
+        const rootNode = canvasQuery(frame, `[data-element-id="${rootElementId}"]`);
         const rootEl = elements[rootElementId];
-        const rs = rootNode instanceof HTMLElement ? getComputedStyle(rootNode) : null;
-        const widthFixed = rootEl?.widthMode === 'fixed' && rootNode instanceof HTMLElement;
-        const heightFixed = rootEl?.heightMode === 'fixed' && rootNode instanceof HTMLElement;
+        const rs = isHtmlNode(rootNode) ? getComputedStyle(rootNode) : null;
+        const widthFixed = rootEl?.widthMode === 'fixed' && isHtmlNode(rootNode);
+        const heightFixed = rootEl?.heightMode === 'fixed' && isHtmlNode(rootNode);
         const width = widthFixed
             ? rootNode.offsetWidth
             : right + (rs ? parseFloat(rs.paddingRight) || 0 : 0);
@@ -428,7 +420,8 @@ export const Viewport = ({ canvasWidth, canvasHeight, heightIsFixed = false, cli
                     fontFamily: themeFontFamily,
                     position: 'relative',
                     ...(frameContent !== undefined ? { background: 'transparent' } : {}),
-                }, children: [_jsx(CanvasKeyframes, {}), useIframe ? (_jsx(IframeCanvas, { viewportHeight: canvasHeight ?? viewportHeight })) : (_jsxs(_Fragment, { children: [_jsx(CanvasPageStylesheet, {}), frameContent ?? _jsx(ElementRenderer, { elementId: rootElementId })] })), _jsx(CanvasInteractionLayer, { frameRef: frameRef, scale: scale }), onResize && (_jsxs(_Fragment, { children: [_jsx("div", { className: `${styles.canvasResizeHandle} ${styles.canvasResizeHandleTL}`, onPointerDown: makeResizePointerDown('tl'), onDoubleClick: handleFitToContent, "aria-label": "Resize canvas (top-left)", title: "Drag to resize \u00B7 double-click to fit content" }), _jsx("div", { className: `${styles.canvasResizeHandle} ${styles.canvasResizeHandleTR}`, onPointerDown: makeResizePointerDown('tr'), onDoubleClick: handleFitToContent, "aria-label": "Resize canvas (top-right)", title: "Drag to resize \u00B7 double-click to fit content" }), _jsx("div", { className: `${styles.canvasResizeHandle} ${styles.canvasResizeHandleBL}`, onPointerDown: makeResizePointerDown('bl'), onDoubleClick: handleFitToContent, "aria-label": "Resize canvas (bottom-left)", title: "Drag to resize \u00B7 double-click to fit content" }), _jsx("div", { className: `${styles.canvasResizeHandle} ${styles.canvasResizeHandleBR}`, onPointerDown: makeResizePointerDown('br'), onDoubleClick: handleFitToContent, "aria-label": "Resize canvas (bottom-right)", title: "Drag to resize \u00B7 double-click to fit content" })] }))] }), _jsx(CanvasBoundaryOverlay, { scale: scale, boundaryWidth: frameW, boundaryHeight: reservedHeight, overflowX: overflowX, overflowY: overflowY, naturalHeight: content.bottom, clip: clipContent, fixedHeight: heightIsFixed })] }));
+                }, children: [_jsx(CanvasKeyframes, {}), !iframeFlag && _jsx(CanvasPageStylesheet, {}), frameContent ??
+                        (iframeFlag ? (_jsx(IframeCanvas, { viewportHeight: canvasHeight ?? viewportHeight })) : (_jsx(ElementRenderer, { elementId: rootElementId }))), _jsx(CanvasInteractionLayer, { frameRef: frameRef, scale: scale }), onResize && (_jsxs(_Fragment, { children: [_jsx("div", { className: `${styles.canvasResizeHandle} ${styles.canvasResizeHandleTL}`, onPointerDown: makeResizePointerDown('tl'), onDoubleClick: handleFitToContent, "aria-label": "Resize canvas (top-left)", title: "Drag to resize \u00B7 double-click to fit content" }), _jsx("div", { className: `${styles.canvasResizeHandle} ${styles.canvasResizeHandleTR}`, onPointerDown: makeResizePointerDown('tr'), onDoubleClick: handleFitToContent, "aria-label": "Resize canvas (top-right)", title: "Drag to resize \u00B7 double-click to fit content" }), _jsx("div", { className: `${styles.canvasResizeHandle} ${styles.canvasResizeHandleBL}`, onPointerDown: makeResizePointerDown('bl'), onDoubleClick: handleFitToContent, "aria-label": "Resize canvas (bottom-left)", title: "Drag to resize \u00B7 double-click to fit content" }), _jsx("div", { className: `${styles.canvasResizeHandle} ${styles.canvasResizeHandleBR}`, onPointerDown: makeResizePointerDown('br'), onDoubleClick: handleFitToContent, "aria-label": "Resize canvas (bottom-right)", title: "Drag to resize \u00B7 double-click to fit content" })] }))] }), _jsx(CanvasBoundaryOverlay, { scale: scale, boundaryWidth: frameW, boundaryHeight: reservedHeight, overflowX: overflowX, overflowY: overflowY, naturalHeight: content.bottom, clip: clipContent, fixedHeight: heightIsFixed })] }));
 };
 /**
  * Mounts a `<style>` element inside the canvas frame containing the

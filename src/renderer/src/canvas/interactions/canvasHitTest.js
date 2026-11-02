@@ -1,7 +1,7 @@
 // Pure DOM hit-testing for the canvas interaction layer. We rely on
 // `document.elementsFromPoint` rather than maintaining a parallel quadtree
 // — the canvas DOM is small and React's render is the source of truth.
-import { canvasElementsFromPoint, hasDataset, isHtmlNode } from '../canvasDom';
+import { canvasElementsFromPoint, framedElementsFromPoint, hasDataset, isHtmlNode } from '../canvasDom';
 /**
  * Read a node's `data-element-id`, for both HTML and SVG elements. An
  * inline `<svg>` on the canvas is an `SVGElement`, not an `HTMLElement`,
@@ -122,8 +122,10 @@ export const inactiveVariantCellAt = (clientX, clientY) => {
         if (cell.dataset['variantLive'] === 'true')
             return null;
         const key = cell.dataset['variantCell'] ?? '';
-        const owner = node.closest('[data-scamp-id]');
-        const className = owner !== null && cell.contains(owner) ? owner.getAttribute('data-scamp-id') : null;
+        // With the iframe canvas the frame is an iframe: look under the point inside it.
+        const inside = node instanceof HTMLIFrameElement ? framedElementsFromPoint(node, clientX, clientY)[0] : undefined;
+        const owner = (inside ?? node).closest('[data-scamp-id]');
+        const className = owner !== null && (inside !== undefined || cell.contains(owner)) ? owner.getAttribute('data-scamp-id') : null;
         return { key: key === '' ? null : key, className };
     }
     return null;

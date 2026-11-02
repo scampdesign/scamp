@@ -605,6 +605,15 @@ Thus we do not write the interactions again. We do these steps:
    iframe. This is the last step, because it has the most special
    cases.
 
+**Status (2026-11-02):** steps 1–8 are in. The component's artboard is one
+iframe; a variant set is one iframe per frame, with `data-<axis>` on each
+root, and only the live frame registers with `canvasDom`. Frames hug the
+component by measuring what they draw. `@media` follow the picked breakpoint
+in the component editor, as before. Known gaps: animations inside the
+iframe aren't in `document.getAnimations()`, so the extent measures them
+mid-move; thumbnails skip while the flag is on; every frame of a set builds
+its own CSS on each edit (not yet measured).
+
 ### How we measure it
 
 - **The full e2e suite with the flag on.** A second Playwright project

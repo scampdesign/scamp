@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/app';
 import { drawAndSelectRect, panelSection } from '../fixtures/panel';
 import { createComponentFromSidebar, openComponentsSection } from '../fixtures/components';
-import { pageRoot } from '../fixtures/selectors';
+import { inVariantCell, pageRoot } from '../fixtures/selectors';
 import { waitForSaved } from '../fixtures/assertions';
 test.use({ projectOptions: { format: 'nextjs' } });
 /**
@@ -44,7 +44,7 @@ test.describe('components: variants', () => {
         const className = await drawAndSelectRect(window, { x: 40, y: 40 }, { x: 160, y: 120 });
         await waitForSaved(window);
         await addOutlineVariant(window);
-        await clickOn(window, cell(window, 'variant=outline').locator(`[data-scamp-id="${className}"]`));
+        await clickOn(window, inVariantCell(window, 'variant=outline', `[data-scamp-id="${className}"]`));
         await setOpacity(window, '50');
         await waitForSaved(window);
         const { tsx, css } = await project.readComponent('Card');
@@ -52,8 +52,8 @@ test.describe('components: variants', () => {
         expect(css).toMatch(new RegExp(`\\.root\\[data-variant="outline"\\] \\.${className}\\s*\\{[^}]*opacity:\\s*0\\.5`, 's'));
         expect(css).not.toMatch(new RegExp(`^\\.${className}\\s*\\{[^}]*opacity`, 'm'));
         // Both frames are drawn side by side, each in its own look.
-        const inDefault = cell(window, '').locator(`[data-scamp-id="${className}"]`);
-        await expect(cell(window, 'variant=outline').locator(`[data-scamp-id="${className}"]`)).toHaveCSS('opacity', '0.5');
+        const inDefault = inVariantCell(window, '', `[data-scamp-id="${className}"]`);
+        await expect(inVariantCell(window, 'variant=outline', `[data-scamp-id="${className}"]`)).toHaveCSS('opacity', '0.5');
         await expect(inDefault).toHaveCSS('opacity', '1');
         // One click on the default frame's rectangle makes it live and selects it.
         await clickOn(window, inDefault);
@@ -67,7 +67,7 @@ test.describe('components: variants', () => {
         const className = await drawAndSelectRect(window, { x: 40, y: 40 }, { x: 160, y: 120 });
         await waitForSaved(window);
         await addOutlineVariant(window);
-        await clickOn(window, cell(window, 'variant=outline').locator(`[data-scamp-id="${className}"]`));
+        await clickOn(window, inVariantCell(window, 'variant=outline', `[data-scamp-id="${className}"]`));
         await setOpacity(window, '50');
         await waitForSaved(window);
         expect((await project.readComponent('Card')).css).toContain('[data-variant="outline"]');
@@ -85,7 +85,7 @@ test.describe('components: variants', () => {
         await window.getByRole('group', { name: 'Add a starter component' }).getByRole('button', { name: 'Button', exact: true }).click();
         // Three variants by three sizes: every combination is a frame.
         await expect(window.locator('[data-variant-cell]')).toHaveCount(9);
-        await clickOn(window, cell(window, 'variant=outline&size=small').locator('[data-scamp-id="label_b7e1"]'));
+        await clickOn(window, inVariantCell(window, 'variant=outline&size=small', '[data-scamp-id="label_b7e1"]'));
         await setOpacity(window, '50');
         await waitForSaved(window);
         const { css } = await project.readComponent('Button');

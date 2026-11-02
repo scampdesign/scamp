@@ -120,6 +120,7 @@ const renderInstance = (el, scope, level, options, activeComponents) => {
         isComponent: true,
         binding: rootBinding(tree.elements, tree.rootId),
         ownerInstanceId: el.id,
+        ownerInstanceMark: el.instanceId ?? '',
     };
     // The page sizes an instance through the component's `className` prop, so
     // in the app the component root renders with both its own `.root` and the
@@ -128,7 +129,14 @@ const renderInstance = (el, scope, level, options, activeComponents) => {
     // Emitted only when the instance actually has a size, matching the
     // condition `generateTsx` and `elementCssChunks` both use.
     const extraClass = sizeDeclarationLines(el).length > 0 ? instanceClass : null;
-    return renderElement(root, childScope, level, options, extraClass, activeComponents, name, el.id);
+    // The root carries each variant value the instance picks, as the component's
+    // TSX writes it, so the `.root[data-<axis>]` rules match.
+    const axes = root.variantAxes ?? [];
+    const picked = Object.fromEntries(axes.map((axis) => {
+        const value = childScope.propValues[axis.prop];
+        return [`data-${axis.prop}`, value !== undefined && axis.values.includes(value) ? value : axis.defaultValue];
+    }));
+    return renderElement(axes.length > 0 ? { ...root, attributes: { ...root.attributes, ...picked } } : root, childScope, level, options, extraClass, activeComponents, name, el.id);
 };
 /**
  * Render one element and its descendants.
@@ -157,8 +165,13 @@ ownerId) => {
         attrs.push(`data-scamp-id="${escapeHtml(classNameFor(el))}"`);
         // The hit-test marks the canvas puts on an instance's prop text and slots.
         const owner = scope.isComponent ? scope.ownerInstanceId : undefined;
-        if (owner !== undefined && el.type === 'text' && typeof el.prop === 'string' && el.prop.length > 0) {
-            attrs.push(`data-scamp-instance-id="${escapeHtml(owner)}"`, `data-scamp-prop="${escapeHtml(el.prop)}"`);
+        const prop = el.type === 'text' && typeof el.prop === 'string' && el.prop.length > 0 ? el.prop : null;
+        // Today's canvas marks an instance's box this way; the iframe's is its root. A prop text's mark wins.
+        if (ownerId !== undefined && (owner === undefined || prop === null)) {
+            attrs.push(`data-scamp-instance-id="${escapeHtml(scope.ownerInstanceMark ?? '')}"`);
+        }
+        if (owner !== undefined && prop !== null) {
+            attrs.push(`data-scamp-instance-id="${escapeHtml(owner)}"`, `data-scamp-prop="${escapeHtml(prop)}"`);
         }
         if (owner !== undefined && el.slot !== undefined && el.slot.length > 0) {
             attrs.push(`data-scamp-slot="${escapeHtml(el.slot)}"`, `data-slot-owner-id="${escapeHtml(owner)}"`);

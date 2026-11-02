@@ -104,13 +104,13 @@ test.use({
  * which is what the drop is supposed to control.
  */
 const instanceParentScampId = async (window) => window.evaluate(() => {
-    const instance = document.querySelector('[data-scamp-instance-id]');
+    // The iframe canvas experiment draws the page inside an iframe.
+    const drawn = document.querySelector('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? document;
+    const instance = drawn.querySelector('[data-scamp-instance-id]');
     if (!instance)
         return null;
     const parent = instance.parentElement?.closest('[data-element-id]');
-    return parent instanceof HTMLElement
-        ? (parent.dataset['scampId'] ?? null)
-        : null;
+    return parent?.getAttribute('data-scamp-id') ?? null;
 });
 test.describe('components: drop into the container under the cursor', () => {
     test('drops into an absolutely-positioned box rather than the page root', async ({ window, }) => {
@@ -139,11 +139,10 @@ test.describe('components: drop into the container under the cursor', () => {
         // Ordering is the whole point of the insert index: appending would put
         // the instance last, so this is what distinguishes the two.
         const firstChildIsInstance = await window.evaluate(() => {
-            const row = document.querySelector('[data-scamp-id="rect_row"]');
+            const drawn = document.querySelector('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? document;
+            const row = drawn.querySelector('[data-scamp-id="rect_row"]');
             const first = row?.firstElementChild;
-            return first instanceof HTMLElement
-                ? first.hasAttribute('data-scamp-instance-id')
-                : false;
+            return first?.hasAttribute('data-scamp-instance-id') ?? false;
         });
         expect(firstChildIsInstance).toBe(true);
     });

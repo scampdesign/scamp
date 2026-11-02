@@ -130,7 +130,9 @@ test.describe('components: canvas sizing', () => {
       if (!frame) return { right: -1, bottom: -1 };
       let right = 0;
       let bottom = 0;
-      for (const node of frame.querySelectorAll('[data-element-id]')) {
+      // The iframe canvas experiment draws inside an iframe in the frame.
+      const drawn = frame.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? frame;
+      for (const node of drawn.querySelectorAll('[data-element-id]')) {
         const el = node as HTMLElement;
         if (el.dataset['elementId'] === 'root') continue;
         let left = 0;
@@ -139,7 +141,7 @@ test.describe('components: canvas sizing', () => {
         while (cur && cur !== frame) {
           left += cur.offsetLeft;
           top += cur.offsetTop;
-          cur = cur.offsetParent as HTMLElement | null;
+          cur = (cur.offsetParent ?? cur.ownerDocument.defaultView?.frameElement ?? null) as HTMLElement | null;
         }
         right = Math.max(right, left + el.offsetWidth);
         bottom = Math.max(bottom, top + el.offsetHeight);
@@ -222,9 +224,10 @@ export default function Bar() {
           // also carry data-element-id, so a bare query hits the sidebar row.
           const page = document.querySelector(
             '[data-testid="canvas-frame"] [data-element-id="root"]'
-          );
-          const innerRoot = document.querySelector(
-            '[data-scamp-instance-id] [data-scamp-id="root"]'
+          ) ?? document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument?.querySelector('[data-element-id="root"]');
+          // In the iframe canvas experiment the instance has no wrapper: it is the component's root.
+          const innerRoot = (document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? document).querySelector(
+            '[data-scamp-instance-id] [data-scamp-id="root"], [data-scamp-instance-id][data-scamp-id="root"]'
           );
           if (!page || !innerRoot) return null;
           const p = (page as HTMLElement).offsetWidth;
