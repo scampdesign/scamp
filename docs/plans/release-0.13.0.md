@@ -9,6 +9,11 @@ and integration tests pass; full e2e 626 passed, 0 failed, 6 skipped (the
 opt-in speed bench, `SCAMP_E2E_SPEED=1`), 26 minutes. The suite runs on
 the iframe canvas; `SCAMP_E2E_LEGACY_CANVAS=1` runs it on the fallback.
 
+`fix/canvas-scroll-containers` merged after that run (`b0b8608d`). Its new
+spec and the selection, drag, zoom, overflow, instance and variant specs
+pass on both canvases (39 on the iframe, 38 + 1 iframe-only skip on the
+legacy one); the full suite has not run again since.
+
 ## What ships
 
 - **The iframe canvas is the default.** The page draws as the HTML export
