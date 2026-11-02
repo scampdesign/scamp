@@ -214,13 +214,13 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
                         }), onCancel: resetPageEdit, error: pageEditError, busy: pageEditBusy }) }, `view:${view.name}`));
             }
             const isActive = activeComponent !== null && activeComponent.name === view.name;
-            return (_jsx("li", { children: _jsx("button", { className: `${styles.pageButton} ${isActive ? styles.pageActive : ''} ${selected.has(row.slug) ? styles.pageSelected : ''} ${dropping}`, "aria-pressed": selected.has(row.slug), onClick: (e) => {
-                        if (handlePick(e, row.slug))
-                            return;
-                        if (isEditingPage || isActive)
-                            return;
-                        openView(view.name);
-                    }, onContextMenu: (e) => handleRowContextMenu(e, row.slug, (ev) => openViewMenu(ev, view.name)), type: "button", "data-page-slug": row.slug, ...drag, children: row.slug }) }, `view:${view.name}`));
+            return (_jsx("li", { children: _jsx(Tooltip, { label: row.slug, onlyWhenTruncated: true, children: _jsx("button", { className: `${styles.pageButton} ${isActive ? styles.pageActive : ''} ${selected.has(row.slug) ? styles.pageSelected : ''} ${dropping}`, "aria-pressed": selected.has(row.slug), onClick: (e) => {
+                            if (handlePick(e, row.slug))
+                                return;
+                            if (isEditingPage || isActive)
+                                return;
+                            openView(view.name);
+                        }, onContextMenu: (e) => handleRowContextMenu(e, row.slug, (ev) => openViewMenu(ev, view.name)), type: "button", "data-page-slug": row.slug, ...drag, children: row.slug }) }) }, `view:${view.name}`));
         }
         const page = row.page;
         const isDuplicating = pageEdit !== null &&
@@ -250,38 +250,38 @@ export const PageSidebar = ({ projectPath, pages, views, existingPageNames, page
                             follow((stored) => renamePage(stored, page.name, name));
                     }), onCancel: resetPageEdit, error: pageEditError, busy: pageEditBusy }) }, page.name));
         }
-        return (_jsx("li", { children: _jsx("button", { className: `${styles.pageButton} ${activeComponent === null &&
-                    activePageName === page.name
-                    ? styles.pageActive
-                    : ''} ${selected.has(page.name) ? styles.pageSelected : ''} ${dropping}`, "aria-pressed": selected.has(page.name), onClick: (e) => {
-                    if (handlePick(e, page.name))
-                        return;
-                    if (isEditingPage)
-                        return;
-                    // Clicking the same page that's already
-                    // active is a no-op for state but we
-                    // still want to keep the early-return so
-                    // we don't pointlessly thrash the project
-                    // snapshot.
-                    const sameTargetClicked = activeComponent === null &&
-                        activePageName === page.name;
-                    if (sameTargetClicked)
-                        return;
-                    // Flush any in-flight write on the
-                    // outgoing target (component or other
-                    // page) BEFORE swapping so the disk has
-                    // the user's latest edits. Then persist
-                    // those edits into the React snapshot so
-                    // re-entering the outgoing target later
-                    // shows the work, not the stale
-                    // initial-load template.
-                    flushPendingPageWrite();
-                    persistActiveSource();
-                    if (activeComponent !== null) {
-                        setActiveComponentState(null);
-                    }
-                    setActivePageName(page.name);
-                }, onContextMenu: (e) => handleRowContextMenu(e, page.name, (ev) => openPageMenu(ev, page.name)), type: "button", "data-page-slug": page.name, ...drag, children: page.name }) }, page.name));
+        return (_jsx("li", { children: _jsx(Tooltip, { label: page.name, onlyWhenTruncated: true, children: _jsx("button", { className: `${styles.pageButton} ${activeComponent === null &&
+                        activePageName === page.name
+                        ? styles.pageActive
+                        : ''} ${selected.has(page.name) ? styles.pageSelected : ''} ${dropping}`, "aria-pressed": selected.has(page.name), onClick: (e) => {
+                        if (handlePick(e, page.name))
+                            return;
+                        if (isEditingPage)
+                            return;
+                        // Clicking the same page that's already
+                        // active is a no-op for state but we
+                        // still want to keep the early-return so
+                        // we don't pointlessly thrash the project
+                        // snapshot.
+                        const sameTargetClicked = activeComponent === null &&
+                            activePageName === page.name;
+                        if (sameTargetClicked)
+                            return;
+                        // Flush any in-flight write on the
+                        // outgoing target (component or other
+                        // page) BEFORE swapping so the disk has
+                        // the user's latest edits. Then persist
+                        // those edits into the React snapshot so
+                        // re-entering the outgoing target later
+                        // shows the work, not the stale
+                        // initial-load template.
+                        flushPendingPageWrite();
+                        persistActiveSource();
+                        if (activeComponent !== null) {
+                            setActiveComponentState(null);
+                        }
+                        setActivePageName(page.name);
+                    }, onContextMenu: (e) => handleRowContextMenu(e, page.name, (ev) => openPageMenu(ev, page.name)), type: "button", "data-page-slug": page.name, ...drag, children: page.name }) }) }, page.name));
     };
     const importItems = [
         ...(onImportWebsite ? [{ label: 'Import from website…', onSelect: onImportWebsite }] : []),

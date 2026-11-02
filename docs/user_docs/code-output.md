@@ -158,6 +158,10 @@ right, including state variants like `:hover` and any `@media`
 overrides. Selecting a [component instance](components.md) highlights
 only the TSX, because instances have no CSS class of their own.
 
+To make the panel taller or shorter, drag its top edge. Double-click the
+edge to return to the default height. The code panel and the
+[terminal](terminal.md) share one height.
+
 ## Save status
 
 An indicator in the toolbar tracks whether the canvas is in sync with

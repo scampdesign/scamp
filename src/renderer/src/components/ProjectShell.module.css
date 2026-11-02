@@ -365,8 +365,10 @@ font-size: 14px;
   min-height: 0;
 }
 
+/* Its width is inline, from the panel sizes store. */
 .sidebar {
-  width: 240px;
+  position: relative;
+  flex-shrink: 0;
   background: var(--bg-surface);
   border-right: 1px solid var(--border);
   display: flex;
@@ -374,10 +376,6 @@ font-size: 14px;
   min-height: 0;
 }
 
-/* The agent's chat needs more width than a layer list. */
-.sidebarWide {
-  width: 320px;
-}
 
 .sidebarSection {
   padding: 12px;
@@ -678,4 +676,12 @@ font-size: 12px;
   margin-top: 6px;
   font-size: 12px;
   color: var(--error-text);
+}
+
+/* Holds the code panel and the terminal; its height is inline while one is open. */
+.bottomPanels {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
 }

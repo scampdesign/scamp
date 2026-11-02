@@ -32,6 +32,8 @@ type Props = {
   agentAvailable: boolean;
   /** Offer the tutorial's checklist — unless the user hid or skipped it. */
   learnAvailable: boolean;
+  /** The panel is folded away, so no section shows as open. */
+  sidebarCollapsed: boolean;
 };
 
 /**
@@ -49,19 +51,22 @@ export const SidebarRail = ({
   settingsOpen,
   agentAvailable,
   learnAvailable,
+  sidebarCollapsed,
 }: Props): JSX.Element => {
   const railButton = (
     key: string,
     label: string,
     icon: JSX.Element,
     active: boolean,
-    onClick: () => void
+    onClick: () => void,
+    expandable = true
   ): JSX.Element => (
     <Tooltip label={label}>
       <button
         type="button"
         aria-label={label}
         aria-pressed={active}
+        aria-expanded={expandable ? active : undefined}
         data-section={key}
         className={`${styles.railButton} ${active ? styles.railButtonActive : ''}`}
         onClick={onClick}
@@ -74,7 +79,7 @@ export const SidebarRail = ({
   // Design System and Settings are overlays that take over the workspace, so
   // while one is open the left-panel section (Pages/Components/History) icon
   // must NOT stay highlighted — the active state is exclusive.
-  const sectionActive = !designSystemOpen && !settingsOpen;
+  const sectionActive = !designSystemOpen && !settingsOpen && !sidebarCollapsed;
 
   return (
     <nav className={styles.rail} aria-label="Sections" data-testid="sidebar-rail">
@@ -97,7 +102,8 @@ export const SidebarRail = ({
         'Design System',
         <IconPalette size={ICON_SIZE} />,
         designSystemOpen,
-        onOpenDesignSystem
+        onOpenDesignSystem,
+        false
       )}
       {railButton(
         'history',
@@ -127,7 +133,8 @@ export const SidebarRail = ({
         'Settings',
         <IconSettings size={ICON_SIZE} />,
         settingsOpen,
-        onOpenSettings
+        onOpenSettings,
+        false
       )}
     </nav>
   );

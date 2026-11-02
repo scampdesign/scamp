@@ -26,6 +26,36 @@ code. Nested elements appear indented under their parents.
   one element's own settings, such as **Element** and **Position**, show
   when one element is selected.
 
+## Resize the panel
+
+The left panel holds the layers panel, and the page and component lists.
+If names are cut off, you can make the panel wider.
+
+- Drag the panel's right edge. The panel can be from 200 to 480 pixels
+  wide, and it always leaves the canvas at least 320 pixels.
+- Double-click the edge to return to the default width.
+- To resize it with the keyboard, press **Tab** until the edge is
+  focused, and then press the **Left** or **Right** arrow key. **Home**
+  and **End** go to the narrowest and widest.
+
+Scamp remembers the width for every project on this computer.
+
+Hold the pointer over a layer to see its full name and its CSS class. A
+page or component whose name is cut off shows its full name the same
+way.
+
+## Hide the panel
+
+To give the canvas more room, you can hide the left panel and show it
+again at the same width.
+
+- In the sidebar, click the button of the section that's open, such as
+  **Pages**. Click it again to show the panel.
+- Press **Cmd+B** on macOS, or **Ctrl+B** on Windows and Linux.
+- Drag the panel's right edge most of the way to the left.
+
+Clicking any other section in the sidebar shows the panel again.
+
 ## Collapse branches
 
 Any element with children shows a small triangle to the left of its

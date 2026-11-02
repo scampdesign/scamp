@@ -18,6 +18,8 @@ type Props = {
     children: ReactElement;
     /** Hover delay in ms before showing. Default 400. */
     delay?: number;
+    /** Show only while the trigger's own text is cut off, for a name that may not fit. */
+    onlyWhenTruncated?: boolean;
     /**
      * Which side of the trigger to render on. `'auto'` (the default) flips
      * to `'bottom'` when the trigger is too close to the top edge for the
@@ -33,5 +35,5 @@ type Props = {
  * The wrapper clones the child and attaches hover/focus handlers — it
  * doesn't add an extra DOM node, so layout of the trigger is preserved.
  */
-export declare const Tooltip: ({ label, header, children, delay, placement, }: Props) => JSX.Element;
+export declare const Tooltip: ({ label, header, children, delay, placement, onlyWhenTruncated, }: Props) => JSX.Element;
 export {};

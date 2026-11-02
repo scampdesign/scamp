@@ -40,6 +40,8 @@ type Props = {
   children: ReactElement;
   /** Hover delay in ms before showing. Default 400. */
   delay?: number;
+  /** Show only while the trigger's own text is cut off, for a name that may not fit. */
+  onlyWhenTruncated?: boolean;
   /**
    * Which side of the trigger to render on. `'auto'` (the default) flips
    * to `'bottom'` when the trigger is too close to the top edge for the
@@ -68,6 +70,7 @@ export const Tooltip = ({
   children,
   delay = 400,
   placement = 'auto',
+  onlyWhenTruncated = false,
 }: Props): JSX.Element => {
   // An explicit `header` prop always wins; otherwise fall back to the
   // `Name — description` convention baked into most label strings.
@@ -137,6 +140,8 @@ export const Tooltip = ({
 
   const handleEnter = (): void => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    const node = triggerRef.current;
+    if (onlyWhenTruncated && node !== null && node.scrollWidth <= node.clientWidth) return;
     timerRef.current = window.setTimeout(show, delay);
   };
 

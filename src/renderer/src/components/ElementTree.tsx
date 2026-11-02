@@ -83,6 +83,14 @@ const labelFor = (el: ScampElement): string => {
 
 const truncate = (s: string, n: number): string => (s.length > n ? `${s.slice(0, n)}…` : s);
 
+/** The row's name with nothing cut: the tooltip's heading. */
+const fullLabelFor = (el: ScampElement): string => {
+  const text = (el.text ?? '').trim();
+  return el.type === 'text' && !el.name && el.id !== ROOT_ELEMENT_ID && text.length > 0
+    ? `Text · ${text}`
+    : labelFor(el);
+};
+
 /**
  * Decide whether the cursor's vertical position over a row means
  * "before", "after", or "inside".
@@ -244,7 +252,7 @@ const Row = ({
           aria-hidden
         />
       )}
-      <Tooltip label={`.${classNameFor(element)}`}>
+      <Tooltip header={fullLabelFor(element)} label={`.${classNameFor(element)}`}>
       <button
         type="button"
         className={`${styles.row} ${isSelected ? styles.rowSelected : ''}`}

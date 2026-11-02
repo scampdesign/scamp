@@ -12,7 +12,10 @@ import { addComponentButton, addPageButton, componentSidebarItem, contextMenuIte
  * Idempotent — safe to call when Components is already active.
  */
 export const openComponentsSection = async (page) => {
-    await page.locator('[data-section="components"]').click();
+    // Clicking the open section's button folds the panel away, so only click to switch.
+    const button = page.locator('[data-section="components"]');
+    if ((await button.getAttribute('aria-pressed')) !== 'true')
+        await button.click();
     await addComponentButton(page).waitFor({ state: 'visible' });
 };
 /**
@@ -21,7 +24,10 @@ export const openComponentsSection = async (page) => {
  * component interaction opened the Components section. Idempotent.
  */
 export const openPagesSection = async (page) => {
-    await page.locator('[data-section="pages"]').click();
+    // Clicking the open section's button folds the panel away, so only click to switch.
+    const button = page.locator('[data-section="pages"]');
+    if ((await button.getAttribute('aria-pressed')) !== 'true')
+        await button.click();
     await page
         .getByRole('button', { name: 'Add page', exact: true })
         .waitFor({ state: 'visible' });
