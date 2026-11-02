@@ -1,11 +1,11 @@
 import type { Locator, Page } from '@playwright/test';
 /**
- * The iframe canvas experiment: with `SCAMP_E2E_IFRAME=1` the page draws in
- * an iframe, and these helpers look inside it.
- * see docs/plans/canvas-rendering-options.md, "The full test"
+ * The canvas draws the page in an iframe, and these helpers look inside it.
+ * `SCAMP_E2E_LEGACY_CANVAS=1` runs the suite on the legacy fallback instead,
+ * for as long as it exists. see docs/notes/iframe-canvas.md
  */
 export declare const IFRAME_CANVAS: boolean;
-/** The drawn page as a whole: the canvas frame today, the iframe's body in the experiment. */
+/** The drawn page as a whole: the iframe's body, or the canvas frame on the legacy fallback. */
 export declare const canvasContent: (page: Page) => Locator;
 /** Nodes inside one frame of the variant set, by its key ('' for the default look). */
 export declare const inVariantCell: (page: Page, key: string, selector: string) => Locator;
@@ -31,7 +31,7 @@ export declare const pageRoot: (page: Page) => Locator;
  */
 export declare const canvasElement: (page: Page, className: string) => Locator;
 /** The scaled frame the canvas renders inside. */
-/** Any selector, inside the drawn page: the canvas frame today, the iframe in the experiment. */
+/** Any selector, inside the drawn page: the iframe, or the canvas frame on the legacy fallback. */
 export declare const canvasLocator: (page: Page, selector: string) => Locator;
 export declare const canvasFrame: (page: Page) => Locator;
 /** The toolbar button for a given tool (exposed via role=button + accessible name). */

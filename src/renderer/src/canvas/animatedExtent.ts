@@ -36,7 +36,7 @@ export const animatedSubtreePredicate = (
   root: HTMLElement
 ): ((el: Element) => boolean) => {
   const animated = new Set<Element>();
-  // The iframe canvas experiment's page runs its animations in its own document.
+  // The iframe canvas's page runs its animations in its own document.
   const frames = Array.from(root.querySelectorAll('iframe'), (f) => f.contentDocument);
   const docs = [root.ownerDocument, ...frames.filter((d): d is Document => d !== null)];
   for (const animation of docs.flatMap((d) => d.getAnimations())) {

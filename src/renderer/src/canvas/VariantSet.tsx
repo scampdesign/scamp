@@ -10,8 +10,8 @@ import {
 } from '@lib/variantAxes';
 
 import { ElementRenderer } from './ElementRenderer';
-import { IframeCanvas } from './experiment/IframeCanvas';
-import { useIframeCanvasFlag } from './experiment/iframeCanvasFlag';
+import { IframeCanvas } from './IframeCanvas';
+import { useIframeCanvasFlag } from './iframeCanvasFlag';
 import { VariantFrameContext } from './variantFrame';
 import styles from './VariantSet.module.css';
 

@@ -3,7 +3,7 @@ import os from 'os';
 import path from 'path';
 import { _electron as electron, type Page } from '@playwright/test';
 
-import { applyIframeCanvasFlag, dismissSentryPrompt, test, expect } from '../fixtures/app';
+import { applyCanvasChoice, dismissSentryPrompt, test, expect } from '../fixtures/app';
 import { openPagesSection } from '../fixtures/components';
 import { OZONE_ARGS } from '../fixtures/launchArgs';
 import { pageRoot, pageSidebarItem } from '../fixtures/selectors';
@@ -88,7 +88,7 @@ test('keeps a conversation per page, on disk, across a restart', async ({ window
     const window2 = await again.firstWindow();
     await window2.waitForLoadState('domcontentloaded');
     await dismissSentryPrompt(window2);
-    await applyIframeCanvasFlag(window2);
+    await applyCanvasChoice(window2);
     await connect(window2);
     await expect(window2.getByTestId('agent-user-message')).toHaveText('What is on this page?');
     await expect(window2.getByTestId('agent-reply')).toContainText('The page has a header.');

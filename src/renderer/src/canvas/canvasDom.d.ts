@@ -1,9 +1,9 @@
 /**
- * The one way canvas code reaches the drawn page. Today's canvas draws into
- * the app's own document; the iframe experiment draws into an iframe's, and
- * registers it here. The canvas's chrome (handles, outlines, drop lines)
+ * The one way canvas code reaches the drawn page. The canvas draws into an
+ * iframe's document, which registers here; the legacy fallback draws into
+ * the app's own. The canvas's chrome (handles, outlines, drop lines)
  * always stays in the app's document.
- * see docs/plans/canvas-rendering-options.md, "The full test"
+ * see docs/notes/iframe-canvas.md
  *
  * Nodes from the iframe belong to its own window, so `instanceof HTMLElement`
  * is false for them. Use `isHtmlNode` instead.

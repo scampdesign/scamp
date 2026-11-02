@@ -9,11 +9,14 @@ import { openComponentsSection } from '../fixtures/components';
 import { pageRoot } from '../fixtures/selectors';
 
 /**
- * Experiment (option C1): speed of today's canvas against the iframe canvas
- * on real pages, and 30 read-only iframes under one transform. Prints its
- * numbers; asserts nothing about them. Copies each project to a temp folder,
- * so the originals are never opened. see docs/plans/canvas-rendering-options.md
+ * Speed of the legacy canvas against the iframe canvas on real pages, and 30
+ * read-only iframes under one transform. Prints its numbers; asserts nothing
+ * about them. Copies each project to a temp folder, so the originals are
+ * never opened. Opt-in (`SCAMP_E2E_SPEED=1`): it takes minutes, and two of
+ * its pages are projects on one machine. see docs/notes/iframe-canvas.md
  */
+
+test.skip(process.env['SCAMP_E2E_SPEED'] !== '1', 'speed measurements run only with SCAMP_E2E_SPEED=1');
 
 type Bench = {
   set: (on: boolean) => void;

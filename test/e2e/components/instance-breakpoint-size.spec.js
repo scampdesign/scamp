@@ -81,7 +81,7 @@ test.use({
     },
 });
 const widths = async (window) => window.evaluate(() => {
-    // The iframe canvas experiment draws in its own document, with no instance wrapper.
+    // The iframe canvas draws in its own document, with no instance wrapper.
     const drawn = document.querySelector('[data-testid="iframe-canvas"] iframe')?.contentDocument;
     const doc = drawn ?? document;
     const w = (sel) => Math.round(doc.querySelector(sel)?.getBoundingClientRect().width ?? -1);

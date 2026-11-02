@@ -1,19 +1,23 @@
 import { create } from 'zustand';
 import { benchEdits, benchFrames, removeFrames } from './bench';
-const KEY = 'scamp.iframeCanvas';
+// A new key, so a choice stored while the iframe was opt-in doesn't carry over.
+const LEGACY_KEY = 'scamp.legacyCanvas';
 const read = () => {
     try {
-        return globalThis.localStorage?.getItem(KEY) === '1';
+        return globalThis.localStorage?.getItem(LEGACY_KEY) !== '1';
     }
     catch {
-        return false;
+        return true;
     }
 };
 export const useIframeCanvasFlag = create((set) => ({
     on: read(),
     set: (on) => {
         try {
-            globalThis.localStorage?.setItem(KEY, on ? '1' : '0');
+            if (on)
+                globalThis.localStorage?.removeItem(LEGACY_KEY);
+            else
+                globalThis.localStorage?.setItem(LEGACY_KEY, '1');
         }
         catch {
             // The flag still holds for this session.

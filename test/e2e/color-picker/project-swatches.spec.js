@@ -49,7 +49,7 @@ test.describe('color picker: project swatches', () => {
                 return { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) };
             };
             const target = hexToRgb(expectedHex);
-            // The iframe canvas experiment draws from a stylesheet, not inline styles.
+            // The iframe canvas draws from a stylesheet, not inline styles.
             const drawn = document.querySelector('[data-testid="iframe-canvas"] iframe')?.contentDocument;
             const nodes = (drawn ?? document).querySelectorAll('div');
             for (const node of nodes) {

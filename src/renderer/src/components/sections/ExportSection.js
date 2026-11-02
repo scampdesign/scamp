@@ -18,7 +18,7 @@ const SCALE_OPTIONS = [
     { value: '2', label: '2×' },
     { value: '3', label: '3×' },
 ];
-// The iframe canvas experiment draws the page inside the frame, in its own body.
+// The iframe canvas draws the page inside the frame, in its own body.
 const findCanvasFrame = () => {
     const frame = document.querySelector('[data-testid="canvas-frame"]');
     const body = canvasQuery(frame, 'body');

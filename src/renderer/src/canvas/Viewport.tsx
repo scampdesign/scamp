@@ -26,8 +26,8 @@ import { CanvasBoundaryOverlay } from './CanvasBoundaryOverlay';
 import { useCanvasTheme } from './useCanvasTheme';
 import styles from './Viewport.module.css';
 import { canvasQuery, canvasQueryAll, clientRectOf, isHtmlNode, offsetIn } from './canvasDom';
-import { IframeCanvas } from './experiment/IframeCanvas';
-import { useIframeCanvasFlag } from './experiment/iframeCanvasFlag';
+import { IframeCanvas } from './IframeCanvas';
+import { useIframeCanvasFlag } from './iframeCanvasFlag';
 
 // Padding subtracted from the scroll container's inner width when
 // computing fit-to-width zoom. Mirrors the artboard's horizontal
@@ -144,7 +144,8 @@ export const Viewport = ({
   // own box, so a ResizeObserver on the frame alone wouldn't fire.
   const elements = useCanvasStore((s) => s.elements);
   const activeTool = useCanvasStore((s) => s.activeTool);
-  // Experiment: the page, the component's artboard, and (in `VariantSet`) each variant frame draw in an iframe.
+  // The page, the component's artboard, and (in `VariantSet`) each variant frame draw in an iframe;
+  // off is the legacy fallback for this release. see docs/notes/iframe-canvas.md
   const iframeFlag = useIframeCanvasFlag((s) => s.on);
   // The page's viewport height: what `100vh` means, as the preview's window would give it.
   const viewportHeight = useCanvasStore((s) => s.canvasMinHeight);

@@ -40,7 +40,7 @@ test('styling from the panel applies to the selection, not the element', async (
   const at = frameToClient(metrics, { x: 210, y: 205 });
   await window.mouse.dblclick(at.x, at.y);
   await window.evaluate(() => {
-    // The iframe canvas experiment draws the text, and holds its selection, in its own document.
+    // The iframe canvas draws the text, and holds its selection, in its own document.
     const doc = (document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? document);
     const node = doc.querySelector('[data-scamp-id^="text_"]');
     const first = node?.firstChild;

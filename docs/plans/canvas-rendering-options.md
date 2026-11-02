@@ -1,6 +1,9 @@
 # Canvas rendering: options to close the parity gap
 
-Status: **options, for review.** We did not build anything yet.
+Status: **decided (2026-11-02): the iframe canvas (C1) ships as the default**, with the
+legacy canvas behind `__scampIframeCanvas.set(false)` for one release. How it
+works: [iframe-canvas.md](../notes/iframe-canvas.md). Next: delete the legacy
+path and the inline translation layer (the plan's phase D).
 
 This document continues [canvas-iframe-plan.md](canvas-iframe-plan.md).
 The phase A test in that plan passed. This document compares that plan

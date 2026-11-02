@@ -58,6 +58,10 @@ export type ScampOptions = {
     appEnv: Record<string, string>;
 };
 export declare const test: import("playwright/test").TestType<import("playwright/test").PlaywrightTestArgs & import("playwright/test").PlaywrightTestOptions & ScampFixtures & ScampOptions, import("playwright/test").PlaywrightWorkerArgs & import("playwright/test").PlaywrightWorkerOptions>;
-/** With `SCAMP_E2E_IFRAME=1`, turn the iframe canvas on: for a window a spec launches itself. */
-export declare function applyIframeCanvasFlag(window: Page): Promise<void>;
+/**
+ * The iframe canvas, or the legacy one with `SCAMP_E2E_LEGACY_CANVAS=1`. Set
+ * either way, so a run never depends on a choice stored on this machine.
+ * Exported for a window a spec launches itself.
+ */
+export declare function applyCanvasChoice(window: Page): Promise<void>;
 export { expect } from '@playwright/test';

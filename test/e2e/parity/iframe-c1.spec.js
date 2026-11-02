@@ -3,9 +3,10 @@ import { IFRAME_CANVAS, pageRoot } from '../fixtures/selectors';
 import { PARITY_FIXTURES } from './fixtures';
 import { compareComputed, compareGeometry, computedInBrowser, describeComputed, describeDivergences, launchTruthBrowser, measure, measureInBrowser, } from './harness';
 /**
- * Experiment (option C1): every parity fixture drawn as the HTML export in
- * a same-origin iframe, measured against the browser oracle. Throwaway, on
- * the experiment branch only. see docs/plans/canvas-rendering-options.md
+ * Every parity fixture on the iframe canvas, measured against the browser
+ * drawing the SAVED file (`parity.spec.ts` uses the fixture's own CSS). The
+ * canvas-only root floor is set aside first, since the file never has it.
+ * see docs/notes/iframe-canvas.md
  */
 const TOLERANCE_PX = 1;
 const page = (body) => `import styles from './home.module.css';
@@ -125,6 +126,13 @@ for (const fixture of FIXTURES) {
             await expect(pageRoot(window)).toBeVisible();
             const today = await measure(window);
             const frame = await iframeCanvas(window);
+            // The truth here is the saved file; the root's 900px floor is the
+            // canvas's own, as on today's canvas, and the file never says so.
+            await frame.evaluate(() => {
+                const root = document.querySelector('[data-element-id="root"]');
+                if (root)
+                    root.style.minHeight = '';
+            });
             const mine = (await frame.evaluate(MEASURE_IFRAME));
             if (mine === null)
                 throw new Error('no root in the iframe');
@@ -143,7 +151,7 @@ for (const fixture of FIXTURES) {
                 const cdiffs = compareComputed(computed, truth.computed);
                 expect(cdiffs, describeComputed(cdiffs)).toEqual([]);
             }
-            // With SCAMP_E2E_IFRAME=1 the "today" side is the iframe too.
+            // Only on the legacy canvas is the "today" side something other than the iframe.
             if (fixture === VIEWPORT_UNITS && !IFRAME_CANVAS) {
                 // The point of the fixture: today's canvas gets this wrong.
                 expect(todayDiffs.length, 'today’s canvas diverges on vh').toBeGreaterThan(0);

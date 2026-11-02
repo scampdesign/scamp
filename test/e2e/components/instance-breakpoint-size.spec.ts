@@ -91,7 +91,7 @@ const widths = async (
   window: Parameters<typeof pageRoot>[0]
 ): Promise<{ root: number; a: number; b: number; c: number }> =>
   window.evaluate(() => {
-    // The iframe canvas experiment draws in its own document, with no instance wrapper.
+    // The iframe canvas draws in its own document, with no instance wrapper.
     const drawn = document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument;
     const doc = drawn ?? document;
     const w = (sel: string): number =>

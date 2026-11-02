@@ -48,7 +48,7 @@ export const MEASURE_SCRIPT = `(() => {
     const inst = instanceOf(el);
     return inst ? inst + '/' + own : own;
   };
-  // The iframe canvas experiment draws the page in a document of its own;
+  // The iframe canvas draws the page in a document of its own;
   // the oracle's plain document has no such iframe.
   const canvasIframe = document.querySelector('[data-testid="iframe-canvas"] iframe');
   const doc = (canvasIframe && canvasIframe.contentDocument) || document;
@@ -385,7 +385,7 @@ export const hideCanvasChrome = async (page: Page): Promise<void> => {
       [${CANVAS_SCOPE_ATTR}] [class*="andle"] { visibility: hidden !important; }
     `,
   });
-  // The iframe canvas experiment draws its outlines inside the page, from marks.
+  // The iframe canvas draws its outlines inside the page, from marks.
   await page.evaluate(() => {
     const doc = document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument;
     if (!doc) return;

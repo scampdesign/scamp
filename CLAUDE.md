@@ -29,7 +29,8 @@ you can do here, and a wrong guess costs more context than this table.
 | TSX / CSS output | `src/renderer/lib/generateCode/` — `declarations.ts` is where a property becomes CSS |
 | Read files back into the model | `src/renderer/lib/parseCode/` |
 | A CSS property's typed mapping | `src/renderer/lib/cssPropertyMap.ts`, `parsers/` for each shorthand |
-| Draw an element on the canvas | `src/renderer/src/canvas/ElementRenderer.tsx` |
+| Draw the page on the canvas | `src/renderer/src/canvas/IframeCanvas.tsx` (the page as HTML in an iframe); read `docs/notes/iframe-canvas.md` first. `ElementRenderer.tsx` is the legacy canvas, kept one release as a fallback |
+| Reach the drawn page from canvas code | `src/renderer/src/canvas/canvasDom.ts` — never `document` directly |
 | Canvas frame, zoom, theme variables | `src/renderer/src/canvas/Viewport.tsx` |
 | Theme tokens reaching the canvas | `src/renderer/store/canvas/slices/designSystem.ts` (`setThemeData`), consumed in `Viewport.tsx` |
 | Canvas state, selection, elements | `src/renderer/store/canvas/slices/` — one slice per domain |

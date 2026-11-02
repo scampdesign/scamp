@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/app';
 import { IFRAME_CANVAS, canvasElement, pageRoot } from '../fixtures/selectors';
 
 /**
- * The iframe canvas experiment draws no scrollbars of its own, even when the
+ * The iframe canvas draws no scrollbars of its own, even when the
  * page's content runs past the canvas's edge: today's canvas is a div, which
  * never scrolls either.
  */

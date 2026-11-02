@@ -4,6 +4,14 @@ import * as path from 'path';
 import { test, expect, stubOpenDialog } from '../fixtures/app';
 import { openComponentsSection } from '../fixtures/components';
 import { pageRoot } from '../fixtures/selectors';
+/**
+ * Speed of the legacy canvas against the iframe canvas on real pages, and 30
+ * read-only iframes under one transform. Prints its numbers; asserts nothing
+ * about them. Copies each project to a temp folder, so the originals are
+ * never opened. Opt-in (`SCAMP_E2E_SPEED=1`): it takes minutes, and two of
+ * its pages are projects on one machine. see docs/notes/iframe-canvas.md
+ */
+test.skip(process.env['SCAMP_E2E_SPEED'] !== '1', 'speed measurements run only with SCAMP_E2E_SPEED=1');
 /** Resident memory of the window's renderer process, in MB (Linux). */
 const rendererRssMb = async (app) => {
     const pid = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.webContents.getOSProcessId() ?? 0);

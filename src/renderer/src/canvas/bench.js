@@ -1,9 +1,8 @@
 import { useCanvasStore } from '@store/canvasSlice';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 /**
- * Experiment only: timings for the canvas, called from the e2e
- * measurements through `globalThis.__scampIframeCanvas`.
- * see docs/plans/canvas-rendering-options.md
+ * Timings for the canvas, called from the e2e speed measurements through
+ * `globalThis.__scampIframeCanvas`. see docs/notes/iframe-canvas.md
  */
 const nextPaint = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 const spread = (values) => {

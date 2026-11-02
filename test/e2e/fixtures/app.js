@@ -161,14 +161,17 @@ export const test = base.extend({
         const window = await app.firstWindow();
         await window.waitForLoadState('domcontentloaded');
         await dismissSentryPrompt(window);
-        await applyIframeCanvasFlag(window);
+        await applyCanvasChoice(window);
         await use(window);
     },
 });
-/** With `SCAMP_E2E_IFRAME=1`, turn the iframe canvas on: for a window a spec launches itself. */
-export async function applyIframeCanvasFlag(window) {
-    if (process.env['SCAMP_E2E_IFRAME'] !== '1')
-        return;
-    await window.evaluate(() => globalThis.__scampIframeCanvas.set(true));
+/**
+ * The iframe canvas, or the legacy one with `SCAMP_E2E_LEGACY_CANVAS=1`. Set
+ * either way, so a run never depends on a choice stored on this machine.
+ * Exported for a window a spec launches itself.
+ */
+export async function applyCanvasChoice(window) {
+    const on = process.env['SCAMP_E2E_LEGACY_CANVAS'] !== '1';
+    await window.evaluate((value) => globalThis.__scampIframeCanvas.set(value), on);
 }
 export { expect } from '@playwright/test';

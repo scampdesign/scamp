@@ -3,21 +3,24 @@ import { create } from 'zustand';
 import { benchEdits, benchFrames, removeFrames } from './bench';
 
 /**
- * Experiment only: draw the page canvas as the HTML export inside a
- * same-origin iframe (option C1). see docs/plans/canvas-rendering-options.md
+ * The canvas draws the page in an iframe (`IframeCanvas`). For one release
+ * today's canvas stays reachable as a fallback, from the developer tools:
+ * `__scampIframeCanvas.set(false)`, remembered on this machine.
+ * see docs/notes/iframe-canvas.md
  */
 type IframeCanvasFlag = {
   on: boolean;
   set: (on: boolean) => void;
 };
 
-const KEY = 'scamp.iframeCanvas';
+// A new key, so a choice stored while the iframe was opt-in doesn't carry over.
+const LEGACY_KEY = 'scamp.legacyCanvas';
 
 const read = (): boolean => {
   try {
-    return globalThis.localStorage?.getItem(KEY) === '1';
+    return globalThis.localStorage?.getItem(LEGACY_KEY) !== '1';
   } catch {
-    return false;
+    return true;
   }
 };
 
@@ -25,7 +28,8 @@ export const useIframeCanvasFlag = create<IframeCanvasFlag>((set) => ({
   on: read(),
   set: (on) => {
     try {
-      globalThis.localStorage?.setItem(KEY, on ? '1' : '0');
+      if (on) globalThis.localStorage?.removeItem(LEGACY_KEY);
+      else globalThis.localStorage?.setItem(LEGACY_KEY, '1');
     } catch {
       // The flag still holds for this session.
     }
@@ -33,7 +37,7 @@ export const useIframeCanvasFlag = create<IframeCanvasFlag>((set) => ({
   },
 }));
 
-/** Timings the experiment reports, read by the e2e measurements. */
+/** Timings the iframe canvas reports, read by the e2e speed measurements. */
 export type IframeCanvasStats = {
   firstDrawMs: number | null;
   /** Each update: building the HTML and CSS, then patching the DOM. */

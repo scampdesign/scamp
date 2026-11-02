@@ -112,7 +112,7 @@ const instanceParentScampId = async (
   window: Parameters<typeof measureFrame>[0]
 ): Promise<string | null> =>
   window.evaluate(() => {
-    // The iframe canvas experiment draws the page inside an iframe.
+    // The iframe canvas draws the page inside an iframe.
     const drawn = document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? document;
     const instance = drawn.querySelector('[data-scamp-instance-id]');
     if (!instance) return null;

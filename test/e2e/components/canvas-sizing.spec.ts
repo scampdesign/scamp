@@ -130,7 +130,7 @@ test.describe('components: canvas sizing', () => {
       if (!frame) return { right: -1, bottom: -1 };
       let right = 0;
       let bottom = 0;
-      // The iframe canvas experiment draws inside an iframe in the frame.
+      // The iframe canvas draws inside an iframe in the frame.
       const drawn = frame.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? frame;
       for (const node of drawn.querySelectorAll('[data-element-id]')) {
         const el = node as HTMLElement;
@@ -225,7 +225,7 @@ export default function Bar() {
           const page = document.querySelector(
             '[data-testid="canvas-frame"] [data-element-id="root"]'
           ) ?? document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument?.querySelector('[data-element-id="root"]');
-          // In the iframe canvas experiment the instance has no wrapper: it is the component's root.
+          // On the iframe canvas the instance has no wrapper: it is the component's root.
           const innerRoot = (document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? document).querySelector(
             '[data-scamp-instance-id] [data-scamp-id="root"], [data-scamp-instance-id][data-scamp-id="root"]'
           );

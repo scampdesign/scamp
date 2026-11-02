@@ -1,7 +1,7 @@
 /**
  * Patch `from` to match `to` in place: attributes, text, and children, matched
  * by position and checked by tag and first class. A node that doesn't match is
- * replaced whole. Experiment only. see docs/plans/canvas-rendering-options.md
+ * replaced whole. see docs/notes/iframe-canvas.md
  *
  * Checks `nodeType`, never `instanceof`: the nodes live in the iframe's own
  * window, whose `Element` is not this window's.

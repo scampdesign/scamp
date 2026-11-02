@@ -6,19 +6,19 @@ import { collectExpandedInstances, generateHtml } from '@lib/generateHtml';
 import { assemblePageCss, rewriteCssUrls } from '@lib/htmlExportCss';
 import { mediaForViewport } from '@lib/canvasStylesheet';
 import { variantKeyParts } from '@lib/element';
-import { useAppTheme } from '../../hooks/useAppTheme';
-import { animatedSubtreePredicate, layoutEdges } from '../animatedExtent';
-import { isHtmlNode, releaseCanvasIframe, setCanvasIframe } from '../canvasDom';
-import { selectionOffsetsWithin } from '../textSelectionOffsets';
-import { useCanvasTheme } from '../useCanvasTheme';
+import { useAppTheme } from '../hooks/useAppTheme';
+import { animatedSubtreePredicate, layoutEdges } from './animatedExtent';
+import { isHtmlNode, releaseCanvasIframe, setCanvasIframe } from './canvasDom';
+import { selectionOffsetsWithin } from './textSelectionOffsets';
+import { useCanvasTheme } from './useCanvasTheme';
 import { iframeCanvasStats } from './iframeCanvasFlag';
 import { morphDom } from './morphDom';
 import styles from './IframeCanvas.module.css';
 /**
- * Experiment only (option C1): the open page drawn as the HTML export, in a
- * same-origin iframe with the page's real stylesheet, theme.css and fonts.
- * The canvas's interaction layer sits over it and reaches it through
- * `canvasDom`. see docs/plans/canvas-rendering-options.md, "The full test"
+ * The canvas: the open page drawn as the HTML export, in a same-origin
+ * iframe with the page's real stylesheet, theme.css and fonts. The
+ * interaction layer sits over it and reaches it through `canvasDom`.
+ * see docs/notes/iframe-canvas.md
  */
 const SHELL = '<!doctype html><html><head><meta charset="utf-8" />' +
     '<style data-sheet="viewport"></style><style data-sheet="theme"></style><style data-sheet="page"></style>' +

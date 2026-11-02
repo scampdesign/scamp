@@ -104,7 +104,7 @@ test.use({
  * which is what the drop is supposed to control.
  */
 const instanceParentScampId = async (window) => window.evaluate(() => {
-    // The iframe canvas experiment draws the page inside an iframe.
+    // The iframe canvas draws the page inside an iframe.
     const drawn = document.querySelector('[data-testid="iframe-canvas"] iframe')?.contentDocument ?? document;
     const instance = drawn.querySelector('[data-scamp-instance-id]');
     if (!instance)

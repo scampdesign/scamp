@@ -17,9 +17,10 @@ import {
 } from './harness';
 
 /**
- * Experiment (option C1): every parity fixture drawn as the HTML export in
- * a same-origin iframe, measured against the browser oracle. Throwaway, on
- * the experiment branch only. see docs/plans/canvas-rendering-options.md
+ * Every parity fixture on the iframe canvas, measured against the browser
+ * drawing the SAVED file (`parity.spec.ts` uses the fixture's own CSS). The
+ * canvas-only root floor is set aside first, since the file never has it.
+ * see docs/notes/iframe-canvas.md
  */
 
 const TOLERANCE_PX = 1;
@@ -180,7 +181,7 @@ for (const fixture of FIXTURES) {
         const cdiffs = compareComputed(computed, truth.computed);
         expect(cdiffs, describeComputed(cdiffs)).toEqual([]);
       }
-      // With SCAMP_E2E_IFRAME=1 the "today" side is the iframe too.
+      // Only on the legacy canvas is the "today" side something other than the iframe.
       if (fixture === VIEWPORT_UNITS && !IFRAME_CANVAS) {
         // The point of the fixture: today's canvas gets this wrong.
         expect(todayDiffs.length, 'today’s canvas diverges on vh').toBeGreaterThan(0);

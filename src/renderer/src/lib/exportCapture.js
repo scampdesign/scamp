@@ -1,7 +1,7 @@
 import { toPng, toSvg } from 'html-to-image';
 import { buildFontEmbedCss } from './embedFonts';
 import elementStyles from '../canvas/ElementRenderer.module.css';
-import { EDITOR_MARKS, canvasSnapshotHtml } from '../canvas/experiment/IframeCanvas';
+import { EDITOR_MARKS, canvasSnapshotHtml } from '../canvas/IframeCanvas';
 /**
  * Skip nodes that are part of the editor chrome. The marker
  * `data-canvas-chrome="true"` lives on the `CanvasInteractionLayer`
@@ -53,7 +53,7 @@ const withChromeClassesHidden = async (node, fn) => {
     // restore (rare, but cheap insurance).
     const restorations = [];
     const candidates = [node, ...node.querySelectorAll('*')];
-    // The iframe canvas experiment marks its outlines with attributes instead.
+    // The iframe canvas marks its outlines with attributes instead.
     const marks = [];
     for (const el of candidates) {
         for (const attr of EDITOR_MARKS) {
@@ -211,7 +211,7 @@ export const captureIsolatedPng = async (inputs) => {
     const height = inputs.node.offsetHeight;
     if (width === 0 || height === 0)
         return null;
-    // The iframe canvas experiment: its nodes need its own stylesheets, so the
+    // The iframe canvas: its nodes need its own stylesheets, so the
     // copy is a document of its own rather than a clone in this one.
     const drawn = inputs.node.querySelector('[data-testid="iframe-canvas"] iframe')?.contentDocument;
     if (drawn !== null && drawn !== undefined) {

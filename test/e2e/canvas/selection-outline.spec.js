@@ -3,8 +3,8 @@ import { waitForSaved } from '../fixtures/assertions';
 import { drawAndSelectRect } from '../fixtures/panel';
 import { canvasElement, pageRoot } from '../fixtures/selectors';
 /**
- * A selected element is outlined on the element itself, on today's canvas
- * and on the iframe canvas experiment (`SCAMP_E2E_IFRAME=1`) alike.
+ * A selected element is outlined on the element itself, on the iframe canvas
+ * and on the legacy fallback (`SCAMP_E2E_LEGACY_CANVAS=1`) alike.
  */
 test.describe('canvas: selection outline', () => {
     test('outlines the selected element, each of a multi-select, and none once deselected', async ({ window }) => {

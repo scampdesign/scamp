@@ -1,14 +1,14 @@
 /**
- * The iframe canvas experiment: with `SCAMP_E2E_IFRAME=1` the page draws in
- * an iframe, and these helpers look inside it.
- * see docs/plans/canvas-rendering-options.md, "The full test"
+ * The canvas draws the page in an iframe, and these helpers look inside it.
+ * `SCAMP_E2E_LEGACY_CANVAS=1` runs the suite on the legacy fallback instead,
+ * for as long as it exists. see docs/notes/iframe-canvas.md
  */
-export const IFRAME_CANVAS = process.env['SCAMP_E2E_IFRAME'] === '1';
+export const IFRAME_CANVAS = process.env['SCAMP_E2E_LEGACY_CANVAS'] !== '1';
 // In a variant set every frame is an iframe; the live one is the editable page.
 const drawn = (page) => IFRAME_CANVAS
     ? page.frameLocator('[data-testid="iframe-canvas"]:not([data-variant-live="false"] *) > iframe')
     : page;
-/** The drawn page as a whole: the canvas frame today, the iframe's body in the experiment. */
+/** The drawn page as a whole: the iframe's body, or the canvas frame on the legacy fallback. */
 export const canvasContent = (page) => IFRAME_CANVAS ? drawn(page).locator('body') : page.locator('[data-testid="canvas-frame"]');
 /** Nodes inside one frame of the variant set, by its key ('' for the default look). */
 export const inVariantCell = (page, key, selector) => {
@@ -44,7 +44,7 @@ export const canvasElement = (page, className) => IFRAME_CANVAS
     ? drawn(page).locator(`[data-scamp-id="${className}"]`)
     : page.locator(`[data-testid="canvas-frame"] [data-scamp-id="${className}"]`);
 /** The scaled frame the canvas renders inside. */
-/** Any selector, inside the drawn page: the canvas frame today, the iframe in the experiment. */
+/** Any selector, inside the drawn page: the iframe, or the canvas frame on the legacy fallback. */
 export const canvasLocator = (page, selector) => IFRAME_CANVAS ? drawn(page).locator(selector) : page.locator(`[data-testid="canvas-frame"] ${selector}`);
 export const canvasFrame = (page) => page.locator('[data-testid="canvas-frame"]');
 /** The toolbar button for a given tool (exposed via role=button + accessible name). */
