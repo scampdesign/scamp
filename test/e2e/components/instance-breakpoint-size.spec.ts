@@ -91,13 +91,17 @@ const widths = async (
   window: Parameters<typeof pageRoot>[0]
 ): Promise<{ root: number; a: number; b: number; c: number }> =>
   window.evaluate(() => {
+    // The iframe canvas experiment draws in its own document, with no instance wrapper.
+    const drawn = document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument;
+    const doc = drawn ?? document;
     const w = (sel: string): number =>
-      Math.round(document.querySelector(sel)?.getBoundingClientRect().width ?? -1);
+      Math.round(doc.querySelector(sel)?.getBoundingClientRect().width ?? -1);
+    const inst = (id: string): string => `[data-scamp-instance-id="${id}"] [data-scamp-id="root"], [data-scamp-instance-id="${id}"][data-scamp-id="root"]`;
     return {
-      root: w('[data-testid="canvas-frame"] [data-scamp-id="root"]'),
-      a: w('[data-scamp-instance-id="inst_a024"] [data-scamp-id="root"]'),
-      b: w('[data-scamp-instance-id="inst_b025"] [data-scamp-id="root"]'),
-      c: w('[data-scamp-instance-id="inst_c026"] [data-scamp-id="root"]'),
+      root: w(drawn ? '[data-element-id="root"]' : '[data-testid="canvas-frame"] [data-scamp-id="root"]'),
+      a: w(inst('inst_a024')),
+      b: w(inst('inst_b025')),
+      c: w(inst('inst_c026')),
     };
   });
 

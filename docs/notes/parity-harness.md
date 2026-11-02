@@ -54,6 +54,16 @@ found on its first run are fixed: the `align-items` default
 closed when the canvas started loading the page's own stylesheet
 ([note](canvas-injected-stylesheet.md)).
 
+## The iframe canvas experiment
+
+With `SCAMP_E2E_IFRAME=1` the canvas side is measured inside the canvas
+iframe (`MEASURE_SCRIPT` falls back to `document` on the oracle's page,
+which has none). `compareGeometry` then skips one field, `root.h`: a view's
+root loses `min-height: 100vh` on parse, today's canvas puts a 900px floor
+back that the saved file doesn't have, and the oracle keeps the fixture's.
+The iframe draws the file. Which is right is open — see
+`docs/plans/canvas-rendering-options.md`, "The full test".
+
 ## Fixtures must not depend on text metrics
 
 The canvas runs in Electron's Chromium and the oracle in a standalone

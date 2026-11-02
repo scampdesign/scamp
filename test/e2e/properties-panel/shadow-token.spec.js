@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import { test, expect } from '../fixtures/app';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 import { panelSection } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 /**
  * `box-shadow: var(--shadow-card)` shows in the Shadow section as the
  * token, and can be detached into layers or removed.
@@ -43,7 +43,7 @@ const withShadowToken = async (window, themePath) => {
     await expect(pageRoot(window)).toBeVisible();
 };
 const selectCard = async (window) => {
-    const box = await window.locator('[data-scamp-id="card_a1b2"]').boundingBox();
+    const box = await canvasElement(window, 'card_a1b2').boundingBox();
     if (box === null)
         throw new Error('card not on screen');
     await window.mouse.click(box.x + box.width / 2, box.y + box.height / 2);

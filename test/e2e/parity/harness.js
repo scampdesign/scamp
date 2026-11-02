@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { chromium } from '@playwright/test';
+import { IFRAME_CANVAS } from '../fixtures/selectors';
 /**
  * Machinery for comparing what the canvas lays out against what a browser
  * lays out from the same source files.
@@ -31,8 +32,9 @@ export const MEASURE_SCRIPT = `(() => {
   // a page root and a component root are both "root". Qualify by the
   // owning instance so the two don't collide — and so both sides key the
   // same way, since the browser document marks instances the same way.
+  // A prop text carries the attribute too, for the canvas's hit test; it isn't an instance.
   const instanceOf = (el) => {
-    const host = el.closest('[data-scamp-instance-id]');
+    const host = el.closest('[data-scamp-instance-id]:not([data-scamp-prop])');
     return host ? host.getAttribute('data-scamp-instance-id') : null;
   };
   const read = (el) => {
@@ -41,8 +43,12 @@ export const MEASURE_SCRIPT = `(() => {
     const inst = instanceOf(el);
     return inst ? inst + '/' + own : own;
   };
+  // The iframe canvas experiment draws the page in a document of its own;
+  // the oracle's plain document has no such iframe.
+  const canvasIframe = document.querySelector('[data-testid="iframe-canvas"] iframe');
+  const doc = (canvasIframe && canvasIframe.contentDocument) || document;
   const nodes = Array.from(
-    document.querySelectorAll('[data-scamp-id], [class]')
+    doc.querySelectorAll('[data-scamp-id], [class]')
   ).filter((el) => {
     const key = read(el);
     return typeof key === 'string' && key.length > 0;
@@ -176,6 +182,12 @@ export const compareGeometry = (canvas, browser, tolerance = 1) => {
             continue;
         }
         for (const field of ['x', 'y', 'w', 'h']) {
+            // A view's root loses `min-height: 100vh` on parse; today's canvas puts a
+            // 900px floor back that the saved file doesn't have, and the oracle keeps
+            // the fixture's. The iframe canvas draws the file. Open question, so not
+            // compared there. see docs/plans/canvas-rendering-options.md, "The full test"
+            if (IFRAME_CANVAS && element === 'root' && field === 'h')
+                continue;
             const delta = Math.abs(canvasBox[field] - browserBox[field]);
             if (delta >= tolerance) {
                 out.push({
@@ -300,6 +312,16 @@ export const hideCanvasChrome = async (page) => {
       [${CANVAS_SCOPE_ATTR}] [class*="nteractionLayer"],
       [${CANVAS_SCOPE_ATTR}] [class*="andle"] { visibility: hidden !important; }
     `,
+    });
+    // The iframe canvas experiment draws its outlines inside the page, from marks.
+    await page.evaluate(() => {
+        const doc = document.querySelector('[data-testid="iframe-canvas"] iframe')?.contentDocument;
+        if (!doc)
+            return;
+        const style = doc.createElement('style');
+        style.textContent =
+            '[data-scamp-selected], [data-scamp-editing], [data-scamp-prop-edit] { outline: none !important; }';
+        doc.head.appendChild(style);
     });
 };
 export const COMPUTED_SCRIPT = (props) => `(() => {

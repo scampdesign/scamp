@@ -7,6 +7,7 @@ import { assemblePageCss, rewriteCssUrls } from '@lib/htmlExportCss';
 import { mediaForViewport } from '@lib/canvasStylesheet';
 import { variantKeyParts } from '@lib/element';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { animatedSubtreePredicate, layoutEdges } from '../animatedExtent';
 import { isHtmlNode, releaseCanvasIframe, setCanvasIframe } from '../canvasDom';
 import { selectionOffsetsWithin } from '../textSelectionOffsets';
 import { useCanvasTheme } from '../useCanvasTheme';
@@ -25,21 +26,43 @@ const SHELL = '<!doctype html><html><head><meta charset="utf-8" />' +
     '<body style="margin: 0; min-height: 100vh"></body></html>';
 const FONT_LINK = 'link[data-scamp-font-import]';
 const SELECTED_ATTR = 'data-scamp-selected';
+const EDITING_ATTR = 'data-scamp-editing';
+const PROP_EDIT_ATTR = 'data-scamp-prop-edit';
+const MARKS = [SELECTED_ATTR, EDITING_ATTR, PROP_EDIT_ATTR];
 /**
  * The editor's marks on the drawn page, as `.element.selected` draws them on
  * today's canvas. Colors come from the app's chrome, which the iframe can't see.
  */
-const chromeCss = (accent, component) => 
 // The iframe is as tall as the page, and today's canvas (a div) never scrolls: content past the edge mustn't add scrollbars.
-'html { overflow: hidden !important; }\n' +
+const NO_SCROLL_CSS = 'html { overflow: hidden !important; }\n';
+const chromeCss = (accent, component) => NO_SCROLL_CSS +
     `[${SELECTED_ATTR}] { outline: 2px solid ${accent} !important; outline-offset: -2px !important; }\n` +
-    `[${SELECTED_ATTR}][data-scamp-instance-id] { outline-color: ${component} !important; }`;
+    `[${SELECTED_ATTR}][data-scamp-instance-id] { outline-color: ${component} !important; }\n` +
+    `[${EDITING_ATTR}] { outline: 1px dashed ${accent} !important; outline-offset: 2px !important; cursor: text; }\n` +
+    // A selected instance's editable prop texts.
+    `[${PROP_EDIT_ATTR}] { outline: 1px dashed ${component} !important; outline-offset: 1px !important; cursor: text; }`;
 const PAGE_BODY_STYLE = 'margin: 0; min-height: 100vh';
+/** The drawn page as a document of its own, without the editor's marks: what a thumbnail shows. */
+export const canvasSnapshotHtml = (doc) => {
+    const copy = doc.documentElement.cloneNode(true);
+    if (!isHtmlNode(copy))
+        return '';
+    const chrome = copy.querySelector('style[data-sheet="chrome"]');
+    if (chrome !== null)
+        chrome.textContent = NO_SCROLL_CSS;
+    for (const attr of [...MARKS, 'contenteditable']) {
+        for (const node of copy.querySelectorAll(`[${attr}]`))
+            node.removeAttribute(attr);
+    }
+    return `<!doctype html>${copy.outerHTML}`;
+};
 /** How far the drawn nodes reach, in the iframe's own pixels: a root can be 0 tall with what hangs past it. */
 const contentExtent = (doc) => {
     const body = doc.body.getBoundingClientRect();
     let w = body.right;
     let h = body.bottom;
+    // A running animation is measured where it rests, as the canvas extent does.
+    const isAnimated = animatedSubtreePredicate(doc.body);
     for (const node of doc.body.querySelectorAll('[data-scamp-id]')) {
         const r = node.getBoundingClientRect();
         if (r.width === 0 && r.height === 0)
@@ -47,8 +70,11 @@ const contentExtent = (doc) => {
         // A closed menu's panel is there but hidden: the frame hugs what shows.
         if (doc.defaultView?.getComputedStyle(node).visibility === 'hidden')
             continue;
-        w = Math.max(w, r.right);
-        h = Math.max(h, r.bottom);
+        const edges = isAnimated(node) && isHtmlNode(node) ? layoutEdges(node, doc.body) : r;
+        if (edges === null)
+            continue;
+        w = Math.max(w, edges.right);
+        h = Math.max(h, edges.bottom);
     }
     return { w: Math.ceil(w), h: Math.ceil(h) };
 };
@@ -70,8 +96,10 @@ const assetUrlFor = (projectPath, legacy) => (url) => {
  * unit, like the `@media` to `@container` one the canvas does today.
  */
 const VH_RE = /(-?\d*\.?\d+)(?:[dsl])?vh\b/g;
-const pinViewportUnits = (css) => css.replace(VH_RE, 'calc($1 * var(--scamp-vh))');
-export const IframeCanvas = ({ viewportHeight, variant }) => {
+// `vw` the same way, for an iframe widened to show what runs past the canvas.
+const VW_RE = /(-?\d*\.?\d+)(?:[dsl])?vw\b/g;
+const pinViewportUnits = (css) => css.replace(VH_RE, 'calc($1 * var(--scamp-vh))').replace(VW_RE, 'calc($1 * var(--scamp-vw))');
+export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }) => {
     const elements = useCanvasStore((s) => s.elements);
     const rootId = useCanvasStore((s) => s.rootElementId);
     const breakpoints = useCanvasStore((s) => s.breakpoints);
@@ -83,12 +111,17 @@ export const IframeCanvas = ({ viewportHeight, variant }) => {
     const legacy = useCanvasStore((s) => s.projectFormat === 'legacy');
     const editingElementId = useCanvasStore((s) => s.editingElementId);
     const selectedElementIds = useCanvasStore((s) => s.selectedElementIds);
+    const editingInstanceProp = useCanvasStore((s) => s.editingInstanceProp);
     const appTheme = useAppTheme();
     // A component's frame is its own size, not a viewport; its `@media` follow
     // the breakpoint picked instead, as today's canvas does.
-    const mediaWidth = useCanvasStore((s) => s.activeComponent?.kind === 'component'
+    const componentMediaWidth = useCanvasStore((s) => s.activeComponent?.kind === 'component'
         ? s.breakpoints.find((b) => b.id === s.activeBreakpointId)?.width
         : undefined);
+    // Widened past the canvas to show its overflow: the viewport is no longer
+    // the canvas, so `@media` resolve for the canvas width instead.
+    const [wide, setWide] = useState(false);
+    const mediaWidth = componentMediaWidth ?? (wide ? overflowWidth : undefined);
     const { themeCssVars } = useCanvasTheme();
     const live = variant?.live ?? true;
     const hugWidth = variant?.hugWidth === true;
@@ -160,6 +193,16 @@ export const IframeCanvas = ({ viewportHeight, variant }) => {
                 return;
             }
         }
+        else if (overflowWidth !== undefined) {
+            // `scrollWidth` is the cheap test; the drawn nodes are the answer (it counts an
+            // animation mid-move, and can't shrink while wide).
+            const scrollWidth = target.documentElement.scrollWidth;
+            const reach = wide || scrollWidth > overflowWidth + 1 ? contentExtent(target).w : scrollWidth;
+            const nextWide = reach > overflowWidth + 1;
+            host.style.width = nextWide ? `${reach}px` : '';
+            if (nextWide !== wide)
+                setWide(nextWide);
+        }
         host.style.height = `${viewportHeight}px`;
         host.style.height = `${Math.max(viewportHeight, target.documentElement.scrollHeight)}px`;
     };
@@ -168,7 +211,9 @@ export const IframeCanvas = ({ viewportHeight, variant }) => {
             return;
         const start = performance.now();
         const viewport = doc.querySelector('style[data-sheet="viewport"]');
-        const vh = `:root { --scamp-vh: ${viewportHeight / 100}px; }`;
+        const vw = wide && overflowWidth !== undefined ? `${overflowWidth / 100}px` : '1vw';
+        const vh = `:root { --scamp-vh: ${viewportHeight / 100}px; --scamp-vw: ${vw}; }` +
+            (wide && overflowWidth !== undefined ? ` html { width: ${overflowWidth}px; }` : '');
         if (viewport !== null && viewport.textContent !== vh)
             viewport.textContent = vh;
         const theme = doc.querySelector('style[data-sheet="theme"]');
@@ -197,19 +242,27 @@ export const IframeCanvas = ({ viewportHeight, variant }) => {
         else
             iframeCanvasStats.updates.push({ buildMs: built.buildMs, patchMs });
         fitHeight(doc);
-    }, [doc, built, themeCss, viewportHeight, bodyStyle, rootId, variant?.key]);
-    // Selection outlines. Runs after the patch above, which drops attributes the markup doesn't have.
+    }, [doc, built, themeCss, viewportHeight, bodyStyle, rootId, variant?.key, wide, overflowWidth]);
+    // The editor's marks. Runs after the patch above, which drops attributes the markup doesn't have.
     useLayoutEffect(() => {
         if (doc === null)
             return;
-        for (const node of doc.querySelectorAll(`[${SELECTED_ATTR}]`))
-            node.removeAttribute(SELECTED_ATTR);
+        for (const attr of MARKS)
+            for (const node of doc.querySelectorAll(`[${attr}]`))
+                node.removeAttribute(attr);
         if (!live)
             return;
         for (const id of selectedElementIds) {
-            doc.querySelector(`[data-element-id="${CSS.escape(id)}"]`)?.setAttribute(SELECTED_ATTR, '');
+            const key = CSS.escape(id);
+            doc.querySelector(`[data-element-id="${key}"]`)?.setAttribute(SELECTED_ATTR, '');
+            for (const prop of doc.querySelectorAll(`[data-scamp-prop][data-scamp-instance-id="${key}"]`)) {
+                prop.setAttribute(PROP_EDIT_ATTR, '');
+            }
         }
-    }, [doc, built, bodyStyle, selectedElementIds, live]);
+        if (editingElementId !== null) {
+            doc.querySelector(`[data-element-id="${CSS.escape(editingElementId)}"]`)?.setAttribute(EDITING_ATTR, '');
+        }
+    }, [doc, built, bodyStyle, selectedElementIds, editingElementId, live]);
     useLayoutEffect(() => {
         const sheet = doc?.querySelector('style[data-sheet="chrome"]');
         if (sheet === null || sheet === undefined)
@@ -257,7 +310,7 @@ export const IframeCanvas = ({ viewportHeight, variant }) => {
         const observer = new ResizeObserver(() => fitHeight(doc));
         observer.observe(doc.body);
         return () => observer.disconnect();
-    }, [doc, viewportHeight, hugWidth, hugHeight]);
+    }, [doc, viewportHeight, hugWidth, hugHeight, wide, overflowWidth]);
     // Text editing, in the iframe: the interaction layer stops taking pointer
     // events while an element edits, so clicks reach the text directly.
     useEffect(() => {
@@ -289,23 +342,71 @@ export const IframeCanvas = ({ viewportHeight, variant }) => {
             }
         };
         node.setAttribute('contenteditable', 'true');
-        node.focus();
+        // Select it all, as today's canvas does, so typing replaces it.
+        node.focus({ preventScroll: true });
         const range = doc.createRange();
         range.selectNodeContents(node);
-        range.collapse(false);
         view?.getSelection()?.removeAllRanges();
         view?.getSelection()?.addRange(range);
         node.addEventListener('blur', finish, { once: true });
         node.addEventListener('keydown', handleKeyDown);
         node.addEventListener('keyup', remember);
-        node.addEventListener('pointerup', remember);
+        node.addEventListener('mouseup', remember);
         return () => {
             node.removeEventListener('blur', finish);
             node.removeEventListener('keydown', handleKeyDown);
             node.removeEventListener('keyup', remember);
-            node.removeEventListener('pointerup', remember);
+            node.removeEventListener('mouseup', remember);
             node.removeAttribute('contenteditable');
         };
     }, [doc, editingElementId, live]);
+    // An instance's prop text, edited in place: Enter or blur commits it as the
+    // instance's override, Escape puts the text back, as on today's canvas.
+    useEffect(() => {
+        if (doc === null || editingInstanceProp === null || !live)
+            return;
+        const { instanceId, propName } = editingInstanceProp;
+        const node = doc.querySelector(`[data-scamp-instance-id="${CSS.escape(instanceId)}"][data-scamp-prop="${CSS.escape(propName)}"]`);
+        if (!isHtmlNode(node))
+            return;
+        const before = node.textContent ?? '';
+        let done = false;
+        const commit = () => {
+            if (done)
+                return;
+            done = true;
+            const state = useCanvasStore.getState();
+            state.setPropOverride(instanceId, propName, node.textContent ?? '');
+            state.setEditingInstanceProp(null);
+        };
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                done = true;
+                node.textContent = before;
+                useCanvasStore.getState().setEditingInstanceProp(null);
+            }
+            else if (e.key === 'Enter') {
+                e.preventDefault();
+                commit();
+            }
+        };
+        node.setAttribute('contenteditable', 'true');
+        node.setAttribute('spellcheck', 'false');
+        // Select it all, as today's canvas does, so typing replaces it.
+        node.focus({ preventScroll: true });
+        const range = doc.createRange();
+        range.selectNodeContents(node);
+        doc.defaultView?.getSelection()?.removeAllRanges();
+        doc.defaultView?.getSelection()?.addRange(range);
+        node.addEventListener('blur', commit);
+        node.addEventListener('keydown', handleKeyDown);
+        return () => {
+            node.removeEventListener('blur', commit);
+            node.removeEventListener('keydown', handleKeyDown);
+            node.removeAttribute('contenteditable');
+            node.removeAttribute('spellcheck');
+        };
+    }, [doc, editingInstanceProp, live]);
     return (_jsx("div", { ref: hostRef, className: styles.host, style: { height: viewportHeight }, "data-testid": "iframe-canvas", children: _jsx("iframe", { ref: iframeRef, className: styles.iframe, srcDoc: SHELL, onLoad: handleLoad, title: "Canvas" }) }));
 };

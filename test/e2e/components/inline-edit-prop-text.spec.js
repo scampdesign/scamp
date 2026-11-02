@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/app';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasLocator, pageRoot } from '../fixtures/selectors';
 import { waitForSaved } from '../fixtures/assertions';
 test.use({
     projectOptions: {
@@ -61,7 +61,7 @@ test.describe('components: inline-edit of prop text on an instance', () => {
         await waitForSaved(window);
         // The instance renders inline; the prop-text inside it carries
         // `data-scamp-prop="title"`.
-        const propText = window.locator('[data-scamp-prop="title"]');
+        const propText = canvasLocator(window, '[data-scamp-prop="title"]');
         await expect(propText).toBeVisible();
         // No selection yet — no dashed outline.
         let outline = await propText.evaluate((el) => globalThis.getComputedStyle(el).outlineStyle);

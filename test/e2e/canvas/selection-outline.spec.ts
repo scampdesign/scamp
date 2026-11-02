@@ -32,3 +32,46 @@ test.describe('canvas: selection outline', () => {
     await expect(second).toHaveCSS('outline-style', 'none');
   });
 });
+
+const TEXT_TSX = [
+  "import styles from './home.module.css';",
+  '',
+  'export default function Home() {',
+  '  return (',
+  '    <div data-scamp-id="root" className={styles.root}>',
+  '      <p data-scamp-id="e5f6" className={styles.label_e5f6}>Edit me</p>',
+  '    </div>',
+  '  );',
+  '}',
+  '',
+].join('\n');
+
+const TEXT_CSS = [
+  '.root {',
+  '  width: 100%;',
+  '  min-height: 100vh;',
+  '  position: relative;',
+  '}',
+  '',
+  '.label_e5f6 {',
+  '  position: absolute;',
+  '  left: 40px;',
+  '  top: 40px;',
+  '  font-size: 32px;',
+  '}',
+  '',
+].join('\n');
+
+test.describe('canvas: text-editing outline', () => {
+  test.use({ projectOptions: { format: 'nextjs', pageContent: { home: { tsx: TEXT_TSX, css: TEXT_CSS } } } });
+
+  test('a text being edited has a dashed outline', async ({ window }) => {
+    await expect(pageRoot(window)).toBeVisible();
+    const label = canvasElement(window, 'label_e5f6');
+    const box = await label.boundingBox();
+    if (box === null) throw new Error('label not on screen');
+    await window.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(label).toHaveAttribute('contenteditable', 'true');
+    await expect(label).toHaveCSS('outline-style', 'dashed');
+  });
+});

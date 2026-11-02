@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/app';
 import { dragComponentToCanvas, openPagesSection } from '../fixtures/components';
 import { measureFrame, frameToClient, selectTool } from '../fixtures/canvas';
-import { canvasElement, pageRoot } from '../fixtures/selectors';
+import { canvasElement, canvasLocator, pageRoot } from '../fixtures/selectors';
 
 /**
  * A page owns exactly one thing about a component instance: its size. The
@@ -91,7 +91,7 @@ const placeAndSelectCard = async (
   const drop = frameToClient(metrics, { x: 100, y: 300 });
   await dragComponentToCanvas(page, 'Card', drop.x, drop.y);
   await openPagesSection(page);
-  await expect(page.locator('[data-scamp-instance-id]')).toHaveCount(1);
+  await expect(canvasLocator(page, '[data-scamp-instance-id]:not([data-scamp-prop])')).toHaveCount(1);
 };
 
 test.describe('components: properties panel for an instance', () => {

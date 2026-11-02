@@ -609,10 +609,49 @@ Thus we do not write the interactions again. We do these steps:
 iframe; a variant set is one iframe per frame, with `data-<axis>` on each
 root, and only the live frame registers with `canvasDom`. Frames hug the
 component by measuring what they draw. `@media` follow the picked breakpoint
-in the component editor, as before. Known gaps: animations inside the
-iframe aren't in `document.getAnimations()`, so the extent measures them
-mid-move; thumbnails skip while the flag is on; every frame of a set builds
-its own CSS on each edit (not yet measured).
+in the component editor, as before.
+
+Closed since: selection, text-edit and prop-text outlines are drawn by an
+editor sheet inside the iframe, from marks re-applied after each patch; the
+iframe never scrolls; with clip off it widens to show what runs past the
+canvas, while `<html>`, `vw` and `@media` stay at the canvas width;
+thumbnails rasterise a copy of the iframe's document, without the marks, in
+an off-screen iframe; the extent reads animations inside the iframe; an
+instance's prop text edits in place.
+
+**Speed after the interaction layer (2026-11-02).** Edit to paint, p50 / p95:
+
+| Page | Elements | Today | Iframe | Build + patch |
+|---|---|---|---|---|
+| Ruixen (imported) | 206 | 33 / 58 ms | 17 / 25 ms | 4.0 ms |
+| Gainwix (imported) | 218 | 26 / 48 ms | 17 / 29 ms | 3.1 ms |
+| Resova Health (imported) | 221 | 25 / 57 ms | 17 / 22 ms | 2.6 ms |
+| glitch Songs | 96 | 17 / 26 ms | 17 / 20 ms | 2.3 ms |
+| Synthetic | 1,001 | 55 / 85 ms | 27 / 45 ms | 4.9 ms |
+| Variant set, Button starter (9 frames) | 2 | 17 / 19 ms | 17 / 18 ms | 0.1 ms per frame |
+
+The iframe stays ahead of today's canvas with the interaction layer over
+it, and its p95 is the steadier of the two. The variant set row is a small
+component; a large one, where each frame's own CSS build adds up, is not
+measured yet.
+
+**The full suite with the flag on (2026-11-02):** 551 passed and about 80
+failed on the first run. Nearly all were specs looking in the app's
+document instead of the iframe's, now fixed to work in both modes. It
+also found real gaps, now closed: text editing put the caret at the end
+instead of selecting all, an instance's prop text wasn't editable, and an
+animation could widen the iframe mid-move. Two findings are left open, for
+the decision:
+
+- **A view's root has no `min-height` in its saved file.** The parser
+  strips `100vh` from a view's root; today's canvas puts a 900px floor back
+  that the preview doesn't have. The iframe draws the file. The parity
+  harness leaves `root.h` out of its comparison with the flag on.
+- **An instance's position is never saved.** Neither the TSX nor the CSS
+  carries an absolute instance's `left` / `top`, so dragging one moves it
+  on today's canvas and nowhere else. The iframe draws the file, so the
+  drag shows nothing, and `instance-hit-test`'s drag test fails with the
+  flag on.
 
 ### How we measure it
 

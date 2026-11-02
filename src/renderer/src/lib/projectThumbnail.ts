@@ -8,7 +8,6 @@ import {
 import { useCanvasStore } from '@store/canvasSlice';
 
 import { captureIsolatedPng } from './exportCapture';
-import { canvasInIframe } from '../canvas/canvasDom';
 
 /**
  * Start-screen thumbnail capture. The component-sidebar equivalent one
@@ -68,8 +67,6 @@ const CAPTURE_IDLE_MS = 1500;
 const pending = new Map<string, ReturnType<typeof setTimeout>>();
 
 const findCanvasFrame = (): HTMLElement | null => {
-  // shortcut: the iframe experiment's page can't be rasterised from the frame yet; skip rather than save a blank one.
-  if (canvasInIframe()) return null;
   const node = document.querySelector('[data-testid="canvas-frame"]');
   return node instanceof HTMLElement ? node : null;
 };

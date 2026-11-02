@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../fixtures/app';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 import { panelSection } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 
 /**
  * `box-shadow: var(--shadow-card)` shows in the Shadow section as the
@@ -51,7 +51,7 @@ const withShadowToken = async (window: Page, themePath: string): Promise<void> =
 };
 
 const selectCard = async (window: Page): Promise<void> => {
-  const box = await window.locator('[data-scamp-id="card_a1b2"]').boundingBox();
+  const box = await canvasElement(window, 'card_a1b2').boundingBox();
   if (box === null) throw new Error('card not on screen');
   await window.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   await expect(panelSection(window, 'Shadow')).toBeVisible();

@@ -1,3 +1,4 @@
+import { isHtmlNode } from './canvasDom';
 /**
  * Keeping animated elements from driving the canvas extent.
  *
@@ -31,7 +32,10 @@
  */
 export const animatedSubtreePredicate = (root) => {
     const animated = new Set();
-    for (const animation of document.getAnimations()) {
+    // The iframe canvas experiment's page runs its animations in its own document.
+    const frames = Array.from(root.querySelectorAll('iframe'), (f) => f.contentDocument);
+    const docs = [root.ownerDocument, ...frames.filter((d) => d !== null)];
+    for (const animation of docs.flatMap((d) => d.getAnimations())) {
         if (animation.playState !== 'running')
             continue;
         const effect = animation.effect;
@@ -39,7 +43,8 @@ export const animatedSubtreePredicate = (root) => {
         const target = effect !== null && 'target' in effect
             ? effect.target
             : null;
-        if (target instanceof Element)
+        // `nodeType`, not `instanceof`: an iframe's nodes have their own `Element`.
+        if (target !== null && target !== undefined && target.nodeType === 1)
             animated.add(target);
     }
     if (animated.size === 0)
@@ -76,8 +81,9 @@ export const layoutEdges = (el, root) => {
     while (current !== null && current !== root) {
         left += current.offsetLeft;
         top += current.offsetTop;
-        const parent = current.offsetParent;
-        current = parent instanceof HTMLElement ? parent : null;
+        // From an iframe the chain ends at its body and carries on from the iframe.
+        const parent = current.offsetParent ?? current.ownerDocument.defaultView?.frameElement ?? null;
+        current = isHtmlNode(parent) ? parent : null;
     }
     if (current !== root)
         return null;

@@ -15,8 +15,6 @@
 export declare const setCanvasIframe: (iframe: HTMLIFrameElement) => void;
 /** Called when `iframe` stops being the live one; a no-op if another took over. */
 export declare const releaseCanvasIframe: (iframe: HTMLIFrameElement | null) => void;
-/** True when the page draws into an iframe. */
-export declare const canvasInIframe: () => boolean;
 /** An element node with `dataset` and offsets, from either document. */
 export declare const isHtmlNode: (node: unknown) => node is HTMLElement;
 /** An element node with `dataset`, HTML or SVG, from either document. */

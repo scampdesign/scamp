@@ -1,4 +1,3 @@
-import { canvasInIframe } from '../canvas/canvasDom';
 import { captureIsolatedPng } from './exportCapture';
 
 // Sidebar thumbnail capture. see docs/notes/components-thumbnails.md
@@ -15,8 +14,6 @@ export type ComponentThumbnailUpdatedDetail = {
 // A component with variants is drawn as its set; the thumbnail is its
 // default frame, not the whole set, which also costs seconds to clone.
 const findCanvasFrame = (): HTMLElement | null => {
-  // shortcut: the iframe experiment's frames can't be rasterised yet; skip rather than save a blank one.
-  if (canvasInIframe()) return null;
   const node =
     document.querySelector('[data-variant-cell=""] [data-variant-frame]') ??
     document.querySelector('[data-testid="canvas-frame"]');

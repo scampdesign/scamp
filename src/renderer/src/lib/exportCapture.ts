@@ -2,6 +2,7 @@ import { toPng, toSvg } from 'html-to-image';
 
 import { buildFontEmbedCss } from './embedFonts';
 import elementStyles from '../canvas/ElementRenderer.module.css';
+import { canvasSnapshotHtml } from '../canvas/experiment/IframeCanvas';
 
 /**
  * Inputs for a single capture. The caller resolves the right DOM
@@ -180,6 +181,38 @@ export const capturePng = async (
   );
 };
 
+/** Rasterise `html` in an off-screen iframe of `width` × `height`. */
+const captureDocumentPng = async (
+  html: string,
+  width: number,
+  height: number,
+  backgroundColor: string | null
+): Promise<string | null> => {
+  const shot = document.createElement('iframe');
+  shot.setAttribute('aria-hidden', 'true');
+  shot.style.cssText = `position:fixed;top:0;left:-100000px;width:${width}px;height:${height}px;border:0;pointer-events:none;`;
+  const loaded = new Promise<void>((resolve) => shot.addEventListener('load', () => resolve(), { once: true }));
+  shot.srcdoc = html;
+  document.body.appendChild(shot);
+  try {
+    await loaded;
+    const doc = shot.contentDocument;
+    if (doc === null) return null;
+    await doc.fonts.ready;
+    const fontEmbedCss = await buildFontEmbedCss(doc.body);
+    return await toPng(doc.body, {
+      width,
+      height,
+      pixelRatio: 1,
+      cacheBust: false,
+      ...(fontEmbedCss.length > 0 ? { fontEmbedCSS: fontEmbedCss } : { skipFonts: true }),
+      ...(backgroundColor !== null ? { backgroundColor } : {}),
+    });
+  } finally {
+    shot.remove();
+  }
+};
+
 /**
  * Capture without touching the live canvas.
  *
@@ -206,6 +239,13 @@ export const captureIsolatedPng = async (inputs: {
   const width = inputs.node.offsetWidth;
   const height = inputs.node.offsetHeight;
   if (width === 0 || height === 0) return null;
+
+  // The iframe canvas experiment: its nodes need its own stylesheets, so the
+  // copy is a document of its own rather than a clone in this one.
+  const drawn = inputs.node.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument;
+  if (drawn !== null && drawn !== undefined) {
+    return captureDocumentPng(canvasSnapshotHtml(drawn), width, height, inputs.backgroundColor);
+  }
 
   // The off-screen placement goes on a WRAPPER, never on the captured node
   // itself. `html-to-image` serialises the node with its own inline styles

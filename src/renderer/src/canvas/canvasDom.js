@@ -22,8 +22,6 @@ export const releaseCanvasIframe = (iframe) => {
         liveIframe = null;
 };
 const iframeDocument = () => liveIframe?.contentDocument ?? null;
-/** True when the page draws into an iframe. */
-export const canvasInIframe = () => iframeDocument() !== null;
 /** An element node with `dataset` and offsets, from either document. */
 export const isHtmlNode = (node) => typeof node === 'object' &&
     node !== null &&

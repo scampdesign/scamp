@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { test, expect, stubSaveDialog } from '../fixtures/app';
 import { panelSection } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 /**
  * Exporting an element positioned on the page draws it from the image's
  * top-left, with its own padding and type, not shifted by its page
@@ -62,7 +62,7 @@ const pixelsOf = (window, png, points) => window.evaluate(async ([b64, pts]) => 
 }, [png.toString('base64'), points]);
 test('an absolutely positioned element exports with its padding and type in place', async ({ window, app, project }) => {
     await expect(pageRoot(window)).toBeVisible();
-    const card = window.locator('[data-scamp-id="card_a1b2"]');
+    const card = canvasElement(window, 'card_a1b2');
     const size = await card.evaluate((n) => ({ w: n.offsetWidth, h: n.offsetHeight }));
     const box = await card.boundingBox();
     if (box === null)

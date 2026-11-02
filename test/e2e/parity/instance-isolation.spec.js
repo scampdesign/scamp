@@ -66,7 +66,9 @@ test.describe('canvas: page styles stay out of component instances', () => {
     test("a page's .root rule does not repaint a component's root", async ({ window, }) => {
         await expect(pageRoot(window)).toBeVisible();
         const measured = await window.evaluate(() => {
-            const inner = document.querySelector('[data-scamp-instance-id] [data-scamp-id="root"]');
+            // The iframe canvas experiment draws in its own document, with no instance wrapper.
+            const drawn = document.querySelector('[data-testid="iframe-canvas"] iframe')?.contentDocument;
+            const inner = (drawn ?? document).querySelector('[data-scamp-instance-id] [data-scamp-id="root"], [data-scamp-instance-id][data-scamp-id="root"]');
             if (!inner)
                 return null;
             const el = inner;

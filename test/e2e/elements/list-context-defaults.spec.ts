@@ -4,7 +4,7 @@ import {
   drawAndSelectRect,
   panelSection,
 } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasLocator, pageRoot } from '../fixtures/selectors';
 import { readPageFiles, waitForSaved } from '../fixtures/assertions';
 
 test.describe('elements: list context defaults', () => {
@@ -29,7 +29,8 @@ test.describe('elements: list context defaults', () => {
     await dragInFrame(window, { x: 120, y: 120 }, { x: 300, y: 240 });
 
     // Pick the nested rect by excluding the outer's own data-scamp-id.
-    const nestedRect = window.locator(
+    const nestedRect = canvasLocator(
+      window,
       `[data-scamp-id^="rect_"]:not([data-scamp-id="${outerClass}"])`
     ).first();
     await nestedRect.waitFor();

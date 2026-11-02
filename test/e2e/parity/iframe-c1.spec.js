@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/app';
-import { pageRoot } from '../fixtures/selectors';
+import { IFRAME_CANVAS, pageRoot } from '../fixtures/selectors';
 import { PARITY_FIXTURES } from './fixtures';
 import { compareComputed, compareGeometry, computedInBrowser, describeComputed, describeDivergences, launchTruthBrowser, measure, measureInBrowser, } from './harness';
 /**
@@ -143,7 +143,8 @@ for (const fixture of FIXTURES) {
                 const cdiffs = compareComputed(computed, truth.computed);
                 expect(cdiffs, describeComputed(cdiffs)).toEqual([]);
             }
-            if (fixture === VIEWPORT_UNITS) {
+            // With SCAMP_E2E_IFRAME=1 the "today" side is the iframe too.
+            if (fixture === VIEWPORT_UNITS && !IFRAME_CANVAS) {
                 // The point of the fixture: today's canvas gets this wrong.
                 expect(todayDiffs.length, 'today’s canvas diverges on vh').toBeGreaterThan(0);
             }

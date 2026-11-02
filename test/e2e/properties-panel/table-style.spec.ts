@@ -95,7 +95,7 @@ test.describe('properties panel: table rows and cells', () => {
     await expect(panelSection(window, 'Rows and cells')).toBeVisible();
     await layersRowByClass(window, 'rect_t3a3').click();
     // Prove the row is selected, or the absence below proves nothing.
-    await expect(canvasElement(window, 'rect_t3a3')).toHaveClass(/selected/);
+    await expect(canvasElement(window, 'rect_t3a3')).toHaveCSS('outline-style', 'solid');
     await expect(panelSection(window, 'Rows and cells')).toHaveCount(0);
   });
 });

@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { test, expect, stubOpenDialog } from '../fixtures/app';
+import { openComponentsSection } from '../fixtures/components';
 import { pageRoot } from '../fixtures/selectors';
 /** Resident memory of the window's renderer process, in MB (Linux). */
 const rendererRssMb = async (app) => {
@@ -34,7 +35,7 @@ const measurePage = async (app, window, label, frames) => {
     const today = await bench(window, (b) => b.benchEdits(20));
     const rssToday = await rendererRssMb(app);
     await bench(window, (b) => b.set(true));
-    await expect(window.locator('[data-testid="iframe-canvas"] iframe')).toBeVisible();
+    await expect(window.locator('[data-testid="iframe-canvas"] iframe').first()).toBeVisible();
     await window.waitForTimeout(1500);
     const firstDrawMs = await bench(window, (b) => b.stats.firstDrawMs);
     const before = await bench(window, (b) => b.stats.updates.length);
@@ -79,6 +80,17 @@ test.describe('iframe C1: speed', () => {
         await openProject(app, window, dir);
         await openPage(window, /songs/i);
         await measurePage(app, window, 'glitch songs', true);
+    });
+});
+test.describe('iframe C1: speed, variant set', () => {
+    test.setTimeout(300_000);
+    // Every frame of the set is an iframe that builds its own CSS on each edit.
+    test('the Button starter, 9 frames', async ({ app, window }) => {
+        await expect(pageRoot(window)).toBeVisible();
+        await openComponentsSection(window);
+        await window.getByRole('group', { name: 'Add a starter component' }).getByRole('button', { name: 'Button', exact: true }).click();
+        await expect(window.locator('[data-variant-cell]')).toHaveCount(9);
+        await measurePage(app, window, 'variant set, 9 frames', false);
     });
 });
 const SYNTHETIC_COUNT = 1000;

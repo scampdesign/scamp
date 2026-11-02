@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
 
 import { test, expect, stubSaveDialog } from '../fixtures/app';
 import { panelSection } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 
 /**
  * Exporting an element positioned on the page draws it from the image's
@@ -74,7 +74,7 @@ const pixelsOf = (window: Page, png: Buffer, points: ReadonlyArray<[number, numb
 
 test('an absolutely positioned element exports with its padding and type in place', async ({ window, app, project }) => {
   await expect(pageRoot(window)).toBeVisible();
-  const card = window.locator('[data-scamp-id="card_a1b2"]');
+  const card = canvasElement(window, 'card_a1b2');
   const size = await card.evaluate((n: HTMLElement) => ({ w: n.offsetWidth, h: n.offsetHeight }));
   const box = await card.boundingBox();
   if (box === null) throw new Error('card not on screen');

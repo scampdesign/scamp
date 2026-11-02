@@ -213,13 +213,17 @@ export const test = base.extend<ScampFixtures & ScampOptions>({
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
     await dismissSentryPrompt(window);
-    if (process.env['SCAMP_E2E_IFRAME'] === '1') {
-      await window.evaluate(() =>
-        (globalThis as unknown as { __scampIframeCanvas: { set: (on: boolean) => void } }).__scampIframeCanvas.set(true)
-      );
-    }
+    await applyIframeCanvasFlag(window);
     await use(window);
   },
 });
+
+/** With `SCAMP_E2E_IFRAME=1`, turn the iframe canvas on: for a window a spec launches itself. */
+export async function applyIframeCanvasFlag(window: Page): Promise<void> {
+  if (process.env['SCAMP_E2E_IFRAME'] !== '1') return;
+  await window.evaluate(() =>
+    (globalThis as unknown as { __scampIframeCanvas: { set: (on: boolean) => void } }).__scampIframeCanvas.set(true)
+  );
+}
 
 export { expect } from '@playwright/test';

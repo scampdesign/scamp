@@ -277,7 +277,6 @@ export const Viewport = ({
     // and with it the fit zoom, on every edit. Those elements are measured
     // by their transform-free layout box instead.
     // see src/renderer/src/canvas/animatedExtent.ts
-    // shortcut: animations inside the iframe canvas aren't in `document.getAnimations()`, so they're measured as they move; fix if the experiment ships.
     const isAnimated = animatedSubtreePredicate(frame);
     for (const node of canvasQueryAll(frame, '[data-element-id]')) {
       if (!isHtmlNode(node)) continue;
@@ -563,7 +562,10 @@ export const Viewport = ({
         {!iframeFlag && <CanvasPageStylesheet />}
         {frameContent ??
           (iframeFlag ? (
-            <IframeCanvas viewportHeight={canvasHeight ?? viewportHeight} />
+            <IframeCanvas
+              viewportHeight={canvasHeight ?? viewportHeight}
+              overflowWidth={clipContent ? undefined : frameW}
+            />
           ) : (
             <ElementRenderer elementId={rootElementId} />
           ))}

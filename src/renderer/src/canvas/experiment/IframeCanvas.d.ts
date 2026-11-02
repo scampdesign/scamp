@@ -8,11 +8,18 @@ export type IframeVariant = {
     hugWidth: boolean;
     hugHeight: boolean;
 };
+/** The drawn page as a document of its own, without the editor's marks: what a thumbnail shows. */
+export declare const canvasSnapshotHtml: (doc: Document) => string;
 type Props = {
     /** The page's viewport height: what `100vh` means, as the preview's window gives it. */
     viewportHeight: number;
     /** Set for a frame of the component editor's variant set; absent for a page or an artboard. */
     variant?: IframeVariant;
+    /**
+     * The canvas width, when its content isn't clipped: what runs past it shows,
+     * as on today's canvas. The page still lays out at this width.
+     */
+    overflowWidth?: number;
 };
-export declare const IframeCanvas: ({ viewportHeight, variant }: Props) => JSX.Element;
+export declare const IframeCanvas: ({ viewportHeight, variant, overflowWidth }: Props) => JSX.Element;
 export {};

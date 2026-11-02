@@ -50,4 +50,20 @@ test.describe('canvas: iframe scrollbars', () => {
         });
         expect(gutters).toEqual({ x: 0, y: 0 });
     });
+    test('content past the canvas edge shows, and the page still lays out at the canvas width', async ({ window }) => {
+        await expect(canvasElement(window, 'wide_c3d4')).toBeVisible();
+        const widths = await window.evaluate(() => {
+            const iframe = document.querySelector('[data-testid="iframe-canvas"] iframe');
+            const frame = document.querySelector('[data-testid="canvas-frame"]');
+            const root = iframe?.contentDocument?.querySelector('[data-element-id="root"]');
+            if (!iframe || !frame || !root)
+                return null;
+            return { frame: frame.offsetWidth, iframe: iframe.offsetWidth, root: root.offsetWidth };
+        });
+        if (widths === null)
+            throw new Error('canvas not found');
+        // The rect ends at 1300 + 400 = 1700, past the 1440 canvas.
+        expect(widths.iframe).toBe(1700);
+        expect(widths.root).toBe(widths.frame);
+    });
 });

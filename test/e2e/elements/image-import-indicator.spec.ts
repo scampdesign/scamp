@@ -5,7 +5,7 @@ import sharp from 'sharp';
 
 import { test, expect, stubOpenDialog } from '../fixtures/app';
 import { drawAndSelectRect, panelSection } from '../fixtures/panel';
-import { pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 
 /**
  * Importing a large photo takes a second or two. Nothing is blocked —
@@ -60,7 +60,7 @@ test.describe('images: import indicator', () => {
       await expect(indicator).toBeVisible({ timeout: 5000 });
 
       // Sitting on the element, not off at the edge of the canvas.
-      const target = window.locator(`[data-scamp-id="${className}"]`);
+      const target = canvasElement(window, className);
       const [box, over] = await Promise.all([
         target.boundingBox(),
         indicator.boundingBox(),

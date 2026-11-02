@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/app';
 import { clickContextMenuItem, createPageFromSidebar } from '../fixtures/components';
 import { clickInFrame, dragInFrame, frameToClient, measureFrame, selectTool } from '../fixtures/canvas';
 import { drawAndSelectRect, panelSection } from '../fixtures/panel';
-import { canvasElementsByPrefix, pageRoot } from '../fixtures/selectors';
+import { canvasElement, canvasElementsByPrefix, pageRoot } from '../fixtures/selectors';
 import { waitForSaved } from '../fixtures/assertions';
 
 test.use({ projectOptions: { format: 'nextjs' } });
@@ -45,7 +45,7 @@ test.describe('Data tab bindings', () => {
     await rightClickInFrame(window, { x: 300, y: 160 });
     await clickContextMenuItem(window, 'Repeat this');
     // Show the note only when a flag is on.
-    const note = window.locator(`[data-scamp-id="${noteId}"]`).first();
+    const note = canvasElement(window, noteId).first();
     await rightClickInFrame(window, { x: 220, y: 290 });
     await clickContextMenuItem(window, 'Show only when');
 
@@ -103,7 +103,7 @@ test.describe('Data tab bindings', () => {
     expect(tsx).toContain("export const _scamp = { contract: 2, events: [] } as const;");
 
     // The canvas shows one card per row.
-    await expect(window.locator(`[data-scamp-id="${cardId}"]`)).toHaveCount(2);
+    await expect(canvasElement(window, cardId)).toHaveCount(2);
   });
 
   test('an attribute binds to a prop with its literal as the sample', async ({ window, project }) => {

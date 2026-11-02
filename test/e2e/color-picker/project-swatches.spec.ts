@@ -62,10 +62,13 @@ test.describe('color picker: project swatches', () => {
         return { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) };
       };
       const target = hexToRgb(expectedHex);
-      const nodes = document.querySelectorAll('div');
+      // The iframe canvas experiment draws from a stylesheet, not inline styles.
+      const drawn = document.querySelector<HTMLIFrameElement>('[data-testid="iframe-canvas"] iframe')?.contentDocument;
+      const nodes = (drawn ?? document).querySelectorAll('div');
       for (const node of nodes) {
-        const bg = (node as HTMLElement).style.background ||
-          (node as HTMLElement).style.backgroundColor;
+        const bg = drawn
+          ? (drawn.defaultView?.getComputedStyle(node).backgroundColor ?? '')
+          : (node as HTMLElement).style.background || (node as HTMLElement).style.backgroundColor;
         if (!bg) continue;
         const rgb = parseRgb(bg);
         if (!rgb) continue;

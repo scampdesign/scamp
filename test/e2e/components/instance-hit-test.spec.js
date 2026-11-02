@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/app';
 import { dragComponentToCanvas } from '../fixtures/components';
 import { frameToClient, measureFrame, selectTool } from '../fixtures/canvas';
 import { waitForSaved } from '../fixtures/assertions';
-import { pageRoot } from '../fixtures/selectors';
+import { IFRAME_CANVAS, canvasLocator, pageRoot } from '../fixtures/selectors';
 /**
  * A click anywhere a component instance draws selects the instance, even
  * when its wrapper box is 0 × 0 (the component's content doesn't give it
@@ -85,8 +85,11 @@ const placeCard = async (window) => {
     await waitForSaved(window);
     const card = await boxOf(overlay(window));
     // The wrapper has no size of its own; that's the case this covers.
-    const wrapper = await boxOf(window.locator('[data-scamp-instance-id]').first());
-    expect(wrapper.width * wrapper.height).toBe(0);
+    // Today's canvas draws an instance in a 0 × 0 wrapper; the iframe canvas draws no wrapper.
+    if (!IFRAME_CANVAS) {
+        const wrapper = await boxOf(window.locator('[data-scamp-instance-id]').first());
+        expect(wrapper.width * wrapper.height).toBe(0);
+    }
     const empty = frameToClient(metrics, { x: 40, y: 420 });
     await window.mouse.click(empty.x, empty.y);
     await expect.poll(async () => (await boxOf(overlay(window))).width).toBeGreaterThan(card.width * 2);
@@ -121,7 +124,7 @@ test('page content in a slot still selects itself, not the instance', async ({ w
     const metrics = await measureFrame(window);
     const drop = frameToClient(metrics, { x: 220, y: 220 });
     await dragComponentToCanvas(window, 'Slotted', drop.x, drop.y);
-    const slot = await boxOf(window.locator('[data-scamp-slot]').first());
+    const slot = await boxOf(canvasLocator(window, '[data-scamp-slot]').first());
     // Draw a 36px rectangle into the slot.
     await selectTool(window, 'r');
     const cx = slot.x + slot.width / 2;
@@ -135,7 +138,7 @@ test('page content in a slot still selects itself, not the instance', async ({ w
     const empty = frameToClient(metrics, { x: 40, y: 420 });
     await window.mouse.click(empty.x, empty.y);
     // Click the slot content where it renders, inside the slot box.
-    const content = await boxOf(window.locator('[data-scamp-slot] [data-element-id]').first());
+    const content = await boxOf(canvasLocator(window, '[data-scamp-slot] [data-element-id]').first());
     await window.mouse.click(content.x + content.width / 2, content.y + content.height / 2);
     await expect.poll(async () => Math.round((await boxOf(overlay(window))).width)).toBe(Math.round(content.width));
 });

@@ -26,7 +26,9 @@ const heapMb = (): number | null => {
 /** Time from a background change in the store to the next paint, `count` times. */
 export const benchEdits = async (count: number): Promise<{ elementCount: number; editToPaint: Spread }> => {
   const state = useCanvasStore.getState();
-  const target = Object.values(state.elements).find((el) => el.id !== ROOT_ELEMENT_ID && el.type === 'rectangle');
+  // A rectangle where there is one; a component starter may only have text.
+  const others = Object.values(state.elements).filter((el) => el.id !== ROOT_ELEMENT_ID);
+  const target = others.find((el) => el.type === 'rectangle') ?? others[0];
   if (target === undefined) throw new Error('no rectangle to edit');
   const times: number[] = [];
   for (let i = 0; i < count; i++) {
