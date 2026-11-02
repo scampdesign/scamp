@@ -26,7 +26,7 @@ import {
 } from './bindingEval';
 import { svgSourceToHtml } from './svgJsx';
 import { type ScampElement } from './element';
-import { sizeDeclarationLines } from './generateCode/declarations';
+import { instanceRuleLines } from './generateCode/declarations';
 import { classNameFor, escapeHtml, tagFor } from './generateCode/internal';
 import { hasRunStyle, isStyled, runClassName, runsOf } from './textRuns';
 
@@ -222,7 +222,9 @@ const renderInstance = (
   // Emitted only when the instance actually has a size, matching the
   // condition `generateTsx` and `elementCssChunks` both use.
   const extraClass =
-    sizeDeclarationLines(el).length > 0 ? instanceClass : null;
+    instanceRuleLines(el, el.parentId === null ? null : scope.elements[el.parentId]).length > 0
+      ? instanceClass
+      : null;
 
   // The root carries each variant value the instance picks, as the component's
   // TSX writes it, so the `.root[data-<axis>]` rules match.

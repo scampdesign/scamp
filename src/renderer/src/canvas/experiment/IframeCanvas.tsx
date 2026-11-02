@@ -34,7 +34,8 @@ const FONT_LINK = 'link[data-scamp-font-import]';
 const SELECTED_ATTR = 'data-scamp-selected';
 const EDITING_ATTR = 'data-scamp-editing';
 const PROP_EDIT_ATTR = 'data-scamp-prop-edit';
-const MARKS = [SELECTED_ATTR, EDITING_ATTR, PROP_EDIT_ATTR];
+/** The editor's own attributes on the drawn page, which no capture of it should keep. */
+export const EDITOR_MARKS = [SELECTED_ATTR, EDITING_ATTR, PROP_EDIT_ATTR];
 
 /**
  * The editor's marks on the drawn page, as `.element.selected` draws them on
@@ -70,7 +71,7 @@ export const canvasSnapshotHtml = (doc: Document): string => {
   if (!isHtmlNode(copy)) return '';
   const chrome = copy.querySelector('style[data-sheet="chrome"]');
   if (chrome !== null) chrome.textContent = NO_SCROLL_CSS;
-  for (const attr of [...MARKS, 'contenteditable']) {
+  for (const attr of [...EDITOR_MARKS, 'contenteditable']) {
     for (const node of copy.querySelectorAll(`[${attr}]`)) node.removeAttribute(attr);
   }
   return `<!doctype html>${copy.outerHTML}`;
@@ -147,6 +148,15 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }: Props):
   const appTheme = useAppTheme();
   // A component's frame is its own size, not a viewport; its `@media` follow
   // the breakpoint picked instead, as today's canvas does.
+  // Today's canvas-only floor: the root fills the canvas (900px on a page, the
+  // artboard in the component editor) and the file never says so. Not in a
+  // variant frame, which draws the root at its own size, nor for a component
+  // root of fixed height. see elementToStyle.ts
+  const canvasMinHeight = useCanvasStore((s) => s.canvasMinHeight);
+  const rootKeepsFixedHeight = useCanvasStore(
+    (s) => s.activeComponent?.kind === 'component' && s.elements[s.rootElementId]?.heightMode === 'fixed'
+  );
+  const rootFloor = variant !== undefined || rootKeepsFixedHeight ? null : canvasMinHeight;
   const componentMediaWidth = useCanvasStore((s) =>
     s.activeComponent?.kind === 'component'
       ? s.breakpoints.find((b) => b.id === s.activeBreakpointId)?.width
@@ -268,16 +278,19 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }: Props):
       const root = doc.querySelector(`[data-element-id="${CSS.escape(rootId)}"]`);
       for (const { axis, value } of variantKeyParts(variant?.key ?? '') ?? []) root?.setAttribute(`data-${axis}`, value);
     }
+    // Inline, as today's canvas sets it, so it wins over the page's own min-height.
+    const rootNode = doc.querySelector(`[data-element-id="${CSS.escape(rootId)}"]`);
+    if (isHtmlNode(rootNode)) rootNode.style.minHeight = rootFloor === null ? '' : `${rootFloor}px`;
     const patchMs = performance.now() - start;
     if (iframeCanvasStats.firstDrawMs === null) iframeCanvasStats.firstDrawMs = performance.now() - mountedAt.current;
     else iframeCanvasStats.updates.push({ buildMs: built.buildMs, patchMs });
     fitHeight(doc);
-  }, [doc, built, themeCss, viewportHeight, bodyStyle, rootId, variant?.key, wide, overflowWidth]);
+  }, [doc, built, themeCss, viewportHeight, bodyStyle, rootId, variant?.key, wide, overflowWidth, rootFloor]);
 
   // The editor's marks. Runs after the patch above, which drops attributes the markup doesn't have.
   useLayoutEffect(() => {
     if (doc === null) return;
-    for (const attr of MARKS) for (const node of doc.querySelectorAll(`[${attr}]`)) node.removeAttribute(attr);
+    for (const attr of EDITOR_MARKS) for (const node of doc.querySelectorAll(`[${attr}]`)) node.removeAttribute(attr);
     if (!live) return;
     for (const id of selectedElementIds) {
       const key = CSS.escape(id);
@@ -326,6 +339,40 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }: Props):
     const observer = new MutationObserver(sync);
     observer.observe(document.head, { childList: true });
     return () => observer.disconnect();
+  }, [doc]);
+
+  // The app's shortcuts (undo, delete, copy, …) listen on its own window; a
+  // key pressed while the iframe has focus never reaches it. Pass it on,
+  // except while something in the page is being typed into.
+  useEffect(() => {
+    const view = doc?.defaultView;
+    const iframe = iframeRef.current;
+    if (doc === null || view === null || view === undefined || iframe === null) return;
+    const forward = (e: KeyboardEvent): void => {
+      const target = e.target;
+      if (isHtmlNode(target) && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) {
+        return;
+      }
+      const copy = new KeyboardEvent(e.type, {
+        key: e.key,
+        code: e.code,
+        location: e.location,
+        repeat: e.repeat,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+        bubbles: true,
+        cancelable: true,
+      });
+      if (!iframe.dispatchEvent(copy)) e.preventDefault();
+    };
+    view.addEventListener('keydown', forward);
+    view.addEventListener('keyup', forward);
+    return () => {
+      view.removeEventListener('keydown', forward);
+      view.removeEventListener('keyup', forward);
+    };
   }, [doc]);
 
   // Images and fonts that finish loading change the page's height.

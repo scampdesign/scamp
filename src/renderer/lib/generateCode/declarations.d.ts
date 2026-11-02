@@ -37,6 +37,15 @@ import { type BreakpointOverride, type ScampElement } from "../element";
  * with the flex-item block below, which must not repeat that line.
  */
 export declare const fillHeightKind: (el: ScampElement, parent?: ScampElement | null) => "flex" | "align-self" | null;
+/**
+ * A component instance's page rule: its size, and where the page places it.
+ * Placement is written only for an instance out of its parent's flow
+ * (`position: auto` in a parent that doesn't lay it out, or an explicit
+ * `absolute` / `fixed`): in a flex or grid parent, or a slot, the layout
+ * places it, as it does any element. Empty when the page sets neither, so
+ * an instance at its own size in the flow keeps a bare tag.
+ */
+export declare const instanceRuleLines: (el: ScampElement, parent?: ScampElement | null) => string[];
 export declare const sizeDeclarationLines: (el: ScampElement, parent?: ScampElement | null) => string[];
 /**
  * Build the list of `prop: value;` lines for one element. Skips anything

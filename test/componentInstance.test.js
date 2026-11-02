@@ -21,6 +21,7 @@ const makeRoot = (childIds = []) => ({
 const makeInstance = (overrides) => ({
     ...DEFAULT_RECT_STYLES,
     type: 'component-instance',
+    position: 'static',
     parentId: ROOT_ELEMENT_ID,
     childIds: [],
     widthMode: 'auto',

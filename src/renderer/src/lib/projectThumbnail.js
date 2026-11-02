@@ -1,6 +1,7 @@
 import { viewSlugFor } from '@shared/templates';
 import { needsBackfill, thumbnailFrame, } from '@lib/thumbnailCrop';
 import { useCanvasStore } from '@store/canvasSlice';
+import { toEditTarget } from '../syncBridge/editTarget';
 import { captureIsolatedPng } from './exportCapture';
 /**
  * Start-screen thumbnail capture. The component-sidebar equivalent one
@@ -89,6 +90,8 @@ const cropToCard = async (sourceDataUrl, frame, background) => {
     ctx.drawImage(img, frame.sx, frame.sy, frame.sWidth, frame.sHeight, frame.dx, frame.dy, frame.dWidth, frame.dHeight);
     return canvas.toDataURL('image/png');
 };
+/** What each scheduled capture is of: switch pages inside the debounce and the canvas no longer shows it. */
+const scheduledFor = new Map();
 /** Fire-and-forget; never blocks the underlying save. */
 export const captureAndPersistProjectThumbnail = (inputs) => {
     if (inputs.pageName !== THUMBNAIL_PAGE_NAME)
@@ -96,6 +99,7 @@ export const captureAndPersistProjectThumbnail = (inputs) => {
     const existing = pending.get(inputs.projectPath);
     if (existing !== undefined)
         clearTimeout(existing);
+    scheduledFor.set(inputs.projectPath, inputs.cssPath);
     pending.set(inputs.projectPath, setTimeout(() => {
         pending.delete(inputs.projectPath);
         runCapture(inputs.projectPath);
@@ -131,6 +135,13 @@ const runCapture = (projectPath) => {
     // still the open one, which is the whole reason it runs before the
     // unmount. see docs/notes/project-thumbnails.md
     if (useCanvasStore.getState().projectPath !== projectPath)
+        return;
+    // The same race one level down: home saved, then another page opened
+    // inside the debounce, photographed and filed as the cover.
+    const cssPath = scheduledFor.get(projectPath);
+    scheduledFor.delete(projectPath);
+    const { activePage, activeComponent } = useCanvasStore.getState();
+    if (cssPath === undefined || toEditTarget(activePage, activeComponent)?.cssPath !== cssPath)
         return;
     if (inFlight.has(projectPath))
         return;

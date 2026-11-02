@@ -2,7 +2,7 @@ import { toPng, toSvg } from 'html-to-image';
 
 import { buildFontEmbedCss } from './embedFonts';
 import elementStyles from '../canvas/ElementRenderer.module.css';
-import { canvasSnapshotHtml } from '../canvas/experiment/IframeCanvas';
+import { EDITOR_MARKS, canvasSnapshotHtml } from '../canvas/experiment/IframeCanvas';
 
 /**
  * Inputs for a single capture. The caller resolves the right DOM
@@ -67,7 +67,6 @@ const withChromeClassesHidden = async <T>(
     elementStyles.textEditing,
     elementStyles.propEditAffordance,
   ].filter((c): c is string => typeof c === 'string' && c.length > 0);
-  if (chromeClassNames.length === 0) return fn();
 
   // Capture every element in the subtree (including the root) that
   // currently carries any chrome class, and the specific classes
@@ -76,6 +75,16 @@ const withChromeClassesHidden = async <T>(
   // restore (rare, but cheap insurance).
   const restorations: Array<{ el: Element; classes: string[] }> = [];
   const candidates: Element[] = [node, ...node.querySelectorAll('*')];
+  // The iframe canvas experiment marks its outlines with attributes instead.
+  const marks: Array<{ el: Element; attr: string; value: string }> = [];
+  for (const el of candidates) {
+    for (const attr of EDITOR_MARKS) {
+      const value = el.getAttribute(attr);
+      if (value === null) continue;
+      marks.push({ el, attr, value });
+      el.removeAttribute(attr);
+    }
+  }
   for (const el of candidates) {
     const stripped: string[] = [];
     for (const cls of chromeClassNames) {
@@ -93,6 +102,7 @@ const withChromeClassesHidden = async <T>(
     for (const { el, classes } of restorations) {
       el.classList.add(...classes);
     }
+    for (const { el, attr, value } of marks) el.setAttribute(attr, value);
   }
 };
 

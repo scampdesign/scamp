@@ -18,7 +18,7 @@
  */
 import { expandChildren, resolveAttr, resolveInstanceOverrides, resolveText as resolveRowText, } from './bindingEval';
 import { svgSourceToHtml } from './svgJsx';
-import { sizeDeclarationLines } from './generateCode/declarations';
+import { instanceRuleLines } from './generateCode/declarations';
 import { classNameFor, escapeHtml, tagFor } from './generateCode/internal';
 import { hasRunStyle, isStyled, runClassName, runsOf } from './textRuns';
 /**
@@ -128,7 +128,9 @@ const renderInstance = (el, scope, level, options, activeComponents) => {
     // keeps the cascade identical and lets the page's rule ship unchanged.
     // Emitted only when the instance actually has a size, matching the
     // condition `generateTsx` and `elementCssChunks` both use.
-    const extraClass = sizeDeclarationLines(el).length > 0 ? instanceClass : null;
+    const extraClass = instanceRuleLines(el, el.parentId === null ? null : scope.elements[el.parentId]).length > 0
+        ? instanceClass
+        : null;
     // The root carries each variant value the instance picks, as the component's
     // TSX writes it, so the `.root[data-<axis>]` rules match.
     const axes = root.variantAxes ?? [];

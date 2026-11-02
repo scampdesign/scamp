@@ -24,8 +24,12 @@ writes for a box it leaves in flow. The generator then writes
 - **An inline tag with no `display`** (`INLINE_BY_DEFAULT` in
   `tagDefaults.ts`) stays `auto`. As `static` the generator would write
   `display: block` for it, which the file never said.
-- **Component instances and slot content** stay `auto`. The generator
-  writes no `position` for either, so there's nothing to keep in step.
+- **Slot content** stays `auto`: its parent is an instance, which lays
+  it out.
+- **A component instance** needs no rule for this: with no `.inst_x`
+  rule, or one with only a size, it is `static` too. The instance rule
+  carries `position` only when the page places it (`instanceRuleLines`),
+  and that reads back as `auto` at its x / y, like any placed element.
 
 `<progress>` and `<meter>` joined `INLINE_BY_DEFAULT` with this: they're
 inline-block, and the project reset doesn't make them block, so a

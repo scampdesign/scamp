@@ -212,6 +212,12 @@ because `flushPendingPageWrite` schedules its capture through a
 `requestAnimationFrame` that lands after the close. A stale thumbnail
 is a better failure than the wrong project's.
 
+The same race happens inside one project: save home, open another page
+within the debounce, and that page was photographed and filed as the
+cover, and stayed there, since only home saves schedule a capture. The
+capture now also carries the saved target's `cssPath`, and `runCapture`
+drops it unless the canvas still shows that target.
+
 The component equivalent has the same shape and is not affected: it has
 no debounce, so its window is a single frame rather than a second and a
 half, and a user would have to change component inside it.

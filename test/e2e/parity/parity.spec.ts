@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/app';
-import { IFRAME_CANVAS, canvasLocator, pageRoot } from '../fixtures/selectors';
+import { canvasLocator, pageRoot } from '../fixtures/selectors';
 import { PARITY_FIXTURES, type ParityFixture } from './fixtures';
 import {
   compareGeometry,
@@ -105,16 +105,7 @@ const runParityCheck = async (
         },
         { width: Math.round(rootWidth ?? 0), height: 900 }
       );
-      const canvasRoot = canvasLocator(window, '[data-scamp-id="root"]').first();
-      if (IFRAME_CANVAS) {
-        // The view root's height is left out of the comparison (see
-        // `compareGeometry`), so the canvas root takes the oracle's for the shot.
-        const height = (await shot.page.locator('.root').first().boundingBox())?.height;
-        if (height !== undefined) {
-          await canvasRoot.evaluate((el, px) => ((el as HTMLElement).style.minHeight = `${px}px`), height);
-        }
-      }
-      const canvasPng = await canvasRoot.screenshot();
+      const canvasPng = await canvasLocator(window, '[data-scamp-id="root"]').first().screenshot();
       const diff = await comparePixels(shot.page, canvasPng, shot.png);
       await shot.page.close();
       expect(

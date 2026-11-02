@@ -7,6 +7,7 @@ import {
 
 import { useCanvasStore } from '@store/canvasSlice';
 
+import { toEditTarget } from '../syncBridge/editTarget';
 import { captureIsolatedPng } from './exportCapture';
 
 /**
@@ -124,7 +125,12 @@ export type CaptureProjectThumbnailInputs = {
   projectPath: string;
   /** The page that was just saved. Anything but home is ignored. */
   pageName: string;
+  /** Its CSS file, which the canvas must still be showing when the capture runs. */
+  cssPath: string;
 };
+
+/** What each scheduled capture is of: switch pages inside the debounce and the canvas no longer shows it. */
+const scheduledFor = new Map<string, string>();
 
 /** Fire-and-forget; never blocks the underlying save. */
 export const captureAndPersistProjectThumbnail = (
@@ -133,6 +139,7 @@ export const captureAndPersistProjectThumbnail = (
   if (inputs.pageName !== THUMBNAIL_PAGE_NAME) return;
   const existing = pending.get(inputs.projectPath);
   if (existing !== undefined) clearTimeout(existing);
+  scheduledFor.set(inputs.projectPath, inputs.cssPath);
   pending.set(
     inputs.projectPath,
     setTimeout(() => {
@@ -172,6 +179,12 @@ const runCapture = (projectPath: string): void => {
   // still the open one, which is the whole reason it runs before the
   // unmount. see docs/notes/project-thumbnails.md
   if (useCanvasStore.getState().projectPath !== projectPath) return;
+  // The same race one level down: home saved, then another page opened
+  // inside the debounce, photographed and filed as the cover.
+  const cssPath = scheduledFor.get(projectPath);
+  scheduledFor.delete(projectPath);
+  const { activePage, activeComponent } = useCanvasStore.getState();
+  if (cssPath === undefined || toEditTarget(activePage, activeComponent)?.cssPath !== cssPath) return;
   if (inFlight.has(projectPath)) return;
   inFlight.add(projectPath);
 

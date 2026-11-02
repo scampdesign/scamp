@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures/app';
+import { waitForSaved } from '../fixtures/assertions';
 import { drawAndSelectRect } from '../fixtures/panel';
 import { canvasElement, pageRoot } from '../fixtures/selectors';
 
@@ -73,5 +74,22 @@ test.describe('canvas: text-editing outline', () => {
     await window.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
     await expect(label).toHaveAttribute('contenteditable', 'true');
     await expect(label).toHaveCSS('outline-style', 'dashed');
+  });
+
+  test('undo after a text edit puts the text back', async ({ window }) => {
+    await expect(pageRoot(window)).toBeVisible();
+    const label = canvasElement(window, 'label_e5f6');
+    const box = await label.boundingBox();
+    if (box === null) throw new Error('label not on screen');
+    await window.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(label).toHaveAttribute('contenteditable', 'true');
+    await window.keyboard.type('Changed');
+    // Escape commits and leaves focus where the edit was: inside the
+    // iframe, on the iframe canvas, whose keys never reached the app.
+    await window.keyboard.press('Escape');
+    await expect(label).toHaveText('Changed');
+    await waitForSaved(window);
+    await window.keyboard.press('ControlOrMeta+z');
+    await expect(label).toHaveText('Edit me');
   });
 });

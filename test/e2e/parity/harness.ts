@@ -3,8 +3,6 @@ import * as os from 'os';
 import * as path from 'path';
 import { chromium, type Browser, type Page } from '@playwright/test';
 
-import { IFRAME_CANVAS } from '../fixtures/selectors';
-
 /**
  * Machinery for comparing what the canvas lays out against what a browser
  * lays out from the same source files.
@@ -207,11 +205,6 @@ export const compareGeometry = (
       continue;
     }
     for (const field of ['x', 'y', 'w', 'h'] as const) {
-      // A view's root loses `min-height: 100vh` on parse; today's canvas puts a
-      // 900px floor back that the saved file doesn't have, and the oracle keeps
-      // the fixture's. The iframe canvas draws the file. Open question, so not
-      // compared there. see docs/plans/canvas-rendering-options.md, "The full test"
-      if (IFRAME_CANVAS && element === 'root' && field === 'h') continue;
       const delta = Math.abs(canvasBox[field] - browserBox[field]);
       if (delta >= tolerance) {
         out.push({

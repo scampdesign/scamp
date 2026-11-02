@@ -8,7 +8,7 @@ import { EnumSelect } from '../controls/EnumSelect';
 import { SegmentedControl } from '../controls/SegmentedControl';
 import { Section, Row } from './Section';
 import styles from './ExportSection.module.css';
-import { canvasNodeById } from '../../canvas/canvasDom';
+import { canvasNodeById, canvasQuery, isHtmlNode } from '../../canvas/canvasDom';
 const FORMAT_OPTIONS = [
     { value: 'png', label: 'PNG' },
     { value: 'svg', label: 'SVG' },
@@ -18,7 +18,12 @@ const SCALE_OPTIONS = [
     { value: '2', label: '2×' },
     { value: '3', label: '3×' },
 ];
-const findCanvasFrame = () => document.querySelector('[data-testid="canvas-frame"]');
+// The iframe canvas experiment draws the page inside the frame, in its own body.
+const findCanvasFrame = () => {
+    const frame = document.querySelector('[data-testid="canvas-frame"]');
+    const body = canvasQuery(frame, 'body');
+    return isHtmlNode(body) ? body : frame;
+};
 /**
  * Look up an element node by id, *scoped to the canvas frame*. The
  * layers panel (`ElementTree`) also tags its rows with

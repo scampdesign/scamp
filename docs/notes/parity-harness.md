@@ -58,11 +58,9 @@ closed when the canvas started loading the page's own stylesheet
 
 With `SCAMP_E2E_IFRAME=1` the canvas side is measured inside the canvas
 iframe (`MEASURE_SCRIPT` falls back to `document` on the oracle's page,
-which has none). `compareGeometry` then skips one field, `root.h`: a view's
-root loses `min-height: 100vh` on parse, today's canvas puts a 900px floor
-back that the saved file doesn't have, and the oracle keeps the fixture's.
-The iframe draws the file. Which is right is open — see
-`docs/plans/canvas-rendering-options.md`, "The full test".
+which has none). Every field is compared, as for today's canvas: the iframe
+draws the same canvas-only root floor, so a view root whose saved CSS has
+no `min-height` still measures as the oracle's `100vh` one does.
 
 ## Fixtures must not depend on text metrics
 

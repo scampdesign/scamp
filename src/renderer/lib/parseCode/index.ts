@@ -459,14 +459,15 @@ export const parseCode = (
     // A rule with no `position` under a block parent is normal flow, and
     // `auto` would draw it at 0,0. An inline tag with no `display` stays
     // `auto`: as `static` the generator would write it `display: block`.
+    // An instance needs no rule at all for this: one the page doesn't
+    // place (no `.inst_x` rule, or one with only a size) sits in the flow.
     // see docs/notes/parse-flow-children.md
     if (
       !isRoot &&
-      raw.type !== 'component-instance' &&
       raw.parentId !== null &&
       typeById.get(raw.parentId) !== 'component-instance' &&
       !isLayoutContainer(raw.parentId) &&
-      decls.length > 0 &&
+      (decls.length > 0 || raw.type === 'component-instance') &&
       !decls.some((d) => d.prop === 'position') &&
       (!INLINE_BY_DEFAULT.has(raw.tag ?? '') || decls.some((d) => d.prop === 'display'))
     ) {

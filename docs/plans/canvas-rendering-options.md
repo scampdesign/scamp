@@ -640,18 +640,17 @@ failed on the first run. Nearly all were specs looking in the app's
 document instead of the iframe's, now fixed to work in both modes. It
 also found real gaps, now closed: text editing put the caret at the end
 instead of selecting all, an instance's prop text wasn't editable, and an
-animation could widen the iframe mid-move. Two findings are left open, for
-the decision:
+animation could widen the iframe mid-move. Two findings, decided after
+manual testing (2026-11-02):
 
-- **A view's root has no `min-height` in its saved file.** The parser
-  strips `100vh` from a view's root; today's canvas puts a 900px floor back
-  that the preview doesn't have. The iframe draws the file. The parity
-  harness leaves `root.h` out of its comparison with the flag on.
-- **An instance's position is never saved.** Neither the TSX nor the CSS
-  carries an absolute instance's `left` / `top`, so dragging one moves it
-  on today's canvas and nowhere else. The iframe draws the file, so the
-  drag shows nothing, and `instance-hit-test`'s drag test fails with the
-  flag on.
+- **A view's root keeps the canvas's 900px floor.** The parser strips
+  `100vh` from a view's root and the floor stays canvas-only, as on today's
+  canvas; the iframe now sets it the same way, inline on the root.
+- **An instance's position is saved.** A placed instance (out of its
+  parent's flow) writes `position` + `left` / `top` into its page rule;
+  one a file leaves in the flow reads as `static` and stays there. Applies
+  to today's canvas and the HTML export too. see
+  docs/notes/components-data-model.md
 
 ### How we measure it
 

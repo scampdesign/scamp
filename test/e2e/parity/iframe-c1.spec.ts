@@ -155,6 +155,12 @@ for (const fixture of FIXTURES) {
       await expect(pageRoot(window)).toBeVisible();
       const today = await measure(window);
       const frame = await iframeCanvas(window);
+      // The truth here is the saved file; the root's 900px floor is the
+      // canvas's own, as on today's canvas, and the file never says so.
+      await frame.evaluate(() => {
+        const root = document.querySelector<HTMLElement>('[data-element-id="root"]');
+        if (root) root.style.minHeight = '';
+      });
       const mine = (await frame.evaluate(MEASURE_IFRAME)) as Geometry | null;
       if (mine === null) throw new Error('no root in the iframe');
       const width = Math.round(mine['root']?.w ?? 0);

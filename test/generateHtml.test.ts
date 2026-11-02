@@ -75,6 +75,7 @@ const instance = (
 ): ScampElement =>
   makeEl(id, {
     type: 'component-instance',
+    position: 'static',
     componentName: 'SidebarRow',
     instanceId,
     // Matches `makeComponentInstance`: an instance has no intrinsic size,
@@ -343,6 +344,7 @@ describe('generateHtml — nested components', () => {
       makeRoot(['n1']),
       makeEl('n1', {
         type: 'component-instance',
+        position: 'static',
         componentName: 'SidebarRow',
         instanceId: 'inst_b111',
         // As above: a real instance is auto on both axes.
@@ -371,6 +373,7 @@ describe('generateHtml — nested components', () => {
         makeRoot(['n1']),
         makeEl('n1', {
           type: 'component-instance',
+          position: 'static',
           componentName: 'Loop',
           instanceId: 'inst_c222',
         }),
@@ -391,6 +394,7 @@ describe('collectExpandedInstances', () => {
       makeRoot(['n1']),
       makeEl('n1', {
         type: 'component-instance',
+        position: 'static',
         componentName: 'SidebarRow',
         instanceId: 'inst_b111',
         // As above: a real instance is auto on both axes.
@@ -467,6 +471,7 @@ describe('collectExpandedInstances', () => {
         makeRoot(['n1']),
         makeEl('n1', {
           type: 'component-instance',
+          position: 'static',
           componentName: 'Loop',
           instanceId: 'inst_c222',
         }),
@@ -648,6 +653,7 @@ describe('generateHtml — repeats and show flags', () => {
       { ...makeRoot(['inst']), samples: { cards: [{ title: 'First' }, { title: 'Second' }] } },
       makeEl('inst', {
         type: 'component-instance',
+        position: 'static',
         componentName: 'Card',
         instanceId: 'inst_inst',
         propOverrides: {},
@@ -728,5 +734,19 @@ describe('generateHtml — editor ids', () => {
     });
     expect(html).toContain('data-scamp-instance-id="i1" data-scamp-prop="label"');
     expect(html.match(/data-scamp-instance-id=/g)?.length).toBe(1);
+  });
+});
+
+describe('generateHtml — instance placement', () => {
+  const options = { componentTrees: { SidebarRow: sidebarRow() } };
+
+  it('gives a placed instance its page class, so its root takes the position', () => {
+    const html = render([makeRoot(['i1']), instance('i1', 'inst_a024', { position: 'auto', x: 40, y: 30 })], options);
+    expect(html).toContain('<div class="inst_a024__root inst_a024">');
+  });
+
+  it('leaves an instance in the flow without the page class', () => {
+    const html = render([makeRoot(['i1']), instance('i1', 'inst_a024')], options);
+    expect(html).toContain('<div class="inst_a024__root">');
   });
 });

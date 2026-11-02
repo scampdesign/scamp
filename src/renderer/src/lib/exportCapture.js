@@ -1,7 +1,7 @@
 import { toPng, toSvg } from 'html-to-image';
 import { buildFontEmbedCss } from './embedFonts';
 import elementStyles from '../canvas/ElementRenderer.module.css';
-import { canvasSnapshotHtml } from '../canvas/experiment/IframeCanvas';
+import { EDITOR_MARKS, canvasSnapshotHtml } from '../canvas/experiment/IframeCanvas';
 /**
  * Skip nodes that are part of the editor chrome. The marker
  * `data-canvas-chrome="true"` lives on the `CanvasInteractionLayer`
@@ -46,8 +46,6 @@ const withChromeClassesHidden = async (node, fn) => {
         elementStyles.textEditing,
         elementStyles.propEditAffordance,
     ].filter((c) => typeof c === 'string' && c.length > 0);
-    if (chromeClassNames.length === 0)
-        return fn();
     // Capture every element in the subtree (including the root) that
     // currently carries any chrome class, and the specific classes
     // that need restoring. We snapshot only the classes we strip so
@@ -55,6 +53,17 @@ const withChromeClassesHidden = async (node, fn) => {
     // restore (rare, but cheap insurance).
     const restorations = [];
     const candidates = [node, ...node.querySelectorAll('*')];
+    // The iframe canvas experiment marks its outlines with attributes instead.
+    const marks = [];
+    for (const el of candidates) {
+        for (const attr of EDITOR_MARKS) {
+            const value = el.getAttribute(attr);
+            if (value === null)
+                continue;
+            marks.push({ el, attr, value });
+            el.removeAttribute(attr);
+        }
+    }
     for (const el of candidates) {
         const stripped = [];
         for (const cls of chromeClassNames) {
@@ -73,6 +82,8 @@ const withChromeClassesHidden = async (node, fn) => {
         for (const { el, classes } of restorations) {
             el.classList.add(...classes);
         }
+        for (const { el, attr, value } of marks)
+            el.setAttribute(attr, value);
     }
 };
 /**

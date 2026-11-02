@@ -72,11 +72,11 @@ When `ElementRenderer` hits a `component-instance` element, it looks up `compone
 
 Missing-component placeholder: when `componentTrees[name]` is undefined (deleted, renamed externally), the renderer paints a labelled red box so the broken reference is visible on the canvas.
 
-### What a page owns about an instance: its size
+### What a page owns about an instance: its size and place
 
-A page can set an instance's width and height, and nothing else. Everything else about how a component looks belongs to its definition, and the page has nowhere to write it — so `UiPanel` shows only Element + Size for a `component-instance`. Offering Background or Border there would offer edits that silently vanish on the next reload.
+A page can set an instance's width and height, and where it places it, and nothing else. Everything else about how a component looks belongs to its definition, and the page has nowhere to write it — so `UiPanel` shows only Element + Size for a `component-instance`. Offering Background or Border there would offer edits that silently vanish on the next reload.
 
-The size travels as a page CSS class forwarded through the component's `className` prop:
+Both travel as one page CSS class forwarded through the component's `className` prop:
 
 ```tsx
 // page.tsx                          // page.module.css
@@ -94,7 +94,9 @@ Three things make that work, each with a reason that isn't obvious:
 - **The page selector is doubled** (`.inst_x.inst_x`). Both rules are single-class selectors in different CSS modules, so at equal specificity the winner is bundle order — and the component module, imported by the page, lands last. Doubling lifts the page rule to (0,2,0) so it reliably wins. `classifyClassSelector` reads `.x.x` back as a base rule.
 - **The parser normalises the merged `className` away before the HTML parse** (`lib/classNamePassthrough.ts`). The template literal necessarily contains a space, which htmlparser2 would read as the end of an unquoted attribute value.
 
-An instance left at the default size emits neither the rule nor the `className` attribute, so pages that only place components stay free of empty rules.
+**Placement** is written only for an instance out of its parent's flow — `position: auto` in a parent that doesn't lay it out (a dropped or dragged instance), or an explicit `absolute` / `fixed` — as `position` + `left` / `top` after the size (`instanceRuleLines`). In a flex or grid parent, or a slot, the layout places it. The parser reads an instance whose rule has no `position` (or that has no rule) under a block parent as `static`, in the flow, so a file that lets instances flow keeps doing so on the canvas and on save. see docs/notes/parse-flow-children.md
+
+An instance in the flow at its own size emits neither the rule nor the `className` attribute, so such pages stay free of empty rules.
 
 Components written before the passthrough existed still parse — they just ignore a forwarded class until Scamp next regenerates the file.
 

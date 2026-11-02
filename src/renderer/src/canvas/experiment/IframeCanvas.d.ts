@@ -1,3 +1,5 @@
+/** The editor's own attributes on the drawn page, which no capture of it should keep. */
+export declare const EDITOR_MARKS: string[];
 /** One frame of a variant set. see docs/plans/component-variants-plan.md, phase 6 */
 export type IframeVariant = {
     /** The look it draws (`size=large&tone=muted`), or null for the default. */

@@ -407,6 +407,7 @@ export const makeWriteIfDirty =
           captureAndPersistProjectThumbnail({
             projectPath,
             pageName: thumbName,
+            cssPath: target.cssPath,
           });
         });
       }
