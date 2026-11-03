@@ -1,18 +1,15 @@
 # Release 0.13.0 checklist
 
 `main` holds `exp/canvas-rendering` (the iframe canvas, saved instance
-positions) and `feat/resizable-panels`, merged locally and not pushed,
-with one fix on top (`4a345292`).
+positions), `feat/resizable-panels` and `fix/canvas-scroll-containers`,
+merged locally and not pushed, with the overflow fix on top (`4a345292`).
 
-**Test run on merged `main` (2026-11-02):** typecheck clean; 4,759 unit
-and integration tests pass; full e2e 626 passed, 0 failed, 6 skipped (the
-opt-in speed bench, `SCAMP_E2E_SPEED=1`), 26 minutes. The suite runs on
-the iframe canvas; `SCAMP_E2E_LEGACY_CANVAS=1` runs it on the fallback.
-
-`fix/canvas-scroll-containers` merged after that run (`b0b8608d`). Its new
-spec and the selection, drag, zoom, overflow, instance and variant specs
-pass on both canvases (39 on the iframe, 38 + 1 iframe-only skip on the
-legacy one); the full suite has not run again since.
+**Test run on merged `main` (2026-11-03, `a31a1039`):** typecheck clean;
+4,759 unit and integration tests pass; full e2e 629 passed, 0 failed, 6
+skipped (the opt-in speed bench, `SCAMP_E2E_SPEED=1`), 26 minutes. The
+suite runs on the iframe canvas; `SCAMP_E2E_LEGACY_CANVAS=1` runs it on the
+fallback. An earlier run (2026-11-02) found the overflow-indicator blocker
+below; `fix/canvas-scroll-containers` merged between the two.
 
 ## What ships
 
