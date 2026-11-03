@@ -79,15 +79,16 @@ below; `fix/canvas-scroll-containers` merged between the two.
   to the tag date.
 - [x] Commit as `release: 0.13.0`. If a fix lands after it, add it to the
   0.13.0 notes before tagging.
-- [ ] Push `main`, then tag `v0.13.0` and push the tag. The tag starts
+- [x] Push `main`, then tag `v0.13.0` and push the tag. The tag starts
   `.github/workflows/release.yml`.
-- [ ] Watch the workflow through the `verify-feed` job.
+- [x] Watch the workflow through the `verify-feed` job. Run 41696504075: every job
+  passed in 9 minutes. The GitHub release is a draft, as 0.12.0's is.
 - [ ] On an installed 0.12.0, confirm the app offers the update and
   installs it.
 
 ## Cleanup
 
-- [ ] Delete the merged branches `exp/canvas-rendering`,
+- [x] Delete the merged branches `exp/canvas-rendering`,
   `feat/resizable-panels` and `fix/canvas-scroll-containers`. They were
   local only.
 - [ ] Decide on the six old unmerged branches (`backup/phase-7-premerge`,
