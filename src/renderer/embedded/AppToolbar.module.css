@@ -1,0 +1,94 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  padding: 0 12px 0 80px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-header);
+  -webkit-app-region: drag;
+}
+
+.bar button,
+.bar input {
+  -webkit-app-region: no-drag;
+}
+
+.nav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.icon {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.icon:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.urlForm {
+  flex: 1;
+  max-width: 520px;
+}
+
+.url {
+  width: 100%;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.modes {
+  display: flex;
+  gap: 4px;
+}
+
+.toggle {
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.toggle[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+  color: var(--accent-text);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.branch {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+}

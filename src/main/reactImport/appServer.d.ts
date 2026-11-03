@@ -22,7 +22,13 @@ export declare const inspectReactFolder: (dir: string) => Promise<DetectResult>;
  * One per key (the Scamp project importing it); a second call while one
  * runs returns the same URL.
  */
-export declare const startReactApp: (key: string, dir: string, onEvent: (event: ReactAppEvent) => void) => Promise<{
+export declare const startReactApp: (key: string, dir: string, onEvent: (event: ReactAppEvent) => void, 
+/** Run this instead of the project's dev script (Embedded Scamp runs Vite with its own config). */
+command?: (port: number) => {
+    command: string;
+    args: string[];
+    env: Record<string, string>;
+}) => Promise<{
     ok: true;
     url: string;
 } | {

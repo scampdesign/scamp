@@ -1,0 +1,26 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+
+.page {
+  padding: 24px;
+}
+
+.cards {
+  display: flex;
+  gap: 12px;
+}
+
+.menu {
+  display: inline-block;
+  padding: 8px;
+}
+
+.menu-list {
+  margin: 4px 0 0;
+  padding: 8px;
+  list-style: none;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+}

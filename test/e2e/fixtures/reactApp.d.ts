@@ -4,4 +4,4 @@
  * installing anything. The caller removes the folder.
  * see docs/plans/react-import-plan.md
  */
-export declare const copyFixtureApp: () => Promise<string>;
+export declare const copyFixtureApp: (fixture?: string) => Promise<string>;

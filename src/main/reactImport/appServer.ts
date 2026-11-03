@@ -105,7 +105,9 @@ const waitForServer = async (url: string, proc: ChildProcess, timeoutMs: number)
 export const startReactApp = async (
   key: string,
   dir: string,
-  onEvent: (event: ReactAppEvent) => void
+  onEvent: (event: ReactAppEvent) => void,
+  /** Run this instead of the project's dev script (Embedded Scamp runs Vite with its own config). */
+  command?: (port: number) => { command: string; args: string[]; env: Record<string, string> }
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> => {
   const existing = running.get(key);
   if (existing !== undefined && existing.process.exitCode === null) return { ok: true, url: existing.url };
@@ -124,8 +126,8 @@ export const startReactApp = async (
 
   onEvent({ kind: 'phase', phase: 'starting' });
   const port = await allocateFreePort();
-  const { command, args, env } = project.devCommand(port);
-  const proc = run(command, args, dir, env, log);
+  const started = (command ?? project.devCommand)(port);
+  const proc = run(started.command, started.args, dir, started.env, log);
   const url = `http://localhost:${port}`;
   running.set(key, { process: proc, url, folder: dir });
   proc.on('exit', () => {

@@ -1,0 +1,10 @@
+.card {
+  padding: 16px;
+  border-radius: 8px;
+  background: #f2f4f7;
+}
+
+.name {
+  margin: 0;
+  font-size: 18px;
+}

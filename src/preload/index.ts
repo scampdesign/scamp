@@ -182,6 +182,8 @@ const api = {
    * dev server in parallel as the window opens.
    */
   // Website import. see docs/archive/2026-09-23-website-import-plan.md
+  /** Embedded Scamp: open its own window, which asks for the project folder. */
+  openEmbedded: (): Promise<void> => ipcRenderer.invoke(IPC.EmbeddedOpenWindow),
   openImport: (args: ImportOpenArgs): Promise<{ id: number }> =>
     ipcRenderer.invoke(IPC.ImportOpen, args),
   /** A captured page arriving from the import window. */

@@ -235,6 +235,31 @@ export const IPC = {
     McpQueryResult: 'mcp:query-result',
     // Renderer asks whether the server is up, for the terminal indicator.
     McpStatus: 'mcp:status',
+    // Embedded Scamp: edit an existing React project in its own window.
+    // see docs/plans/embedded-scamp-plan.md
+    EmbeddedOpenWindow: 'embedded:open-window',
+    EmbeddedChooseFolder: 'embedded:choose-folder',
+    EmbeddedOpen: 'embedded:open',
+    EmbeddedPreflight: 'embedded:preflight',
+    EmbeddedGitInit: 'embedded:git-init',
+    EmbeddedStart: 'embedded:start',
+    EmbeddedStartProgress: 'embedded:start-progress',
+    EmbeddedStop: 'embedded:stop',
+    EmbeddedEnqueue: 'embedded:enqueue',
+    EmbeddedRemoveQueued: 'embedded:remove-queued',
+    EmbeddedSetPaused: 'embedded:set-paused',
+    EmbeddedRunNow: 'embedded:run-now',
+    EmbeddedCancel: 'embedded:cancel',
+    EmbeddedDesignCheck: 'embedded:design-check',
+    EmbeddedAgentEvent: 'embedded:agent-event',
+    EmbeddedGitStatus: 'embedded:git-status',
+    EmbeddedGitDiff: 'embedded:git-diff',
+    EmbeddedAccept: 'embedded:accept',
+    EmbeddedDiscard: 'embedded:discard',
+    EmbeddedRevert: 'embedded:revert',
+    EmbeddedSwitchBranch: 'embedded:switch-branch',
+    EmbeddedPush: 'embedded:push',
+    EmbeddedPull: 'embedded:pull',
     // E2E test bootstrap (only live when SCAMP_E2E=1)
     TestGetBootstrap: 'test:getBootstrap',
 };

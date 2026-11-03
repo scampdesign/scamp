@@ -106,6 +106,12 @@ export const StartScreen = ({
     onProjectOpened(project)
   }
 
+  // Embedded Scamp opens its own window, which asks for the folder.
+  // see docs/plans/embedded-scamp-plan.md
+  const handleEditReactProject = (): void => {
+    void window.scamp.openEmbedded()
+  }
+
   const handleOpenProject = async (): Promise<void> => {
     setError(null)
     const result = await window.scamp.chooseFolder()
@@ -400,6 +406,15 @@ export const StartScreen = ({
             type="button"
           >
             Open Project
+          </button>
+          <button
+            className={styles.secondary}
+            onClick={handleEditReactProject}
+            type="button"
+            title="Restyle an existing Vite + React project in place"
+            data-testid="start-edit-react-project"
+          >
+            Edit React Project
           </button>
         </div>
 

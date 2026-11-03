@@ -1,0 +1,108 @@
+.tab {
+  display: flex;
+  flex-direction: column;
+}
+
+.hint {
+  margin: 0;
+  padding: 16px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.component {
+  color: var(--component);
+}
+
+.source {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  overflow-wrap: anywhere;
+}
+
+.scope {
+  display: flex;
+  gap: 4px;
+}
+
+.scope button {
+  flex: 1;
+  height: 24px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.scope button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+  color: var(--accent-text);
+}
+
+.pending {
+  color: var(--accent-text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.notice {
+  margin: 0;
+  padding: 12px;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  line-height: 1.45;
+}
+
+.ask {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.askInput {
+  resize: vertical;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.askButton {
+  align-self: flex-end;
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--text-inverse);
+  font: inherit;
+  cursor: pointer;
+}
+
+.askButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

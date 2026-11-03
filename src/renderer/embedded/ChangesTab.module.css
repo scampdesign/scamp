@@ -1,0 +1,143 @@
+.tab {
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.button,
+.primary {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.button {
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
+
+.button[aria-pressed='true'] {
+  border-color: var(--status-warn);
+}
+
+.primary {
+  border: 0;
+  background: var(--accent);
+  color: var(--text-inverse);
+}
+
+.button:disabled,
+.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.empty,
+.note {
+  margin: 0;
+  color: var(--text-tertiary);
+  line-height: 1.45;
+}
+
+.notice {
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+.list,
+.files {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.files li {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.itemText {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.remove {
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.input,
+.select {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.log {
+  padding: 12px;
+  color: var(--text-secondary);
+}
+
+.logLine {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  font-size: 12px;
+}
+
+.logLine[data-kind='tool'] {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.logLine[data-ok='false'] {
+  color: var(--error-text);
+}

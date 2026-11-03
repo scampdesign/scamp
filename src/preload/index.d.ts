@@ -29,6 +29,8 @@ declare const api: {
      * Returns the window id so callers can correlate; main spawns the
      * dev server in parallel as the window opens.
      */
+    /** Embedded Scamp: open its own window, which asks for the project folder. */
+    openEmbedded: () => Promise<void>;
     openImport: (args: ImportOpenArgs) => Promise<{
         id: number;
     }>;

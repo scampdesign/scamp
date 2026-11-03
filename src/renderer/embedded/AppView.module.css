@@ -1,0 +1,13 @@
+.view {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  background: var(--bg-canvas);
+}
+
+.webview {
+  flex: 1;
+  border: 0;
+  /* One-off literal: a browser's own default page colour, behind a page that sets none. */
+  background: #ffffff;
+}

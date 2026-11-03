@@ -10,9 +10,9 @@ const REPO = path.resolve(__dirname, '../../..');
  * installing anything. The caller removes the folder.
  * see docs/plans/react-import-plan.md
  */
-export const copyFixtureApp = async (): Promise<string> => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'scamp-react-app-'));
-  await fs.cp(path.join(REPO, 'test/fixtures/react-app'), dir, { recursive: true });
+export const copyFixtureApp = async (fixture = 'react-app'): Promise<string> => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), `scamp-${fixture}-`));
+  await fs.cp(path.join(REPO, 'test/fixtures', fixture), dir, { recursive: true });
   await fs.symlink(path.join(REPO, 'node_modules'), path.join(dir, 'node_modules'), 'dir');
   return dir;
 };

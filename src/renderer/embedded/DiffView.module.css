@@ -1,0 +1,22 @@
+.diff {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.line {
+  display: block;
+  padding: 0 8px;
+  white-space: pre;
+}
+
+.line[data-kind='add'] { background: color-mix(in srgb, var(--status-success) 16%, transparent); }
+.line[data-kind='del'] { background: color-mix(in srgb, var(--status-error) 16%, transparent); }
+.line[data-kind='hunk'] { color: var(--accent-text); }
+.line[data-kind='meta'] { color: var(--text-tertiary); }

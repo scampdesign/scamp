@@ -26,6 +26,7 @@ import { registerHtmlExportIpc } from './ipc/htmlExport';
 import { registerUpdaterIpc } from './ipc/updater';
 import { initAutoUpdater } from './updater';
 import { registerPreviewIpc } from './ipc/preview';
+import { registerEmbeddedIpc } from './embedded/window';
 import { registerImportIpc } from './importWindow';
 import { registerReactImportIpc } from './ipc/reactImport';
 import { stopAllReactApps } from './reactImport/appServer';
@@ -338,6 +339,7 @@ app.whenReady().then(() => {
     registerAgentIpc();
     registerHtmlExportIpc();
     registerImportIpc();
+    registerEmbeddedIpc();
     registerReactImportIpc();
     registerUpdaterIpc();
     registerPreviewIpc({
