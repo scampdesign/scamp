@@ -47,37 +47,37 @@ below; `fix/canvas-scroll-containers` merged between the two.
 - [x] **Re-test of the fixes from that run**: undo after a text edit and
   the other shortcuts, the 900px floor, saved instance positions, instances
   in the flow, PNG export without the outline, the project cover.
-- [ ] **Long session (section 9).** Design for 20 to 30 minutes, switching
+- [x] **Long session (section 9).** Design for 20 to 30 minutes, switching
   pages and components often. Watch for slowdowns, memory growth in the
   developer tools' **Task Manager**, and outlines left on deselected
   elements.
-- [ ] **Large variant sets.** Open ChainStrip in the glitch project: it
+- [x] **Large variant sets.** Open ChainStrip in the glitch project: it
   opens, draws its authored frames with the notice, and editing a frame
   stays fast. Each frame is an iframe now, and a large set's speed was
   never measured.
-- [ ] **Saved instance positions on a real project.** Open a project with
+- [x] **Saved instance positions on a real project.** Open a project with
   placed instances, save a page, and read the diff: placed instances gain
   a `.inst_….inst_…` rule with `position`, `left` and `top`; instances in a
   row, a column or the flow don't change.
-- [ ] **Scroll containers.** In riq-frontend's `AdminAudit` view, the
+- [x] **Scroll containers.** In riq-frontend's `AdminAudit` view, the
   wheel over the table scrolls it, then the canvas once it reaches the
   end; Shift scrolls sideways; a row selected inside it keeps its outline
   while it scrolls; the scrollbars look lighter than the system's.
-- [ ] **The fallback.** `__scampIframeCanvas.set(false)` switches to the
+- [x] **The fallback.** `__scampIframeCanvas.set(false)` switches to the
   legacy canvas and survives a restart; `set(true)` switches back.
-- [ ] **Resizable panels.** Drag the left panel's edge (200 to 480px) and
+- [x] **Resizable panels.** Drag the left panel's edge (200 to 480px) and
   double-click it to reset; hide it with the open section's rail button,
   **Cmd+B**, and a drag past 120px; resize the code panel and the terminal;
   move each edge with the arrow keys. Sizes survive a restart.
 
 ## Release
 
-- [ ] `npm version 0.13.0 --no-git-tag-version`, which updates
+- [x] `npm version 0.13.0 --no-git-tag-version`, which updates
   `package.json` and `package-lock.json`.
-- [ ] In `docs/CHANGELOG.md`, rename `### Unreleased` to
-  `### 0.13.0 (2026-11-02)`. If you tag on another day, change the date
+- [x] In `docs/CHANGELOG.md`, rename `### Unreleased` to
+  `### 0.13.0 (2026-11-03)`. If you tag on another day, change the date
   to the tag date.
-- [ ] Commit as `release: 0.13.0`. If a fix lands after it, add it to the
+- [x] Commit as `release: 0.13.0`. If a fix lands after it, add it to the
   0.13.0 notes before tagging.
 - [ ] Push `main`, then tag `v0.13.0` and push the tag. The tag starts
   `.github/workflows/release.yml`.
@@ -87,8 +87,9 @@ below; `fix/canvas-scroll-containers` merged between the two.
 
 ## Cleanup
 
-- [ ] Delete the merged branches `exp/canvas-rendering` and
-  `feat/resizable-panels`. They were local only.
+- [ ] Delete the merged branches `exp/canvas-rendering`,
+  `feat/resizable-panels` and `fix/canvas-scroll-containers`. They were
+  local only.
 - [ ] Decide on the six old unmerged branches (`backup/phase-7-premerge`,
   `code-comparison`, `examples/scamp-ui`, `feat/component-variants`,
   `feat/framework-phase-1`, `feat/framework-phase-3`), 276 to 466 commits
