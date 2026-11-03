@@ -1,28 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { AgentStatus } from './AgentStatus';
 import { useEmbeddedStore } from './embeddedStore';
-import { navigatePage, openPath, setModes } from './session';
+import { PathField } from './PathField';
+import { navigatePage, refreshTree, releaseHeld, setModes } from './session';
 import styles from './AppToolbar.module.css';
-
-const pathOf = (url: string | null): string => {
-  if (url === null) return '/';
-  try {
-    const u = new URL(url);
-    return `${u.pathname}${u.search}${u.hash}`;
-  } catch {
-    return '/';
-  }
-};
 
 /** Navigation, the edit and freeze modes, the branch, and the agent's state. */
 export const AppToolbar = (): JSX.Element => {
-  const pageUrl = useEmbeddedStore((s) => s.pageUrl);
   const edit = useEmbeddedStore((s) => s.edit);
   const frozen = useEmbeddedStore((s) => s.frozen);
   const branch = useEmbeddedStore((s) => s.branch);
-  const [draft, setDraft] = useState(pathOf(pageUrl));
-  useEffect(() => setDraft(pathOf(pageUrl)), [pageUrl]);
+  const held = useEmbeddedStore((s) => s.held);
+  const layersOpen = useEmbeddedStore((s) => s.layersOpen);
   // F8 freezes from here too; inside the page, the inspector answers it.
   useEffect(() => {
     const handleKey = (e: KeyboardEvent): void => {
@@ -40,17 +30,22 @@ export const AppToolbar = (): JSX.Element => {
         <button type="button" className={styles.icon} onClick={() => navigatePage('back')} aria-label="Back">‹</button>
         <button type="button" className={styles.icon} onClick={() => navigatePage('forward')} aria-label="Forward">›</button>
         <button type="button" className={styles.icon} onClick={() => navigatePage('reload')} aria-label="Reload">↻</button>
-        <form
-          className={styles.urlForm}
-          onSubmit={(e) => {
-            e.preventDefault();
-            openPath(draft);
-          }}
-        >
-          <input className={styles.url} value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="Page path" data-testid="embedded-path" />
-        </form>
+        <PathField />
       </div>
       <div className={styles.modes}>
+        <button
+          type="button"
+          className={styles.toggle}
+          aria-pressed={layersOpen}
+          onClick={() => {
+            useEmbeddedStore.getState().set({ layersOpen: !layersOpen });
+            if (!layersOpen) void refreshTree();
+          }}
+          title="Show the page's elements as a tree"
+          data-testid="embedded-layers-toggle"
+        >
+          Layers
+        </button>
         <button
           type="button"
           className={styles.toggle}
@@ -71,6 +66,15 @@ export const AppToolbar = (): JSX.Element => {
         >
           Freeze
         </button>
+        {held.length > 0 && (
+          <span className={styles.held} data-testid="embedded-held" title={held.map((h) => `${h.label} :${h.states.join(' :')}`).join('\n')}>
+            Holding :{held[0]?.states[0]} on {held[0]?.label}
+            {held.length > 1 ? ` +${held.length - 1}` : ''}
+            <button type="button" className={styles.release} onClick={releaseHeld} data-testid="embedded-release">
+              Release
+            </button>
+          </span>
+        )}
       </div>
       <div className={styles.status}>
         {branch !== null && <span className={styles.branch} title="Your work happens on this branch">{branch}</span>}

@@ -286,6 +286,9 @@ export const IPC = {
   EmbeddedSwitchBranch: 'embedded:switch-branch',
   EmbeddedPush: 'embedded:push',
   EmbeddedPull: 'embedded:pull',
+  EmbeddedSyncPseudo: 'embedded:sync-pseudo',
+  EmbeddedResolveSource: 'embedded:resolve-source',
+  EmbeddedRoutes: 'embedded:routes',
 
   // E2E test bootstrap (only live when SCAMP_E2E=1)
   TestGetBootstrap: 'test:getBootstrap',

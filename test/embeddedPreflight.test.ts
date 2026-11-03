@@ -60,8 +60,17 @@ describe('evaluatePreflight', () => {
     expect(report.canStart).toBe(true);
   });
 
-  it('refuses Next.js and CRA for now, and a folder that is not React', () => {
-    expect(statusOf({ ...ready, framework: 'next' }, 'bundler')).toBe('fail');
+  it('runs Next.js as it is, writing nothing for source mapping', () => {
+    const report = evaluatePreflight({ ...ready, framework: 'next', reactPlugin: null });
+    expect(report.checks.find((c) => c.id === 'bundler')?.status).toBe('pass');
+    expect(report.checks.find((c) => c.id === 'instrument')?.status).toBe('pass');
+    expect(report.checks.find((c) => c.id === 'instrument')?.detail).toContain('Nothing is written to your project');
+    expect(report.checks.some((c) => c.id === 'branch')).toBe(true);
+    expect(report.framework).toBe('next');
+    expect(report.canStart).toBe(true);
+  });
+
+  it('refuses CRA for now, and a folder that is not React', () => {
     expect(statusOf({ ...ready, framework: 'cra' }, 'bundler')).toBe('fail');
     const none = evaluatePreflight({ ...ready, framework: null, frameworkError: 'No React in package.json.' });
     expect(none.checks.find((c) => c.id === 'bundler')?.detail).toBe('No React in package.json.');

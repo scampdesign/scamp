@@ -64,11 +64,10 @@
   overflow-wrap: anywhere;
 }
 
-.notice {
+.note {
   margin: 0;
-  padding: 12px;
-  color: var(--warn-text);
-  background: var(--warn-bg);
+  color: var(--text-secondary);
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -105,4 +104,9 @@
 .askButton:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.stateNote {
+  color: var(--accent-text);
+  font-size: 11px;
 }

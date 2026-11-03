@@ -8,7 +8,13 @@ import { commitFiles, discardFiles, ensureSessionBranch, gitDiff, gitStatus, ini
 import { viteCommand, writeInstrumentation } from './instrument';
 import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
+import { listProjectFiles } from './projectFiles';
+import { syncPseudo } from './pseudo';
+import { nextRoutes } from './routes';
+import { resolveSource } from './sourceResolve';
 const sessions = new Map();
+/** Each window's `<webview>` contents, for the debugger. */
+const guests = new Map();
 /** Folders the user chose in the dialog: the only ones a window may open. */
 const chosen = new Set();
 const serverKeyFor = (folder) => `embedded:${folder}`;
@@ -42,6 +48,7 @@ export const openEmbeddedWindow = async () => {
     // The project's page may open popups or links: the system browser takes
     // web links, and nothing opens inside Scamp.
     win.webContents.on('did-attach-webview', (_e, contents) => {
+        guests.set(id, contents);
         contents.setWindowOpenHandler((details) => {
             if (details.url.startsWith('http://') || details.url.startsWith('https://'))
                 void shell.openExternal(details.url);
@@ -53,6 +60,7 @@ export const openEmbeddedWindow = async () => {
     win.on('closed', () => {
         const session = sessions.get(id);
         sessions.delete(id);
+        guests.delete(id);
         session?.agent?.dispose();
         if (session?.serverKey)
             stopReactApp(session.serverKey);
@@ -92,7 +100,7 @@ export const registerEmbeddedIpc = () => {
             if (before.serverKey)
                 stopReactApp(before.serverKey);
         }
-        sessions.set(e.sender.id, { folder, window: win, agent: null, serverKey: null });
+        sessions.set(e.sender.id, { folder, window: win, agent: null, serverKey: null, url: null, framework: null });
         win.setTitle(`Scamp — ${folder.split(/[\\/]/).pop() ?? folder}`);
         return preflight(folder);
     });
@@ -116,13 +124,19 @@ export const registerEmbeddedIpc = () => {
         const branch = await ensureSessionBranch(session.folder, new Date());
         if (!branch.ok)
             return { ok: false, error: branch.error };
-        progress({ kind: 'phase', phase: 'configure' });
-        await writeInstrumentation(session.folder);
+        // Next.js runs as it is: sources come from React's debug info, resolved in `resolveSource`.
+        session.framework = check.framework;
+        const next = check.framework === 'next';
+        if (!next) {
+            progress({ kind: 'phase', phase: 'configure' });
+            await writeInstrumentation(session.folder);
+        }
         const key = serverKeyFor(session.folder);
         session.serverKey = key;
-        const started = await startReactApp(key, session.folder, (event) => progress(event.kind === 'log' ? { kind: 'log', text: event.text } : { kind: 'phase', phase: event.phase }), (port) => viteCommand(session.folder, port));
+        const started = await startReactApp(key, session.folder, (event) => progress(event.kind === 'log' ? { kind: 'log', text: event.text } : { kind: 'phase', phase: event.phase }), next ? undefined : (port) => viteCommand(session.folder, port));
         if (!started.ok)
             return started;
+        session.url = started.url;
         session.agent?.dispose();
         session.agent = createEmbeddedAgent({
             folder: session.folder,
@@ -138,6 +152,27 @@ export const registerEmbeddedIpc = () => {
             stopReactApp(session.serverKey);
         if (session)
             session.serverKey = null;
+    });
+    ipcMain.handle(IPC.EmbeddedRoutes, async (e) => {
+        const session = sessionOf(e);
+        return session?.framework === 'next' ? nextRoutes(await listProjectFiles(session.folder)) : [];
+    });
+    ipcMain.handle(IPC.EmbeddedSyncPseudo, async (e) => {
+        const guest = guests.get(e.sender.id);
+        return guest === undefined || guest.isDestroyed() ? false : syncPseudo(guest);
+    });
+    ipcMain.handle(IPC.EmbeddedResolveSource, async (e, args) => {
+        const session = sessionOf(e);
+        const raw = args?.raw;
+        if (session === null || session.url === null || raw === null || typeof raw !== 'object')
+            return { source: null };
+        const hints = {
+            tag: String(args.hints?.tag ?? ''),
+            classes: Array.isArray(args.hints?.classes) ? args.hints.classes.map(String) : [],
+            text: String(args.hints?.text ?? ''),
+        };
+        const source = await resolveSource(session.folder, new URL(session.url).origin, raw, hints).catch(() => null);
+        return { source };
     });
     // The agent queue.
     const withAgent = (e, fallback, fn) => {

@@ -18,3 +18,5 @@ export declare const inPage: <T = unknown>(embedded: Page, code: string) => Prom
  * centre, or just inside its top-left corner to hit it rather than a child.
  */
 export declare const clickInPage: (embedded: Page, selector: string, at?: "center" | "corner") => Promise<void>;
+/** Move the pointer onto an element of the page, so CSS `:hover` applies. */
+export declare const hoverInPage: (embedded: Page, selector: string, at?: "center" | "corner") => Promise<void>;

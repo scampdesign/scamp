@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildAgentPrompt, computedToDeclarations, describeQueueItem } from '@shared/embedded';
+import { buildAgentPrompt, computedToDeclarations, describeQueueItem, mergeRoutes, routeHasParams } from '@shared/embedded';
 const computed = (patch) => ({
     display: 'block',
     position: 'static',
@@ -66,7 +66,9 @@ describe('computedToDeclarations', () => {
 });
 const element = (patch = {}) => ({
     source: 'src/components/Card.tsx:12:5',
-    unmappable: null,
+    library: null,
+    page: '/',
+    selector: 'main.page > section.cards > div.card',
     tag: 'div',
     classes: ['_card_x1'],
     components: ['Card', 'CardList'],
@@ -91,6 +93,25 @@ describe('describeQueueItem', () => {
         expect(text).toContain('Change the shared definition');
         expect(text).toContain('`color`: (not set) → `red`');
     });
+    it('asks the agent to search for an element Scamp couldn’t map, with what it knows', () => {
+        const text = describeQueueItem({ id: 'u', kind: 'style', element: element({ source: null, usedAt: null }), scope: 'instance', changes: [{ property: 'color', from: '', to: 'red' }] }, 0);
+        expect(text).toContain('- Written at: not mapped. Find it: search the project for its classes, its text and the component names below');
+        expect(text).toContain('- On the page: `/`, at `main.page > section.cards > div.card`');
+        expect(text).toContain('Inside components: Card › CardList');
+    });
+    it('tells the agent to style a library’s element from the project, never node_modules', () => {
+        const text = describeQueueItem({ id: 'l', kind: 'style', element: element({ source: null, library: '@radix-ui/react-menu' }), scope: 'instance', changes: [{ property: 'color', from: '', to: 'red' }] }, 0);
+        expect(text).toContain('Drawn by @radix-ui/react-menu, a library. Never edit `node_modules`');
+    });
+    it('names the pseudo-class when the edit was made in a forced state', () => {
+        const text = describeQueueItem({ id: 'h', kind: 'style', element: element(), scope: 'all', state: 'hover', changes: [{ property: 'background-color', from: 'rgb(255, 255, 255)', to: 'rgb(0, 0, 0)' }] }, 0);
+        expect(text).toContain('### Edit 1: style (:hover)');
+        expect(text).toContain('a `:hover` rule, or Tailwind’s `hover:` prefix'.replace('’', "'"));
+    });
+    it('leaves the state out of an edit made in the default state', () => {
+        const text = describeQueueItem({ id: 'a', kind: 'style', element: element(), scope: 'all', changes: [{ property: 'color', from: '', to: 'red' }] }, 0);
+        expect(text).not.toContain('State:');
+    });
     it('carries an instruction, with or without a selection', () => {
         expect(describeQueueItem({ id: 'b', kind: 'instruction', element: null, scope: 'instance', text: 'tighten the spacing' }, 0)).toBe('### Edit 1: instruction\n- Do this: tighten the spacing');
         expect(describeQueueItem({ id: 'b', kind: 'instruction', element: element({ instanceCount: 1 }), scope: 'instance', text: 'make it bold' }, 0)).toContain('Scope: this element.');
@@ -110,5 +131,24 @@ describe('buildAgentPrompt', () => {
     });
     it('speaks of one change in the singular', () => {
         expect(buildAgentPrompt([{ id: 'b', kind: 'instruction', element: null, scope: 'instance', text: 'x' }], ['plain-css'])).toMatch(/^Make this change/);
+    });
+});
+describe('mergeRoutes', () => {
+    it('keeps one of each path, pages before parameterised ones, alphabetical within each', () => {
+        expect(mergeRoutes(['/about'], ['/blog/[slug]', '/', '/about', '/users/:id', '/blog'])).toEqual(['/', '/about', '/blog', '/blog/[slug]', '/users/:id']);
+    });
+    it('drops trailing slashes, queries and hashes, and anything that isn’t a path', () => {
+        expect(mergeRoutes([], ['/team/', '/team?tab=1', '/team#top', 'https://elsewhere.com/x', '//cdn.example.com/a', '', '/files/*'])).toEqual(['/team']);
+    });
+    it('caps the list', () => {
+        expect(mergeRoutes([], ['/a', '/b', '/c'], 2)).toEqual(['/a', '/b']);
+    });
+});
+describe('routeHasParams', () => {
+    it('spots React Router and Next.js params', () => {
+        expect(routeHasParams('/users/:id')).toBe(true);
+        expect(routeHasParams('/blog/[slug]')).toBe(true);
+        expect(routeHasParams('/docs/[[...slug]]')).toBe(true);
+        expect(routeHasParams('/about')).toBe(false);
     });
 });

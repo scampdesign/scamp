@@ -5,8 +5,12 @@ import type {
   EmbeddedEditScope,
   EmbeddedElementRef,
   EmbeddedGitStatus,
+  EmbeddedHeld,
   EmbeddedPreflight,
+  EmbeddedPseudoState,
+  EmbeddedRawSource,
   EmbeddedStyleChange,
+  EmbeddedTreeNode,
 } from '@shared/types';
 import type { ScampElement } from '@lib/element';
 
@@ -20,6 +24,10 @@ import type { ScampElement } from '@lib/element';
 export type EmbeddedScreen = 'choose' | 'setup' | 'editor';
 
 export type EmbeddedSelection = {
+  /** Its id in the layers tree. */
+  uid: string;
+  /** React's location, when main is still resolving the source (Next.js). */
+  raw: EmbeddedRawSource | null;
   element: EmbeddedElementRef;
   computed: Record<string, string>;
   parentDisplay: string;
@@ -57,7 +65,17 @@ type State = {
   edit: boolean;
   frozen: boolean;
   selection: EmbeddedSelection | null;
+  /** True while main looks the selection's source up. */
+  resolving: boolean;
   scope: EmbeddedEditScope;
+  /** The pseudo-class forced on the selection; edits style that state. */
+  pseudo: EmbeddedPseudoState;
+  /** Elements with a state held in the page, frozen or forced. */
+  held: EmbeddedHeld[];
+  layersOpen: boolean;
+  /** Paths of the app found so far: its router, its files (Next.js), and links on pages visited. */
+  routes: string[];
+  tree: EmbeddedTreeNode | null;
   pending: PendingEdit | null;
   agent: EmbeddedAgentState;
   agentLog: AgentLogEntry[];
@@ -87,7 +105,13 @@ export const useEmbeddedStore = create<State & Actions>((set) => ({
   edit: true,
   frozen: false,
   selection: null,
+  resolving: false,
   scope: 'instance',
+  pseudo: 'none',
+  held: [],
+  layersOpen: true,
+  routes: [],
+  tree: null,
   pending: null,
   agent: IDLE_AGENT,
   agentLog: [],

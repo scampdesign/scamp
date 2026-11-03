@@ -9,7 +9,7 @@ const item = (id, to) => ({
     id,
     kind: 'style',
     scope: 'instance',
-    element: { source: 'src/Card.tsx:3:5', unmappable: null, tag: 'div', classes: ['card'], components: ['Card'], instanceCount: 1, usedAt: null, text: '' },
+    element: { source: 'src/Card.tsx:3:5', library: null, page: '/', selector: 'main > div', tag: 'div', classes: ['card'], components: ['Card'], instanceCount: 1, usedAt: null, text: '' },
     changes: [{ property: 'padding', from: '16px', to }],
 });
 const until = async (check, ms = 2000) => {

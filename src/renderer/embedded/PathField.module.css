@@ -1,0 +1,56 @@
+.form {
+  position: relative;
+  flex: 1;
+  max-width: 520px;
+}
+
+.url {
+  width: 100%;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  box-shadow: var(--shadow-popover);
+  -webkit-app-region: no-drag;
+}
+
+.option {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.option[aria-selected='true'] {
+  background: var(--bg-hover);
+}
+
+.params {
+  color: var(--text-tertiary);
+  font-family: var(--font-sans, inherit);
+  font-size: 11px;
+}

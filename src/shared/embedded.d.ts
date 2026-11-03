@@ -1,4 +1,4 @@
-import type { EmbeddedEditScope, EmbeddedIdiom, EmbeddedQueueItem } from './types';
+import type { EmbeddedEditScope, EmbeddedIdiom, EmbeddedPseudoState, EmbeddedQueueItem } from './types';
 /**
  * Embedded Scamp's shared vocabulary: the properties the inspector reads
  * from the page, how they become declarations Scamp's parser understands,
@@ -20,6 +20,10 @@ export declare const computedToDeclarations: (computed: Record<string, string>) 
 export declare const describeQueueItem: (item: EmbeddedQueueItem, index: number) => string;
 /** A batch of queued edits as one message to the agent. */
 export declare const buildAgentPrompt: (items: ReadonlyArray<EmbeddedQueueItem>, idioms: ReadonlyArray<EmbeddedIdiom>) => string;
+/** A route path needs values filled in: `:id` (React Router) or `[id]` (Next.js). */
+export declare const routeHasParams: (path: string) => boolean;
+/** Known routes plus newly found ones: one each, pages before parameterised paths, then alphabetical. */
+export declare const mergeRoutes: (known: ReadonlyArray<string>, found: ReadonlyArray<string>, limit?: number) => string[];
 /** Messages from the inspector arrive as console lines starting with this. */
 export declare const INSPECTOR_PREFIX = "__scamp_inspector__";
 export type InspectorConfig = {
@@ -27,6 +31,7 @@ export type InspectorConfig = {
     attr: string;
     properties: ReadonlyArray<string>;
 };
+export type InspectorState = EmbeddedPseudoState;
 export type InspectorCommand = {
     type: 'edit';
     on: boolean;
@@ -37,14 +42,35 @@ export type InspectorCommand = {
     type: 'apply';
     scope: EmbeddedEditScope;
     styles: Record<string, string>;
+    state: InspectorState;
 } | {
     type: 'restore';
     scope: EmbeddedEditScope;
     properties: ReadonlyArray<string>;
+    state: InspectorState;
 } | {
     type: 'clear';
 } | {
     type: 'deselect';
+}
+/** Force a pseudo-class on the selection, as DevTools' `:hov` does. */
+ | {
+    type: 'state';
+    state: InspectorState;
+}
+/** Let go of every forced state, the frozen ones included. */
+ | {
+    type: 'release';
+}
+/** Report the selection again, with its styles as they are now. */
+ | {
+    type: 'reselect';
+} | {
+    type: 'selectId';
+    id: string;
+} | {
+    type: 'hoverId';
+    id: string | null;
 };
 /**
  * Runs IN the page, installed by `webview.executeJavaScript`. Must be
@@ -55,13 +81,17 @@ export type InspectorCommand = {
  *   the page's own pointer events are swallowed, so a click selects
  *   instead of navigating, and an open menu isn't "clicked outside".
  * - **Freeze** swallows the events transient UI closes on (leave, blur,
- *   Escape), so a popover or tooltip opened by script stays open while
- *   the user moves to the panel. F8 toggles it from inside the page.
- *   CSS `:hover`-only UI can't be held this way: nothing script does
- *   keeps the browser's hover state once the pointer leaves.
+ *   Escape), and marks what's under the pointer for a forced `:hover` (and
+ *   what has focus for `:focus`), which main applies through the debugger
+ *   protocol, so CSS-only hover UI holds too. F8 toggles it from the page.
+ * - **States** force a pseudo-class on the selection; an edit made in one
+ *   previews as a `:hover` (or `:focus`, `:active`) rule, not inline.
  * - **Apply** sets layer-1 styles inline (`!important`), remembering what
  *   was there so `clear` puts it back.
+ * - **Tree** returns the page as a tree of ids, for the layers panel.
  */
 export declare const installInspector: (config: InspectorConfig) => void;
 /** The source text that installs the inspector, then runs `cmd` if given. */
 export declare const inspectorScript: (config: InspectorConfig, cmd?: InspectorCommand) => string;
+/** The source text that returns the page's tree, installing the inspector first. */
+export declare const inspectorTreeScript: (config: InspectorConfig) => string;

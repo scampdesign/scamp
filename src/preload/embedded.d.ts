@@ -1,4 +1,4 @@
-import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedPreflight, EmbeddedQueueItem, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
+import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedPreflight, EmbeddedQueueItem, EmbeddedRawSource, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
 declare const embeddedApi: {
     chooseFolder: () => Promise<EmbeddedChooseResult>;
     open: (folder: string) => Promise<EmbeddedPreflight | {
@@ -30,6 +30,15 @@ declare const embeddedApi: {
     switchBranch: (name: string, create: boolean) => Promise<EmbeddedGitResult>;
     push: () => Promise<EmbeddedGitResult>;
     pull: () => Promise<EmbeddedGitResult>;
+    /** Apply the page's `data-scamp-force` marks as forced pseudo-classes. */
+    syncPseudo: () => Promise<boolean>;
+    /** Routes read from the project's files (Next.js); empty for other stacks. */
+    routes: () => Promise<string[]>;
+    resolveSource: (raw: EmbeddedRawSource, hints: {
+        tag: string;
+        classes: string[];
+        text: string;
+    }) => Promise<EmbeddedResolvedSource>;
 };
 export type ScampEmbeddedApi = typeof embeddedApi;
 export {};

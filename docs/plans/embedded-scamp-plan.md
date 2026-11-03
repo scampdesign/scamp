@@ -10,7 +10,7 @@ Status: **phases 1–7 built, ready for manual testing** on
 These were made to ship a testable v1 without stopping to ask. Each is
 cheap to change later.
 
-- **Stacks for v1:** Vite + React only. Next.js and CRA are detected and
+- **Stacks for v1:** Vite + React and Next.js. CRA is detected and
   reported as "not supported yet" on the setup screen. The agent writes in
   whatever idiom it finds, and its prompt names the one Scamp detected:
   Tailwind, CSS Modules, styled-components or plain CSS.
@@ -50,6 +50,40 @@ cheap to change later.
     tags from `source`, for a project without `@babel/parser` (SWC, where
     `source` is computed on the original file); then React's fiber debug
     info (`_debugSource` on React 18, `_debugStack` on 19), read in the page.
+- **Next.js** runs with its own dev script; nothing is written to the
+  project. The inspector reports React's debug location for an untagged
+  element (`_debugSource` on React 18, the first non-React frame of
+  `_debugStack` on 19), and main resolves it (`sourceResolve.ts`): it
+  fetches the chunk from the app's own origin (or reads a server chunk
+  inside the project, for `rsc://React/Server/file://` frames), follows its
+  `sourceMappingURL`, decodes the map by hand (`sourceMap.ts`, index maps
+  included, for Turbopack), strips the `webpack://_N_E/` or
+  `turbopack:///[project]/` prefix, then `refineLine` picks the line that
+  opens the tag, scored by CSS Module local names (`classTokens`) and
+  text. Instances are counted by the same debug location.
+- **Pseudo states** go through the debugger protocol (`pseudo.ts`), on the
+  webview's contents from `did-attach-webview`: the inspector marks
+  elements with `data-scamp-force="hover,focus"`, says so, and the window
+  asks main to apply the marks with `CSS.forcePseudoState`. Forced nodes
+  are tracked by backend node id, since `DOM.getDocument` renumbers node
+  ids. Freeze marks the chain under the pointer `:hover` and the focused
+  element `:focus`; the Style tab's states mark the selection. An edit made
+  in a state previews as a stylesheet rule (`[data-scamp-uid]:hover`, or
+  the shared `data-scamp-src` for every instance) and is queued with
+  `state`, so the prompt asks for a `:hover` rule or Tailwind's prefix.
+- **Every element is editable.** The panel edits computed CSS, so it works
+  on any element; the source line is a head start for the agent, not a
+  gate. An element with no line goes to the agent with its classes, text,
+  component chain, page path and ancestor selector, and is told to search;
+  a library's element (React's location inside `node_modules`) is styled
+  from the project's code that renders it.
+- **Routes** under the path field come from three places, merged by
+  `mergeRoutes`: React Router's route objects (`readRoutesFn`, shared with
+  React import), Next.js files (`routes.ts`, once per session), and
+  same-origin links on every page loaded. Scamp doesn't load pages in the
+  background to find more.
+- **Layers** are the page's tree from the inspector (`tree()`, ids kept in a
+  `WeakMap`, capped at 3,000 nodes), asked again after a quiet DOM change.
 - **The inspector** is a self-contained script that runs in the page through
   `webview.executeJavaScript`, as `captureScript.ts` does. It draws the
   hover and selection outline, blocks the app's own clicks in edit mode,
@@ -95,10 +129,12 @@ cheap to change later.
 
 ## Known limits
 
-- Freeze holds UI that script opens and closes. A tooltip shown by CSS
-  `:hover` alone can't be held: nothing script does keeps the browser's
-  hover state once the pointer leaves. Electron's debugger
-  (`CSS.forcePseudoState`) could, later.
+- Forced states use the debugger, which only one client can hold: with
+  DevTools open on the page, forcing may stop until it's closed.
+- Next.js mapping depends on the dev server's source maps and React's
+  debug info; an element it can't resolve says so. `webpack-internal://`
+  frames give a file but not a reliable line, so the line comes from
+  `refineLine` alone.
 - The panel shows the selection's computed styles, so a `width: auto`
   element reads as a fixed width. Only what you change is sent, so this
   never reaches the source unless you edit it.
@@ -124,4 +160,8 @@ cheap to change later.
   CSS, review, and accept onto the `scamp/` branch.
   `embedded-modes.spec.ts` covers freeze with F8, an edit to every
   instance, pause and Run now, an instruction, the design check, and the
-  signed-out setup screen.
+  signed-out setup screen. `embedded-states.spec.ts` covers F8 holding a
+  CSS-only tooltip and **Release**, selecting from the layers tree,
+  forcing `:hover` on the selection, and an edit queued for that state.
+- Next.js resolution is unit-tested (`test/embeddedSourceMap.test.ts`) but
+  has no e2e fixture: the repo doesn't install Next.

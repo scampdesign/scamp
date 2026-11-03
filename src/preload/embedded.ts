@@ -10,6 +10,8 @@ import type {
   EmbeddedGitStatus,
   EmbeddedPreflight,
   EmbeddedQueueItem,
+  EmbeddedRawSource,
+  EmbeddedResolvedSource,
   EmbeddedStartProgress,
   EmbeddedStartResult,
 } from '@shared/types';
@@ -53,6 +55,12 @@ const embeddedApi = {
   switchBranch: (name: string, create: boolean): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedSwitchBranch, { name, create }),
   push: (): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedPush),
   pull: (): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedPull),
+  /** Apply the page's `data-scamp-force` marks as forced pseudo-classes. */
+  syncPseudo: (): Promise<boolean> => ipcRenderer.invoke(IPC.EmbeddedSyncPseudo),
+  /** Routes read from the project's files (Next.js); empty for other stacks. */
+  routes: (): Promise<string[]> => ipcRenderer.invoke(IPC.EmbeddedRoutes),
+  resolveSource: (raw: EmbeddedRawSource, hints: { tag: string; classes: string[]; text: string }): Promise<EmbeddedResolvedSource> =>
+    ipcRenderer.invoke(IPC.EmbeddedResolveSource, { raw, hints }),
 };
 
 contextBridge.exposeInMainWorld('scampEmbedded', embeddedApi);

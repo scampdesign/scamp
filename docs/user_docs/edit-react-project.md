@@ -6,14 +6,14 @@ style them, and the Scamp Agent writes each change into your source
 files, in the way your project already writes styles. Every change is
 made on its own git branch, so you can review it and undo it.
 
-This works with Vite + React projects. Next.js and Create React App
-aren't supported yet.
+This works with Vite + React and Next.js projects. Create React App isn't
+supported yet.
 
 ## Before you start
 
 You need the following:
 
-- A Vite + React project on your computer.
+- A Vite + React or Next.js project on your computer.
 - Git, with your name and email set in `git config`.
 - Node.js, at the version your project asks for.
 - To be signed in to Scamp, with the Scamp Agent connected. See
@@ -41,11 +41,14 @@ Scamp creates a branch named after the date and time, such as
 `scamp/2026-11-03-1430`, and starts your app's dev server. Your main
 branch isn't changed.
 
-**Note:** To map elements to their source, Scamp runs Vite with a config
-file of its own, in a `.scamp/` folder inside your project. That file
-loads your own `vite.config` and adds one plugin. The `.scamp/` folder is
-kept out of git, and Scamp doesn't change your config or your
-`package.json`.
+**Note:** To map elements to their source in a Vite project, Scamp runs
+Vite with a config file of its own, in a `.scamp/` folder inside your
+project. That file loads your own `vite.config` and adds one plugin. The
+`.scamp/` folder is kept out of git, and Scamp doesn't change your config
+or your `package.json`. A Next.js project runs with its own dev script,
+and Scamp writes nothing to it: it finds each element's file from React's
+debug information and the dev server's source maps. While it looks, the
+**Style** tab shows **Finding source…**.
 
 ## Style an element
 
@@ -60,8 +63,39 @@ a list, the **Style** tab shows **This one** and **All**. Click **This
 one** to change only the element you selected, or **All** to change the
 shared definition, so every instance changes.
 
-If an element comes from a library, or Scamp can't find where it's
-written, the **Style** tab says so instead of showing the panel.
+If Scamp can't map an element to a line, or the element comes from a
+library, you can still style it. The **Style** tab says so in a short note.
+The agent gets what Scamp knows about the element (its classes, its text,
+its components, and where it sits on the page) and finds it in your code.
+For a library's element, it styles it from your code that uses it, and
+never edits `node_modules`.
+
+## Go to another page
+
+Click the path field in the toolbar. The list under it shows the routes
+Scamp found: your router's routes, your Next.js `app/` and `pages/` files,
+and the links on each page you visit. Select a route to go there. A route
+with a value to fill in, such as `/blog/[slug]`, goes into the field
+instead: replace the placeholder, and then press **Enter**.
+
+## Select from the layers tree
+
+The **Layers** panel, on the left, shows the page's elements as a tree,
+with each component's name beside the element it draws. Hold the pointer
+over a row to outline that element on the page, and click a row to select
+it. When you select an element on the page, the tree opens to it. To hide
+the panel, in the toolbar, click **Layers**.
+
+## Style a hover, focus, or active state
+
+1. Select an element.
+1. In the **Style** tab, click **Hover**, **Focus**, or **Active**. The page
+   shows the element in that state, as if the pointer were over it, and the
+   toolbar shows what Scamp is holding.
+1. Change its styles in the panel. These edits style only that state; the
+   agent writes them as a `:hover` rule, or with Tailwind's `hover:` prefix,
+   in your project's idiom.
+1. Click **Default** to go back to the element's normal styles.
 
 ## Ask the agent in your own words
 
@@ -75,14 +109,13 @@ Menus and popovers close when you move the pointer away, which makes them
 hard to select. To keep one open:
 
 1. In the toolbar, turn **Edit** off, so you can use your app.
-1. Open the menu.
+1. Open the menu, or hold the pointer over what shows the tooltip.
 1. Without moving the pointer off the page, press **F8** to freeze it.
 1. Turn **Edit** on, and click an element inside the menu.
 
-Press **F8** again, or click **Freeze**, to unfreeze.
-
-**Note:** Freeze holds UI that your app opens and closes with JavaScript.
-A tooltip that only CSS `:hover` shows can't be held open.
+Freeze holds both UI that your app opens with JavaScript and UI that CSS
+`:hover` shows. While it holds a state, the toolbar shows **Holding
+:hover on …**. To let go, click **Release**, or press **F8** again.
 
 ## Let the agent write your changes
 

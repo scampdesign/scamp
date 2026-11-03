@@ -5,7 +5,7 @@ import { useEmbeddedStore } from './embeddedStore';
 import { refreshGit, runInspector } from './session';
 import styles from './ChangesTab.module.css';
 const summary = (item) => item.kind === 'style'
-    ? `<${item.element.tag}> ${item.changes.map((c) => `${c.property} → ${c.to}`).join(', ')}${item.scope === 'all' ? ' (all)' : ''}`
+    ? `<${item.element.tag}${item.state !== undefined ? `:${item.state}` : ''}> ${item.changes.map((c) => `${c.property} → ${c.to}`).join(', ')}${item.scope === 'all' ? ' (all)' : ''}`
     : item.text;
 /** The agent's queue and controls, review of what it wrote, and git. */
 export const ChangesTab = () => {

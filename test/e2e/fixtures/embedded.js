@@ -38,16 +38,25 @@ export const startEmbedded = async (embedded) => {
 };
 /** Run code in the project's page and return its result. */
 export const inPage = (embedded, code) => embedded.evaluate((source) => document.querySelector('webview').executeJavaScript(source), code);
-/**
- * A real click on an element of the page, through the webview: at its
- * centre, or just inside its top-left corner to hit it rather than a child.
- */
-export const clickInPage = async (embedded, selector, at = 'center') => {
+const pointInPage = async (embedded, selector, at) => {
     const point = await inPage(embedded, `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return null; const r = el.getBoundingClientRect(); return ${at === 'center' ? '{ x: r.left + r.width / 2, y: r.top + r.height / 2 }' : '{ x: r.left + 3, y: r.top + 3 }'}; })()`);
     if (point === null)
         throw new Error(`nothing in the page matches ${selector}`);
     const box = await embedded.getByTestId('embedded-webview').boundingBox();
     if (box === null)
         throw new Error('the webview is not on screen');
-    await embedded.mouse.click(box.x + point.x, box.y + point.y);
+    return { x: box.x + point.x, y: box.y + point.y };
+};
+/**
+ * A real click on an element of the page, through the webview: at its
+ * centre, or just inside its top-left corner to hit it rather than a child.
+ */
+export const clickInPage = async (embedded, selector, at = 'center') => {
+    const { x, y } = await pointInPage(embedded, selector, at);
+    await embedded.mouse.click(x, y);
+};
+/** Move the pointer onto an element of the page, so CSS `:hover` applies. */
+export const hoverInPage = async (embedded, selector, at = 'center') => {
+    const { x, y } = await pointInPage(embedded, selector, at);
+    await embedded.mouse.move(x, y);
 };

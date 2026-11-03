@@ -1,4 +1,5 @@
-import { EMBEDDED_COMPUTED_PROPERTIES, INSPECTOR_PREFIX, inspectorScript } from '@shared/embedded';
+import { EMBEDDED_COMPUTED_PROPERTIES, INSPECTOR_PREFIX, inspectorScript, inspectorTreeScript, mergeRoutes } from '@shared/embedded';
+import { flattenRoutes, readRoutesFn } from '@shared/reactRoutes';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { STAND_IN_ID, standInTree, styleChanges } from '@lib/embeddedStandIn';
 import { useCanvasStore } from '@store/canvasSlice';
@@ -35,9 +36,71 @@ export const runInspector = async (cmd) => {
 };
 /** Install the inspector in a freshly loaded page, with the window's current modes. */
 export const installInPage = async () => {
-    const { edit, frozen } = useEmbeddedStore.getState();
+    const { edit, frozen, layersOpen, set } = useEmbeddedStore.getState();
+    // A new page has no forced states.
+    set({ pseudo: 'none', held: [] });
     await runInspector({ type: 'edit', on: edit });
     await runInspector({ type: 'freeze', on: frozen });
+    if (layersOpen)
+        await refreshTree();
+    await discoverRoutes();
+};
+let fileRoutesAsked = false;
+/** Find the app's routes: from its files once (Next.js), and from its router and links on every page. */
+export const discoverRoutes = async () => {
+    if (webview === null)
+        return;
+    const found = [];
+    if (!fileRoutesAsked) {
+        fileRoutesAsked = true;
+        found.push(...(await window.scampEmbedded.routes().catch(() => [])));
+    }
+    try {
+        const raw = (await webview.executeJavaScript(`(${readRoutesFn.toString()})()`));
+        if (raw !== null)
+            found.push(...flattenRoutes(raw).filter((r) => !r.splat).map((r) => r.path));
+        const origin = new URL(useEmbeddedStore.getState().url ?? 'http://invalid').origin;
+        const links = (await webview.executeJavaScript(`Array.from(document.querySelectorAll('a[href]'), (a) => a.href)`));
+        for (const href of links) {
+            const u = new URL(href);
+            if (u.origin === origin)
+                found.push(u.pathname);
+        }
+    }
+    catch {
+        // Mid-navigation: the next page load looks again.
+    }
+    const { routes, set } = useEmbeddedStore.getState();
+    set({ routes: mergeRoutes(routes, found) });
+};
+/** Ask the page for its element tree, for the layers panel. */
+export const refreshTree = async () => {
+    if (webview === null)
+        return;
+    try {
+        const tree = (await webview.executeJavaScript(inspectorTreeScript(config)));
+        useEmbeddedStore.getState().set({ tree });
+    }
+    catch {
+        // Mid-navigation: dom-ready asks again.
+    }
+};
+export const selectTreeNode = (id) => {
+    void runInspector({ type: 'selectId', id });
+};
+export const hoverTreeNode = (id) => {
+    void runInspector({ type: 'hoverId', id });
+};
+/** Force a pseudo-class on the selection; later edits style that state. */
+export const setPseudo = (state) => {
+    flushPending();
+    useEmbeddedStore.getState().set({ pseudo: state });
+    void runInspector({ type: 'state', state });
+};
+/** Let go of every held state: freeze and the forced pseudo-class. */
+export const releaseHeld = () => {
+    useEmbeddedStore.getState().set({ pseudo: 'none', frozen: false });
+    void runInspector({ type: 'release' });
 };
 export const attachWebview = (el) => {
     webview = el;
@@ -77,7 +140,7 @@ export const setModes = (patch) => {
     if (patch.edit === false) {
         flushPending();
         void runInspector({ type: 'deselect' });
-        useEmbeddedStore.getState().set({ selection: null, pending: null });
+        useEmbeddedStore.getState().set({ selection: null, pending: null, pseudo: 'none' });
     }
 };
 const loadStandIn = (selection) => {
@@ -108,13 +171,31 @@ export const handleConsoleLine = (line) => {
         return true;
     }
     if (msg.type === 'select') {
-        const { pending, selection } = useEmbeddedStore.getState();
+        const { pending, selection, set } = useEmbeddedStore.getState();
         // A hot reload re-reports the same element: keep an edit in progress rather than reset it.
-        const same = selection !== null && selection.element.source === msg.element.source && selection.element.tag === msg.element.tag;
+        const same = selection !== null &&
+            (selection.uid === msg.uid ||
+                (msg.element.source !== null && selection.element.source === msg.element.source && selection.element.tag === msg.element.tag));
         if (same && pending !== null && pending.changes.length > 0 && !pending.sent)
             return true;
         flushPending();
-        loadStandIn({ element: msg.element, computed: msg.computed, parentDisplay: msg.parentDisplay, textOnly: msg.textOnly });
+        if (selection?.uid !== msg.uid && !same)
+            set({ pseudo: 'none' });
+        // Keep a source main already resolved, rather than look it up again.
+        const element = same && selection.raw !== null && msg.element.source === null ? { ...msg.element, source: selection.element.source } : msg.element;
+        loadStandIn({ uid: msg.uid, raw: msg.raw, element, computed: msg.computed, parentDisplay: msg.parentDisplay, textOnly: msg.textOnly });
+        if (msg.raw !== null && element.source === null && element.library === null)
+            void resolveSelection(msg.uid);
+    }
+    else if (msg.type === 'forced') {
+        useEmbeddedStore.getState().set({ held: msg.held });
+        // Main applies the marks; then the panel reads the styles of the forced state.
+        void window.scampEmbedded.syncPseudo().then(() => runInspector({ type: 'reselect' }));
+    }
+    else if (msg.type === 'treeChanged') {
+        if (useEmbeddedStore.getState().layersOpen)
+            void refreshTree();
+        void discoverRoutes();
     }
     else if (msg.type === 'freeze') {
         useEmbeddedStore.getState().set({ frozen: msg.on });
@@ -125,17 +206,37 @@ export const handleConsoleLine = (line) => {
     }
     return true;
 };
+/** Look up a selection's source from React's debug location (Next.js), and patch it in. */
+const resolveSelection = async (uid) => {
+    const start = useEmbeddedStore.getState();
+    if (start.selection === null || start.selection.raw === null)
+        return;
+    const { raw, element } = start.selection;
+    start.set({ resolving: true });
+    const { source } = await window.scampEmbedded.resolveSource(raw, { tag: element.tag, classes: element.classes, text: element.text });
+    const { selection, set } = useEmbeddedStore.getState();
+    if (selection === null || selection.uid !== uid) {
+        set({ resolving: false });
+        return;
+    }
+    const library = source !== null && source.includes('node_modules/') ? (/node_modules\/((?:@[^/]+\/)?[^/]+)/.exec(source)?.[1] ?? null) : null;
+    set({ resolving: false, selection: { ...selection, element: { ...selection.element, source: library === null ? source : null, library } } });
+};
 const queueItemFor = () => {
-    const { pending, selection, scope } = useEmbeddedStore.getState();
-    if (pending === null || selection === null || pending.changes.length === 0 || selection.element.unmappable !== null)
+    const { pending, selection, scope, pseudo } = useEmbeddedStore.getState();
+    // Unmapped elements are edited too: the prompt carries what the agent needs to find them.
+    if (pending === null || selection === null || pending.changes.length === 0)
         return null;
-    return { id: pending.id, kind: 'style', element: selection.element, scope, changes: pending.changes };
+    return { id: pending.id, kind: 'style', element: selection.element, scope, changes: pending.changes, ...(pseudo !== 'none' ? { state: pseudo } : {}) };
 };
 /** Send the edit in progress to the agent now. */
 export const flushPending = () => {
     if (enqueueTimer !== null)
         clearTimeout(enqueueTimer);
     enqueueTimer = null;
+    // Sent already and unchanged since: sending again would overwrite it, with the state as it is now.
+    if (useEmbeddedStore.getState().pending?.sent === true)
+        return;
     const item = queueItemFor();
     if (item === null)
         return;
@@ -146,9 +247,9 @@ export const flushPending = () => {
 };
 /** Apply the edit's current CSS to the page. */
 const showOnPage = (changes) => {
-    const { scope } = useEmbeddedStore.getState();
+    const { scope, pseudo } = useEmbeddedStore.getState();
     if (changes.length > 0) {
-        void runInspector({ type: 'apply', scope, styles: Object.fromEntries(changes.map((c) => [c.property, c.to])) });
+        void runInspector({ type: 'apply', scope, state: pseudo, styles: Object.fromEntries(changes.map((c) => [c.property, c.to])) });
     }
 };
 /** A panel edit landed on the stand-in: measure it, show it, and queue it. */
@@ -168,7 +269,7 @@ const handleStandInChange = () => {
     const restore = back.filter((c) => !pending.carried.includes(c.property)).map((c) => c.property);
     const keep = back.filter((c) => pending.carried.includes(c.property)).map((c) => ({ property: c.property, to: c.from }));
     if (restore.length > 0)
-        void runInspector({ type: 'restore', scope: 'all', properties: restore });
+        void runInspector({ type: 'restore', scope: 'all', properties: restore, state: store.pseudo });
     showOnPage([...changes, ...keep]);
     const applied = [...new Set([...pending.applied.filter((p) => !restore.includes(p)), ...changes.map((c) => c.property)])];
     store.set({ pending: { ...pending, changes, applied, sent: false } });
@@ -178,10 +279,10 @@ const handleStandInChange = () => {
 };
 /** Switch between this instance and all of them, moving the page's preview with it. */
 export const setScope = (scope) => {
-    const { pending, set } = useEmbeddedStore.getState();
+    const { pending, set, pseudo } = useEmbeddedStore.getState();
     if (pending !== null && pending.applied.length > 0)
-        void runInspector({ type: 'restore', scope: 'all', properties: pending.applied });
-    set({ scope });
+        void runInspector({ type: 'restore', scope: 'all', properties: pending.applied, state: pseudo });
+    set({ scope, ...(pending !== null ? { pending: { ...pending, sent: false } } : {}) });
     if (pending !== null && pending.changes.length > 0) {
         showOnPage(pending.changes);
         if (enqueueTimer !== null)

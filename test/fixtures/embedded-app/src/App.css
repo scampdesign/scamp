@@ -24,3 +24,16 @@ body {
   background: #ffffff;
   border: 1px solid #cccccc;
 }
+
+.title:hover {
+  color: rgb(200, 0, 0);
+}
+
+/* Shown by CSS :hover alone, which only a forced pseudo-class can hold. */
+.tip {
+  display: none;
+}
+
+.hint:hover .tip {
+  display: inline;
+}

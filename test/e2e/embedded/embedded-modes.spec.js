@@ -2,7 +2,7 @@ import { promises as fs, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test, expect } from '../fixtures/app';
-import { clickInPage, copyEmbeddedApp, inPage, openEmbedded, startEmbedded } from '../fixtures/embedded';
+import { clickInPage, copyEmbeddedApp, hoverInPage, inPage, openEmbedded, startEmbedded } from '../fixtures/embedded';
 import { commitInput, panelInputByPrefix } from '../fixtures/panel';
 /**
  * Embedded Scamp's other ways to edit: freezing a menu that closes on
@@ -26,14 +26,14 @@ test('freeze holds a menu open, one edit reaches every instance, and pause batch
         await embedded.getByTestId('embedded-edit-toggle').click();
         await clickInPage(embedded, '.menu-button');
         await expect.poll(() => menuOpen(embedded)).toBe(true);
-        await embedded.mouse.move(5, 300);
+        await hoverInPage(embedded, '.cards', 'corner');
         await expect.poll(() => menuOpen(embedded)).toBe(false);
         // F8, with the pointer still on the page, freezes it open.
         await clickInPage(embedded, '.menu-button');
         await expect.poll(() => menuOpen(embedded)).toBe(true);
         await embedded.keyboard.press('F8');
         await expect(embedded.getByTestId('embedded-freeze-toggle')).toHaveAttribute('aria-pressed', 'true');
-        await embedded.mouse.move(5, 300);
+        await hoverInPage(embedded, '.cards', 'corner');
         await embedded.getByTestId('embedded-edit-toggle').click();
         expect(await menuOpen(embedded)).toBe(true);
         await clickInPage(embedded, '.menu-item');

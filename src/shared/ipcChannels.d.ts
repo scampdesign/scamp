@@ -184,6 +184,9 @@ export declare const IPC: {
     readonly EmbeddedSwitchBranch: "embedded:switch-branch";
     readonly EmbeddedPush: "embedded:push";
     readonly EmbeddedPull: "embedded:pull";
+    readonly EmbeddedSyncPseudo: "embedded:sync-pseudo";
+    readonly EmbeddedResolveSource: "embedded:resolve-source";
+    readonly EmbeddedRoutes: "embedded:routes";
     readonly TestGetBootstrap: "test:getBootstrap";
 };
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];

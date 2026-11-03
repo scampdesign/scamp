@@ -105,8 +105,10 @@ export const evaluatePreflight = (f: PreflightFacts): EmbeddedPreflight => {
   }
   if (f.framework === null) {
     add({ id: 'bundler', group: 'environment', label: 'Not a React app', status: 'fail', detail: f.frameworkError ?? 'Scamp couldn’t find React in package.json.' });
-  } else if (f.framework !== 'vite') {
-    add({ id: 'bundler', group: 'environment', label: f.framework === 'next' ? 'Next.js isn’t supported yet' : 'Create React App isn’t supported yet', status: 'fail', detail: 'Embedded Scamp runs Vite projects for now.' });
+  } else if (f.framework === 'cra') {
+    add({ id: 'bundler', group: 'environment', label: 'Create React App isn’t supported yet', status: 'fail', detail: 'Embedded Scamp runs Vite and Next.js projects for now.' });
+  } else if (f.framework === 'next') {
+    add({ id: 'bundler', group: 'environment', label: 'Next.js', status: 'pass', detail: 'Scamp runs your dev script for you.' });
   } else {
     add({ id: 'bundler', group: 'environment', label: 'Vite + React', status: 'pass', detail: 'Scamp runs the dev server for you.' });
   }
@@ -122,7 +124,7 @@ export const evaluatePreflight = (f: PreflightFacts): EmbeddedPreflight => {
   }
 
   // Project
-  if (f.framework === 'vite') {
+  if (f.framework === 'vite' || f.framework === 'next') {
     if (f.needsInstall) {
       add({ id: 'install', group: 'project', label: 'Install packages', status: 'action', detail: `Scamp will run ${f.packageManager ?? 'npm'} install.` });
     }
@@ -130,9 +132,10 @@ export const evaluatePreflight = (f: PreflightFacts): EmbeddedPreflight => {
       id: 'instrument',
       group: 'project',
       label: 'Map elements to source',
-      status: f.reactPlugin === null ? 'warn' : 'action',
-      detail:
-        f.reactPlugin === null
+      status: f.framework === 'next' ? 'pass' : f.reactPlugin === null ? 'warn' : 'action',
+      detail: f.framework === 'next'
+        ? 'Scamp finds each element’s file from React’s debug info and the dev server’s source maps. Nothing is written to your project.'
+        : f.reactPlugin === null
           ? 'No @vitejs/plugin-react in the Vite config, so elements may map to components but not to lines. Scamp will still run the app.'
           : 'Scamp runs Vite with its own config in .scamp/, which tags each element with its file and line. Your files and git history are untouched.',
     });
@@ -155,5 +158,6 @@ export const evaluatePreflight = (f: PreflightFacts): EmbeddedPreflight => {
     checks,
     canStart: !checks.some((c) => c.status === 'fail'),
     idioms: f.idioms,
+    framework: f.framework,
   };
 };

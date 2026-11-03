@@ -1,4 +1,5 @@
 import { type InspectorCommand } from '@shared/embedded';
+import type { EmbeddedPseudoState } from '@shared/types';
 /** How long editing pauses before an edit goes to the agent's queue. */
 export declare const ENQUEUE_DELAY_MS = 900;
 type WebviewLike = HTMLElement & {
@@ -7,6 +8,16 @@ type WebviewLike = HTMLElement & {
 export declare const runInspector: (cmd?: InspectorCommand) => Promise<void>;
 /** Install the inspector in a freshly loaded page, with the window's current modes. */
 export declare const installInPage: () => Promise<void>;
+/** Find the app's routes: from its files once (Next.js), and from its router and links on every page. */
+export declare const discoverRoutes: () => Promise<void>;
+/** Ask the page for its element tree, for the layers panel. */
+export declare const refreshTree: () => Promise<void>;
+export declare const selectTreeNode: (id: string) => void;
+export declare const hoverTreeNode: (id: string | null) => void;
+/** Force a pseudo-class on the selection; later edits style that state. */
+export declare const setPseudo: (state: EmbeddedPseudoState) => void;
+/** Let go of every held state: freeze and the forced pseudo-class. */
+export declare const releaseHeld: () => void;
 export declare const attachWebview: (el: WebviewLike | null) => void;
 /** Back, forward or reload in the page. */
 export declare const navigatePage: (kind: "back" | "forward" | "reload") => void;

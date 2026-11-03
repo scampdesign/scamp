@@ -36,5 +36,10 @@ const embeddedApi = {
     switchBranch: (name, create) => ipcRenderer.invoke(IPC.EmbeddedSwitchBranch, { name, create }),
     push: () => ipcRenderer.invoke(IPC.EmbeddedPush),
     pull: () => ipcRenderer.invoke(IPC.EmbeddedPull),
+    /** Apply the page's `data-scamp-force` marks as forced pseudo-classes. */
+    syncPseudo: () => ipcRenderer.invoke(IPC.EmbeddedSyncPseudo),
+    /** Routes read from the project's files (Next.js); empty for other stacks. */
+    routes: () => ipcRenderer.invoke(IPC.EmbeddedRoutes),
+    resolveSource: (raw, hints) => ipcRenderer.invoke(IPC.EmbeddedResolveSource, { raw, hints }),
 };
 contextBridge.exposeInMainWorld('scampEmbedded', embeddedApi);

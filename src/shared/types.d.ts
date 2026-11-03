@@ -1573,6 +1573,7 @@ export type EmbeddedPreflight = {
     /** False while any check fails: Start stays disabled. */
     canStart: boolean;
     idioms: EmbeddedIdiom[];
+    framework: 'vite' | 'next' | 'cra' | null;
 };
 export type EmbeddedChooseResult = {
     kind: 'cancelled';
@@ -1605,8 +1606,12 @@ export type EmbeddedStyleChange = {
 export type EmbeddedElementRef = {
     /** `src/components/Card.tsx:12:5`, or null when it can't be mapped. */
     source: string | null;
-    /** Why it can't be edited here, when it can't. */
-    unmappable: string | null;
+    /** The library that draws it, when React's location is inside `node_modules`. */
+    library: string | null;
+    /** The page's path, so the agent can find the route that renders it. */
+    page: string;
+    /** Its ancestors as `main.page > section.cards > article`, a search hint. */
+    selector: string;
     tag: string;
     /** Its CSS classes, as written in the page. */
     classes: string[];
@@ -1620,6 +1625,45 @@ export type EmbeddedElementRef = {
     text: string;
 };
 export type EmbeddedEditScope = 'instance' | 'all';
+/** A pseudo-class forced on the selection; an edit made in one targets that state. */
+export type EmbeddedPseudoState = 'none' | 'hover' | 'focus' | 'active';
+/** One element of the running page, as the layers tree shows it. */
+export type EmbeddedTreeNode = {
+    id: string;
+    tag: string;
+    cls: string;
+    /** The component this element is the outermost DOM node of, if any. */
+    comp: string | null;
+    /** `Card.jsx:4`, when the element carries its source. */
+    src: string | null;
+    text: string;
+    kids: EmbeddedTreeNode[];
+    /** Children left out to keep the tree to a size the panel can draw. */
+    more: number;
+};
+/** Where an untagged element's JSX may be, as React's debug info gives it (Next.js). */
+export type EmbeddedRawSource = {
+    kind: 'frame';
+    url: string;
+    line: number;
+    column: number;
+} | {
+    kind: 'file';
+    path: string;
+    line: number;
+    column: number;
+};
+/** What main found for a raw source: a project file and line, or nothing. */
+export type EmbeddedResolvedSource = {
+    source: string;
+} | {
+    source: null;
+};
+/** An element whose pseudo-class is held, for the toolbar's badge. */
+export type EmbeddedHeld = {
+    label: string;
+    states: string[];
+};
 /** One item in the agent's queue. */
 export type EmbeddedQueueItem = {
     id: string;
@@ -1627,6 +1671,8 @@ export type EmbeddedQueueItem = {
     element: EmbeddedElementRef;
     scope: EmbeddedEditScope;
     changes: EmbeddedStyleChange[];
+    /** Set when the edit was made with a pseudo-class forced: it styles that state. */
+    state?: Exclude<EmbeddedPseudoState, 'none'>;
 } | {
     id: string;
     kind: 'instruction';
@@ -1688,6 +1734,10 @@ export type EmbeddedGitResult = {
 /** What the inspector in the page reports to the window. */
 export type EmbeddedInspectorMessage = {
     type: 'select';
+    /** The element's id in the layers tree. */
+    uid: string;
+    /** React's debug location, for an element with no build-time tag, for main to resolve. */
+    raw: EmbeddedRawSource | null;
     element: EmbeddedElementRef;
     /** Computed styles of the properties the panel shows. */
     computed: Record<string, string>;
@@ -1704,4 +1754,13 @@ export type EmbeddedInspectorMessage = {
  | {
     type: 'freeze';
     on: boolean;
+}
+/** Which elements have a pseudo-class forced now. */
+ | {
+    type: 'forced';
+    held: EmbeddedHeld[];
+}
+/** The page's DOM changed: the layers tree should ask again. */
+ | {
+    type: 'treeChanged';
 };

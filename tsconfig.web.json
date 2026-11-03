@@ -50,6 +50,8 @@
     "src/main/embedded/preflight.ts",
     "src/main/embedded/preflightFacts.ts",
     "src/main/embedded/projectFiles.ts",
+    "src/main/embedded/routes.ts",
+    "src/main/embedded/sourceMap.ts",
     "src/main/agent/agentTools.ts",
     "src/main/agent/systemPrompt.ts",
     "src/main/agent/writeTools.ts",
