@@ -36,6 +36,7 @@ you can do here, and a wrong guess costs more context than this table.
 | Canvas state, selection, elements | `src/renderer/store/canvas/slices/` — one slice per domain |
 | A properties-panel control | `src/renderer/src/components/sections/` — one file per section |
 | Pages, views, routes on disk | `src/main/ipc/componentOps.ts` |
+| Embedded Scamp (edit an existing React project) | `docs/plans/embedded-scamp-plan.md` first; `src/main/embedded/` (window and IPC, setup checks, git, the agent queue, file tools, the Vite config Scamp injects), `src/shared/embedded.ts` (the in-page inspector, prompts), `src/renderer/embedded/` (its window) |
 | Start-screen thumbnails | `src/renderer/src/lib/projectThumbnail.ts`, capture in `exportCapture.ts` |
 | An IPC channel | name in `src/shared/ipcChannels.ts`, handler in `src/main/ipc/<domain>.ts`, surface in `src/preload/index.ts` |
 | What an agent can do over MCP | `src/main/mcp/tools.ts`, answered in `src/renderer/src/syncBridge/mcpResponder.ts` |

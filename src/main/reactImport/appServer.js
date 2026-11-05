@@ -80,7 +80,9 @@ const waitForServer = async (url, proc, timeoutMs) => {
  * One per key (the Scamp project importing it); a second call while one
  * runs returns the same URL.
  */
-export const startReactApp = async (key, dir, onEvent) => {
+export const startReactApp = async (key, dir, onEvent, 
+/** Run this instead of the project's dev script (Embedded Scamp runs Vite with its own config). */
+command) => {
     const existing = running.get(key);
     if (existing !== undefined && existing.process.exitCode === null)
         return { ok: true, url: existing.url };
@@ -98,8 +100,8 @@ export const startReactApp = async (key, dir, onEvent) => {
     }
     onEvent({ kind: 'phase', phase: 'starting' });
     const port = await allocateFreePort();
-    const { command, args, env } = project.devCommand(port);
-    const proc = run(command, args, dir, env, log);
+    const started = (command ?? project.devCommand)(port);
+    const proc = run(started.command, started.args, dir, started.env, log);
     const url = `http://localhost:${port}`;
     running.set(key, { process: proc, url, folder: dir });
     proc.on('exit', () => {

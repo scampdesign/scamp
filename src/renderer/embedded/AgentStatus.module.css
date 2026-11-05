@@ -1,0 +1,40 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.pill[data-phase='thinking'] .dot,
+.pill[data-phase='writing'] .dot {
+  background: var(--accent);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.pill[data-phase='done'] .dot { background: var(--status-success); }
+.pill[data-phase='error'] .dot { background: var(--status-error); }
+.pill[data-phase='paused'] .dot { background: var(--status-warn); }
+
+.count {
+  color: var(--text-tertiary);
+}
+
+@keyframes pulse {
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill .dot { animation: none !important; }
+}

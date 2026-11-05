@@ -93,6 +93,18 @@ describe('sendHeartbeat', () => {
     expect(calls).toEqual([]);
   });
 
+  it('calls afterBeat once an accepted beat lands, and not otherwise', async () => {
+    let after = 0;
+    const count = (): void => {
+      after += 1;
+    };
+    expect(await sendHeartbeat(deps({ afterBeat: count }))).toBe('sent');
+    clock += MIN_SEND_GAP_MS + 1;
+    expect(await sendHeartbeat(deps({ afterBeat: count, fetchImpl: responder(500) }))).toBe('failed');
+    expect(await sendHeartbeat(deps({ afterBeat: count, token: () => null }))).toBe('skipped');
+    expect(after).toBe(1);
+  });
+
   it('signs the user out on a 401', async () => {
     // The session is genuinely gone; without this the UI keeps claiming
     // the user is signed in until they restart.

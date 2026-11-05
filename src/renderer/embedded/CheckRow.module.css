@@ -1,0 +1,75 @@
+.row {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mark {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-inverse);
+  background: var(--text-tertiary);
+}
+
+.row[data-status='pass'] .mark { background: var(--status-success); }
+.row[data-status='warn'] .mark { background: var(--status-warn); }
+.row[data-status='fail'] .mark { background: var(--status-error); }
+.row[data-status='action'] .mark { background: var(--accent); }
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.detail {
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.fix {
+  align-self: flex-start;
+  margin-top: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.fix:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.keyForm {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.keyInput {
+  width: 260px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+}

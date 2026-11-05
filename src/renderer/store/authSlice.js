@@ -2,6 +2,8 @@ import { create } from 'zustand';
 export const useAuthStore = create((set) => ({
     status: 'unknown',
     user: null,
+    features: { embedded: false },
+    applyFeatures: (features) => set({ features }),
     applyStatus: (result) => set(result.signedIn
         ? { status: 'signed-in', user: result.user ?? null }
         : { status: 'signed-out', user: null }),

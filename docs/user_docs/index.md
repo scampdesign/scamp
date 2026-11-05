@@ -19,6 +19,7 @@ Scamp is a local-first design tool that generates real code as you design. Draw 
 - [Components](components.md)—Reusable components across pages, the component editor, the Data tab, per-instance text overrides, variants, and starter components
 - [The Scamp framework](scamp-framework.md)—What a project is made of, which files Scamp owns, and how design, routes, and agents fit together
 - [Views](views.md)—A page's design as a component-shaped file, data bindings in the Data tab, and Scamp framework projects
+- [Edit an existing React project](edit-react-project.md)—Restyle a Vite + React app in place, with the agent writing the changes on a git branch
 - [Import a page from the web](website-import.md)—Read a live web page or a React app's pages into views, what comes across, and what doesn't
 - [Element states](element-states.md)—Hover, active, and focus styles through the state switcher
 - [Transitions](transitions.md)—Smooth state changes through the Transitions section

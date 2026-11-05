@@ -48,6 +48,8 @@ export type HeartbeatDeps = {
     token: () => string | null;
     /** Called on a 401 so the app stops claiming to be signed in. */
     onUnauthorized: () => void | Promise<void>;
+    /** Called after an accepted beat, for anything that refreshes on the same cadence. */
+    afterBeat?: () => void;
     now?: () => number;
 };
 /** Test seam: forget the send-gap floor between cases. */

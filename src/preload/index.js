@@ -39,6 +39,9 @@ const api = {
      * dev server in parallel as the window opens.
      */
     // Website import. see docs/archive/2026-09-23-website-import-plan.md
+    /** Embedded Scamp: open its own window, which asks for the project folder. */
+    /** False when the account doesn't have Edit React Project switched on. */
+    openEmbedded: () => ipcRenderer.invoke(IPC.EmbeddedOpenWindow),
     openImport: (args) => ipcRenderer.invoke(IPC.ImportOpen, args),
     /** A captured page arriving from the import window. */
     onImportDeliver: (listener) => {
@@ -188,6 +191,12 @@ const api = {
     authCancelSignIn: () => ipcRenderer.invoke(IPC.AuthCancel),
     authStatus: () => ipcRenderer.invoke(IPC.AuthStatus),
     authSignOut: () => ipcRenderer.invoke(IPC.AuthSignOut),
+    features: () => ipcRenderer.invoke(IPC.FeaturesGet),
+    onFeaturesChanged: (handler) => {
+        const listener = (_e, features) => handler(features);
+        ipcRenderer.on(IPC.FeaturesChanged, listener);
+        return () => ipcRenderer.removeListener(IPC.FeaturesChanged, listener);
+    },
     onAuthChanged: (handler) => {
         const listener = (_e, status) => handler(status);
         ipcRenderer.on(IPC.AuthComplete, listener);

@@ -22,6 +22,28 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Added**
+
+- **You can restyle an existing React project in place.** On the start
+  screen, click **Edit React Project** and choose a Vite + React or
+  Next.js project.
+  Scamp checks it's ready, runs it on a new git branch, and shows it beside
+  the Scamp panel. Select an element on the running page and style it, and
+  the page updates at once. The Scamp Agent then writes the change into
+  your source, in the way your project already writes styles. Review each
+  change as a diff and accept, discard, or revert it. You can also ask the
+  agent in your own words, freeze a menu, popover, or CSS hover open to
+  style it, style an element's **Hover**, **Focus**, or **Active** state,
+  select elements from a **Layers** tree, go to any route the app has from
+  a list under the path field, choose whether an edit reaches
+  one instance or all of them, push and pull your branch, and run a design
+  check of the whole project. Projects you opened before are listed under
+  **Recent**. Edit React Project is in early access: it shows only for
+  accounts it's switched on for. See
+  [Edit an existing React project](user_docs/edit-react-project.md).
+
 ### 0.13.0 (2026-11-03)
 
 **Added**

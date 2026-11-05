@@ -71,9 +71,16 @@ export const App = () => {
                 apply(status);
         });
         const off = window.scamp.onAuthChanged(apply);
+        const { applyFeatures } = useAuthStore.getState();
+        void window.scamp.features().then((features) => {
+            if (!cancelled)
+                applyFeatures(features);
+        });
+        const offFeatures = window.scamp.onFeaturesChanged(applyFeatures);
         return () => {
             cancelled = true;
             off();
+            offFeatures();
         };
     }, []);
     // "Clean up with AI" from the import window: open the Agent panel and

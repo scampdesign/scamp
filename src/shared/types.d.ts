@@ -1317,6 +1317,11 @@ export type AuthUser = {
     email: string;
     emailVerified: boolean;
 };
+/** Flagged features the website has switched on for this account. see src/main/auth/features.ts */
+export type AppFeatures = {
+    /** Edit React Project (Embedded Scamp). */
+    embedded: boolean;
+};
 export type AuthStatusResult = {
     signedIn: boolean;
     user?: AuthUser;
@@ -1552,4 +1557,221 @@ export type ExportHtmlResult = {
     ok: false;
     error: string;
     reason?: 'occupied';
+};
+/** One row of the setup screen. `action` is something Scamp will do on Start. */
+export type EmbeddedCheckStatus = 'pass' | 'warn' | 'fail' | 'action';
+export type EmbeddedCheck = {
+    id: string;
+    group: 'accounts' | 'environment' | 'project';
+    label: string;
+    status: EmbeddedCheckStatus;
+    detail: string;
+    /** A fix the setup screen offers as a button, when there is one. */
+    fix?: 'git-init' | 'sign-in' | 'connect-agent';
+};
+/** How the project writes its styles: what the agent edits in. */
+export type EmbeddedIdiom = 'tailwind' | 'css-modules' | 'styled-components' | 'plain-css';
+export type EmbeddedPreflight = {
+    folder: string;
+    name: string;
+    checks: EmbeddedCheck[];
+    /** False while any check fails: Start stays disabled. */
+    canStart: boolean;
+    idioms: EmbeddedIdiom[];
+    framework: 'vite' | 'next' | 'cra' | null;
+};
+export type EmbeddedRecentProject = {
+    folder: string;
+    name: string;
+    /** ISO time it was last opened. */
+    lastOpened: string;
+};
+export type EmbeddedChooseResult = {
+    kind: 'cancelled';
+} | {
+    kind: 'ok';
+    folder: string;
+};
+export type EmbeddedStartProgress = {
+    kind: 'log';
+    text: string;
+} | {
+    kind: 'phase';
+    phase: 'branch' | 'configure' | 'installing' | 'starting';
+};
+export type EmbeddedStartResult = {
+    ok: true;
+    url: string;
+    branch: string;
+} | {
+    ok: false;
+    error: string;
+};
+/** One CSS property a panel edit changed. `from` is what the page showed. */
+export type EmbeddedStyleChange = {
+    property: string;
+    from: string;
+    to: string;
+};
+/** Where a selected element's JSX is written, and what the page knows about it. */
+export type EmbeddedElementRef = {
+    /** `src/components/Card.tsx:12:5`, or null when it can't be mapped. */
+    source: string | null;
+    /** The library that draws it, when React's location is inside `node_modules`. */
+    library: string | null;
+    /** The page's path, so the agent can find the route that renders it. */
+    page: string;
+    /** Its ancestors as `main.page > section.cards > article`, a search hint. */
+    selector: string;
+    tag: string;
+    /** Its CSS classes, as written in the page. */
+    classes: string[];
+    /** Component names from the element outwards: `['Card', 'CardList', 'App']`. */
+    components: string[];
+    /** How many elements on the page come from the same line of JSX. */
+    instanceCount: number;
+    /** Where the nearest enclosing component is used, when the page knows. */
+    usedAt: string | null;
+    /** A short piece of its text, to help find it. */
+    text: string;
+};
+export type EmbeddedEditScope = 'instance' | 'all';
+/** A pseudo-class forced on the selection; an edit made in one targets that state. */
+export type EmbeddedPseudoState = 'none' | 'hover' | 'focus' | 'active';
+/** One element of the running page, as the layers tree shows it. */
+export type EmbeddedTreeNode = {
+    id: string;
+    tag: string;
+    cls: string;
+    /** The component this element is the outermost DOM node of, if any. */
+    comp: string | null;
+    /** `Card.jsx:4`, when the element carries its source. */
+    src: string | null;
+    text: string;
+    kids: EmbeddedTreeNode[];
+    /** Children left out to keep the tree to a size the panel can draw. */
+    more: number;
+};
+/** Where an untagged element's JSX may be, as React's debug info gives it (Next.js). */
+export type EmbeddedRawSource = {
+    kind: 'frame';
+    url: string;
+    line: number;
+    column: number;
+} | {
+    kind: 'file';
+    path: string;
+    line: number;
+    column: number;
+};
+/** What main found for a raw source: a project file and line, or nothing. */
+export type EmbeddedResolvedSource = {
+    source: string;
+} | {
+    source: null;
+};
+/** An element whose pseudo-class is held, for the toolbar's badge. */
+export type EmbeddedHeld = {
+    label: string;
+    states: string[];
+};
+/** One item in the agent's queue. */
+export type EmbeddedQueueItem = {
+    id: string;
+    kind: 'style';
+    element: EmbeddedElementRef;
+    scope: EmbeddedEditScope;
+    changes: EmbeddedStyleChange[];
+    /** Set when the edit was made with a pseudo-class forced: it styles that state. */
+    state?: Exclude<EmbeddedPseudoState, 'none'>;
+} | {
+    id: string;
+    kind: 'instruction';
+    element: EmbeddedElementRef | null;
+    scope: EmbeddedEditScope;
+    text: string;
+};
+export type EmbeddedAgentPhase = 'idle' | 'paused' | 'thinking' | 'writing' | 'done' | 'error';
+export type EmbeddedAgentState = {
+    phase: EmbeddedAgentPhase;
+    paused: boolean;
+    queued: EmbeddedQueueItem[];
+    /** What the agent last said, for the status line and the log. */
+    lastText: string;
+    /** The items the last run wrote, so their layer-1 styles can be cleared. */
+    lastRunItemIds: string[];
+    message?: string;
+};
+export type EmbeddedAgentEvent = {
+    kind: 'state';
+    state: EmbeddedAgentState;
+} | {
+    kind: 'text';
+    text: string;
+} | {
+    kind: 'tool';
+    name: string;
+    summary: string;
+    ok: boolean;
+} | {
+    kind: 'report';
+    markdown: string;
+};
+export type EmbeddedChangedFile = {
+    path: string;
+    /** `M` modified, `A` added, `D` deleted, `?` untracked. */
+    status: 'M' | 'A' | 'D' | '?';
+};
+export type EmbeddedGitStatus = {
+    branch: string;
+    branches: string[];
+    changed: EmbeddedChangedFile[];
+    hasRemote: boolean;
+    ahead: number;
+    behind: number;
+    /** Commits Scamp made on this branch, newest first. */
+    scampCommits: Array<{
+        sha: string;
+        subject: string;
+    }>;
+};
+export type EmbeddedGitResult = {
+    ok: true;
+    message?: string;
+} | {
+    ok: false;
+    error: string;
+};
+/** What the inspector in the page reports to the window. */
+export type EmbeddedInspectorMessage = {
+    type: 'select';
+    /** The element's id in the layers tree. */
+    uid: string;
+    /** React's debug location, for an element with no build-time tag, for main to resolve. */
+    raw: EmbeddedRawSource | null;
+    element: EmbeddedElementRef;
+    /** Computed styles of the properties the panel shows. */
+    computed: Record<string, string>;
+    /** The display of its parent, so the panel knows a flex child. */
+    parentDisplay: string;
+    textOnly: boolean;
+} | {
+    type: 'deselect';
+} | {
+    type: 'navigated';
+    url: string;
+}
+/** F8 in the page toggled freeze. */
+ | {
+    type: 'freeze';
+    on: boolean;
+}
+/** Which elements have a pseudo-class forced now. */
+ | {
+    type: 'forced';
+    held: EmbeddedHeld[];
+}
+/** The page's DOM changed: the layers tree should ask again. */
+ | {
+    type: 'treeChanged';
 };

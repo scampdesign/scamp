@@ -51,6 +51,26 @@ const scriptedProvider = async (path) => {
     const script = JSON.parse(await fs.readFile(path, 'utf-8'));
     return createScriptedProvider(script);
 };
+/** Signed in, as the agent checks it: a session token, or the e2e seam. */
+export const agentSignedIn = () => isSignedIn();
+/** Whether the agent can run now: a working key, or the e2e script in its place. */
+export const agentConnected = async () => {
+    if (seams().agentScript !== null)
+        return true;
+    const status = await getProviderKey().status();
+    return status === 'connected' || status === 'session-only';
+};
+let embeddedScripted = null;
+/** A provider for Embedded Scamp's agent: the same key and checks as the app's. */
+export const embeddedAgentProvider = async () => {
+    if (!isSignedIn())
+        return null;
+    const script = seams().agentScript;
+    if (script !== null)
+        return (embeddedScripted ??= scriptedProvider(script));
+    const key = await getProviderKey().current();
+    return key === null ? null : createAnthropicProvider(key);
+};
 // Reads first, then edits — both in a fixed order, since the tool list
 // heads the cached prefix.
 const AGENT_TOOLS = [

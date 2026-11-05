@@ -47,6 +47,9 @@ export declare const IPC: {
     readonly AuthSignOut: "auth:signout";
     /** Broadcast to every window when the signed-in state changes. */
     readonly AuthComplete: "auth:complete";
+    readonly FeaturesGet: "features:get";
+    /** main → renderer: the account's flags changed. */
+    readonly FeaturesChanged: "features:changed";
     readonly AgentKeySet: "agent:key-set";
     readonly AgentKeyStatus: "agent:key-status";
     readonly AgentKeyClear: "agent:key-clear";
@@ -161,6 +164,34 @@ export declare const IPC: {
     readonly McpQuery: "mcp:query";
     readonly McpQueryResult: "mcp:query-result";
     readonly McpStatus: "mcp:status";
+    readonly EmbeddedOpenWindow: "embedded:open-window";
+    readonly EmbeddedChooseFolder: "embedded:choose-folder";
+    readonly EmbeddedOpen: "embedded:open";
+    readonly EmbeddedRecent: "embedded:recent";
+    readonly EmbeddedForgetRecent: "embedded:forget-recent";
+    readonly EmbeddedPreflight: "embedded:preflight";
+    readonly EmbeddedGitInit: "embedded:git-init";
+    readonly EmbeddedStart: "embedded:start";
+    readonly EmbeddedStartProgress: "embedded:start-progress";
+    readonly EmbeddedStop: "embedded:stop";
+    readonly EmbeddedEnqueue: "embedded:enqueue";
+    readonly EmbeddedRemoveQueued: "embedded:remove-queued";
+    readonly EmbeddedSetPaused: "embedded:set-paused";
+    readonly EmbeddedRunNow: "embedded:run-now";
+    readonly EmbeddedCancel: "embedded:cancel";
+    readonly EmbeddedDesignCheck: "embedded:design-check";
+    readonly EmbeddedAgentEvent: "embedded:agent-event";
+    readonly EmbeddedGitStatus: "embedded:git-status";
+    readonly EmbeddedGitDiff: "embedded:git-diff";
+    readonly EmbeddedAccept: "embedded:accept";
+    readonly EmbeddedDiscard: "embedded:discard";
+    readonly EmbeddedRevert: "embedded:revert";
+    readonly EmbeddedSwitchBranch: "embedded:switch-branch";
+    readonly EmbeddedPush: "embedded:push";
+    readonly EmbeddedPull: "embedded:pull";
+    readonly EmbeddedSyncPseudo: "embedded:sync-pseudo";
+    readonly EmbeddedResolveSource: "embedded:resolve-source";
+    readonly EmbeddedRoutes: "embedded:routes";
     readonly TestGetBootstrap: "test:getBootstrap";
 };
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];

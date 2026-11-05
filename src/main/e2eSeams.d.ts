@@ -17,6 +17,8 @@ export type E2eSeams = {
      * scripted provider and needs no key.
      */
     agentScript: string | null;
+    /** Edit React Project, on for the signed-in e2e user unless SCAMP_E2E_EMBEDDED=0. */
+    embedded: boolean;
 };
 export declare const E2E_USER: {
     readonly id: "e2e-user";

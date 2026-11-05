@@ -1,4 +1,4 @@
-import type { AuthStatusResult, AuthUser } from '@shared/types';
+import type { AppFeatures, AuthStatusResult, AuthUser } from '@shared/types';
 /**
  * Whether the user is signed in to Scamp, for anything that is gated on it.
  *
@@ -12,7 +12,10 @@ import type { AuthStatusResult, AuthUser } from '@shared/types';
 export type AuthState = {
     status: 'unknown' | 'signed-in' | 'signed-out';
     user: AuthUser | null;
+    /** Flagged features for this account; all off until main answers. */
+    features: AppFeatures;
     applyStatus: (result: AuthStatusResult) => void;
+    applyFeatures: (features: AppFeatures) => void;
 };
 export declare const useAuthStore: import("zustand").UseBoundStore<import("zustand").StoreApi<AuthState>>;
 /** True only once main has said the user is signed in. */

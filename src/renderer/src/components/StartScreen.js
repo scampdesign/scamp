@@ -6,6 +6,7 @@ import { formatLastOpened } from "@lib/formatLastOpened";
 import { projectDisplayName } from "@lib/projectDisplayName";
 import { basename } from "../lib/path";
 import { startTutorial } from "../lib/startTutorial";
+import { useAuthStore } from "@store/authSlice";
 import { useOnboardingStore } from "@store/onboardingSlice";
 import { CreateProjectModal } from "./CreateProjectModal";
 import { AccountPanel } from "./startScreen/AccountPanel";
@@ -18,6 +19,8 @@ const scampLogoUrl = new URL("../assets/scamp-icon.png", import.meta.url).href;
 const VIEW_STORAGE_KEY = "scamp.projectsView";
 const readStoredView = () => globalThis.localStorage?.getItem(VIEW_STORAGE_KEY) === "list" ? "list" : "card";
 export const StartScreen = ({ onProjectOpened, onOpenSettings, }) => {
+    // Behind a flag the website sets per account; main refuses the window without it too.
+    const embeddedEnabled = useAuthStore((s) => s.features.embedded);
     const [projects, setProjects] = useState([]);
     const [settings, setSettings] = useState(null);
     const [error, setError] = useState(null);
@@ -91,6 +94,11 @@ export const StartScreen = ({ onProjectOpened, onOpenSettings, }) => {
         });
         onProjectOpened(project);
     };
+    // Embedded Scamp opens its own window, which asks for the folder.
+    // see docs/plans/embedded-scamp-plan.md
+    const handleEditReactProject = () => {
+        void window.scamp.openEmbedded();
+    };
     const handleOpenProject = async () => {
         setError(null);
         const result = await window.scamp.chooseFolder();
@@ -163,6 +171,6 @@ export const StartScreen = ({ onProjectOpened, onOpenSettings, }) => {
                                     },
                                 ], onChange: changeView }) }))] }), error && _jsx("div", { className: styles.error, children: error }), projects.length === 0 ? (_jsx("div", { className: styles.emptyState, children: "No projects yet \u2014 create one or open a folder." })) : viewMode === "card" ? (renderCards()) : (renderList())] }));
     };
-    return (_jsxs("div", { className: styles.screen, children: [_jsxs("aside", { className: styles.sidebar, children: [_jsxs("div", { className: styles.brand, children: [_jsx("img", { className: styles.brandLogo, src: scampLogoUrl, alt: "" }), _jsx("h1", { className: styles.sidebarTitle, children: "Scamp" })] }), _jsx("p", { className: styles.sidebarSubtitle, children: "Local design tool \u2014 draw, get real code." }), _jsxs("div", { className: styles.sidebarActions, children: [_jsx("button", { className: styles.primary, onClick: () => setShowCreateModal(true), type: "button", disabled: !defaultFolder, children: "New Project" }), _jsx("button", { className: styles.secondary, onClick: handleOpenProject, type: "button", children: "Open Project" })] }), _jsx("div", { className: styles.sidebarSpacer }), _jsxs("div", { className: styles.resources, children: [_jsx("span", { className: styles.footerLabel, children: "Resources" }), _jsx("button", { className: styles.linkButton, onClick: () => window.open("https://discord.com/invite/xyx5WwVbEG", "_blank", "noopener,noreferrer"), type: "button", children: "Discord community" }), _jsx("button", { className: styles.linkButton, onClick: () => window.open("https://scampdesign.app/docs", "_blank", "noopener,noreferrer"), type: "button", children: "Documentation" }), _jsx("button", { className: styles.linkButton, onClick: () => window.open("https://scampdesign.app/changelog", "_blank", "noopener,noreferrer"), type: "button", children: "Changelog" })] }), _jsx("button", { className: `${styles.secondary} ${styles.settingsButton}`, onClick: onOpenSettings, type: "button", children: "Settings" }), _jsx(AccountPanel, {})] }), _jsx("main", { className: styles.main, children: renderMain() }), showCreateModal && defaultFolder && (_jsx(CreateProjectModal, { defaultFolder: defaultFolder, onSubmit: handleCreateProject, onCancel: () => setShowCreateModal(false) }))] }));
+    return (_jsxs("div", { className: styles.screen, children: [_jsxs("aside", { className: styles.sidebar, children: [_jsxs("div", { className: styles.brand, children: [_jsx("img", { className: styles.brandLogo, src: scampLogoUrl, alt: "" }), _jsx("h1", { className: styles.sidebarTitle, children: "Scamp" })] }), _jsx("p", { className: styles.sidebarSubtitle, children: "Local design tool \u2014 draw, get real code." }), _jsxs("div", { className: styles.sidebarActions, children: [_jsx("button", { className: styles.primary, onClick: () => setShowCreateModal(true), type: "button", disabled: !defaultFolder, children: "New Project" }), _jsx("button", { className: styles.secondary, onClick: handleOpenProject, type: "button", children: "Open Project" }), embeddedEnabled && (_jsx("button", { className: styles.secondary, onClick: handleEditReactProject, type: "button", title: "Restyle an existing Vite + React or Next.js project in place", "data-testid": "start-edit-react-project", children: "Edit React Project" }))] }), _jsx("div", { className: styles.sidebarSpacer }), _jsxs("div", { className: styles.resources, children: [_jsx("span", { className: styles.footerLabel, children: "Resources" }), _jsx("button", { className: styles.linkButton, onClick: () => window.open("https://discord.com/invite/xyx5WwVbEG", "_blank", "noopener,noreferrer"), type: "button", children: "Discord community" }), _jsx("button", { className: styles.linkButton, onClick: () => window.open("https://scampdesign.app/docs", "_blank", "noopener,noreferrer"), type: "button", children: "Documentation" }), _jsx("button", { className: styles.linkButton, onClick: () => window.open("https://scampdesign.app/changelog", "_blank", "noopener,noreferrer"), type: "button", children: "Changelog" })] }), _jsx("button", { className: `${styles.secondary} ${styles.settingsButton}`, onClick: onOpenSettings, type: "button", children: "Settings" }), _jsx(AccountPanel, {})] }), _jsx("main", { className: styles.main, children: renderMain() }), showCreateModal && defaultFolder && (_jsx(CreateProjectModal, { defaultFolder: defaultFolder, onSubmit: handleCreateProject, onCancel: () => setShowCreateModal(false) }))] }));
 };
 export const projectNameFromPath = (p) => basename(p);

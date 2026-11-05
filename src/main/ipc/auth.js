@@ -2,6 +2,7 @@ import { app, ipcMain, safeStorage, shell, BrowserWindow } from 'electron';
 import { IPC } from '@shared/ipcChannels';
 import { cancelSignIn, currentAuthToken, getStatus, signIn, signOut, } from '../auth/authService';
 import { authBaseUrl } from '../auth/desktopAuthFlow';
+import { clearFeatures, currentFeatures, loadFeatures, refreshFeatures } from '../auth/features';
 import { sendHeartbeat, startHeartbeat } from '../auth/heartbeat';
 import { E2E_USER, readE2eSeams } from '../e2eSeams';
 /**
@@ -32,6 +33,27 @@ const deps = () => ({
  * cloud sync ships, essentially never again.
  * see docs/notes/desktop-heartbeat.md
  */
+/** The flags the app acts on: the website's answer, or the e2e seam's. */
+export const appFeatures = () => {
+    const seams = readE2eSeams(process.env, app.isPackaged);
+    return seams.signedIn ? { embedded: seams.embedded } : currentFeatures();
+};
+/** Ask the website for the account's flags, and tell every window if they changed. */
+const syncFeatures = async () => {
+    const before = JSON.stringify(currentFeatures());
+    const after = await refreshFeatures({
+        baseUrl: authBaseUrl(process.env, app.isPackaged),
+        fetchImpl: deps().fetchImpl,
+        token: currentAuthToken,
+        userDataDir: app.getPath('userData'),
+    });
+    if (after !== null && JSON.stringify(after) !== before)
+        broadcast(IPC.FeaturesChanged, after);
+};
+const dropFeatures = async () => {
+    await clearFeatures(app.getPath('userData'));
+    broadcast(IPC.FeaturesChanged, currentFeatures());
+};
 const heartbeatDeps = () => {
     const base = deps();
     return {
@@ -42,7 +64,11 @@ const heartbeatDeps = () => {
             // The session is gone. Drop it locally rather than let the UI keep
             // saying the user is signed in until they restart.
             await signOut(base);
+            await dropFeatures();
             broadcast(IPC.AuthComplete, { signedIn: false });
+        },
+        afterBeat: () => {
+            void syncFeatures();
         },
     };
 };
@@ -58,6 +84,8 @@ export const registerAuthIpc = () => {
     // the only thing that reads the token off disk, and it makes no network
     // call of its own — a signed-out launch still costs nothing.
     void (async () => {
+        // The cached flags first, so the start screen is right offline; the beat refreshes them.
+        await loadFeatures(app.getPath('userData'));
         await getStatus(deps());
         stopHeartbeat = startHeartbeat(heartbeatDeps());
     })();
@@ -68,6 +96,8 @@ export const registerAuthIpc = () => {
             // Count the sign-in itself, rather than waiting up to four hours for
             // a new user to register as having used the app at all.
             void sendHeartbeat(heartbeatDeps());
+            // Not left to the beat, which skips a send within a minute of launch's.
+            void syncFeatures();
         }
         return outcome;
     });
@@ -75,8 +105,10 @@ export const registerAuthIpc = () => {
     ipcMain.handle(IPC.AuthStatus, async () => readE2eSeams(process.env, app.isPackaged).signedIn
         ? { signedIn: true, user: { ...E2E_USER } }
         : getStatus(deps()));
+    ipcMain.handle(IPC.FeaturesGet, async () => appFeatures());
     ipcMain.handle(IPC.AuthSignOut, async () => {
         await signOut(deps());
+        await dropFeatures();
         broadcast(IPC.AuthComplete, { signedIn: false });
     });
 };
