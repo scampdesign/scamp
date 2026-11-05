@@ -91,8 +91,13 @@ Dismissing the banner does **not** cancel the update —
   --force` before building, or image import fails in the Intel build only.
   Both builds carry both pairs. node-pty is rebuilt per architecture by
   electron-builder (`npmRebuild`).
-- The website's download page serves the first `.dmg` in
-  `latest-mac.yml`, so arm64 stays first in the `arch` list.
+- electron-builder lists the **Intel** files first in `latest-mac.yml`,
+  whatever the `arch` order, and its top-level `path` is the Intel zip.
+  electron-updater ignores the order (it filters by `arm64` in the name),
+  but anything else reading the file must pick by name. The website's
+  download page does (`lib/releases.ts` in scamp-website).
+- Both builds carry both sharp pairs, about 10 MB more per download.
+  shortcut: no per-arch `files` exclusion; add one if download size matters.
 - The CI Windows cert env vars are exported to `GITHUB_ENV` from the
   Windows-only import step, not set globally — otherwise `CSC_LINK`
   would point the macOS/Linux runners at a `certificate.p12` that

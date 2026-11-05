@@ -48,5 +48,5 @@ jobs:
           for dir in mac mac-arm64; do
             app="dist/$dir/Scamp.app/Contents"
             prefix=""; [ "$dir" = mac ] && prefix="arch -x86_64"
-            ELECTRON_RUN_AS_NODE=1 $prefix "$app/MacOS/Scamp" smoke.js "$app/Resources"
+            ELECTRON_RUN_AS_NODE=1 $prefix "$app/MacOS/Scamp" "$PWD/smoke.js" "$PWD/$app/Resources"
           done

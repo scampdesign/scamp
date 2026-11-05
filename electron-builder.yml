@@ -62,8 +62,10 @@ mac:
   #
   # Apple Silicon and Intel, from ONE run, so one `latest-mac.yml` lists
   # both and electron-updater picks the build for the Mac it runs on.
-  # arm64 stays first: the website serves the first .dmg in that file.
-  # The Intel files are `Scamp-<v>.dmg` and `Scamp-<v>-mac.zip`.
+  # electron-builder lists the Intel files first whatever this order, so
+  # anything reading that file must pick by name: Apple Silicon's end in
+  # `-arm64.dmg` / `-arm64-mac.zip`, Intel's are `Scamp-<v>.dmg` and
+  # `Scamp-<v>-mac.zip`.
   # see docs/notes/auto-update.md
   target:
     - target: dmg
