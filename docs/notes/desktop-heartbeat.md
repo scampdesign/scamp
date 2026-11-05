@@ -66,6 +66,11 @@ either way.
 The interval is `unref`ed, so it never holds the process open at quit;
 stopping it is tidiness rather than a requirement.
 
+Each accepted beat also calls `afterBeat`, which refreshes the account's
+feature flags (`GET /api/desktop/features`, see `src/main/auth/features.ts`).
+Sign-in refreshes them directly, since the beat skips a send within a
+minute of the launch one.
+
 ## Reading the numbers
 
 App figures only count builds new enough to send this, so they read low

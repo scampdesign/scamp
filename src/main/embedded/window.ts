@@ -1,5 +1,6 @@
-import { BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent, type WebContents } from 'electron';
-import { join } from 'path';
+import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent, type WebContents } from 'electron';
+import { promises as fs } from 'fs';
+import { basename, join } from 'path';
 
 import { IPC } from '@shared/ipcChannels';
 import type {
@@ -10,12 +11,14 @@ import type {
   EmbeddedPreflight,
   EmbeddedQueueItem,
   EmbeddedRawSource,
+  EmbeddedRecentProject,
   EmbeddedResolvedSource,
   EmbeddedStartProgress,
   EmbeddedStartResult,
 } from '@shared/types';
 
 import { agentConnected, agentSignedIn, embeddedAgentProvider } from '../ipc/agent';
+import { appFeatures } from '../ipc/auth';
 import { startReactApp, stopReactApp } from '../reactImport/appServer';
 import { createEmbeddedAgent, type EmbeddedAgent } from './agentQueue';
 import {
@@ -36,6 +39,7 @@ import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
 import { listProjectFiles } from './projectFiles';
 import { syncPseudo } from './pseudo';
+import { parseRecent, removeRecent, upsertRecent } from './recent';
 import { nextRoutes } from './routes';
 import { resolveSource } from './sourceResolve';
 
@@ -63,6 +67,13 @@ const sessions = new Map<number, Session>();
 const guests = new Map<number, WebContents>();
 /** Folders the user chose in the dialog: the only ones a window may open. */
 const chosen = new Set<string>();
+
+const recentPath = (): string => join(app.getPath('userData'), 'embeddedRecent.json');
+const readRecent = async (): Promise<EmbeddedRecentProject[]> =>
+  parseRecent(await fs.readFile(recentPath(), 'utf8').catch(() => ''));
+const writeRecent = async (projects: EmbeddedRecentProject[]): Promise<void> => {
+  await fs.writeFile(recentPath(), JSON.stringify({ projects }, null, 2), 'utf8').catch(() => undefined);
+};
 
 const serverKeyFor = (folder: string): string => `embedded:${folder}`;
 
@@ -128,7 +139,12 @@ const preflight = async (folder: string): Promise<EmbeddedPreflight> =>
   evaluatePreflight(await gatherPreflightFacts(folder, { signedIn: agentSignedIn(), agentConnected: await agentConnected() }));
 
 export const registerEmbeddedIpc = (): void => {
-  ipcMain.handle(IPC.EmbeddedOpenWindow, async () => openEmbeddedWindow());
+  // The flag is checked here, not only by hiding the button.
+  ipcMain.handle(IPC.EmbeddedOpenWindow, async (): Promise<boolean> => {
+    if (!appFeatures().embedded) return false;
+    await openEmbeddedWindow();
+    return true;
+  });
 
   ipcMain.handle(IPC.EmbeddedChooseFolder, async (e): Promise<EmbeddedChooseResult> => {
     const parent = BrowserWindow.fromWebContents(e.sender);
@@ -143,7 +159,8 @@ export const registerEmbeddedIpc = (): void => {
   /** Bind this window to a chosen folder. */
   ipcMain.handle(IPC.EmbeddedOpen, async (e, args: { folder: string }): Promise<EmbeddedPreflight | { error: string }> => {
     const folder = typeof args?.folder === 'string' ? args.folder : '';
-    if (!chosen.has(folder)) return { error: 'Choose the project folder in the dialog first.' };
+    const recent = await readRecent();
+    if (!chosen.has(folder) && !recent.some((p) => p.folder === folder)) return { error: 'Choose the project folder in the dialog first.' };
     const win = BrowserWindow.fromWebContents(e.sender);
     if (win === null) return { error: 'The window closed.' };
     const before = sessions.get(e.sender.id);
@@ -153,7 +170,21 @@ export const registerEmbeddedIpc = (): void => {
     }
     sessions.set(e.sender.id, { folder, window: win, agent: null, serverKey: null, url: null, framework: null });
     win.setTitle(`Scamp — ${folder.split(/[\\/]/).pop() ?? folder}`);
-    return preflight(folder);
+    const report = await preflight(folder);
+    await writeRecent(upsertRecent(recent, { folder, name: report.name || basename(folder), lastOpened: new Date().toISOString() }));
+    return report;
+  });
+
+  ipcMain.handle(IPC.EmbeddedRecent, async (): Promise<Array<EmbeddedRecentProject & { exists: boolean }>> =>
+    Promise.all(
+      (await readRecent()).map(async (p) => ({
+        ...p,
+        exists: await fs.stat(p.folder).then((s) => s.isDirectory(), () => false),
+      }))
+    )
+  );
+  ipcMain.handle(IPC.EmbeddedForgetRecent, async (_e, args: { folder: string }): Promise<void> => {
+    await writeRecent(removeRecent(await readRecent(), String(args?.folder ?? '')));
   });
 
   ipcMain.handle(IPC.EmbeddedPreflight, async (e): Promise<EmbeddedPreflight | { error: string }> => {

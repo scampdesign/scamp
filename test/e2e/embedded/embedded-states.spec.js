@@ -26,7 +26,8 @@ test('freeze holds CSS hover, a forced :hover state takes its own edits, and the
         await expect.poll(() => tipShown(embedded)).toBe('inline');
         await embedded.keyboard.press('F8');
         await expect(embedded.getByTestId('embedded-held')).toContainText('Holding :hover');
-        await embedded.mouse.move(5, 5);
+        // Off the tooltip, within the page: a move out to Scamp's toolbar never reaches the page.
+        await hoverInPage(embedded, '.cards', 'corner');
         await expect.poll(() => tipShown(embedded)).toBe('inline');
         await embedded.getByTestId('embedded-release').click();
         await expect.poll(() => tipShown(embedded)).toBe('none');

@@ -70,6 +70,7 @@ export const sendHeartbeat = async (deps) => {
     if (!response.ok)
         return 'failed';
     lastSentAt = now;
+    deps.afterBeat?.();
     return 'sent';
 };
 /**

@@ -1,2 +1,2 @@
-/** The first screen: pick the project folder. */
+/** The first screen: a recent project, or a new folder. */
 export declare const ChooseScreen: () => JSX.Element;

@@ -6,6 +6,7 @@ import { formatLastOpened } from "@lib/formatLastOpened"
 import { projectDisplayName } from "@lib/projectDisplayName"
 import { basename } from "../lib/path"
 import { startTutorial } from "../lib/startTutorial"
+import { useAuthStore } from "@store/authSlice"
 import { useOnboardingStore } from "@store/onboardingSlice"
 import { CreateProjectModal } from "./CreateProjectModal"
 import { AccountPanel } from "./startScreen/AccountPanel"
@@ -31,6 +32,8 @@ export const StartScreen = ({
   onProjectOpened,
   onOpenSettings,
 }: Props): JSX.Element => {
+  // Behind a flag the website sets per account; main refuses the window without it too.
+  const embeddedEnabled = useAuthStore((s) => s.features.embedded)
   const [projects, setProjects] = useState<StartScreenProject[]>([])
   const [settings, setSettings] = useState<Settings | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -407,15 +410,17 @@ export const StartScreen = ({
           >
             Open Project
           </button>
-          <button
-            className={styles.secondary}
-            onClick={handleEditReactProject}
-            type="button"
-            title="Restyle an existing Vite + React project in place"
-            data-testid="start-edit-react-project"
-          >
-            Edit React Project
-          </button>
+          {embeddedEnabled && (
+            <button
+              className={styles.secondary}
+              onClick={handleEditReactProject}
+              type="button"
+              title="Restyle an existing Vite + React or Next.js project in place"
+              data-testid="start-edit-react-project"
+            >
+              Edit React Project
+            </button>
+          )}
         </div>
 
         <div className={styles.sidebarSpacer} />

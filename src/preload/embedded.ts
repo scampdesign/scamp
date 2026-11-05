@@ -11,6 +11,7 @@ import type {
   EmbeddedPreflight,
   EmbeddedQueueItem,
   EmbeddedRawSource,
+  EmbeddedRecentProject,
   EmbeddedResolvedSource,
   EmbeddedStartProgress,
   EmbeddedStartResult,
@@ -30,6 +31,9 @@ const on = <T>(channel: string, listener: (payload: T) => void): (() => void) =>
 
 const embeddedApi = {
   chooseFolder: (): Promise<EmbeddedChooseResult> => ipcRenderer.invoke(IPC.EmbeddedChooseFolder),
+  /** Recent projects, with whether each folder is still there. */
+  recent: (): Promise<Array<EmbeddedRecentProject & { exists: boolean }>> => ipcRenderer.invoke(IPC.EmbeddedRecent),
+  forgetRecent: (folder: string): Promise<void> => ipcRenderer.invoke(IPC.EmbeddedForgetRecent, { folder }),
   open: (folder: string): Promise<EmbeddedPreflight | { error: string }> => ipcRenderer.invoke(IPC.EmbeddedOpen, { folder }),
   preflight: (): Promise<EmbeddedPreflight | { error: string }> => ipcRenderer.invoke(IPC.EmbeddedPreflight),
   gitInit: (): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedGitInit),

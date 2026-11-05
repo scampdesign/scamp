@@ -98,6 +98,9 @@ export const IPC = {
   AuthSignOut: 'auth:signout',
   /** Broadcast to every window when the signed-in state changes. */
   AuthComplete: 'auth:complete',
+  FeaturesGet: 'features:get',
+  /** main → renderer: the account's flags changed. */
+  FeaturesChanged: 'features:changed',
 
   // Scamp Agent — the user's own provider key. The key goes in and never
   // comes back out; the renderer only ever sees a status.
@@ -266,6 +269,8 @@ export const IPC = {
   EmbeddedOpenWindow: 'embedded:open-window',
   EmbeddedChooseFolder: 'embedded:choose-folder',
   EmbeddedOpen: 'embedded:open',
+  EmbeddedRecent: 'embedded:recent',
+  EmbeddedForgetRecent: 'embedded:forget-recent',
   EmbeddedPreflight: 'embedded:preflight',
   EmbeddedGitInit: 'embedded:git-init',
   EmbeddedStart: 'embedded:start',

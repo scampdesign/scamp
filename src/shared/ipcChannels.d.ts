@@ -47,6 +47,9 @@ export declare const IPC: {
     readonly AuthSignOut: "auth:signout";
     /** Broadcast to every window when the signed-in state changes. */
     readonly AuthComplete: "auth:complete";
+    readonly FeaturesGet: "features:get";
+    /** main → renderer: the account's flags changed. */
+    readonly FeaturesChanged: "features:changed";
     readonly AgentKeySet: "agent:key-set";
     readonly AgentKeyStatus: "agent:key-status";
     readonly AgentKeyClear: "agent:key-clear";
@@ -164,6 +167,8 @@ export declare const IPC: {
     readonly EmbeddedOpenWindow: "embedded:open-window";
     readonly EmbeddedChooseFolder: "embedded:choose-folder";
     readonly EmbeddedOpen: "embedded:open";
+    readonly EmbeddedRecent: "embedded:recent";
+    readonly EmbeddedForgetRecent: "embedded:forget-recent";
     readonly EmbeddedPreflight: "embedded:preflight";
     readonly EmbeddedGitInit: "embedded:git-init";
     readonly EmbeddedStart: "embedded:start";

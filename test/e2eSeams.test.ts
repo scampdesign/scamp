@@ -15,18 +15,27 @@ describe('readE2eSeams', () => {
       signedIn: true,
       agentKeyVerify: 'accept',
       agentScript: '/tmp/script.json',
+      embedded: true,
     });
+  });
+
+  it('turns Edit React Project off for the signed-in e2e user when asked', () => {
+    expect(readE2eSeams({ ...ON, SCAMP_E2E_EMBEDDED: '0' }, false).embedded).toBe(false);
+  });
+
+  it('leaves Edit React Project off when the e2e user is signed out', () => {
+    expect(readE2eSeams({ SCAMP_E2E: '1' }, false).embedded).toBe(false);
   });
 
   it('ignores every switch in a packaged build', () => {
     // A shipped app must not be signed in, or skip a key check, by an
     // environment variable.
-    expect(readE2eSeams(ON, true)).toEqual({ signedIn: false, agentKeyVerify: null, agentScript: null });
+    expect(readE2eSeams(ON, true)).toEqual({ signedIn: false, agentKeyVerify: null, agentScript: null, embedded: false });
   });
 
   it('ignores the switches without the e2e flag', () => {
     const { SCAMP_E2E: _flag, ...rest } = ON;
-    expect(readE2eSeams(rest, false)).toEqual({ signedIn: false, agentKeyVerify: null, agentScript: null });
+    expect(readE2eSeams(rest, false)).toEqual({ signedIn: false, agentKeyVerify: null, agentScript: null, embedded: false });
   });
 
   it('ignores a verify value it does not know', () => {

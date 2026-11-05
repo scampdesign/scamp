@@ -1,7 +1,9 @@
-import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
-import { join } from 'path';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { promises as fs } from 'fs';
+import { basename, join } from 'path';
 import { IPC } from '@shared/ipcChannels';
 import { agentConnected, agentSignedIn, embeddedAgentProvider } from '../ipc/agent';
+import { appFeatures } from '../ipc/auth';
 import { startReactApp, stopReactApp } from '../reactImport/appServer';
 import { createEmbeddedAgent } from './agentQueue';
 import { commitFiles, discardFiles, ensureSessionBranch, gitDiff, gitStatus, initRepo, pullBranch, pushBranch, repoRelative, revertCommit, switchBranch, } from './git';
@@ -10,6 +12,7 @@ import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
 import { listProjectFiles } from './projectFiles';
 import { syncPseudo } from './pseudo';
+import { parseRecent, removeRecent, upsertRecent } from './recent';
 import { nextRoutes } from './routes';
 import { resolveSource } from './sourceResolve';
 const sessions = new Map();
@@ -17,6 +20,11 @@ const sessions = new Map();
 const guests = new Map();
 /** Folders the user chose in the dialog: the only ones a window may open. */
 const chosen = new Set();
+const recentPath = () => join(app.getPath('userData'), 'embeddedRecent.json');
+const readRecent = async () => parseRecent(await fs.readFile(recentPath(), 'utf8').catch(() => ''));
+const writeRecent = async (projects) => {
+    await fs.writeFile(recentPath(), JSON.stringify({ projects }, null, 2), 'utf8').catch(() => undefined);
+};
 const serverKeyFor = (folder) => `embedded:${folder}`;
 const loadShell = async (win) => {
     const devUrl = process.env['ELECTRON_RENDERER_URL'];
@@ -75,7 +83,13 @@ const send = (contents, channel, payload) => {
 };
 const preflight = async (folder) => evaluatePreflight(await gatherPreflightFacts(folder, { signedIn: agentSignedIn(), agentConnected: await agentConnected() }));
 export const registerEmbeddedIpc = () => {
-    ipcMain.handle(IPC.EmbeddedOpenWindow, async () => openEmbeddedWindow());
+    // The flag is checked here, not only by hiding the button.
+    ipcMain.handle(IPC.EmbeddedOpenWindow, async () => {
+        if (!appFeatures().embedded)
+            return false;
+        await openEmbeddedWindow();
+        return true;
+    });
     ipcMain.handle(IPC.EmbeddedChooseFolder, async (e) => {
         const parent = BrowserWindow.fromWebContents(e.sender);
         const options = { title: 'Choose a React project', properties: ['openDirectory'] };
@@ -89,7 +103,8 @@ export const registerEmbeddedIpc = () => {
     /** Bind this window to a chosen folder. */
     ipcMain.handle(IPC.EmbeddedOpen, async (e, args) => {
         const folder = typeof args?.folder === 'string' ? args.folder : '';
-        if (!chosen.has(folder))
+        const recent = await readRecent();
+        if (!chosen.has(folder) && !recent.some((p) => p.folder === folder))
             return { error: 'Choose the project folder in the dialog first.' };
         const win = BrowserWindow.fromWebContents(e.sender);
         if (win === null)
@@ -102,7 +117,16 @@ export const registerEmbeddedIpc = () => {
         }
         sessions.set(e.sender.id, { folder, window: win, agent: null, serverKey: null, url: null, framework: null });
         win.setTitle(`Scamp — ${folder.split(/[\\/]/).pop() ?? folder}`);
-        return preflight(folder);
+        const report = await preflight(folder);
+        await writeRecent(upsertRecent(recent, { folder, name: report.name || basename(folder), lastOpened: new Date().toISOString() }));
+        return report;
+    });
+    ipcMain.handle(IPC.EmbeddedRecent, async () => Promise.all((await readRecent()).map(async (p) => ({
+        ...p,
+        exists: await fs.stat(p.folder).then((s) => s.isDirectory(), () => false),
+    }))));
+    ipcMain.handle(IPC.EmbeddedForgetRecent, async (_e, args) => {
+        await writeRecent(removeRecent(await readRecent(), String(args?.folder ?? '')));
     });
     ipcMain.handle(IPC.EmbeddedPreflight, async (e) => {
         const session = sessionOf(e);

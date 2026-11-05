@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { AuthStatusResult, AuthUser } from '@shared/types';
+import type { AppFeatures, AuthStatusResult, AuthUser } from '@shared/types';
 
 /**
  * Whether the user is signed in to Scamp, for anything that is gated on it.
@@ -15,12 +15,17 @@ import type { AuthStatusResult, AuthUser } from '@shared/types';
 export type AuthState = {
   status: 'unknown' | 'signed-in' | 'signed-out';
   user: AuthUser | null;
+  /** Flagged features for this account; all off until main answers. */
+  features: AppFeatures;
   applyStatus: (result: AuthStatusResult) => void;
+  applyFeatures: (features: AppFeatures) => void;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
   status: 'unknown',
   user: null,
+  features: { embedded: false },
+  applyFeatures: (features) => set({ features }),
   applyStatus: (result) =>
     set(
       result.signedIn

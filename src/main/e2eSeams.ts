@@ -17,6 +17,8 @@ export type E2eSeams = {
    * scripted provider and needs no key.
    */
   agentScript: string | null;
+  /** Edit React Project, on for the signed-in e2e user unless SCAMP_E2E_EMBEDDED=0. */
+  embedded: boolean;
 };
 
 export const E2E_USER = {
@@ -37,5 +39,6 @@ export const readE2eSeams = (
     signedIn: active && env['SCAMP_E2E_SIGNED_IN'] === '1',
     agentKeyVerify: active && (verify === 'accept' || verify === 'reject') ? verify : null,
     agentScript: active && script !== undefined && script.length > 0 ? script : null,
+    embedded: active && env['SCAMP_E2E_SIGNED_IN'] === '1' && env['SCAMP_E2E_EMBEDDED'] !== '0',
   };
 };

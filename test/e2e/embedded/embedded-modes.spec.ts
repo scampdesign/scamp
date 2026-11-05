@@ -86,23 +86,47 @@ test('freeze holds a menu open, one edit reaches every instance, and pause batch
   }
 });
 
-test.describe('signed out', () => {
-  test.use({ appEnv: {} });
+test.describe('agent not connected', () => {
+  test.use({ appEnv: { SCAMP_E2E_SIGNED_IN: '1' } });
 
-  test('the setup screen keeps Start off until the account checks pass, and says how to fix them', async ({ app, window }) => {
+  test('the setup screen keeps Start off until the agent is connected, and the project is in Recent next time', async ({ app, window }) => {
+    // With the flag, the start screen offers it.
+    await window.getByRole('button', { name: '← Projects' }).click();
+    await expect(window.getByTestId('start-edit-react-project')).toBeVisible();
     const dir = await copyEmbeddedApp();
     try {
       const embedded = await openEmbedded(app, window, dir);
-      await expect(embedded.locator('[data-check="scamp"]')).toHaveAttribute('data-status', 'fail');
-      await expect(embedded.locator('[data-check="scamp"]').getByRole('button', { name: 'Sign in' })).toBeVisible();
+      await expect(embedded.locator('[data-check="scamp"]')).toHaveAttribute('data-status', 'pass');
       await expect(embedded.locator('[data-check="agent"]')).toHaveAttribute('data-status', 'fail');
       await expect(embedded.locator('[data-check="agent"]').getByLabel('Anthropic API key')).toBeVisible();
       // What does pass still says so.
       await expect(embedded.locator('[data-check="bundler"]')).toHaveAttribute('data-status', 'pass');
       await expect(embedded.locator('[data-check="git"]')).toHaveAttribute('data-status', 'pass');
       await expect(embedded.getByTestId('embedded-start')).toBeDisabled();
+      await embedded.close();
+
+      // A new window lists the project; one click opens it, with no folder dialog.
+      const reopened = app.waitForEvent('window');
+      await window.evaluate(() => (globalThis as unknown as { scamp: { openEmbedded: () => Promise<boolean> } }).scamp.openEmbedded());
+      const again = await reopened;
+      const recent = again.getByTestId('embedded-recent');
+      await expect(recent).toContainText(dir);
+      await recent.locator('button', { hasText: dir }).click();
+      await expect(again.locator('[data-check="bundler"]')).toHaveAttribute('data-status', 'pass');
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }
+  });
+});
+
+test.describe('without the flag', () => {
+  test.use({ appEnv: { SCAMP_E2E_SIGNED_IN: '1', SCAMP_E2E_EMBEDDED: '0' } });
+
+  test('the start screen hides Edit React Project, and main refuses to open the window', async ({ window }) => {
+    await window.getByRole('button', { name: '← Projects' }).click();
+    await expect(window.getByRole('button', { name: 'Open Project' })).toBeVisible();
+    await expect(window.getByTestId('start-edit-react-project')).toHaveCount(0);
+    const opened = await window.evaluate(() => (globalThis as unknown as { scamp: { openEmbedded: () => Promise<boolean> } }).scamp.openEmbedded());
+    expect(opened).toBe(false);
   });
 });

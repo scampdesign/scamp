@@ -4,7 +4,7 @@ import { useAuthStore } from '@store/authSlice';
 
 describe('useAuthStore', () => {
   beforeEach(() => {
-    useAuthStore.setState({ status: 'unknown', user: null });
+    useAuthStore.setState({ status: 'unknown', user: null, features: { embedded: false } });
   });
 
   it('starts unknown, so a gated surface waits rather than flashing in', () => {
@@ -29,5 +29,13 @@ describe('useAuthStore', () => {
     });
     useAuthStore.getState().applyStatus({ signedIn: false });
     expect(useAuthStore.getState()).toMatchObject({ status: 'signed-out', user: null });
+  });
+
+  it('keeps every flag off until main answers, then applies the answer', () => {
+    expect(useAuthStore.getState().features).toEqual({ embedded: false });
+    useAuthStore.getState().applyFeatures({ embedded: true });
+    expect(useAuthStore.getState().features).toEqual({ embedded: true });
+    useAuthStore.getState().applyFeatures({ embedded: false });
+    expect(useAuthStore.getState().features).toEqual({ embedded: false });
   });
 });

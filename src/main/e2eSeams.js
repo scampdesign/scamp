@@ -12,5 +12,6 @@ export const readE2eSeams = (env, isPackaged) => {
         signedIn: active && env['SCAMP_E2E_SIGNED_IN'] === '1',
         agentKeyVerify: active && (verify === 'accept' || verify === 'reject') ? verify : null,
         agentScript: active && script !== undefined && script.length > 0 ? script : null,
+        embedded: active && env['SCAMP_E2E_SIGNED_IN'] === '1' && env['SCAMP_E2E_EMBEDDED'] !== '0',
     };
 };

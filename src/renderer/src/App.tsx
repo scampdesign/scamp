@@ -85,9 +85,15 @@ export const App = (): JSX.Element => {
       if (!cancelled) apply(status);
     });
     const off = window.scamp.onAuthChanged(apply);
+    const { applyFeatures } = useAuthStore.getState();
+    void window.scamp.features().then((features) => {
+      if (!cancelled) applyFeatures(features);
+    });
+    const offFeatures = window.scamp.onFeaturesChanged(applyFeatures);
     return () => {
       cancelled = true;
       off();
+      offFeatures();
     };
   }, []);
 

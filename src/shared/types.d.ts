@@ -1317,6 +1317,11 @@ export type AuthUser = {
     email: string;
     emailVerified: boolean;
 };
+/** Flagged features the website has switched on for this account. see src/main/auth/features.ts */
+export type AppFeatures = {
+    /** Edit React Project (Embedded Scamp). */
+    embedded: boolean;
+};
 export type AuthStatusResult = {
     signedIn: boolean;
     user?: AuthUser;
@@ -1574,6 +1579,12 @@ export type EmbeddedPreflight = {
     canStart: boolean;
     idioms: EmbeddedIdiom[];
     framework: 'vite' | 'next' | 'cra' | null;
+};
+export type EmbeddedRecentProject = {
+    folder: string;
+    name: string;
+    /** ISO time it was last opened. */
+    lastOpened: string;
 };
 export type EmbeddedChooseResult = {
     kind: 'cancelled';

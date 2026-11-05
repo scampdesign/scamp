@@ -39,7 +39,9 @@ release time.
   select elements from a **Layers** tree, go to any route the app has from
   a list under the path field, choose whether an edit reaches
   one instance or all of them, push and pull your branch, and run a design
-  check of the whole project. See
+  check of the whole project. Projects you opened before are listed under
+  **Recent**. Edit React Project is in early access: it shows only for
+  accounts it's switched on for. See
   [Edit an existing React project](user_docs/edit-react-project.md).
 
 ### 0.13.0 (2026-11-03)

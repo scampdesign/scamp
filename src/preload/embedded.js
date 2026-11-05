@@ -13,6 +13,9 @@ const on = (channel, listener) => {
 };
 const embeddedApi = {
     chooseFolder: () => ipcRenderer.invoke(IPC.EmbeddedChooseFolder),
+    /** Recent projects, with whether each folder is still there. */
+    recent: () => ipcRenderer.invoke(IPC.EmbeddedRecent),
+    forgetRecent: (folder) => ipcRenderer.invoke(IPC.EmbeddedForgetRecent, { folder }),
     open: (folder) => ipcRenderer.invoke(IPC.EmbeddedOpen, { folder }),
     preflight: () => ipcRenderer.invoke(IPC.EmbeddedPreflight),
     gitInit: () => ipcRenderer.invoke(IPC.EmbeddedGitInit),

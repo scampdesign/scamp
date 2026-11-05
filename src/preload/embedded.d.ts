@@ -1,6 +1,11 @@
-import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedPreflight, EmbeddedQueueItem, EmbeddedRawSource, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
+import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedPreflight, EmbeddedQueueItem, EmbeddedRawSource, EmbeddedRecentProject, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
 declare const embeddedApi: {
     chooseFolder: () => Promise<EmbeddedChooseResult>;
+    /** Recent projects, with whether each folder is still there. */
+    recent: () => Promise<Array<EmbeddedRecentProject & {
+        exists: boolean;
+    }>>;
+    forgetRecent: (folder: string) => Promise<void>;
     open: (folder: string) => Promise<EmbeddedPreflight | {
         error: string;
     }>;

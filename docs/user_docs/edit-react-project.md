@@ -9,6 +9,10 @@ made on its own git branch, so you can review it and undo it.
 This works with Vite + React and Next.js projects. Create React App isn't
 supported yet.
 
+**Note:** Edit React Project is in early access. If you don't see **Edit
+React Project** on the start screen, it isn't switched on for your account
+yet.
+
 ## Before you start
 
 You need the following:
@@ -23,7 +27,8 @@ You need the following:
 
 1. On the start screen, click **Edit React Project**. A new window opens.
 1. Click **Choose project folder**, and select the folder that holds your
-   project's `package.json`.
+   project's `package.json`. To open a project you opened before, click it
+   under **Recent** instead.
 1. Read the setup screen. It lists what Scamp checked and what it will do
    when you start:
    - **Accounts:** whether you're signed in, whether the agent is

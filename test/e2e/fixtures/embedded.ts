@@ -30,7 +30,7 @@ export const gitIn = (dir: string, ...args: string[]): string => execFileSync('g
 /** Open the Embedded Scamp window from the app window, pointed at `dir`. */
 export const openEmbedded = async (app: ElectronApplication, window: Page, dir: string): Promise<Page> => {
   const opened = app.waitForEvent('window');
-  await window.evaluate(() => (globalThis as unknown as { scamp: { openEmbedded: () => Promise<void> } }).scamp.openEmbedded());
+  await window.evaluate(() => (globalThis as unknown as { scamp: { openEmbedded: () => Promise<boolean> } }).scamp.openEmbedded());
   const embedded = await opened;
   await embedded.waitForLoadState('domcontentloaded');
   await stubOpenDialog(app, dir);

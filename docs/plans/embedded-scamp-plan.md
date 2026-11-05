@@ -27,6 +27,22 @@ cheap to change later.
 - **Design checks:** on demand only. A run reads the whole project and
   costs tokens.
 
+## Access
+
+Edit React Project is behind a per-account flag on the website
+(`scamp-website`: `User.embeddedEnabledAt`, `lib/features.ts`). Admins
+(`ADMIN_EMAILS`) have it automatically; an admin grants it to anyone else
+by email on `/admin`. The app asks `GET /api/desktop/features` at launch
+(through the heartbeat), at sign-in, and every four hours, and caches the
+last answer in `features.json` so it works offline. Signing out clears it.
+Main refuses `EmbeddedOpenWindow` without the flag; the start screen also
+hides the button. e2e: `SCAMP_E2E_SIGNED_IN` turns it on, and
+`SCAMP_E2E_EMBEDDED=0` turns it off.
+
+The first screen lists the ten most recent projects (`embeddedRecent.json`,
+`recent.ts`). Only main writes that list, so a folder on it opens without
+the folder dialog, like one just chosen there.
+
 ## Architecture
 
 - **A window of its own**, like the import window: a `BrowserWindow` with a
