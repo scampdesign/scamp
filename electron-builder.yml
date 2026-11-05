@@ -59,9 +59,17 @@ mac:
   icon: src/renderer/src/assets/scamp-icon.png
   # `zip` is required alongside `dmg`: electron-updater downloads the zip
   # for macOS auto-updates (a dmg alone can't self-update).
+  #
+  # Apple Silicon and Intel, from ONE run, so one `latest-mac.yml` lists
+  # both and electron-updater picks the build for the Mac it runs on.
+  # arm64 stays first: the website serves the first .dmg in that file.
+  # The Intel files are `Scamp-<v>.dmg` and `Scamp-<v>-mac.zip`.
+  # see docs/notes/auto-update.md
   target:
-    - dmg
-    - zip
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
   # Hardened runtime + entitlements + notarization are required for
   # Gatekeeper to allow the downloaded app and for auto-updates to apply.
   # The signing identity is auto-discovered from the keychain (CI imports

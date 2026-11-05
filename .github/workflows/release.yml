@@ -1,7 +1,7 @@
 name: Release
 
 # Pushing a version tag (e.g. `v1.1.0`) builds all three platform
-# targets, signs + notarizes them, publishes to GitHub Releases, and
+# targets (macOS for both Apple Silicon and Intel), signs + notarizes them, publishes to GitHub Releases, and
 # copies the installers + updater metadata to the R2 update feed.
 # electron-updater clients pick the new version up on their next launch
 # or 4-hour check. See docs/notes/auto-update.md,
@@ -94,6 +94,17 @@ jobs:
       # node-pty for the runner's platform).
       - name: Install dependencies
         run: npm ci
+
+      # The runner is Apple Silicon, so `npm ci` installed only sharp's
+      # arm64 binaries; the Intel build needs the x64 ones beside them,
+      # or image import fails in that build alone. `--force` skips npm's
+      # platform check; the versions are the ones sharp itself pins.
+      - name: Add sharp's Intel binaries
+        if: runner.os == 'macOS'
+        run: |
+          pkgs=$(node -p "Object.entries(require('./node_modules/sharp/package.json').optionalDependencies).filter(([n]) => n.endsWith('darwin-x64')).map(([n, v]) => n + '@' + v).join(' ')")
+          npm install --no-save --force $pkgs
+          ls node_modules/@img
 
       # macOS: import the Developer ID cert into a temporary keychain so
       # electron-builder auto-discovers it. Notarization is driven by the

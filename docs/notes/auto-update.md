@@ -78,6 +78,21 @@ Dismissing the banner does **not** cancel the update —
 
 - macOS auto-update needs the **zip** target (`mac.target` keeps both
   `dmg` and `zip`). A dmg alone can't self-update.
+- macOS ships **Apple Silicon and Intel** builds from the one macOS job:
+  each target lists `arch: [arm64, x64]`. One run writes one
+  `latest-mac.yml` naming both zips, and electron-updater picks the one
+  for the Mac it runs on. Separate jobs per architecture would each
+  upload their own `latest-mac.yml` and the last one would win. Intel
+  files have no suffix (`Scamp-<v>.dmg`, `Scamp-<v>-mac.zip`); Apple
+  Silicon keeps `-arm64`.
+- The macOS runner is Apple Silicon, so `npm ci` installs only sharp's
+  arm64 binaries (`@img/sharp-darwin-arm64`, `@img/sharp-libvips-darwin-arm64`).
+  The release job adds the `darwin-x64` pair with `npm install --no-save
+  --force` before building, or image import fails in the Intel build only.
+  Both builds carry both pairs. node-pty is rebuilt per architecture by
+  electron-builder (`npmRebuild`).
+- The website's download page serves the first `.dmg` in
+  `latest-mac.yml`, so arm64 stays first in the `arch` list.
 - The CI Windows cert env vars are exported to `GITHUB_ENV` from the
   Windows-only import step, not set globally — otherwise `CSC_LINK`
   would point the macOS/Linux runners at a `certificate.p12` that
