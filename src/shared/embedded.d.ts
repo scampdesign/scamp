@@ -28,8 +28,19 @@ export declare const routeHasParams: (path: string) => boolean;
 export declare const mergeRoutes: (known: ReadonlyArray<string>, found: ReadonlyArray<string>, limit?: number) => string[];
 /** One queued edit in a few words: the queue list, the history, and commit messages. */
 export declare const shortQueueItem: (item: EmbeddedQueueItem) => string;
-/** An Accept's commit: a subject (the user's, or the first change) and one body line per change. */
-export declare const commitMessageFor: (subject: string, changes: ReadonlyArray<string>, files: ReadonlyArray<string>) => {
+/** A change in plain words for people, and the technical form (tags, classes, values) for the tooltip. */
+export type ChangeDescription = {
+    text: string;
+    detail: string;
+};
+/** One queued edit for people ("Changed spacing on every Card"), with its technical form for the tooltip. */
+export declare const describeChange: (item: EmbeddedQueueItem) => ChangeDescription;
+/**
+ * An Accept's commit: a subject (the user's, or the first change) and the
+ * changes in the body, each in plain words with its technical form indented
+ * under it, which the history reads back.
+ */
+export declare const commitMessageFor: (subject: string, changes: ReadonlyArray<ChangeDescription>, files: ReadonlyArray<string>) => {
     subject: string;
     body: string;
 };

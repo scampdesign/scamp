@@ -1,4 +1,4 @@
-import { buildAgentPrompt, shortQueueItem } from '@shared/embedded';
+import { buildAgentPrompt, describeChange } from '@shared/embedded';
 import { runTurn } from '../agent/harness';
 import { EMBEDDED_READ_TOOLS, EMBEDDED_TOOLS, EMBEDDED_WRITE_TOOL_NAMES, embeddedToolInvoker } from './fileTools';
 import { describeIdioms } from './idiom';
@@ -226,7 +226,7 @@ export const createEmbeddedAgent = (deps) => {
                 paths.forEach((p) => touched.delete(p));
         },
         addTouched: (paths) => paths.forEach((p) => touched.add(p)),
-        doneSummary: () => doneItems.map(shortQueueItem),
+        doneSummary: () => doneItems.map(describeChange),
         dispose: () => {
             if (timer !== null)
                 clearTimeout(timer);

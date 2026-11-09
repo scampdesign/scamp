@@ -68,7 +68,7 @@ test('freeze holds CSS hover, a forced :hover state takes its own edits, and the
 
     // The queue says the edit is for :hover.
     await embedded.getByTestId('embedded-tab-agent').click();
-    await expect(embedded.getByTestId('embedded-queue')).toContainText('<h1:hover> padding → 30px');
+    await expect(embedded.getByTestId('embedded-queue')).toContainText('Changed spacing on Heading (hover)');
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
@@ -97,7 +97,7 @@ test('the path field lists routes found on load, and an element Scamp can’t ma
     await commitInput(panelInputByPrefix(embedded, 'Spacing', 'Padding'), '20');
     await expect.poll(() => inPage<string>(embedded, `getComputedStyle(document.querySelector('.injected')).paddingTop`)).toBe('20px');
     await embedded.getByTestId('embedded-tab-agent').click();
-    await expect(embedded.getByTestId('embedded-queue')).toContainText('<div> padding → 20px');
+    await expect(embedded.getByTestId('embedded-queue')).toContainText('Changed spacing on Box');
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }

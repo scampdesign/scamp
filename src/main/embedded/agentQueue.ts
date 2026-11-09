@@ -1,6 +1,6 @@
 import type { BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 
-import { buildAgentPrompt, shortQueueItem } from '@shared/embedded';
+import { buildAgentPrompt, describeChange, type ChangeDescription } from '@shared/embedded';
 import type { EmbeddedAgentEvent, EmbeddedAgentState, EmbeddedIdiom, EmbeddedQueueItem, EmbeddedWorker } from '@shared/types';
 
 import { runTurn, type AgentToolInvoker } from '../agent/harness';
@@ -71,8 +71,8 @@ export type EmbeddedAgent = {
   clearTouched: (paths?: ReadonlyArray<string>) => void;
   /** Files a redo wrote back. */
   addTouched: (paths: ReadonlyArray<string>) => void;
-  /** The changes written since the last accept or discard, in a few words each: the next commit's body. */
-  doneSummary: () => string[];
+  /** The changes written since the last accept or discard, in plain words: the next commit's body. */
+  doneSummary: () => ChangeDescription[];
   dispose: () => void;
   worker: () => EmbeddedWorker;
   setWorker: (worker: EmbeddedWorker) => void;
@@ -268,7 +268,7 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
       } else paths.forEach((p) => touched.delete(p));
     },
     addTouched: (paths) => paths.forEach((p) => touched.add(p)),
-    doneSummary: () => doneItems.map(shortQueueItem),
+    doneSummary: () => doneItems.map(describeChange),
     dispose: () => {
       if (timer !== null) clearTimeout(timer);
       abort?.abort();

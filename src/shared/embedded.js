@@ -185,18 +185,105 @@ export const shortQueueItem = (item) => {
     const where = `${item.state !== undefined ? `:${item.state}` : ''}${item.breakpoint !== undefined ? ` @${item.breakpoint.width}` : ''}`;
     return `<${item.element.tag}${where}> ${item.changes.map((c) => `${c.property} → ${c.to}`).join(', ')}${item.scope === 'all' ? ' (all)' : ''}`;
 };
-/** An Accept's commit: a subject (the user's, or the first change) and one body line per change. */
+/** Elements by what they look like, for the plain wording. */
+const ELEMENT_WORDS = {
+    a: 'Link', button: 'Button', img: 'Image', svg: 'Icon', picture: 'Image', video: 'Video',
+    h1: 'Heading', h2: 'Heading', h3: 'Heading', h4: 'Heading', h5: 'Heading', h6: 'Heading',
+    p: 'Text', span: 'Text', strong: 'Text', em: 'Text', small: 'Text', label: 'Label',
+    input: 'Input', textarea: 'Text field', select: 'Menu', option: 'Option',
+    ul: 'List', ol: 'List', li: 'List item', nav: 'Navigation', header: 'Header', footer: 'Footer',
+    main: 'Page', section: 'Section', article: 'Article', aside: 'Sidebar', form: 'Form', dialog: 'Dialog',
+    table: 'Table', tr: 'Row', td: 'Cell', th: 'Cell', div: 'Box',
+};
+/** Containers that read better as the component they're the root of. */
+const GENERIC = new Set(['div', 'section', 'article', 'span', 'main', 'aside', 'header', 'footer', 'nav', 'li']);
+/** "Card", "Heading in Card", "Button": the component a container draws, or what the element is and where. */
+const elementWords = (el) => {
+    const word = ELEMENT_WORDS[el.tag] ?? el.tag.toUpperCase().slice(0, 1) + el.tag.slice(1);
+    const component = el.components[0];
+    // The outermost component is the app itself: "in App" says nothing.
+    const inside = component !== undefined && el.components.length > 1 ? component : null;
+    if (inside !== null && GENERIC.has(el.tag))
+        return inside;
+    return inside === null ? word : `${word} in ${inside}`;
+};
+/** What a CSS property changes, in a word or two. */
+const propertyGroup = (property) => {
+    if (/radius/.test(property))
+        return 'corners';
+    if (/^(color|background|fill|stroke)/.test(property))
+        return 'color';
+    if (/^(padding|margin|gap|row-gap|column-gap)/.test(property))
+        return 'spacing';
+    if (/^(width|height|min-|max-|flex-basis|aspect-ratio)/.test(property))
+        return 'size';
+    if (/^(font|line-height|letter-spacing|text-|white-space|word-|font-)/.test(property))
+        return 'text style';
+    if (/^(border|outline)/.test(property))
+        return 'border';
+    if (/shadow/.test(property))
+        return 'shadow';
+    if (/^(opacity|filter|backdrop-filter|transform|transition|animation|mix-blend)/.test(property))
+        return 'effects';
+    return 'layout';
+};
+/** Where an edit applies, beyond the element: its state and width. */
+const qualifiers = (item) => {
+    const parts = [];
+    if (item.state !== undefined)
+        parts.push(`(${item.state})`);
+    if (item.breakpoint !== undefined) {
+        const w = item.breakpoint.width;
+        parts.push(w <= 480 ? 'on mobile' : w <= 1024 ? 'on tablet' : `at ${w}px`);
+    }
+    return parts.length === 0 ? '' : ` ${parts.join(' ')}`;
+};
+/** One queued edit for people ("Changed spacing on every Card"), with its technical form for the tooltip. */
+export const describeChange = (item) => {
+    const detail = shortQueueItem(item);
+    if (item.kind === 'instruction')
+        return { text: item.text.length > 80 ? `${item.text.slice(0, 77)}…` : item.text, detail: item.element === null ? '' : `<${item.element.tag}>` };
+    if (item.kind === 'move') {
+        const target = item.target.text.length > 0 ? `“${item.target.text.slice(0, 24)}”` : elementWords(item.target);
+        return { text: `Moved ${elementWords(item.element)} ${item.position} ${target}`, detail };
+    }
+    const groups = [...new Set(item.changes.map((c) => propertyGroup(c.property)))];
+    const name = `${item.scope === 'all' ? 'every ' : ''}${elementWords(item.element)}`;
+    const only = groups.length === 1 ? groups[0] : undefined;
+    const verb = only === undefined ? `Restyled ${name}` : only === 'size' ? `Resized ${name}` : only === 'corners' ? `Changed the corners on ${name}` : `Changed ${only} on ${name}`;
+    return { text: `${verb}${qualifiers(item)}`, detail };
+};
+/**
+ * An Accept's commit: a subject (the user's, or the first change) and the
+ * changes in the body, each in plain words with its technical form indented
+ * under it, which the history reads back.
+ */
 export const commitMessageFor = (subject, changes, files) => {
     const typed = subject.trim();
-    const first = changes[0];
+    const first = changes[0]?.text;
     const auto = first === undefined ? `update ${files.join(', ')}` : changes.length === 1 ? first : `${first}, and ${changes.length - 1} more`;
-    return { subject: (typed.length > 0 ? typed : auto).slice(0, 120), body: changes.map((c) => `- ${c}`).join('\n') };
+    const body = changes.map((c) => (c.detail.length > 0 ? `- ${c.text}\n  ${c.detail}` : `- ${c.text}`)).join('\n');
+    return { subject: (typed.length > 0 ? typed : auto).slice(0, 120), body };
 };
 /** Unit and record separators, which no commit message contains. */
 const UNIT = '\x1f';
 const RECORD = '\x1e';
 /** For `git log --name-only`: each record starts with the separator, and the file list ends it. */
 export const HISTORY_LOG_FORMAT = '%x1e%H%x1f%ct%x1f%s%x1f%b%x1f';
+/** A commit body's changes: `- plain words`, each optionally followed by its indented technical form. */
+const changesFromBody = (body) => {
+    const out = [];
+    for (const line of body.split('\n')) {
+        if (line.startsWith('- '))
+            out.push({ text: line.slice(2), detail: '' });
+        else if (line.startsWith('  ') && line.trim().length > 0) {
+            const last = out[out.length - 1];
+            if (last !== undefined && last.detail.length === 0)
+                last.detail = line.trim();
+        }
+    }
+    return out;
+};
 /** `git log --format=HISTORY_LOG_FORMAT --name-only` read into entries, newest first. */
 export const parseHistoryLog = (text) => text.split(RECORD).flatMap((record) => {
     const [sha, time, subject, body, files] = record.split(UNIT);
@@ -207,10 +294,7 @@ export const parseHistoryLog = (text) => text.split(RECORD).flatMap((record) => 
             sha,
             time: Number(time ?? 0),
             subject: subject ?? '',
-            changes: (body ?? '')
-                .split('\n')
-                .filter((l) => l.startsWith('- '))
-                .map((l) => l.slice(2)),
+            changes: changesFromBody(body ?? ''),
             files: (files ?? '')
                 .split('\n')
                 .map((f) => f.trim())

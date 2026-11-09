@@ -6,7 +6,7 @@ import {
   inspectorScript,
   inspectorTreeScript,
   mergeRoutes,
-  shortQueueItem,
+  describeChange,
   type InspectorCommand,
 } from '@shared/embedded';
 import { flattenRoutes, readRoutesFn, type RawRoute } from '@shared/reactRoutes';
@@ -137,10 +137,16 @@ const queueMove = async (msg: Extract<EmbeddedInspectorMessage, { type: 'moved' 
   // The page tagged its preview with this id: the queue item takes it, so undo can take back both.
   const item: EmbeddedQueueItem = { id: msg.tag, kind: 'move', element, target, position: msg.position, fromList: msg.fromList };
   await window.scampEmbedded.enqueue(item);
-  pushUndo({ kind: 'item', id: item.id, item, label: shortQueueItem(item), redo: [{ type: 'move', id: msg.uid, targetId: msg.targetUid, position: msg.position, tag: msg.tag }] });
+  pushUndo({ kind: 'item', id: item.id, item, ...labelled(item), redo: [{ type: 'move', id: msg.uid, targetId: msg.targetUid, position: msg.position, tag: msg.tag }] });
 };
 
 // --- Undo and redo. see docs/plans/embedded-canvas-gaps.md (P2)
+
+/** An undo step's plain words, and its technical form for the tooltip. */
+const labelled = (item: EmbeddedQueueItem): { label: string; detail: string } => {
+  const { text, detail } = describeChange(item);
+  return { label: text, detail };
+};
 
 /** A new step: it goes on the undo stack, and ends what redo could bring back. */
 const pushUndo = (entry: UndoEntry): void => {
@@ -468,7 +474,7 @@ export const flushPending = (): void => {
   if (item.kind === 'style') {
     const styles = Object.fromEntries(item.changes.map((c) => [c.property, c.to]));
     const redoApply: InspectorCommand = { type: 'apply', uid: selection?.uid, scope, state: pseudo, styles, media: mediaFor(item.breakpoint ?? null), tag: item.id };
-    pushUndo({ kind: 'item', id: item.id, item, label: shortQueueItem(item), redo: [redoApply] });
+    pushUndo({ kind: 'item', id: item.id, item, ...labelled(item), redo: [redoApply] });
   }
 };
 
@@ -534,7 +540,7 @@ export const sendInstruction = async (text: string): Promise<void> => {
   const { selection, scope } = useEmbeddedStore.getState();
   const item: EmbeddedQueueItem = { id: newId(), kind: 'instruction', element: selection?.element ?? null, scope, text: trimmed };
   await window.scampEmbedded.enqueue(item);
-  pushUndo({ kind: 'item', id: item.id, item, label: shortQueueItem(item), redo: [] });
+  pushUndo({ kind: 'item', id: item.id, item, ...labelled(item), redo: [] });
 };
 
 export const refreshGit = async (): Promise<void> => {
@@ -569,9 +575,11 @@ const handleAgentEvent = (event: EmbeddedAgentEvent): void => {
       handledRuns.add(runId);
       const ids = new Set(event.state.lastRunItemIds);
       const { undo } = useEmbeddedStore.getState();
-      const labels = undo.filter((e) => e.kind === 'item' && ids.has(e.id)).map((e) => e.label);
+      const taken = undo.filter((e) => e.kind === 'item' && ids.has(e.id));
+      const labels = taken.map((e) => e.label);
       const label = labels.length === 0 ? 'the agent’s changes' : labels.length === 1 ? (labels[0] ?? '') : `${labels[0]}, and ${labels.length - 1} more`;
-      useEmbeddedStore.getState().set({ undo: [...undo.filter((e) => !(e.kind === 'item' && ids.has(e.id))), { kind: 'run', runId, label }], redo: [] });
+      const detail = taken.map((e) => e.detail).filter((d) => d.length > 0).join('\n');
+      useEmbeddedStore.getState().set({ undo: [...undo.filter((e) => !(e.kind === 'item' && ids.has(e.id))), { kind: 'run', runId, label, detail }], redo: [] });
     }
     if (wasRunning && (event.state.phase === 'done' || event.state.phase === 'error')) {
       void refreshGit();

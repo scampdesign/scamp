@@ -247,7 +247,10 @@ describe('runs, for undo and the commit message', () => {
         agent.enqueue(item('b', '24px'));
         await agent.takeBatch(1000);
         await agent.finishBatch('', ['src/Card.module.css']);
-        expect(agent.doneSummary()).toEqual(['<div> padding → 20px', '<div> padding → 24px']);
+        expect(agent.doneSummary()).toEqual([
+            { text: 'Changed spacing on Box', detail: '<div> padding → 20px' },
+            { text: 'Changed spacing on Box', detail: '<div> padding → 24px' },
+        ]);
         agent.clearTouched(['src/Card.module.css']);
         expect(agent.doneSummary()).toHaveLength(2);
         agent.clearTouched();

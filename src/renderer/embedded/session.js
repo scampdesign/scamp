@@ -1,4 +1,4 @@
-import { breakpointFor, EMBEDDED_COMPUTED_PROPERTIES, INSPECTOR_PREFIX, inspectorBreakpointsScript, inspectorScript, inspectorTreeScript, mergeRoutes, shortQueueItem, } from '@shared/embedded';
+import { breakpointFor, EMBEDDED_COMPUTED_PROPERTIES, INSPECTOR_PREFIX, inspectorBreakpointsScript, inspectorScript, inspectorTreeScript, mergeRoutes, describeChange, } from '@shared/embedded';
 import { flattenRoutes, readRoutesFn } from '@shared/reactRoutes';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { STAND_IN_ID, standInTree, styleChanges } from '@lib/embeddedStandIn';
@@ -109,9 +109,14 @@ const queueMove = async (msg) => {
     // The page tagged its preview with this id: the queue item takes it, so undo can take back both.
     const item = { id: msg.tag, kind: 'move', element, target, position: msg.position, fromList: msg.fromList };
     await window.scampEmbedded.enqueue(item);
-    pushUndo({ kind: 'item', id: item.id, item, label: shortQueueItem(item), redo: [{ type: 'move', id: msg.uid, targetId: msg.targetUid, position: msg.position, tag: msg.tag }] });
+    pushUndo({ kind: 'item', id: item.id, item, ...labelled(item), redo: [{ type: 'move', id: msg.uid, targetId: msg.targetUid, position: msg.position, tag: msg.tag }] });
 };
 // --- Undo and redo. see docs/plans/embedded-canvas-gaps.md (P2)
+/** An undo step's plain words, and its technical form for the tooltip. */
+const labelled = (item) => {
+    const { text, detail } = describeChange(item);
+    return { label: text, detail };
+};
 /** A new step: it goes on the undo stack, and ends what redo could bring back. */
 const pushUndo = (entry) => {
     const { undo, set } = useEmbeddedStore.getState();
@@ -446,7 +451,7 @@ export const flushPending = () => {
     if (item.kind === 'style') {
         const styles = Object.fromEntries(item.changes.map((c) => [c.property, c.to]));
         const redoApply = { type: 'apply', uid: selection?.uid, scope, state: pseudo, styles, media: mediaFor(item.breakpoint ?? null), tag: item.id };
-        pushUndo({ kind: 'item', id: item.id, item, label: shortQueueItem(item), redo: [redoApply] });
+        pushUndo({ kind: 'item', id: item.id, item, ...labelled(item), redo: [redoApply] });
     }
 };
 /** Apply the edit's current CSS to the page. */
@@ -513,7 +518,7 @@ export const sendInstruction = async (text) => {
     const { selection, scope } = useEmbeddedStore.getState();
     const item = { id: newId(), kind: 'instruction', element: selection?.element ?? null, scope, text: trimmed };
     await window.scampEmbedded.enqueue(item);
-    pushUndo({ kind: 'item', id: item.id, item, label: shortQueueItem(item), redo: [] });
+    pushUndo({ kind: 'item', id: item.id, item, ...labelled(item), redo: [] });
 };
 export const refreshGit = async () => {
     const git = await window.scampEmbedded.gitStatus();
@@ -545,9 +550,11 @@ const handleAgentEvent = (event) => {
             handledRuns.add(runId);
             const ids = new Set(event.state.lastRunItemIds);
             const { undo } = useEmbeddedStore.getState();
-            const labels = undo.filter((e) => e.kind === 'item' && ids.has(e.id)).map((e) => e.label);
+            const taken = undo.filter((e) => e.kind === 'item' && ids.has(e.id));
+            const labels = taken.map((e) => e.label);
             const label = labels.length === 0 ? 'the agent’s changes' : labels.length === 1 ? (labels[0] ?? '') : `${labels[0]}, and ${labels.length - 1} more`;
-            useEmbeddedStore.getState().set({ undo: [...undo.filter((e) => !(e.kind === 'item' && ids.has(e.id))), { kind: 'run', runId, label }], redo: [] });
+            const detail = taken.map((e) => e.detail).filter((d) => d.length > 0).join('\n');
+            useEmbeddedStore.getState().set({ undo: [...undo.filter((e) => !(e.kind === 'item' && ids.has(e.id))), { kind: 'run', runId, label, detail }], redo: [] });
         }
         if (wasRunning && (event.state.phase === 'done' || event.state.phase === 'error')) {
             void refreshGit();

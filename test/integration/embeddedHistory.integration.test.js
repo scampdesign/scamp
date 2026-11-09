@@ -40,7 +40,7 @@ describe('history', () => {
         const history = await readHistory(dir, base, await headSha(dir));
         expect(history.atBase).toBe(false);
         expect(history.entries).toHaveLength(1);
-        expect(history.entries[0]).toMatchObject({ subject: 'Scamp: <div> padding → 24px (all)', changes: ['<div> padding → 24px (all)'], files: ['src/Card.module.css'], current: true, undone: false });
+        expect(history.entries[0]).toMatchObject({ subject: 'Scamp: <div> padding → 24px (all)', changes: [{ text: '<div> padding → 24px (all)', detail: '' }], files: ['src/Card.module.css'], current: true, undone: false });
     });
     it('goes back, keeps the newer steps reachable as undone, and goes forward again', async () => {
         const first = await accept('24px', 'first');

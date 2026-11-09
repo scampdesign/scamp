@@ -80,9 +80,10 @@ test('restyles a card live, the agent writes it into the CSS Module, and accept 
     await expect(embedded.getByTestId('embedded-notice')).toHaveText('Committed.');
     expect(gitIn(dir, 'log', '-1', '--format=%s')).toMatch(/^Scamp: /);
     // The commit names the change in plain words, which the history shows.
-    expect(gitIn(dir, 'log', '-1', '--format=%b')).toContain('- <article> padding → 24px');
+    // The commit names the change in plain words, with the technical form under it.
+    expect(gitIn(dir, 'log', '-1', '--format=%b')).toContain('- Changed spacing on Card\n  <article> padding → 24px');
     expect(gitIn(dir, 'status', '--porcelain')).toBe('');
-    await expect(embedded.getByTestId('embedded-history')).toContainText('<article> padding → 24px');
+    await expect(embedded.getByTestId('embedded-history')).toContainText('Changed spacing on Card');
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }

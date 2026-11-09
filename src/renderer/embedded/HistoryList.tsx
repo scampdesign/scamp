@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import type { ChangeDescription } from '@shared/embedded';
 import type { EmbeddedHistoryEntry } from '@shared/types';
 import { formatRelativeTime } from '@store/formatHistoryLabel';
 
@@ -10,9 +11,19 @@ import styles from './HistoryList.module.css';
 
 const exact = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
+/** A change's plain words, with its technical form on hover when it has one. */
+const Change = ({ change, className }: { change: ChangeDescription; className?: string }): JSX.Element =>
+  change.detail.length > 0 ? (
+    <Tooltip label={change.detail}>
+      <span className={className}>{change.text}</span>
+    </Tooltip>
+  ) : (
+    <span className={className}>{change.text}</span>
+  );
+
 type RowProps = {
-  label: string;
-  details: string[];
+  label: ChangeDescription;
+  details: ChangeDescription[];
   time: number | null;
   files: string[];
   current: boolean;
@@ -25,11 +36,13 @@ type RowProps = {
 const Row = ({ label, details, time, files, current, undone, now, disabled, onGo }: RowProps): JSX.Element => (
   <li className={styles.row} data-current={current} data-undone={undone}>
     <button type="button" className={styles.go} onClick={onGo} disabled={disabled || current} aria-current={current ? 'step' : undefined} data-testid="embedded-history-entry">
-      <span className={styles.label}>{label}</span>
+      <Change change={label} className={styles.label} />
       {details.length > 0 && (
         <ul className={styles.details}>
-          {details.map((d) => (
-            <li key={d}>{d}</li>
+          {details.map((d, i) => (
+            <li key={i}>
+              <Change change={d} />
+            </li>
           ))}
         </ul>
       )}
@@ -99,7 +112,7 @@ export const HistoryList = ({ active }: { active: boolean }): JSX.Element | null
       <ol className={styles.list} data-testid="embedded-history">
         {history.base !== null && (
           <Row
-            label="Session start"
+            label={{ text: 'Session start', detail: '' }}
             details={[]}
             time={null}
             files={[]}
@@ -133,7 +146,8 @@ type HistoryRowProps = { entry: EmbeddedHistoryEntry; divider: boolean; now: num
 const HistoryRow = ({ entry, divider, now, busy, onGo }: HistoryRowProps): JSX.Element => {
   // A commit Scamp made lists its changes; any other shows its subject.
   const scamp = entry.subject.startsWith('Scamp: ');
-  const label = entry.changes.length > 0 ? (entry.changes[0] ?? '') : scamp ? entry.subject.slice('Scamp: '.length) : entry.subject;
+  const first = entry.changes[0];
+  const label: ChangeDescription = first ?? { text: scamp ? entry.subject.slice('Scamp: '.length) : entry.subject, detail: '' };
   return (
     <>
       {divider && (

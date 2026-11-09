@@ -43,10 +43,12 @@ export type UndoEntry = {
     item: EmbeddedQueueItem;
     redo: InspectorCommand[];
     label: string;
+    detail: string;
 } | {
     kind: 'run';
     runId: string;
     label: string;
+    detail: string;
 };
 export type AgentLogEntry = {
     kind: 'text' | 'tool';

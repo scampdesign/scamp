@@ -1,3 +1,4 @@
+import { type ChangeDescription } from '@shared/embedded';
 import type { EmbeddedAgentEvent, EmbeddedAgentState, EmbeddedIdiom, EmbeddedQueueItem, EmbeddedWorker } from '@shared/types';
 import { type AgentToolInvoker } from '../agent/harness';
 import type { AgentProvider } from '../agent/provider';
@@ -36,8 +37,8 @@ export type EmbeddedAgent = {
     clearTouched: (paths?: ReadonlyArray<string>) => void;
     /** Files a redo wrote back. */
     addTouched: (paths: ReadonlyArray<string>) => void;
-    /** The changes written since the last accept or discard, in a few words each: the next commit's body. */
-    doneSummary: () => string[];
+    /** The changes written since the last accept or discard, in plain words: the next commit's body. */
+    doneSummary: () => ChangeDescription[];
     dispose: () => void;
     worker: () => EmbeddedWorker;
     setWorker: (worker: EmbeddedWorker) => void;

@@ -55,7 +55,7 @@ test('Cmd+Z undoes a queued edit and an agent run, the history goes back and for
         await expect(queue.locator('li')).toHaveCount(0);
         await expect.poll(() => padding(embedded, 2)).toBe('16px');
         await press('ControlOrMeta+Shift+z');
-        await expect(queue).toContainText('padding → 30px (all)');
+        await expect(queue).toContainText('Changed spacing on every Card');
         await expect.poll(() => padding(embedded, 2)).toBe('30px');
         // Undo and redo what the agent wrote.
         await embedded.getByTestId('embedded-tab-agent').click();
@@ -64,7 +64,7 @@ test('Cmd+Z undoes a queued edit and an agent run, the history goes back and for
         expect(await fs.readFile(cssFile, 'utf8')).toContain('padding: 30px');
         // The History tab lists the run as the next step back, and its Undo button takes it.
         await embedded.getByTestId('embedded-tab-history').click();
-        await expect(embedded.getByTestId('embedded-undo-steps')).toContainText('Agent wrote: <article> padding → 30px (all)');
+        await expect(embedded.getByTestId('embedded-undo-steps')).toContainText('Agent wrote: Changed spacing on every Card');
         await embedded.getByTestId('embedded-undo').click();
         await expect.poll(async () => fs.readFile(cssFile, 'utf8')).toContain('padding: 16px');
         await press('ControlOrMeta+Shift+z');
@@ -73,11 +73,11 @@ test('Cmd+Z undoes a queued edit and an agent run, the history goes back and for
         await embedded.getByTestId('embedded-tab-history').click();
         await embedded.getByTestId('embedded-accept').click();
         const history = embedded.getByTestId('embedded-history');
-        await expect(history).toContainText('padding → 30px (all)');
+        await expect(history).toContainText('Changed spacing on every Card');
         await history.getByRole('button', { name: /Session start/ }).click();
         await expect.poll(async () => fs.readFile(cssFile, 'utf8')).toContain('padding: 16px');
         await expect(history.locator('[data-undone="true"]')).toHaveCount(1);
-        await history.getByRole('button', { name: /padding → 30px/ }).click();
+        await history.getByRole('button', { name: /Changed spacing on every Card/ }).click();
         await expect.poll(async () => fs.readFile(cssFile, 'utf8')).toContain('padding: 30px');
         await expect(history.locator('[data-undone="true"]')).toHaveCount(0);
         // A mobile edit applies at mobile, not at desktop.
@@ -90,7 +90,7 @@ test('Cmd+Z undoes a queued edit and an agent run, the history goes back and for
         await commitInput(panelInputByPrefix(embedded, 'Spacing', 'Padding'), '10');
         await expect.poll(() => padding(embedded)).toBe('10px');
         await embedded.getByTestId('embedded-tab-agent').click();
-        await expect(queue).toContainText('<article @390> padding → 10px');
+        await expect(queue).toContainText('Changed spacing on Card on mobile');
         await embedded.getByTestId('embedded-viewport-desktop').click();
         await expect.poll(() => padding(embedded)).toBe('30px');
         await embedded.getByTestId('embedded-viewport-mobile').click();

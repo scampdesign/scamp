@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import type { EmbeddedGitResult } from '@shared/types';
 
+import { Tooltip } from '../src/components/controls/Tooltip';
 import { DiffView } from './DiffView';
 import { HistoryList } from './HistoryList';
 import { useEmbeddedStore } from './embeddedStore';
@@ -10,6 +11,16 @@ import styles from './Tabs.module.css';
 
 // Mac or not, for the shortcut the buttons name.
 const MOD = navigator.userAgent.includes('Macintosh') ? '⌘' : 'Ctrl+';
+
+/** A step's plain words, with its technical form on hover. */
+const StepText = ({ text, detail }: { text: string; detail: string }): JSX.Element =>
+  detail.length > 0 ? (
+    <Tooltip label={detail}>
+      <span className={styles.itemText}>{text}</span>
+    </Tooltip>
+  ) : (
+    <span className={styles.itemText}>{text}</span>
+  );
 
 /** Everything already done: undo and redo, the agent's changes to review, what was accepted, and git. */
 export const HistoryTab = (): JSX.Element => {
@@ -110,12 +121,12 @@ export const HistoryTab = (): JSX.Element => {
           <ol className={styles.list} data-testid="embedded-undo-steps">
             {[...redoSteps].map((step, i) => (
               <li key={`r${i}`} className={styles.item} data-undone="true">
-                <span className={styles.itemText}>{step.label}</span>
+                <StepText text={step.label} detail={step.detail} />
               </li>
             ))}
             {[...undoSteps].reverse().map((step, i) => (
               <li key={`u${i}`} className={styles.item} data-current={i === 0}>
-                <span className={styles.itemText}>{step.kind === 'run' ? `Agent wrote: ${step.label}` : step.label}</span>
+                <StepText text={step.kind === 'run' ? `Agent wrote: ${step.label}` : step.label} detail={step.detail} />
               </li>
             ))}
           </ol>

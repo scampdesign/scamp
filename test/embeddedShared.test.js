@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { breakpointFor, buildAgentPrompt, commitMessageFor, computedToDeclarations, describeQueueItem, HISTORY_LOG_FORMAT, mergeRoutes, parseHistoryLog, routeHasParams, shortQueueItem, } from '@shared/embedded';
+import { breakpointFor, buildAgentPrompt, commitMessageFor, computedToDeclarations, describeChange, describeQueueItem, HISTORY_LOG_FORMAT, mergeRoutes, parseHistoryLog, routeHasParams, shortQueueItem, } from '@shared/embedded';
 const computed = (patch) => ({
     display: 'block',
     position: 'static',
@@ -196,18 +196,54 @@ describe('shortQueueItem', () => {
         expect(shortQueueItem({ id: 'i', kind: 'instruction', element: null, scope: 'instance', text: 'tighten it' })).toBe('tighten it');
     });
 });
+describe('describeChange', () => {
+    const card = element({ tag: 'article', components: ['Card', 'App'], text: 'Ada' });
+    const style = (patch, changes) => ({ id: 's', kind: 'style', element: card, scope: 'instance', changes, ...patch });
+    it('names the kind of change and the component a container draws, with the technical form as detail', () => {
+        expect(describeChange(style({ scope: 'all' }, [{ property: 'padding', from: '16px', to: '24px' }]))).toEqual({
+            text: 'Changed spacing on every Card',
+            detail: '<article> padding → 24px (all)',
+        });
+        expect(describeChange(style({}, [{ property: 'background-color', from: '', to: 'red' }])).text).toBe('Changed color on Card');
+        expect(describeChange(style({}, [{ property: 'display', from: 'block', to: 'flex' }])).text).toBe('Changed layout on Card');
+    });
+    it('says what an element is, and the component it sits in, leaving out the app itself', () => {
+        expect(describeChange(style({ element: element({ tag: 'h2', components: ['Card', 'App'] }) }, [{ property: 'font-size', from: '', to: '20px' }])).text).toBe('Changed text style on Heading in Card');
+        expect(describeChange(style({ element: element({ tag: 'button', components: ['App'] }) }, [{ property: 'color', from: '', to: 'red' }])).text).toBe('Changed color on Button');
+        expect(describeChange(style({ element: element({ tag: 'div', components: [] }) }, [{ property: 'color', from: '', to: 'red' }])).text).toBe('Changed color on Box');
+    });
+    it('resizes, rounds corners, and restyles when several kinds change at once', () => {
+        expect(describeChange(style({}, [{ property: 'width', from: '', to: '200px' }])).text).toBe('Resized Card');
+        expect(describeChange(style({}, [{ property: 'border-radius', from: '', to: '8px' }])).text).toBe('Changed the corners on Card');
+        expect(describeChange(style({}, [{ property: 'color', from: '', to: 'red' }, { property: 'padding', from: '', to: '4px' }])).text).toBe('Restyled Card');
+    });
+    it('adds the state and the width it applies at', () => {
+        const bp = (width) => ({ width, upTo: width, project: [], direction: null });
+        expect(describeChange(style({ state: 'hover' }, [{ property: 'color', from: '', to: 'red' }])).text).toBe('Changed color on Card (hover)');
+        expect(describeChange(style({ breakpoint: bp(390) }, [{ property: 'color', from: '', to: 'red' }])).text).toBe('Changed color on Card on mobile');
+        expect(describeChange(style({ breakpoint: bp(768) }, [{ property: 'color', from: '', to: 'red' }])).text).toBe('Changed color on Card on tablet');
+        expect(describeChange(style({ breakpoint: bp(1200) }, [{ property: 'color', from: '', to: 'red' }])).text).toBe('Changed color on Card at 1200px');
+    });
+    it('describes moves by the target’s text, and instructions in the user’s own words', () => {
+        expect(describeChange({ id: 'm', kind: 'move', element: element({ tag: 'p', components: ['App'] }), target: element({ tag: 'h1', text: 'Team' }), position: 'before', fromList: false }).text).toBe('Moved Text before “Team”');
+        expect(describeChange({ id: 'i', kind: 'instruction', element: null, scope: 'instance', text: 'tighten the spacing' })).toEqual({ text: 'tighten the spacing', detail: '' });
+    });
+});
 describe('commitMessageFor', () => {
-    it('uses the user’s subject when they typed one, with every change in the body', () => {
-        expect(commitMessageFor('  Restyle the cards ', ['<div> padding → 24px (all)', 'Move <p> before <h1>'], ['a.css'])).toEqual({
+    const a = { text: 'Changed spacing on every Card', detail: '<article> padding → 24px (all)' };
+    const b = { text: 'Moved Text before “Team”', detail: 'Move <p> before <h1> “Team”' };
+    it('uses the user’s subject when they typed one, with each change and its technical form in the body', () => {
+        expect(commitMessageFor('  Restyle the cards ', [a, b], ['a.css'])).toEqual({
             subject: 'Restyle the cards',
-            body: '- <div> padding → 24px (all)\n- Move <p> before <h1>',
+            body: '- Changed spacing on every Card\n  <article> padding → 24px (all)\n- Moved Text before “Team”\n  Move <p> before <h1> “Team”',
         });
     });
-    it('makes the subject from the first change, counting the rest', () => {
-        expect(commitMessageFor('', ['<div> padding → 24px (all)', 'b', 'c'], ['a.css']).subject).toBe('<div> padding → 24px (all), and 2 more');
-        expect(commitMessageFor('', ['<div> padding → 24px (all)'], ['a.css']).subject).toBe('<div> padding → 24px (all)');
+    it('makes the subject from the first change in plain words, counting the rest', () => {
+        expect(commitMessageFor('', [a, b, b], ['a.css']).subject).toBe('Changed spacing on every Card, and 2 more');
+        expect(commitMessageFor('', [a], ['a.css']).subject).toBe('Changed spacing on every Card');
     });
-    it('falls back to the files when there are no changes to name', () => {
+    it('writes a change with no technical form on one line, and falls back to the files with none at all', () => {
+        expect(commitMessageFor('', [{ text: 'tighten it', detail: '' }], ['a.css']).body).toBe('- tighten it');
         expect(commitMessageFor('', [], ['a.css', 'b.css'])).toEqual({ subject: 'update a.css, b.css', body: '' });
     });
 });
@@ -218,13 +254,26 @@ describe('parseHistoryLog', () => {
         .replace('%s', subject)
         .replace('%b', body)
         .replaceAll('%x1f', '\x1f') + `\n\n${files.join('\n')}\n`;
-    it('reads each commit with its changes and files, newest first', () => {
-        const text = record('a'.repeat(40), 200, 'Scamp: <div> padding → 24px', '- <div> padding → 24px\n- Move <p> before <h1>\n', ['src/Card.module.css', 'src/App.jsx']) +
+    it('reads each commit with its changes, their technical form, and files, newest first', () => {
+        const text = record('a'.repeat(40), 200, 'Scamp: Changed spacing on every Card', '- Changed spacing on every Card\n  <article> padding → 24px (all)\n- tighten it\n', ['src/Card.module.css', 'src/App.jsx']) +
             record('b'.repeat(40), 100, 'my own commit', '', ['README.md']);
         expect(parseHistoryLog(text)).toEqual([
-            { sha: 'a'.repeat(40), time: 200, subject: 'Scamp: <div> padding → 24px', changes: ['<div> padding → 24px', 'Move <p> before <h1>'], files: ['src/Card.module.css', 'src/App.jsx'] },
+            {
+                sha: 'a'.repeat(40),
+                time: 200,
+                subject: 'Scamp: Changed spacing on every Card',
+                changes: [
+                    { text: 'Changed spacing on every Card', detail: '<article> padding → 24px (all)' },
+                    { text: 'tighten it', detail: '' },
+                ],
+                files: ['src/Card.module.css', 'src/App.jsx'],
+            },
             { sha: 'b'.repeat(40), time: 100, subject: 'my own commit', changes: [], files: ['README.md'] },
         ]);
+    });
+    it('reads an older commit, with only the technical lines, as its text', () => {
+        const text = record('c'.repeat(40), 50, 'Scamp: x', '- <div> padding → 24px\n', ['a.css']);
+        expect(parseHistoryLog(text)[0]?.changes).toEqual([{ text: '<div> padding → 24px', detail: '' }]);
     });
     it('ignores empty output and records without a commit id', () => {
         expect(parseHistoryLog('')).toEqual([]);

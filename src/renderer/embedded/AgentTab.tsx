@@ -1,5 +1,6 @@
-import { shortQueueItem } from '@shared/embedded';
+import { describeChange } from '@shared/embedded';
 
+import { Tooltip } from '../src/components/controls/Tooltip';
 import { AgentChoice } from './AgentChoice';
 import { DesignCheck } from './DesignCheck';
 import { useEmbeddedStore } from './embeddedStore';
@@ -58,7 +59,9 @@ export const AgentTab = ({ active }: Props): JSX.Element => {
           <ul className={styles.list} data-testid="embedded-queue">
             {agent.queued.map((item) => (
               <li key={item.id} className={styles.item}>
-                <span className={styles.itemText}>{shortQueueItem(item)}</span>
+                <Tooltip label={describeChange(item).detail || describeChange(item).text}>
+                  <span className={styles.itemText}>{describeChange(item).text}</span>
+                </Tooltip>
                 <button type="button" className={styles.remove} onClick={() => void removeQueued(item.id)} aria-label="Remove from queue">
                   ✕
                 </button>

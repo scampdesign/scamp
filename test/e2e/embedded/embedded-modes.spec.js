@@ -55,7 +55,7 @@ test('freeze holds a menu open, one edit reaches every instance, and pause batch
         await embedded.getByTestId('embedded-tab-agent').click();
         const queue = embedded.getByTestId('embedded-queue');
         await expect(queue.locator('li')).toHaveCount(2);
-        await expect(queue).toContainText('padding → 30px (all)');
+        await expect(queue).toContainText('Changed spacing on every Card');
         await expect(queue).toContainText('make the title bolder');
         // Run now sends both as one batch.
         await embedded.getByTestId('embedded-run-now').click();

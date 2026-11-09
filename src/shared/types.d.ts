@@ -1798,8 +1798,11 @@ export type EmbeddedHistoryEntry = {
     /** Unix seconds. */
     time: number;
     subject: string;
-    /** What changed, in plain words, from the commit's body. */
-    changes: string[];
+    /** What changed, in plain words, from the commit's body, with the technical form for a tooltip. */
+    changes: Array<{
+        text: string;
+        detail: string;
+    }>;
     files: string[];
     /** Ahead of where the project is now: a step that was gone back past, still reachable. */
     undone: boolean;

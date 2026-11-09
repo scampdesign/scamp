@@ -59,8 +59,8 @@ export type PendingEdit = {
  * files go back). Past the last Accept, undo steps through the history.
  */
 export type UndoEntry =
-  | { kind: 'item'; id: string; item: EmbeddedQueueItem; redo: InspectorCommand[]; label: string }
-  | { kind: 'run'; runId: string; label: string };
+  | { kind: 'item'; id: string; item: EmbeddedQueueItem; redo: InspectorCommand[]; label: string; detail: string }
+  | { kind: 'run'; runId: string; label: string; detail: string };
 
 export type AgentLogEntry = { kind: 'text' | 'tool'; text: string; ok?: boolean };
 

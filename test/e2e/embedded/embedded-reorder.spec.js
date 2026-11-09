@@ -42,7 +42,7 @@ test('dragging on the page and in the layers tree reorders siblings and queues e
         await expect.poll(() => cardOrder(embedded)).toBe('Grace Hopper,Katherine Johnson,Ada Lovelace');
         await expect(embedded.getByTestId('embedded-drag-note')).toContainText('Moving the <article> around it');
         await embedded.getByTestId('embedded-tab-agent').click();
-        await expect(queue).toContainText('Move <article> after <article> “Katherine Johnson”');
+        await expect(queue).toContainText('Moved Card after “Katherine Johnson”');
         await embedded.getByTestId('embedded-tab-style').click();
         // An element with nothing to move between says so, and moves nothing.
         await inPage(embedded, `(() => { const d = document.createElement('div'); d.className = 'solo'; d.innerHTML = '<span>Alone</span>'; document.body.append(d); })()`);
@@ -59,13 +59,13 @@ test('dragging on the page and in the layers tree reorders siblings and queues e
         const hint = embedded.locator('[data-testid="embedded-layer"][data-tag="p"]');
         const title = embedded.locator('[data-testid="embedded-layer"][data-tag="h1"]');
         await hint.dragTo(title, { targetPosition: { x: 20, y: 2 } });
-        await expect(queue).toContainText('Move <p> before <h1> “Team”');
+        await expect(queue).toContainText('Moved Text before “Team”');
         expect(await inPage(embedded, `document.querySelectorAll('[data-scamp-overlay][title^="Moves here"]').length`)).toBe(1);
         // In the tree, a layer with no siblings lifts too: the menu's button moves its menu.
         const button = embedded.locator('[data-testid="embedded-layer"][data-tag="button"]');
         await button.dragTo(title, { targetPosition: { x: 20, y: 2 } });
         await expect(embedded.getByTestId('embedded-layers-note')).toContainText('Moving the layer around it');
-        await expect(queue).toContainText('Move <div> before <h1> “Team”');
+        await expect(queue).toContainText('Moved Menu before “Team”');
         await expect(queue.locator('li')).toHaveCount(3);
     }
     finally {
