@@ -192,6 +192,10 @@ export declare const IPC: {
     readonly EmbeddedSyncPseudo: "embedded:sync-pseudo";
     readonly EmbeddedResolveSource: "embedded:resolve-source";
     readonly EmbeddedRoutes: "embedded:routes";
+    readonly EmbeddedSetWorker: "embedded:set-worker";
+    readonly EmbeddedOwnAgentStatus: "embedded:own-agent-status";
+    /** renderer → main, fire and forget: the selection changed. */
+    readonly EmbeddedSelectionChanged: "embedded:selection-changed";
     readonly TestGetBootstrap: "test:getBootstrap";
 };
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];

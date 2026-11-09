@@ -43,3 +43,7 @@
   overflow: auto;
   min-height: 0;
 }
+
+.keep[hidden] {
+  display: none;
+}

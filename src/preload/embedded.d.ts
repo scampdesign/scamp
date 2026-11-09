@@ -1,4 +1,4 @@
-import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedPreflight, EmbeddedQueueItem, EmbeddedRawSource, EmbeddedRecentProject, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
+import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedPreflight, EmbeddedElementRef, EmbeddedOwnAgentStatus, EmbeddedQueueItem, EmbeddedWorker, TerminalCreateArgs, TerminalCreateResult, TerminalDataPayload, TerminalExitPayload, TerminalKillArgs, TerminalResizeArgs, TerminalWriteArgs, EmbeddedRawSource, EmbeddedRecentProject, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
 declare const embeddedApi: {
     chooseFolder: () => Promise<EmbeddedChooseResult>;
     /** Recent projects, with whether each folder is still there. */
@@ -37,6 +37,16 @@ declare const embeddedApi: {
     pull: () => Promise<EmbeddedGitResult>;
     /** Apply the page's `data-scamp-force` marks as forced pseudo-classes. */
     syncPseudo: () => Promise<boolean>;
+    /** Who writes changes: Scamp's agent or the user's own, over MCP. */
+    setWorker: (worker: EmbeddedWorker) => Promise<EmbeddedOwnAgentStatus | null>;
+    ownAgentStatus: () => Promise<EmbeddedOwnAgentStatus | null>;
+    selectionChanged: (element: EmbeddedElementRef | null) => void;
+    createTerminal: (args: TerminalCreateArgs) => Promise<TerminalCreateResult>;
+    writeTerminal: (args: TerminalWriteArgs) => Promise<void>;
+    resizeTerminal: (args: TerminalResizeArgs) => Promise<void>;
+    killTerminal: (args: TerminalKillArgs) => Promise<void>;
+    onTerminalData: (handler: (payload: TerminalDataPayload) => void) => (() => void);
+    onTerminalExit: (handler: (payload: TerminalExitPayload) => void) => (() => void);
     /** Routes read from the project's files (Next.js); empty for other stacks. */
     routes: () => Promise<string[]>;
     resolveSource: (raw: EmbeddedRawSource, hints: {

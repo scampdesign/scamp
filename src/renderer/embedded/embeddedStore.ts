@@ -73,6 +73,8 @@ type State = {
   /** Elements with a state held in the page, frozen or forced. */
   held: EmbeddedHeld[];
   layersOpen: boolean;
+  /** Why the last drag moved something else, or nothing; cleared by the next selection. */
+  dragNote: string | null;
   /** Paths of the app found so far: its router, its files (Next.js), and links on pages visited. */
   routes: string[];
   tree: EmbeddedTreeNode | null;
@@ -110,6 +112,7 @@ export const useEmbeddedStore = create<State & Actions>((set) => ({
   pseudo: 'none',
   held: [],
   layersOpen: true,
+  dragNote: null,
   routes: [],
   tree: null,
   pending: null,

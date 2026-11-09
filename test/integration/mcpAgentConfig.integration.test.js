@@ -182,6 +182,19 @@ describe('writeAgentConfigs', () => {
         expect(report.written).toContain('.mcp.json');
         expect(JSON.parse(await read('.mcp.json')).mcpServers[SERVER_KEY]).toBeDefined();
     });
+    it('leaves a skipped config untouched and says why', async () => {
+        await fs.writeFile(join(project, '.mcp.json'), '{"mcpServers":{"team":{"url":"x"}}}\n');
+        const report = await writeAgentConfigs({
+            projectPath: project,
+            homeDir: home,
+            url: URL,
+            token: TOKEN,
+            skip: new Map([['.mcp.json', 'the project tracks this file in git']]),
+        });
+        expect(report.written).not.toContain('.mcp.json');
+        expect(report.skipped).toContainEqual({ path: '.mcp.json', reason: 'the project tracks this file in git' });
+        expect(await read('.mcp.json')).toBe('{"mcpServers":{"team":{"url":"x"}}}\n');
+    });
     it('creates no directories for agents that are not installed', async () => {
         // Littering every project with .cursor/, .gemini/, .kiro/ for tools the
         // user doesn't have would be its own bug.

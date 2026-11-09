@@ -1,3 +1,5 @@
+export declare const allowTerminalRoot: (webContentsId: number, folder: string) => void;
+export declare const forgetTerminalRoot: (webContentsId: number) => void;
 /**
  * Kill every live pty and wait for the OS to release its file
  * descriptors. Awaiting this is what lets the Electron process exit

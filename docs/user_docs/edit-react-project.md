@@ -20,8 +20,10 @@ You need the following:
 - A Vite + React or Next.js project on your computer.
 - Git, with your name and email set in `git config`.
 - Node.js, at the version your project asks for.
-- To be signed in to Scamp, with the Scamp Agent connected. See
-  [Scamp Agent](scamp-agent.md).
+- To be signed in to Scamp.
+- An agent to write your changes: the Scamp Agent, with an Anthropic API
+  key (see [Scamp Agent](scamp-agent.md)), or an agent you already use,
+  such as Claude Code. See [Use your own agent](#use-your-own-agent).
 
 ## Open a project
 
@@ -91,6 +93,29 @@ over a row to outline that element on the page, and click a row to select
 it. When you select an element on the page, the tree opens to it. To hide
 the panel, in the toolbar, click **Layers**.
 
+## Reorder elements
+
+You can move an element before or after one of its siblings, in the same
+parent.
+
+- **On the page:** with **Edit** on, select the element, and then drag it.
+  A blue line shows where it will go.
+- **In the Layers panel:** drag a row above or below a row at the same
+  level.
+
+If the element you drag is the only one in its parent, such as the title
+of a card, Scamp moves the nearest element around it that has siblings,
+such as the card itself. Scamp outlines what's moving and says so. If
+nothing around it has siblings, Scamp says that instead.
+
+When the parent lays out its children in a row, a column, or a grid, the
+page shows the new order at once. Otherwise a dashed line marks where the
+element goes, and the page shows it when the agent has written the change.
+
+If the elements come from a list in your code, the agent reorders the list.
+If their order comes from data, such as an API, the agent can't change it
+and says so.
+
 ## Style a hover, focus, or active state
 
 1. Select an element.
@@ -140,6 +165,34 @@ To collect several edits and send them together:
 
 While the agent works, the page keeps showing your edits. When it finishes,
 the page shows your real code, reloaded.
+
+## Use your own agent
+
+If you use Claude Code, Cursor, Gemini CLI, or Kiro, it can write your
+changes instead of the Scamp Agent, signed in the way it already is. You
+don't need an API key.
+
+1. On the setup screen, click **Use my own agent instead**. Or, in the
+   **Changes** tab, click **My agent**.
+1. Click **Start**. Scamp connects to your agent through its MCP server
+   and adds the connection to your agent's settings in the project, such
+   as `.mcp.json` for Claude Code. Scamp keeps that file out of git.
+1. In the **Changes** tab, under **My agent**, there's a terminal open in
+   your project's folder. Click **Start Claude Code**, or start another
+   agent there. If it asks whether to use the `scamp` server, allow it.
+1. Click **Paste the prompt**, and press **Enter**.
+
+You can also use your agent in a terminal of your own: open it in the
+project's folder, and paste the line from **Copy**.
+
+Your agent then waits for your edits, writes each batch, and waits for
+more until you tell it to stop. The **Changes** tab shows whether it's
+connected and when it's writing. You review, accept, and discard its
+changes the same way.
+
+**Note:** If your project already tracks the agent's settings file in
+git, Scamp doesn't change it. The **Changes** tab shows a command to
+connect Claude Code yourself instead.
 
 ## Review and keep changes
 

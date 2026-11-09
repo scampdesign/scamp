@@ -6,4 +6,5 @@ export declare const viteEnvReads: (text: string) => string[];
 export declare const gatherPreflightFacts: (folder: string, accounts: {
     signedIn: boolean;
     agentConnected: boolean;
+    ownAgent: boolean;
 }) => Promise<PreflightFacts>;

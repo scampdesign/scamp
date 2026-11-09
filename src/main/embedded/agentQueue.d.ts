@@ -1,4 +1,4 @@
-import type { EmbeddedAgentEvent, EmbeddedAgentState, EmbeddedIdiom, EmbeddedQueueItem } from '@shared/types';
+import type { EmbeddedAgentEvent, EmbeddedAgentState, EmbeddedIdiom, EmbeddedQueueItem, EmbeddedWorker } from '@shared/types';
 import { type AgentToolInvoker } from '../agent/harness';
 import type { AgentProvider } from '../agent/provider';
 /**
@@ -31,5 +31,17 @@ export type EmbeddedAgent = {
     touched: () => string[];
     clearTouched: (paths?: ReadonlyArray<string>) => void;
     dispose: () => void;
+    worker: () => EmbeddedWorker;
+    setWorker: (worker: EmbeddedWorker) => void;
+    /**
+     * The user's agent asks for work: resolves with the next batch once one is
+     * ready (queued, not paused, and a batching pause past), or null after
+     * `timeoutMs`. One batch at a time: a second take waits for the first to finish.
+     */
+    takeBatch: (timeoutMs: number) => Promise<EmbeddedQueueItem[] | null>;
+    /** The user's agent finished the batch it took. False when it held none. */
+    finishBatch: (summary: string, files: ReadonlyArray<string>) => boolean;
+    /** The batch the user's agent holds, if any. */
+    heldBatch: () => EmbeddedQueueItem[] | null;
 };
 export declare const createEmbeddedAgent: (deps: EmbeddedAgentDeps) => EmbeddedAgent;

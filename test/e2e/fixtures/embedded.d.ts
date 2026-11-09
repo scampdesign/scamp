@@ -13,6 +13,11 @@ export declare const openEmbedded: (app: ElectronApplication, window: Page, dir:
 export declare const startEmbedded: (embedded: Page) => Promise<void>;
 /** Run code in the project's page and return its result. */
 export declare const inPage: <T = unknown>(embedded: Page, code: string) => Promise<T>;
+/** A point on an element of the page, in the window's coordinates. */
+export declare const pointInPage: (embedded: Page, selector: string, at: "center" | "corner") => Promise<{
+    x: number;
+    y: number;
+}>;
 /**
  * A real click on an element of the page, through the webview: at its
  * centre, or just inside its top-left corner to hit it rather than a child.

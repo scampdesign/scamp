@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import type { EmbeddedGitResult, EmbeddedQueueItem } from '@shared/types';
 
+import { AgentChoice } from './AgentChoice';
 import { DiffView } from './DiffView';
 import { useEmbeddedStore } from './embeddedStore';
 import { refreshGit, runInspector } from './session';
@@ -10,10 +11,17 @@ import styles from './ChangesTab.module.css';
 const summary = (item: EmbeddedQueueItem): string =>
   item.kind === 'style'
     ? `<${item.element.tag}${item.state !== undefined ? `:${item.state}` : ''}> ${item.changes.map((c) => `${c.property} → ${c.to}`).join(', ')}${item.scope === 'all' ? ' (all)' : ''}`
-    : item.text;
+    : item.kind === 'move'
+      ? `Move <${item.element.tag}> ${item.position} <${item.target.tag}>${item.target.text.length > 0 ? ` “${item.target.text.slice(0, 24)}”` : ''}`
+      : item.text;
 
 /** The agent's queue and controls, review of what it wrote, and git. */
-export const ChangesTab = (): JSX.Element => {
+type Props = {
+  /** The tab stays mounted, so the agent's terminal survives a switch; this says when it's on screen. */
+  active: boolean;
+};
+
+export const ChangesTab = ({ active }: Props): JSX.Element => {
   const agent = useEmbeddedStore((s) => s.agent);
   const git = useEmbeddedStore((s) => s.git);
   const log = useEmbeddedStore((s) => s.agentLog);
@@ -27,8 +35,8 @@ export const ChangesTab = (): JSX.Element => {
   const running = agent.phase === 'thinking' || agent.phase === 'writing';
 
   useEffect(() => {
-    void refreshGit();
-  }, []);
+    if (active) void refreshGit();
+  }, [active]);
   // Re-read whenever the set of files the agent wrote changes, or a run ends.
   const fileKey = files.join('\n');
   const phase = agent.phase;
@@ -55,6 +63,7 @@ export const ChangesTab = (): JSX.Element => {
     <div className={styles.tab}>
       <section className={styles.section}>
         <h3 className={styles.title}>Agent</h3>
+        <AgentChoice />
         <div className={styles.row}>
           <button
             type="button"

@@ -38,7 +38,8 @@ export const startEmbedded = async (embedded) => {
 };
 /** Run code in the project's page and return its result. */
 export const inPage = (embedded, code) => embedded.evaluate((source) => document.querySelector('webview').executeJavaScript(source), code);
-const pointInPage = async (embedded, selector, at) => {
+/** A point on an element of the page, in the window's coordinates. */
+export const pointInPage = async (embedded, selector, at) => {
     const point = await inPage(embedded, `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return null; const r = el.getBoundingClientRect(); return ${at === 'center' ? '{ x: r.left + r.width / 2, y: r.top + r.height / 2 }' : '{ x: r.left + 3, y: r.top + 3 }'}; })()`);
     if (point === null)
         throw new Error(`nothing in the page matches ${selector}`);

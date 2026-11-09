@@ -126,6 +126,12 @@ export const describeQueueItem = (item, index) => {
         const state = item.state === undefined ? '' : `\n- State: \`:${item.state}\`. Style the element only while it's in that state (a \`:${item.state}\` rule, or Tailwind's \`${item.state}:\` prefix), leaving its normal styles as they are.`;
         return `### Edit ${index + 1}: style${item.state === undefined ? '' : ` (:${item.state})`}\n${describeElement(item.element)}\n- ${scopeLine(item.scope, item.element)}${state}\n- Change:\n${changes}`;
     }
+    if (item.kind === 'move') {
+        const how = item.fromList
+            ? 'Both are drawn from one line of JSX, by a list (`.map()` or similar), so their order is the data\'s. If the list is written in the project, reorder its items. If it comes from an API, a database or elsewhere, change nothing and say so.'
+            : 'Move the element\'s JSX so it renders just ' + item.position + ' the other. If the element is the root of a component, move where that component is used instead. Keep everything else as it is, keys included.';
+        return `### Edit ${index + 1}: move\n${describeElement(item.element)}\n- Move it to just **${item.position}** this sibling (same parent):\n${describeElement(item.target).replace(/^- /gm, '  - ')}\n- ${how}`;
+    }
     const where = item.element !== null ? `${describeElement(item.element)}\n- ${scopeLine(item.scope, item.element)}\n` : '';
     return `### Edit ${index + 1}: instruction\n${where}- Do this: ${item.text}`;
 };
@@ -144,6 +150,8 @@ export const buildAgentPrompt = (items, idioms) => {
         'Read the file at each source location first. Make the smallest edit that produces each change, then stop. If an element can’t be changed safely (it comes from a library, or from data), say so instead of guessing.',
     ].join('\n');
 };
+/** What to tell the user's own agent to start it working the queue. see docs/plans/embedded-agent-connection-plan.md */
+export const OWN_AGENT_LINE = 'Work my Scamp edit queue: call scamp_embedded_wait_for_edits, write each batch it gives you, call scamp_embedded_done, and keep waiting for more until I say stop.';
 /** A route path needs values filled in: `:id` (React Router) or `[id]` (Next.js). */
 export const routeHasParams = (path) => /\/:|\[/.test(path);
 /** Known routes plus newly found ones: one each, pages before parameterised paths, then alphabetical. */
@@ -200,6 +208,10 @@ export const installInspector = (config) => {
         panelForce: null,
         forcedNow: new Set(),
         rules: new Map(),
+        drag: null,
+        suppressClick: false,
+        /** Moves the page can't preview (block flow), marked until the agent writes them. */
+        marks: [],
     };
     let api;
     const send = (msg) => {
@@ -222,7 +234,10 @@ export const installInspector = (config) => {
             'font:11px/16px system-ui,sans-serif;padding:0 6px;border-radius:3px;white-space:nowrap;';
     const preview = document.createElement('style');
     preview.setAttribute('data-scamp-overlay', '');
-    document.documentElement.append(hoverBox, selectBox, label, preview);
+    const insertLine = document.createElement('div');
+    insertLine.setAttribute('data-scamp-overlay', '');
+    insertLine.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483647;display:none;background:#4a8cff;border-radius:2px;';
+    document.documentElement.append(hoverBox, selectBox, label, preview, insertLine);
     // Ids for the layers tree, kept off the DOM.
     let nextUid = 1;
     const uids = new WeakMap();
@@ -400,8 +415,10 @@ export const installInspector = (config) => {
             if (again !== null)
                 send(describe(again));
         }
-        const hover = state.treeHover ?? (state.edit && state.hovered !== state.selected ? state.hovered : null);
+        const hover = state.drag?.active === true ? state.drag.el : state.treeHover ?? (state.edit && state.hovered !== state.selected ? state.hovered : null);
         place(hoverBox, hover);
+        for (const m of state.marks)
+            drawLine(m.box, m.target, m.position);
         place(selectBox, state.selected);
         if (state.selected !== null && state.selected.isConnected) {
             const r = state.selected.getBoundingClientRect();
@@ -422,6 +439,154 @@ export const installInspector = (config) => {
         e.preventDefault();
         e.stopImmediatePropagation();
     };
+    // Drag the selection among its siblings. Registered before the edit-mode
+    // swallowing below, which stops later listeners for the same events.
+    const axisOf = (parent, a, b) => {
+        const cs = getComputedStyle(parent);
+        if (cs.display.includes('flex'))
+            return cs.flexDirection.startsWith('row') ? 'x' : 'y';
+        if (cs.display.includes('grid')) {
+            const ra = a.getBoundingClientRect();
+            const rb = b.getBoundingClientRect();
+            return Math.abs(ra.top - rb.top) < Math.min(ra.height, rb.height) / 2 ? 'x' : 'y';
+        }
+        return 'y';
+    };
+    const drawLine = (box, target, position) => {
+        const parent = target.parentElement;
+        if (!target.isConnected || parent === null) {
+            box.style.display = 'none';
+            return;
+        }
+        const r = target.getBoundingClientRect();
+        const axis = axisOf(parent, target, target.previousElementSibling ?? target.nextElementSibling ?? target);
+        box.style.display = 'block';
+        if (axis === 'x') {
+            box.style.left = `${(position === 'before' ? r.left : r.right) - 2}px`;
+            box.style.top = `${r.top}px`;
+            box.style.width = '3px';
+            box.style.height = `${r.height}px`;
+        }
+        else {
+            box.style.left = `${r.left}px`;
+            box.style.top = `${(position === 'before' ? r.top : r.bottom) - 2}px`;
+            box.style.width = `${r.width}px`;
+            box.style.height = '3px';
+        }
+    };
+    const kidsOf = (parent) => Array.from(parent.children).filter((c) => !isOverlay(c) && !SKIP.has(c.tagName));
+    /**
+     * What a drag of `el` moves: `el`, or, when it's an only child (a card's
+     * title, say), the nearest ancestor that has siblings to move between.
+     * Null when nothing up to the app's root has any.
+     */
+    const movable = (el) => {
+        for (let at = el; at !== null && at !== document.body; at = at.parentElement) {
+            const parent = at.parentElement;
+            if (parent === null || parent === document.body || parent === document.documentElement)
+                return null;
+            if (kidsOf(parent).length > 1)
+                return at;
+        }
+        return null;
+    };
+    /** The sibling of `el` under the point, and which side of it. */
+    const dropAt = (el, x, y) => {
+        const parent = el.parentElement;
+        if (parent === null)
+            return null;
+        let under = document.elementFromPoint(x, y);
+        while (under !== null && under.parentElement !== parent)
+            under = under.parentElement;
+        if (under === null || under === el || isOverlay(under))
+            return null;
+        const r = under.getBoundingClientRect();
+        const axis = axisOf(parent, under, el);
+        const position = (axis === 'x' ? x < r.left + r.width / 2 : y < r.top + r.height / 2) ? 'before' : 'after';
+        return { target: under, position };
+    };
+    /** Preview a move where `order` can show it, mark it where it can't, and tell the window. */
+    const applyMove = (el, target, position) => {
+        const parent = el.parentElement;
+        if (parent === null || target.parentElement !== parent || el === target)
+            return;
+        const kids = kidsOf(parent);
+        const without = kids.filter((k) => k !== el);
+        const at = without.indexOf(target) + (position === 'after' ? 1 : 0);
+        const next = [...without.slice(0, at), el, ...without.slice(at)];
+        const previewed = /flex|grid/.test(getComputedStyle(parent).display);
+        if (previewed) {
+            next.forEach((kid, i) => {
+                if (!(kid instanceof HTMLElement))
+                    return;
+                const saved = state.overrides.get(kid) ?? new Map();
+                if (!saved.has('order'))
+                    saved.set('order', { value: kid.style.getPropertyValue('order'), priority: kid.style.getPropertyPriority('order') });
+                kid.style.setProperty('order', String(i), 'important');
+                state.overrides.set(kid, saved);
+            });
+        }
+        else {
+            const box = document.createElement('div');
+            box.setAttribute('data-scamp-overlay', '');
+            box.title = 'Moves here once the agent writes it';
+            box.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483646;background:repeating-linear-gradient(90deg,#4a8cff 0 6px,transparent 6px 10px);';
+            document.documentElement.append(box);
+            state.marks.push({ box, target, position });
+        }
+        const a = describe(el);
+        const b = describe(target);
+        const key = keyOf(el);
+        send({ type: 'moved', element: a.element, raw: a.raw, target: b.element, targetRaw: b.raw, position, fromList: key !== null && key === keyOf(target), previewed });
+    };
+    window.addEventListener('pointerdown', (e) => {
+        if (!state.edit || e.button !== 0)
+            return;
+        const t = e.target;
+        if (state.selected !== null && t instanceof Node && state.selected.contains(t)) {
+            state.drag = { el: state.selected, x: e.clientX, y: e.clientY, active: false, target: null, position: 'before' };
+        }
+    }, true);
+    window.addEventListener('pointermove', (e) => {
+        const drag = state.drag;
+        if (drag === null)
+            return;
+        if (!drag.active && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 5)
+            return;
+        if (!drag.active) {
+            const moving = movable(drag.el);
+            if (moving === null) {
+                state.drag = null;
+                // The pointerup that ends this gesture would otherwise select.
+                state.suppressClick = true;
+                send({ type: 'dragNote', text: 'This element and the ones around it have no siblings to move between.' });
+                return;
+            }
+            drag.el = moving;
+            drag.active = true;
+            if (moving !== state.selected)
+                send({ type: 'dragNote', text: `Moving the <${moving.tagName.toLowerCase()}> around it: the selected element has no siblings.` });
+        }
+        const drop = dropAt(drag.el, e.clientX, e.clientY);
+        drag.target = drop?.target ?? null;
+        if (drop === null)
+            insertLine.style.display = 'none';
+        else {
+            drag.position = drop.position;
+            drawLine(insertLine, drop.target, drop.position);
+        }
+    }, true);
+    window.addEventListener('pointerup', () => {
+        const drag = state.drag;
+        state.drag = null;
+        insertLine.style.display = 'none';
+        if (drag === null || !drag.active)
+            return;
+        // The click that follows a drag isn't a selection.
+        state.suppressClick = true;
+        if (drag.target !== null)
+            applyMove(drag.el, drag.target, drag.position);
+    }, true);
     for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'dblclick', 'contextmenu', 'auxclick']) {
         window.addEventListener(type, (e) => {
             if (state.edit)
@@ -432,6 +597,10 @@ export const installInspector = (config) => {
         if (!state.edit)
             return;
         swallow(e);
+        if (state.suppressClick) {
+            state.suppressClick = false;
+            return;
+        }
         const target = e.target;
         if (!(target instanceof Element) || isOverlay(target))
             return;
@@ -590,6 +759,12 @@ export const installInspector = (config) => {
                     select(el);
                 }
             }
+            else if (cmd.type === 'move') {
+                const el = byUid.get(cmd.id ?? '')?.deref();
+                const target = byUid.get(cmd.targetId ?? '')?.deref();
+                if (el !== undefined && target !== undefined)
+                    applyMove(el, target, cmd.position === 'after' ? 'after' : 'before');
+            }
             else if (cmd.type === 'hoverId') {
                 state.treeHover = cmd.id === null ? null : (byUid.get(cmd.id ?? '')?.deref() ?? null);
             }
@@ -653,6 +828,9 @@ export const installInspector = (config) => {
                 }
                 state.overrides.clear();
                 state.rules.clear();
+                for (const m of state.marks)
+                    m.box.remove();
+                state.marks = [];
                 writeRules();
             }
         },

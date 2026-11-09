@@ -22,6 +22,21 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Added**
+
+- **In Edit React Project, you can reorder elements by dragging them.**
+  Drag the selection on the page, or a row in the **Layers** panel, before
+  or after a sibling. A row, column, or grid shows the new order at once,
+  and the agent writes the move into your code. See
+  [Reorder elements](user_docs/edit-react-project.md#reorder-elements).
+- **In Edit React Project, your own agent can write your changes.** Choose
+  **My agent**, and Claude Code, Cursor, Gemini CLI, or Kiro writes each
+  edit through Scamp's MCP server, signed in the way it already is, so you
+  don't need an API key. See
+  [Use your own agent](user_docs/edit-react-project.md#use-your-own-agent).
+
 ### 0.14.0 (2026-11-05)
 
 **Added**

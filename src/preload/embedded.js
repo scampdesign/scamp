@@ -41,6 +41,17 @@ const embeddedApi = {
     pull: () => ipcRenderer.invoke(IPC.EmbeddedPull),
     /** Apply the page's `data-scamp-force` marks as forced pseudo-classes. */
     syncPseudo: () => ipcRenderer.invoke(IPC.EmbeddedSyncPseudo),
+    /** Who writes changes: Scamp's agent or the user's own, over MCP. */
+    setWorker: (worker) => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
+    ownAgentStatus: () => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),
+    selectionChanged: (element) => ipcRenderer.send(IPC.EmbeddedSelectionChanged, element),
+    // A terminal in the project folder, for the user's own agent. Same channels as the main window's.
+    createTerminal: (args) => ipcRenderer.invoke(IPC.TerminalCreate, args),
+    writeTerminal: (args) => ipcRenderer.invoke(IPC.TerminalWrite, args),
+    resizeTerminal: (args) => ipcRenderer.invoke(IPC.TerminalResize, args),
+    killTerminal: (args) => ipcRenderer.invoke(IPC.TerminalKill, args),
+    onTerminalData: (handler) => on(IPC.TerminalData, handler),
+    onTerminalExit: (handler) => on(IPC.TerminalExit, handler),
     /** Routes read from the project's files (Next.js); empty for other stacks. */
     routes: () => ipcRenderer.invoke(IPC.EmbeddedRoutes),
     resolveSource: (raw, hints) => ipcRenderer.invoke(IPC.EmbeddedResolveSource, { raw, hints }),

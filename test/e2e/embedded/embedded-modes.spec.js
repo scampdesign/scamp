@@ -73,6 +73,9 @@ test('freeze holds a menu open, one edit reaches every instance, and pause batch
 test.describe('agent not connected', () => {
     test.use({ appEnv: { SCAMP_E2E_SIGNED_IN: '1' } });
     test('the setup screen keeps Start off until the agent is connected, and the project is in Recent next time', async ({ app, window }) => {
+        // With the flag, the start screen offers it.
+        await window.getByRole('button', { name: '← Projects' }).click();
+        await expect(window.getByTestId('start-edit-react-project')).toBeVisible();
         const dir = await copyEmbeddedApp();
         try {
             const embedded = await openEmbedded(app, window, dir);
@@ -101,6 +104,7 @@ test.describe('agent not connected', () => {
 test.describe('without the flag', () => {
     test.use({ appEnv: { SCAMP_E2E_SIGNED_IN: '1', SCAMP_E2E_EMBEDDED: '0' } });
     test('the start screen hides Edit React Project, and main refuses to open the window', async ({ window }) => {
+        await window.getByRole('button', { name: '← Projects' }).click();
         await expect(window.getByRole('button', { name: 'Open Project' })).toBeVisible();
         await expect(window.getByTestId('start-edit-react-project')).toHaveCount(0);
         const opened = await window.evaluate(() => globalThis.scamp.openEmbedded());

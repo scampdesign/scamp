@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain } from 'electron';
 import * as pty from 'node-pty';
 import { IPC } from '@shared/ipcChannels';
-import { assertInsideActiveProject } from './pathContainment';
+import { assertInsideActiveProject, resolveInsideProject } from './pathContainment';
 // In dev we allow more concurrent ptys than the user can actually open
 // from the UI (MAX_TABS = 3). HMR re-mounts TerminalView without always
 // running its cleanup, so orphaned ptys stack up across reloads until
@@ -11,6 +11,18 @@ import { assertInsideActiveProject } from './pathContainment';
 const MAX_TERMINALS = process.env['NODE_ENV'] === 'development' ? 12 : 3;
 const terminals = new Map();
 let nextId = 1;
+/**
+ * Windows whose terminals open in a folder of their own rather than the
+ * canvas's project: an Edit React Project window, in the project it edits.
+ * Keyed by the asking window's webContents id, so no other window gains it.
+ */
+const windowRoots = new Map();
+export const allowTerminalRoot = (webContentsId, folder) => {
+    windowRoots.set(webContentsId, folder);
+};
+export const forgetTerminalRoot = (webContentsId) => {
+    windowRoots.delete(webContentsId);
+};
 const defaultShell = () => {
     if (process.platform === 'win32') {
         return process.env['COMSPEC'] ?? 'cmd.exe';
@@ -37,10 +49,12 @@ const windowFor = (term) => {
         return owner;
     return BrowserWindow.getAllWindows()[0] ?? null;
 };
-const createTerminal = (args, owner) => {
-    // Pin the shell's working directory to the active project. Without this
-    // a compromised renderer could spawn a shell anywhere on disk.
-    const cwd = assertInsideActiveProject(args.cwd);
+const createTerminal = (args, owner, senderId) => {
+    // Pin the shell's working directory to the active project (or the
+    // window's own folder). Without this a compromised renderer could spawn
+    // a shell anywhere on disk.
+    const root = windowRoots.get(senderId);
+    const cwd = root === undefined ? assertInsideActiveProject(args.cwd) : resolveInsideProject(args.cwd, root);
     if (terminals.size >= MAX_TERMINALS) {
         // Log loudly so the dev knows orphans piled up — not just a quiet
         // IPC rejection in the renderer console.
@@ -154,7 +168,7 @@ export const disposeAllTerminals = async () => {
     await Promise.all(all.map(killAndWait));
 };
 export const registerTerminalIpc = () => {
-    ipcMain.handle(IPC.TerminalCreate, (e, args) => createTerminal(args, BrowserWindow.fromWebContents(e.sender)));
+    ipcMain.handle(IPC.TerminalCreate, (e, args) => createTerminal(args, BrowserWindow.fromWebContents(e.sender), e.sender.id));
     ipcMain.handle(IPC.TerminalWrite, (_e, args) => writeTerminal(args));
     ipcMain.handle(IPC.TerminalResize, (_e, args) => resizeTerminal(args));
     ipcMain.handle(IPC.TerminalKill, (_e, args) => killTerminal(args));

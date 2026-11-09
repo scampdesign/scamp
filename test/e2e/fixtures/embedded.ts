@@ -53,7 +53,8 @@ export const inPage = <T = unknown>(embedded: Page, code: string): Promise<T> =>
     code
   ) as Promise<T>;
 
-const pointInPage = async (embedded: Page, selector: string, at: 'center' | 'corner'): Promise<{ x: number; y: number }> => {
+/** A point on an element of the page, in the window's coordinates. */
+export const pointInPage = async (embedded: Page, selector: string, at: 'center' | 'corner'): Promise<{ x: number; y: number }> => {
   const point = await inPage<{ x: number; y: number } | null>(
     embedded,
     `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return null; const r = el.getBoundingClientRect(); return ${

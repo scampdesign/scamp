@@ -7,6 +7,7 @@ const ready = {
     name: 'app',
     signedIn: true,
     agentConnected: true,
+    ownAgent: false,
     gitInstalled: true,
     isRepo: true,
     gitUser: 'Ada <ada@example.com>',
@@ -44,6 +45,16 @@ describe('evaluatePreflight', () => {
         expect(evaluatePreflight({ ...ready, isRepo: false }).checks.find((c) => c.id === 'git')).toMatchObject({ status: 'fail', fix: 'git-init' });
         expect(statusOf({ ...ready, gitUser: null }, 'git')).toBe('fail');
         expect(statusOf({ ...ready, gitInstalled: false, isRepo: false }, 'git')).toBe('fail');
+    });
+    it('lets the user’s own agent stand in for an API key', () => {
+        const report = evaluatePreflight({ ...ready, agentConnected: false, ownAgent: true });
+        expect(report.checks.find((c) => c.id === 'agent')).toMatchObject({ status: 'pass', label: 'Your own agent writes changes' });
+        expect(report.canStart).toBe(true);
+    });
+    it('offers both an API key and the user’s own agent when neither is set', () => {
+        const agent = evaluatePreflight({ ...ready, agentConnected: false, ownAgent: false }).checks.find((c) => c.id === 'agent');
+        expect(agent).toMatchObject({ status: 'fail', fix: 'connect-agent' });
+        expect(agent?.detail).toContain('Claude Code');
     });
     it('warns, without blocking, when there is no remote to push to', () => {
         const report = evaluatePreflight({ ...ready, hasRemote: false });

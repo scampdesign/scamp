@@ -98,6 +98,7 @@ export const gatherPreflightFacts = async (folder, accounts) => {
         name: typeof pkg?.['name'] === 'string' ? pkg['name'] : basename(folder),
         signedIn: accounts.signedIn,
         agentConnected: accounts.agentConnected,
+        ownAgent: accounts.ownAgent,
         gitInstalled,
         isRepo: repo,
         gitUser: repo ? await gitIdentity(folder) : null,

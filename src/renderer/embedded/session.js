@@ -91,6 +91,23 @@ export const selectTreeNode = (id) => {
 export const hoverTreeNode = (id) => {
     void runInspector({ type: 'hoverId', id });
 };
+/** Move a layer next to a sibling; the page answers with `moved`, which queues it. */
+export const moveTreeNode = (id, targetId, position) => {
+    void runInspector({ type: 'move', id, targetId, position });
+};
+/** An element as the agent should see it: with its source looked up when React only gave a location (Next.js). */
+const withSource = async (element, raw) => {
+    if (element.source !== null || raw === null || element.library !== null)
+        return element;
+    const { source } = await window.scampEmbedded.resolveSource(raw, { tag: element.tag, classes: element.classes, text: element.text });
+    const library = source !== null && source.includes('node_modules/') ? (/node_modules\/((?:@[^/]+\/)?[^/]+)/.exec(source)?.[1] ?? null) : null;
+    return { ...element, source: library === null ? source : null, library };
+};
+const queueMove = async (msg) => {
+    flushPending();
+    const [element, target] = await Promise.all([withSource(msg.element, msg.raw), withSource(msg.target, msg.targetRaw)]);
+    await window.scampEmbedded.enqueue({ id: newId(), kind: 'move', element, target, position: msg.position, fromList: msg.fromList });
+};
 /** Force a pseudo-class on the selection; later edits style that state. */
 export const setPseudo = (state) => {
     flushPending();
@@ -184,6 +201,8 @@ export const handleConsoleLine = (line) => {
         // Keep a source main already resolved, rather than look it up again.
         const element = same && selection.raw !== null && msg.element.source === null ? { ...msg.element, source: selection.element.source } : msg.element;
         loadStandIn({ uid: msg.uid, raw: msg.raw, element, computed: msg.computed, parentDisplay: msg.parentDisplay, textOnly: msg.textOnly });
+        if (selection?.uid !== msg.uid)
+            set({ dragNote: null });
         if (msg.raw !== null && element.source === null && element.library === null)
             void resolveSelection(msg.uid);
     }
@@ -191,6 +210,12 @@ export const handleConsoleLine = (line) => {
         useEmbeddedStore.getState().set({ held: msg.held });
         // Main applies the marks; then the panel reads the styles of the forced state.
         void window.scampEmbedded.syncPseudo().then(() => runInspector({ type: 'reselect' }));
+    }
+    else if (msg.type === 'dragNote') {
+        useEmbeddedStore.getState().set({ dragNote: msg.text });
+    }
+    else if (msg.type === 'moved') {
+        void queueMove(msg);
     }
     else if (msg.type === 'treeChanged') {
         if (useEmbeddedStore.getState().layersOpen)
@@ -360,4 +385,13 @@ export const startSession = () => {
         handleStandInChange();
     });
     window.scampEmbedded.onAgentEvent(handleAgentEvent);
+    // Main answers the user's own agent's "what's selected" from this.
+    let selected = useEmbeddedStore.getState().selection?.element ?? null;
+    useEmbeddedStore.subscribe((st) => {
+        const now = st.selection?.element ?? null;
+        if (now === selected)
+            return;
+        selected = now;
+        window.scampEmbedded.selectionChanged(now);
+    });
 };

@@ -20,6 +20,8 @@ export declare const computedToDeclarations: (computed: Record<string, string>) 
 export declare const describeQueueItem: (item: EmbeddedQueueItem, index: number) => string;
 /** A batch of queued edits as one message to the agent. */
 export declare const buildAgentPrompt: (items: ReadonlyArray<EmbeddedQueueItem>, idioms: ReadonlyArray<EmbeddedIdiom>) => string;
+/** What to tell the user's own agent to start it working the queue. see docs/plans/embedded-agent-connection-plan.md */
+export declare const OWN_AGENT_LINE = "Work my Scamp edit queue: call scamp_embedded_wait_for_edits, write each batch it gives you, call scamp_embedded_done, and keep waiting for more until I say stop.";
 /** A route path needs values filled in: `:id` (React Router) or `[id]` (Next.js). */
 export declare const routeHasParams: (path: string) => boolean;
 /** Known routes plus newly found ones: one each, pages before parameterised paths, then alphabetical. */
@@ -71,6 +73,13 @@ export type InspectorCommand = {
 } | {
     type: 'hoverId';
     id: string | null;
+}
+/** Move a layer next to a sibling, from the layers tree. */
+ | {
+    type: 'move';
+    id: string;
+    targetId: string;
+    position: 'before' | 'after';
 };
 /**
  * Runs IN the page, installed by `webview.executeJavaScript`. Must be

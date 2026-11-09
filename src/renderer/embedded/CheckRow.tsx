@@ -41,25 +41,30 @@ export const CheckRow = ({ check, onFix }: Props): JSX.Element => {
           </button>
         )}
         {check.fix === 'connect-agent' && (
-          <form
-            className={styles.keyForm}
-            onSubmit={(e) => {
-              e.preventDefault();
-              void handleFix(key);
-            }}
-          >
-            <input
-              className={styles.keyInput}
-              type="password"
-              placeholder="sk-ant-…"
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              aria-label="Anthropic API key"
-            />
-            <button type="submit" className={styles.fix} disabled={busy || key.trim().length === 0}>
-              Connect
+          <>
+            <form
+              className={styles.keyForm}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handleFix(key);
+              }}
+            >
+              <input
+                className={styles.keyInput}
+                type="password"
+                placeholder="sk-ant-…"
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                aria-label="Anthropic API key"
+              />
+              <button type="submit" className={styles.fix} disabled={busy || key.trim().length === 0}>
+                Connect
+              </button>
+            </form>
+            <button type="button" className={styles.fix} disabled={busy} onClick={() => void onFix('use-own-agent')} data-testid="embedded-use-own-agent">
+              Use my own agent instead
             </button>
-          </form>
+          </>
         )}
       </div>
     </li>

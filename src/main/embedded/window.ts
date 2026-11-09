@@ -1,11 +1,15 @@
 import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { promises as fs } from 'fs';
+import { homedir } from 'os';
 import { basename, join } from 'path';
 
 import { IPC } from '@shared/ipcChannels';
 import type {
   EmbeddedAgentEvent,
   EmbeddedChooseResult,
+  EmbeddedElementRef,
+  EmbeddedOwnAgentStatus,
+  EmbeddedWorker,
   EmbeddedGitResult,
   EmbeddedGitStatus,
   EmbeddedPreflight,
@@ -19,12 +23,18 @@ import type {
 
 import { agentConnected, agentSignedIn, embeddedAgentProvider } from '../ipc/agent';
 import { appFeatures } from '../ipc/auth';
+import { allowTerminalRoot, forgetTerminalRoot } from '../ipc/terminal';
 import { startReactApp, stopReactApp } from '../reactImport/appServer';
+import { AGENT_TARGETS, writeAgentConfigs } from '../mcp/agentConfig';
+import { ensureToken, markMcpStopped, writeMcpConfig } from '../mcp/mcpOps';
+import { startMcpServer, type RunningMcpServer } from '../mcp/server';
 import { createEmbeddedAgent, type EmbeddedAgent } from './agentQueue';
 import {
   commitFiles,
   discardFiles,
   ensureSessionBranch,
+  excludeFromGit,
+  git,
   gitDiff,
   gitStatus,
   initRepo,
@@ -37,6 +47,7 @@ import {
 import { viteCommand, writeInstrumentation } from './instrument';
 import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
+import { OWN_AGENT_TOOLS, ownAgentInvoker } from './ownAgent';
 import { listProjectFiles } from './projectFiles';
 import { syncPseudo } from './pseudo';
 import { parseRecent, removeRecent, upsertRecent } from './recent';
@@ -60,7 +71,110 @@ type Session = {
   serverKey: string | null;
   url: string | null;
   framework: EmbeddedPreflight['framework'];
+  idioms: EmbeddedPreflight['idioms'];
+  /** The MCP server the user's own agent connects to, while My agent is chosen. */
+  mcp: RunningMcpServer | null;
+  mcpToken: string | null;
+  mcpReport: { written: string[]; skipped: Array<{ path: string; reason: string }> };
+  ownAgentSeen: boolean;
+  selection: EmbeddedElementRef | null;
 };
+
+/** Embedded Scamp's own range, clear of the canvas's (39841 and up), so both can run. */
+const EMBEDDED_MCP_PORT = 39861;
+
+const newSession = (folder: string, win: BrowserWindow): Session => ({
+  folder,
+  window: win,
+  agent: null,
+  serverKey: null,
+  url: null,
+  framework: null,
+  idioms: [],
+  mcp: null,
+  mcpToken: null,
+  mcpReport: { written: [], skipped: [] },
+  ownAgentSeen: false,
+  selection: null,
+});
+
+const endSession = async (session: Session): Promise<void> => {
+  session.agent?.dispose();
+  if (session.serverKey) stopReactApp(session.serverKey);
+  const server = session.mcp;
+  session.mcp = null;
+  if (server !== null) {
+    await server.close();
+    await markMcpStopped(session.folder);
+  }
+};
+
+/** Which agent writes changes, remembered across projects. */
+const workerPath = (): string => join(app.getPath('userData'), 'embeddedAgent.json');
+export const readWorker = async (): Promise<EmbeddedWorker> => {
+  const text = await fs.readFile(workerPath(), 'utf8').catch(() => '');
+  return text.includes('"own"') ? 'own' : 'scamp';
+};
+const writeWorker = async (worker: EmbeddedWorker): Promise<void> => {
+  await fs.writeFile(workerPath(), JSON.stringify({ worker }), 'utf8').catch(() => undefined);
+};
+
+/**
+ * Serve the queue to the user's own agent: start this session's MCP server
+ * and register it in each installed agent's config in the project. A config
+ * file the project tracks in git is left alone (it's the team's), and every
+ * file written goes in `.git/info/exclude`, since it holds the token.
+ */
+const startOwnAgentServer = async (session: Session): Promise<void> => {
+  if (session.mcp !== null) return;
+  const token = await ensureToken(session.folder);
+  session.mcpToken = token;
+  session.mcp = await startMcpServer({
+    token,
+    port: EMBEDDED_MCP_PORT,
+    deps: {
+      tools: OWN_AGENT_TOOLS,
+      invoke: ownAgentInvoker({
+        folder: session.folder,
+        idioms: () => session.idioms,
+        agent: () => session.agent,
+        selection: () => session.selection,
+        onSeen: () => {
+          session.ownAgentSeen = true;
+        },
+      }),
+    },
+  });
+  await writeMcpConfig(session.folder, {
+    url: session.mcp.url,
+    token,
+    running: true,
+    started_at: new Date().toISOString(),
+    project: basename(session.folder),
+  });
+  const skip = new Map<string, string>();
+  for (const target of AGENT_TARGETS) {
+    const tracked = await git(session.folder, ['ls-files', '--error-unmatch', target.configPath]);
+    if (tracked.ok) skip.set(target.configPath, 'the project tracks this file in git, so Scamp won’t add its token to it');
+  }
+  session.mcpReport = await writeAgentConfigs({ projectPath: session.folder, homeDir: homedir(), url: session.mcp.url, token, skip });
+  await excludeFromGit(session.folder, session.mcpReport.written);
+};
+
+const ownAgentStatus = async (session: Session): Promise<EmbeddedOwnAgentStatus> => ({
+  worker: session.agent?.worker() ?? (await readWorker()),
+  url: session.mcp?.url ?? null,
+  written: session.mcpReport.written,
+  skipped: session.mcpReport.skipped,
+  // For an agent whose config couldn't be written: the command that registers it by hand.
+  command:
+    session.mcp === null || session.mcpToken === null
+      ? null
+      : `claude mcp add --transport http scamp ${session.mcp.url} --header "X-Scamp-Token: ${session.mcpToken}"`,
+  seen: session.ownAgentSeen,
+  working: (session.agent?.heldBatch() ?? null) !== null,
+});
+
 
 const sessions = new Map<number, Session>();
 /** Each window's `<webview>` contents, for the debugger. */
@@ -122,8 +236,8 @@ export const openEmbeddedWindow = async (): Promise<void> => {
     const session = sessions.get(id);
     sessions.delete(id);
     guests.delete(id);
-    session?.agent?.dispose();
-    if (session?.serverKey) stopReactApp(session.serverKey);
+    forgetTerminalRoot(id);
+    if (session !== undefined) void endSession(session);
   });
   win.once('ready-to-show', () => win.show());
   await loadShell(win);
@@ -136,7 +250,9 @@ const send = (contents: WebContents, channel: string, payload: unknown): void =>
 };
 
 const preflight = async (folder: string): Promise<EmbeddedPreflight> =>
-  evaluatePreflight(await gatherPreflightFacts(folder, { signedIn: agentSignedIn(), agentConnected: await agentConnected() }));
+  evaluatePreflight(
+    await gatherPreflightFacts(folder, { signedIn: agentSignedIn(), agentConnected: await agentConnected(), ownAgent: (await readWorker()) === 'own' })
+  );
 
 export const registerEmbeddedIpc = (): void => {
   // The flag is checked here, not only by hiding the button.
@@ -164,11 +280,10 @@ export const registerEmbeddedIpc = (): void => {
     const win = BrowserWindow.fromWebContents(e.sender);
     if (win === null) return { error: 'The window closed.' };
     const before = sessions.get(e.sender.id);
-    if (before !== undefined && before.folder !== folder) {
-      before.agent?.dispose();
-      if (before.serverKey) stopReactApp(before.serverKey);
-    }
-    sessions.set(e.sender.id, { folder, window: win, agent: null, serverKey: null, url: null, framework: null });
+    if (before !== undefined && before.folder !== folder) await endSession(before);
+    sessions.set(e.sender.id, newSession(folder, win));
+    // The window's terminal opens in this project, for running the user's own agent.
+    allowTerminalRoot(e.sender.id, folder);
     win.setTitle(`Scamp — ${folder.split(/[\\/]/).pop() ?? folder}`);
     const report = await preflight(folder);
     await writeRecent(upsertRecent(recent, { folder, name: report.name || basename(folder), lastOpened: new Date().toISOString() }));
@@ -233,6 +348,10 @@ export const registerEmbeddedIpc = (): void => {
       getProvider: embeddedAgentProvider,
       emit: (event: EmbeddedAgentEvent) => send(e.sender, IPC.EmbeddedAgentEvent, event),
     });
+    session.idioms = check.idioms;
+    const worker = await readWorker();
+    session.agent.setWorker(worker);
+    if (worker === 'own') await startOwnAgentServer(session).catch(() => undefined);
     return { ok: true, url: started.url, branch: branch.branch };
   });
 
@@ -246,6 +365,24 @@ export const registerEmbeddedIpc = (): void => {
     const session = sessionOf(e);
     return session?.framework === 'next' ? nextRoutes(await listProjectFiles(session.folder)) : [];
   });
+  ipcMain.handle(IPC.EmbeddedSetWorker, async (e, args: { worker: EmbeddedWorker }): Promise<EmbeddedOwnAgentStatus | null> => {
+    const worker: EmbeddedWorker = args?.worker === 'own' ? 'own' : 'scamp';
+    await writeWorker(worker);
+    const session = sessionOf(e);
+    if (session === null) return null;
+    session.agent?.setWorker(worker);
+    if (worker === 'own' && session.agent !== null) await startOwnAgentServer(session).catch(() => undefined);
+    return ownAgentStatus(session);
+  });
+  ipcMain.handle(IPC.EmbeddedOwnAgentStatus, async (e): Promise<EmbeddedOwnAgentStatus | null> => {
+    const session = sessionOf(e);
+    return session === null ? null : ownAgentStatus(session);
+  });
+  ipcMain.on(IPC.EmbeddedSelectionChanged, (e, element: EmbeddedElementRef | null) => {
+    const session = sessions.get(e.sender.id);
+    if (session !== undefined) session.selection = element !== null && typeof element === 'object' ? element : null;
+  });
+
   ipcMain.handle(IPC.EmbeddedSyncPseudo, async (e): Promise<boolean> => {
     const guest = guests.get(e.sender.id);
     return guest === undefined || guest.isDestroyed() ? false : syncPseudo(guest);

@@ -1573,7 +1573,7 @@ export type EmbeddedCheck = {
   status: EmbeddedCheckStatus;
   detail: string;
   /** A fix the setup screen offers as a button, when there is one. */
-  fix?: 'git-init' | 'sign-in' | 'connect-agent';
+  fix?: 'git-init' | 'sign-in' | 'connect-agent' | 'use-own-agent';
 };
 
 /** How the project writes its styles: what the agent edits in. */
@@ -1678,11 +1678,41 @@ export type EmbeddedQueueItem =
     }
   | {
       id: string;
+      kind: 'move';
+      /** The element moved. */
+      element: EmbeddedElementRef;
+      /** The sibling it now sits next to. */
+      target: EmbeddedElementRef;
+      position: 'before' | 'after';
+      /** Both come from one JSX line in a `.map()`: the order is the data's. */
+      fromList: boolean;
+    }
+  | {
+      id: string;
       kind: 'instruction';
       element: EmbeddedElementRef | null;
       scope: EmbeddedEditScope;
       text: string;
     };
+
+/** Who works the queue: Scamp's own agent (an API key), or the user's own (Claude Code and others, over MCP). */
+export type EmbeddedWorker = 'scamp' | 'own';
+
+/** The user's own agent's connection, for the Changes tab. */
+export type EmbeddedOwnAgentStatus = {
+  worker: EmbeddedWorker;
+  /** The MCP server's URL, while My agent is chosen. */
+  url: string | null;
+  /** Agent config files Scamp registered itself in. */
+  written: string[];
+  skipped: Array<{ path: string; reason: string }>;
+  /** Registers Scamp with Claude Code by hand, for when its config couldn't be written. */
+  command: string | null;
+  /** The user's agent has reached Scamp this session. */
+  seen: boolean;
+  /** It holds a batch now. */
+  working: boolean;
+};
 
 export type EmbeddedAgentPhase = 'idle' | 'paused' | 'thinking' | 'writing' | 'done' | 'error';
 
@@ -1744,4 +1774,18 @@ export type EmbeddedInspectorMessage =
   /** Which elements have a pseudo-class forced now. */
   | { type: 'forced'; held: EmbeddedHeld[] }
   /** The page's DOM changed: the layers tree should ask again. */
-  | { type: 'treeChanged' };
+  | { type: 'treeChanged' }
+  /** Why a drag moved something other than the selection, or nothing. */
+  | { type: 'dragNote'; text: string }
+  /** The user dropped an element next to a sibling; the page previews it where it can. */
+  | {
+      type: 'moved';
+      element: EmbeddedElementRef;
+      raw: EmbeddedRawSource | null;
+      target: EmbeddedElementRef;
+      targetRaw: EmbeddedRawSource | null;
+      position: 'before' | 'after';
+      fromList: boolean;
+      /** True when the parent is flex or grid, so `order` shows the result exactly. */
+      previewed: boolean;
+    };

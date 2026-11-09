@@ -245,11 +245,18 @@ export const writeAgentConfigs = async (args: {
   homeDir: string;
   url: string;
   token: string;
+  /** Config paths to leave alone, with why: Embedded Scamp skips files the project tracks in git. */
+  skip?: ReadonlyMap<string, string>;
 }): Promise<WriteReport> => {
   const report: WriteReport = { written: [], skipped: [] };
 
   for (const target of AGENT_TARGETS) {
     if (!(await isAgentInstalled(target, args.homeDir))) continue;
+    const skipReason = args.skip?.get(target.configPath);
+    if (skipReason !== undefined) {
+      report.skipped.push({ path: target.configPath, reason: skipReason });
+      continue;
+    }
 
     const absolute = join(args.projectPath, target.configPath);
     if (!(await staysInside(args.projectPath, absolute))) {

@@ -125,3 +125,70 @@ describe('createEmbeddedAgent', () => {
         expect(events.find((e) => e.kind === 'report')).toEqual({ kind: 'report', markdown: '## Tokens and consistency\n- src/App.css:3 uses #333.' });
     });
 });
+describe('the user’s own agent working the queue', () => {
+    it('runs nothing itself, and hands a batch over once the batching pause has passed', async () => {
+        const { agent, calls, phases } = setup(null);
+        agent.setWorker('own');
+        agent.enqueue(item('a', '20px'));
+        agent.enqueue(item('b', '24px'));
+        const batch = await agent.takeBatch(1000);
+        expect(batch?.map((i) => i.id)).toEqual(['a', 'b']);
+        expect(calls).toEqual([]);
+        expect(agent.state().queued).toEqual([]);
+        expect(agent.heldBatch()?.map((i) => i.id)).toEqual(['a', 'b']);
+        expect(phases().at(-1)).toBe('writing');
+    });
+    it('finishes the batch with what changed, as a run of its own would', async () => {
+        const { agent, events } = setup(null);
+        agent.setWorker('own');
+        agent.enqueue(item('a', '20px'));
+        await agent.takeBatch(1000);
+        expect(agent.finishBatch('Set the padding in Card.module.css.', ['src/Card.module.css'])).toBe(true);
+        expect(agent.touched()).toEqual(['src/Card.module.css']);
+        expect(agent.heldBatch()).toBeNull();
+        const last = events.filter((e) => e.kind === 'state').at(-1);
+        expect(last?.kind === 'state' ? [last.state.phase, last.state.lastText, last.state.lastRunItemIds] : null).toEqual(['done', 'Set the padding in Card.module.css.', ['a']]);
+    });
+    it('says no batch is held when finishing twice, and takes one batch at a time', async () => {
+        const { agent } = setup(null);
+        agent.setWorker('own');
+        agent.enqueue(item('a', '20px'));
+        await agent.takeBatch(1000);
+        agent.enqueue(item('b', '24px'));
+        expect(await agent.takeBatch(50)).toBeNull();
+        agent.finishBatch('', []);
+        expect(agent.finishBatch('', [])).toBe(false);
+        expect((await agent.takeBatch(1000))?.map((i) => i.id)).toEqual(['b']);
+    });
+    it('waits out the timeout with an empty queue', async () => {
+        const { agent } = setup(null);
+        agent.setWorker('own');
+        const started = Date.now();
+        expect(await agent.takeBatch(120)).toBeNull();
+        expect(Date.now() - started).toBeGreaterThanOrEqual(100);
+    });
+    it('holds the queue while paused, until Run now lets one batch through', async () => {
+        const { agent } = setup(null);
+        agent.setWorker('own');
+        agent.setPaused(true);
+        agent.enqueue(item('a', '20px'));
+        expect(await agent.takeBatch(80)).toBeNull();
+        agent.runNow();
+        expect((await agent.takeBatch(1000))?.map((i) => i.id)).toEqual(['a']);
+    });
+    it('puts a taken batch back at the front when stopped', async () => {
+        const { agent } = setup(null);
+        agent.setWorker('own');
+        agent.enqueue(item('a', '20px'));
+        await agent.takeBatch(1000);
+        agent.enqueue(item('b', '24px'));
+        agent.cancel();
+        expect(agent.heldBatch()).toBeNull();
+        expect(agent.state().queued.map((i) => i.id)).toEqual(['a', 'b']);
+    });
+    it('gives the user’s agent nothing while Scamp’s own agent works the queue', async () => {
+        const { agent } = setup(null);
+        agent.enqueue(item('a', '20px'));
+        expect(await agent.takeBatch(60)).toBeNull();
+    });
+});

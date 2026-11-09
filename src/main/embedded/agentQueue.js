@@ -40,6 +40,11 @@ export const createEmbeddedAgent = (deps) => {
     let running = false;
     let timer = null;
     let abort = null;
+    let worker = 'scamp';
+    let held = null;
+    /** Run now, for the user's agent: the next take goes through even while paused. */
+    let releaseOnce = false;
+    let lastChange = 0;
     const delay = deps.batchDelayMs ?? BATCH_DELAY_MS;
     const invokerFor = deps.invoker ?? ((t, readOnly) => embeddedToolInvoker(deps.folder, t, readOnly));
     const publish = (patch) => {
@@ -50,7 +55,9 @@ export const createEmbeddedAgent = (deps) => {
         if (timer !== null)
             clearTimeout(timer);
         timer = null;
-        if (state.paused || running || state.queued.length === 0)
+        lastChange = Date.now();
+        // The user's agent takes batches itself (`takeBatch`); nothing runs here.
+        if (worker === 'own' || state.paused || running || state.queued.length === 0)
             return;
         timer = setTimeout(() => {
             timer = null;
@@ -135,13 +142,32 @@ export const createEmbeddedAgent = (deps) => {
             if (timer !== null)
                 clearTimeout(timer);
             timer = null;
-            void run();
+            if (worker === 'own')
+                releaseOnce = true;
+            else
+                void run();
         },
-        cancel: () => abort?.abort(),
+        cancel: () => {
+            if (held !== null) {
+                // The user's agent may still be writing; the batch goes back so nothing is lost.
+                state.queued.unshift(...held);
+                held = null;
+                running = false;
+                publish({ phase: state.paused ? 'paused' : 'idle', message: 'Stopped. Your agent may have written part of it: check the diff.' });
+                schedule();
+                return;
+            }
+            abort?.abort();
+        },
         designCheck: async () => {
             const provider = await deps.getProvider();
             if (provider === null) {
-                deps.emit({ kind: 'report', markdown: 'Sign in to Scamp and connect the agent to run a design check.' });
+                deps.emit({
+                    kind: 'report',
+                    markdown: worker === 'own'
+                        ? 'Design checks run on the Scamp Agent, which needs an Anthropic key. Your own agent can review the design if you ask it directly.'
+                        : 'Sign in to Scamp and connect the agent to run a design check.',
+                });
                 return;
             }
             if (running) {
@@ -186,5 +212,38 @@ export const createEmbeddedAgent = (deps) => {
                 clearTimeout(timer);
             abort?.abort();
         },
+        worker: () => worker,
+        setWorker: (next) => {
+            if (next === worker || running)
+                return;
+            worker = next;
+            schedule();
+        },
+        takeBatch: async (timeoutMs) => {
+            const until = Date.now() + timeoutMs;
+            const ready = () => worker === 'own' && !running && state.queued.length > 0 && (!state.paused || releaseOnce) && (releaseOnce || Date.now() - lastChange >= delay);
+            while (!ready()) {
+                if (Date.now() >= until)
+                    return null;
+                await new Promise((r) => setTimeout(r, 200));
+            }
+            releaseOnce = false;
+            running = true;
+            held = state.queued.splice(0);
+            publish({ phase: 'writing', lastText: '', message: 'Your agent is writing these changes.' });
+            return held;
+        },
+        finishBatch: (summary, files) => {
+            if (held === null)
+                return false;
+            const items = held;
+            held = null;
+            running = false;
+            files.forEach((f) => touched.add(f));
+            publish({ phase: 'done', lastText: summary.trim(), lastRunItemIds: items.map((i) => i.id), message: undefined });
+            schedule();
+            return true;
+        },
+        heldBatch: () => held,
     };
 };

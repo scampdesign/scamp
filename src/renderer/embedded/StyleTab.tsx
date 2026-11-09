@@ -22,6 +22,7 @@ export const StyleTab = (): JSX.Element => {
   const pending = useEmbeddedStore((s) => s.pending);
   const pseudo = useEmbeddedStore((s) => s.pseudo);
   const resolving = useEmbeddedStore((s) => s.resolving);
+  const dragNote = useEmbeddedStore((s) => s.dragNote);
   const [instruction, setInstruction] = useState('');
 
   const handleSend = async (): Promise<void> => {
@@ -96,6 +97,11 @@ export const StyleTab = (): JSX.Element => {
         </div>
         {pseudo !== 'none' && (
           <div className={styles.stateNote}>Showing :{pseudo}. Edits style this state only.</div>
+        )}
+        {dragNote !== null && (
+          <p className={styles.note} role="status" data-testid="embedded-drag-note">
+            {dragNote}
+          </p>
         )}
         {pending !== null && pending.changes.length > 0 && (
           <div className={styles.pending} data-testid="embedded-pending">

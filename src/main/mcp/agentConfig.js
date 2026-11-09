@@ -201,6 +201,11 @@ export const writeAgentConfigs = async (args) => {
     for (const target of AGENT_TARGETS) {
         if (!(await isAgentInstalled(target, args.homeDir)))
             continue;
+        const skipReason = args.skip?.get(target.configPath);
+        if (skipReason !== undefined) {
+            report.skipped.push({ path: target.configPath, reason: skipReason });
+            continue;
+        }
         const absolute = join(args.projectPath, target.configPath);
         if (!(await staysInside(args.projectPath, absolute))) {
             report.skipped.push({ path: target.configPath, reason: 'it leads outside the project through a symlink' });

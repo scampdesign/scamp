@@ -13,6 +13,8 @@ export type PreflightFacts = {
     name: string;
     signedIn: boolean;
     agentConnected: boolean;
+    /** The user chose to have their own agent (Claude Code and others) write changes. */
+    ownAgent: boolean;
     gitInstalled: boolean;
     isRepo: boolean;
     /** `Name <email>`, or null when git has no identity configured. */

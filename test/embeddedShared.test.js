@@ -112,6 +112,20 @@ describe('describeQueueItem', () => {
         const text = describeQueueItem({ id: 'a', kind: 'style', element: element(), scope: 'all', changes: [{ property: 'color', from: '', to: 'red' }] }, 0);
         expect(text).not.toContain('State:');
     });
+    it('asks for a move of the JSX, or of where a component is used', () => {
+        const text = describeQueueItem({ id: 'm', kind: 'move', element: element({ tag: 'h2', text: 'Hours' }), target: element({ tag: 'h1', text: 'Team', source: 'src/App.jsx:8:5' }), position: 'before', fromList: false }, 0);
+        expect(text).toContain('### Edit 1: move');
+        expect(text).toContain('- Move it to just **before** this sibling (same parent):');
+        expect(text).toContain('  - Element: <h1>');
+        expect(text).toContain('  - Written at: src/App.jsx:8:5');
+        expect(text).toContain('If the element is the root of a component, move where that component is used instead.');
+    });
+    it('says the order of a list is the data’s, and not to invent a change', () => {
+        const text = describeQueueItem({ id: 'l', kind: 'move', element: element(), target: element({ text: 'Grace Hopper' }), position: 'after', fromList: true }, 0);
+        expect(text).toContain('their order is the data');
+        expect(text).toContain('change nothing and say so');
+        expect(text).not.toContain('move where that component is used');
+    });
     it('carries an instruction, with or without a selection', () => {
         expect(describeQueueItem({ id: 'b', kind: 'instruction', element: null, scope: 'instance', text: 'tighten the spacing' }, 0)).toBe('### Edit 1: instruction\n- Do this: tighten the spacing');
         expect(describeQueueItem({ id: 'b', kind: 'instruction', element: element({ instanceCount: 1 }), scope: 'instance', text: 'make it bold' }, 0)).toContain('Scope: this element.');

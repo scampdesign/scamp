@@ -43,6 +43,11 @@ The first screen lists the ten most recent projects (`embeddedRecent.json`,
 `recent.ts`). Only main writes that list, so a folder on it opens without
 the folder dialog, like one just chosen there.
 
+Next: connecting the user's own agent instead of an API key, then a
+Scamp-provided agent: [`embedded-agent-connection-plan.md`](embedded-agent-connection-plan.md).
+What the Scamp canvas does that this doesn't, and how each gap could
+close: [`embedded-canvas-gaps.md`](embedded-canvas-gaps.md).
+
 ## Architecture
 
 - **A window of its own**, like the import window: a `BrowserWindow` with a
@@ -98,6 +103,19 @@ the folder dialog, like one just chosen there.
   React import), Next.js files (`routes.ts`, once per session), and
   same-origin links on every page loaded. Scamp doesn't load pages in the
   background to find more.
+- **Reorder** moves an element before or after a sibling, by dragging the
+  selection on the page or a row in the Layers tree. Within one parent
+  only; moving into another parent isn't supported yet. React owns the
+  DOM, so the page never moves the real node: in a flex or grid parent,
+  the inspector previews the new order with inline `order` (restored by
+  `clear`, like any layer-1 edit); in block flow it draws a dashed marker
+  until the agent's write reloads the page. The queue item is a `move`
+  (element, target sibling, before or after, and `fromList` when both
+  share a JSX line, so their order is the data's). A drag of an only child
+  lifts to the nearest ancestor with siblings (`movable` in the inspector,
+  `liftInTree` in `src/renderer/lib/embeddedTree.ts` for the tree), up to
+  but never including the app's root, and a note says what moved, or that
+  nothing could.
 - **Layers** are the page's tree from the inspector (`tree()`, ids kept in a
   `WeakMap`, capped at 3,000 nodes), asked again after a quiet DOM change.
 - **The inspector** is a self-contained script that runs in the page through
@@ -179,5 +197,9 @@ the folder dialog, like one just chosen there.
   signed-out setup screen. `embedded-states.spec.ts` covers F8 holding a
   CSS-only tooltip and **Release**, selecting from the layers tree,
   forcing `:hover` on the selection, and an edit queued for that state.
+  `embedded-reorder.spec.ts` covers dragging on the page (a flex row,
+  previewed) and in the tree (block flow, marked), each queuing a move;
+  a drag from an only child lifting to its card or menu; and an element
+  with nothing to move between.
 - Next.js resolution is unit-tested (`test/embeddedSourceMap.test.ts`) but
   has no e2e fixture: the repo doesn't install Next.

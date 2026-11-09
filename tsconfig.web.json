@@ -49,6 +49,7 @@
     "src/main/embedded/instrument.ts",
     "src/main/embedded/preflight.ts",
     "src/main/embedded/preflightFacts.ts",
+    "src/main/embedded/ownAgent.ts",
     "src/main/embedded/projectFiles.ts",
     "src/main/embedded/recent.ts",
     "src/main/embedded/routes.ts",

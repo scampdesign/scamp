@@ -14,6 +14,8 @@ export declare const discoverRoutes: () => Promise<void>;
 export declare const refreshTree: () => Promise<void>;
 export declare const selectTreeNode: (id: string) => void;
 export declare const hoverTreeNode: (id: string | null) => void;
+/** Move a layer next to a sibling; the page answers with `moved`, which queues it. */
+export declare const moveTreeNode: (id: string, targetId: string, position: "before" | "after") => void;
 /** Force a pseudo-class on the selection; later edits style that state. */
 export declare const setPseudo: (state: EmbeddedPseudoState) => void;
 /** Let go of every held state: freeze and the forced pseudo-class. */

@@ -99,6 +99,8 @@ export declare const writeAgentConfigs: (args: {
     homeDir: string;
     url: string;
     token: string;
+    /** Config paths to leave alone, with why: Embedded Scamp skips files the project tracks in git. */
+    skip?: ReadonlyMap<string, string>;
 }) => Promise<WriteReport>;
 /** Where Claude Code records the user's answer to its `.mcp.json` prompt. */
 export declare const CLAUDE_CODE_LOCAL_SETTINGS = ".claude/settings.local.json";

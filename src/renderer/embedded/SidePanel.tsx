@@ -32,7 +32,10 @@ export const SidePanel = (): JSX.Element => {
       </div>
       <div className={styles.content}>
         {tab === 'style' && <StyleTab />}
-        {tab === 'changes' && <ChangesTab />}
+        {/* Always mounted: it holds the terminal the user's own agent runs in. */}
+        <div hidden={tab !== 'changes'} className={styles.keep}>
+          <ChangesTab active={tab === 'changes'} />
+        </div>
         {tab === 'checks' && <ChecksTab />}
       </div>
     </aside>

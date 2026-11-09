@@ -15,6 +15,8 @@ export type PreflightFacts = {
   name: string;
   signedIn: boolean;
   agentConnected: boolean;
+  /** The user chose to have their own agent (Claude Code and others) write changes. */
+  ownAgent: boolean;
   gitInstalled: boolean;
   isRepo: boolean;
   /** `Name <email>`, or null when git has no identity configured. */
@@ -67,9 +69,11 @@ export const evaluatePreflight = (f: PreflightFacts): EmbeddedPreflight => {
       : { id: 'scamp', group: 'accounts', label: 'Sign in to Scamp', status: 'fail', detail: 'The Scamp Agent writes your changes, and it needs you signed in.', fix: 'sign-in' }
   );
   add(
-    f.agentConnected
-      ? { id: 'agent', group: 'accounts', label: 'Scamp Agent connected', status: 'pass', detail: 'Your Anthropic key is set.' }
-      : { id: 'agent', group: 'accounts', label: 'Connect the Scamp Agent', status: 'fail', detail: 'Add your Anthropic key so the agent can write your changes.', fix: 'connect-agent' }
+    f.ownAgent
+      ? { id: 'agent', group: 'accounts', label: 'Your own agent writes changes', status: 'pass', detail: 'Claude Code, Cursor, Gemini CLI or Kiro, signed in as you already are. Scamp connects it when the app starts; the Changes tab says how.' }
+      : f.agentConnected
+        ? { id: 'agent', group: 'accounts', label: 'Scamp Agent connected', status: 'pass', detail: 'Your Anthropic key is set.' }
+        : { id: 'agent', group: 'accounts', label: 'Choose who writes your changes', status: 'fail', detail: 'Add an Anthropic key for the Scamp Agent, or use an agent you already have, such as Claude Code.', fix: 'connect-agent' }
   );
   if (!f.gitInstalled) {
     add({ id: 'git', group: 'accounts', label: 'Install git', status: 'fail', detail: 'Scamp keeps every change on a git branch so you can review and undo it. Install git, then check again.' });

@@ -52,6 +52,8 @@ export const SetupScreen = (): JSX.Element => {
       if (!result.ok) setError(result.error);
     } else if (fix === 'sign-in') {
       await window.scampEmbedded.signIn();
+    } else if (fix === 'use-own-agent') {
+      await window.scampEmbedded.setWorker('own');
     } else if (fix === 'connect-agent' && value !== undefined) {
       const result = await window.scampEmbedded.setAgentKey(value.trim());
       if (!result.ok) setError(result.message);

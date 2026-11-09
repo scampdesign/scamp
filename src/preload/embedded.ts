@@ -9,7 +9,17 @@ import type {
   EmbeddedGitResult,
   EmbeddedGitStatus,
   EmbeddedPreflight,
+  EmbeddedElementRef,
+  EmbeddedOwnAgentStatus,
   EmbeddedQueueItem,
+  EmbeddedWorker,
+  TerminalCreateArgs,
+  TerminalCreateResult,
+  TerminalDataPayload,
+  TerminalExitPayload,
+  TerminalKillArgs,
+  TerminalResizeArgs,
+  TerminalWriteArgs,
   EmbeddedRawSource,
   EmbeddedRecentProject,
   EmbeddedResolvedSource,
@@ -61,6 +71,17 @@ const embeddedApi = {
   pull: (): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedPull),
   /** Apply the page's `data-scamp-force` marks as forced pseudo-classes. */
   syncPseudo: (): Promise<boolean> => ipcRenderer.invoke(IPC.EmbeddedSyncPseudo),
+  /** Who writes changes: Scamp's agent or the user's own, over MCP. */
+  setWorker: (worker: EmbeddedWorker): Promise<EmbeddedOwnAgentStatus | null> => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
+  ownAgentStatus: (): Promise<EmbeddedOwnAgentStatus | null> => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),
+  selectionChanged: (element: EmbeddedElementRef | null): void => ipcRenderer.send(IPC.EmbeddedSelectionChanged, element),
+  // A terminal in the project folder, for the user's own agent. Same channels as the main window's.
+  createTerminal: (args: TerminalCreateArgs): Promise<TerminalCreateResult> => ipcRenderer.invoke(IPC.TerminalCreate, args),
+  writeTerminal: (args: TerminalWriteArgs): Promise<void> => ipcRenderer.invoke(IPC.TerminalWrite, args),
+  resizeTerminal: (args: TerminalResizeArgs): Promise<void> => ipcRenderer.invoke(IPC.TerminalResize, args),
+  killTerminal: (args: TerminalKillArgs): Promise<void> => ipcRenderer.invoke(IPC.TerminalKill, args),
+  onTerminalData: (handler: (payload: TerminalDataPayload) => void): (() => void) => on(IPC.TerminalData, handler),
+  onTerminalExit: (handler: (payload: TerminalExitPayload) => void): (() => void) => on(IPC.TerminalExit, handler),
   /** Routes read from the project's files (Next.js); empty for other stacks. */
   routes: (): Promise<string[]> => ipcRenderer.invoke(IPC.EmbeddedRoutes),
   resolveSource: (raw: EmbeddedRawSource, hints: { tag: string; classes: string[]; text: string }): Promise<EmbeddedResolvedSource> =>

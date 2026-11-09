@@ -15,7 +15,7 @@ import styles from './TerminalView.module.css';
  *  - Container resize → fit addon → ipc resize → pty resize.
  *  - On unmount: kill the pty and dispose xterm.
  */
-export const TerminalView = ({ cwd, onExit }) => {
+export const TerminalView = ({ cwd, onExit, api = window.scamp, onReady }) => {
     const containerRef = useRef(null);
     const termRef = useRef(null);
     const fitRef = useRef(null);
@@ -45,33 +45,34 @@ export const TerminalView = ({ cwd, onExit }) => {
         let offData = null;
         let offExit = null;
         const setup = async () => {
-            const { id } = await window.scamp.createTerminal({
+            const { id } = await api.createTerminal({
                 cwd,
                 cols: term.cols,
                 rows: term.rows,
             });
             if (disposed) {
-                void window.scamp.killTerminal({ id });
+                void api.killTerminal({ id });
                 return;
             }
             ptyIdRef.current = id;
-            offData = window.scamp.onTerminalData((payload) => {
+            offData = api.onTerminalData((payload) => {
                 if (payload.id !== id)
                     return;
                 term.write(payload.data);
             });
-            offExit = window.scamp.onTerminalExit((payload) => {
+            offExit = api.onTerminalExit((payload) => {
                 if (payload.id !== id)
                     return;
                 term.write('\r\n[process exited]\r\n');
                 onExit?.(id);
             });
             term.onData((data) => {
-                void window.scamp.writeTerminal({ id, data });
+                void api.writeTerminal({ id, data });
             });
             term.onResize(({ cols, rows }) => {
-                void window.scamp.resizeTerminal({ id, cols, rows });
+                void api.resizeTerminal({ id, cols, rows });
             });
+            onReady?.((data) => void api.writeTerminal({ id, data }));
         };
         // Surface setup failures inside the terminal itself instead of letting
         // them disappear into an unhandled-rejection log. The most common cause
@@ -101,7 +102,7 @@ export const TerminalView = ({ cwd, onExit }) => {
             offExit?.();
             const id = ptyIdRef.current;
             if (id) {
-                void window.scamp.killTerminal({ id });
+                void api.killTerminal({ id });
             }
             term.dispose();
             termRef.current = null;
@@ -109,7 +110,7 @@ export const TerminalView = ({ cwd, onExit }) => {
         };
         // We deliberately re-create the terminal when cwd changes — the project
         // root is the entire reason this component exists.
-    }, [cwd, onExit]);
+    }, [cwd, onExit, api, onReady]);
     // Refit when the container becomes visible (e.g. panel toggled).
     useEffect(() => {
         const t = setTimeout(() => {
