@@ -39,7 +39,7 @@ test('freeze holds a menu open, one edit reaches every instance, and pause batch
         await clickInPage(embedded, '.menu-item');
         await expect(embedded.getByTestId('embedded-source')).toContainText('src/Menu.jsx');
         // Paused, edits wait in the queue.
-        await embedded.getByTestId('embedded-tab-changes').click();
+        await embedded.getByTestId('embedded-tab-agent').click();
         await embedded.getByTestId('embedded-pause').click();
         await embedded.getByTestId('embedded-tab-style').click();
         // One edit, every instance.
@@ -52,7 +52,7 @@ test('freeze holds a menu open, one edit reaches every instance, and pause batch
         // An instruction in words joins the queue.
         await panel.getByTestId('embedded-instruction').fill('make the title bolder');
         await panel.getByRole('button', { name: 'Ask the agent' }).click();
-        await embedded.getByTestId('embedded-tab-changes').click();
+        await embedded.getByTestId('embedded-tab-agent').click();
         const queue = embedded.getByTestId('embedded-queue');
         await expect(queue.locator('li')).toHaveCount(2);
         await expect(queue).toContainText('padding → 30px (all)');
@@ -62,7 +62,7 @@ test('freeze holds a menu open, one edit reaches every instance, and pause batch
         await expect(embedded.getByTestId('embedded-agent-status')).toHaveText(/Done/, { timeout: 30_000 });
         await expect(queue).toHaveCount(0);
         // The design check reads the project and reports, writing nothing.
-        await embedded.getByTestId('embedded-tab-checks').click();
+        await embedded.getByTestId('embedded-tab-agent').click();
         await embedded.getByTestId('embedded-design-check').click();
         await expect(embedded.getByTestId('embedded-report')).toContainText('Tokens and consistency', { timeout: 30_000 });
     }

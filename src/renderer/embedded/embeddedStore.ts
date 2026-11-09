@@ -26,6 +26,9 @@ import type { ScampElement } from '@lib/element';
 
 export type EmbeddedScreen = 'choose' | 'setup' | 'editor';
 
+/** The panel's tabs: the selection, what's been done, and the agent. */
+export type PanelTab = 'style' | 'history' | 'agent';
+
 export type EmbeddedSelection = {
   /** Its id in the layers tree. */
   uid: string;
@@ -85,6 +88,8 @@ type State = {
   /** Elements with a state held in the page, frozen or forced. */
   held: EmbeddedHeld[];
   layersOpen: boolean;
+  /** The panel's open tab; the title bar's branch name opens History. */
+  panelTab: PanelTab;
   undo: UndoEntry[];
   redo: UndoEntry[];
   /** A short note about the last undo or redo, shown in the toolbar for a moment. */
@@ -133,6 +138,7 @@ export const useEmbeddedStore = create<State & Actions>((set) => ({
   pseudo: 'none',
   held: [],
   layersOpen: true,
+  panelTab: 'style',
   dragNote: null,
   undo: [],
   redo: [],

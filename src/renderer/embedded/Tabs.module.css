@@ -141,3 +141,18 @@
 .logLine[data-ok='false'] {
   color: var(--error-text);
 }
+
+.key {
+  margin-left: 4px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.item[data-undone='true'] .itemText {
+  color: var(--text-tertiary);
+}
+
+.item[data-current='true'] .itemText::before {
+  content: '• ';
+  color: var(--accent-text);
+}

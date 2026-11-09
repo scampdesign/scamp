@@ -5,6 +5,7 @@ import { applyAppTheme, readInitialAppTheme } from '../src/lib/applyAppTheme';
 // `theme.css` first: it declares the variables global.css and the panel use.
 import '../src/styles/theme.css';
 import '../src/styles/global.css';
+import './embedded.css';
 import { EmbeddedApp } from './EmbeddedApp';
 applyAppTheme(readInitialAppTheme());
 window.addEventListener('error', (e) => {

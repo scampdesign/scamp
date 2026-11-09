@@ -116,6 +116,12 @@ close: [`embedded-canvas-gaps.md`](embedded-canvas-gaps.md).
   `liftInTree` in `src/renderer/lib/embeddedTree.ts` for the tree), up to
   but never including the app's root, and a note says what moved, or that
   nothing could.
+- **The panel's tabs** separate concerns: **Style** (the selection and
+  the Scamp panel), **History** (undo and redo, the review of the agent's
+  changes, the history timeline, and branches), and **Agent** (which agent
+  and how it connects, with its terminal; the queue, pause and run now; the
+  log; design checks). The Agent tab stays mounted while hidden, so the
+  terminal's session survives a switch.
 - **Layers** are the page's tree from the inspector (`tree()`, ids kept in a
   `WeakMap`, capped at 3,000 nodes), asked again after a quiet DOM change.
 - **The inspector** is a self-contained script that runs in the page through

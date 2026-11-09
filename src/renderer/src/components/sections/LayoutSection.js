@@ -23,25 +23,25 @@ const ICON_SIZE = 16;
 const LAYOUT_OPTIONS = [
     {
         value: 'block',
-        label: _jsx(IconLayoutBoard, { size: ICON_SIZE, stroke: 1.75 }),
+        label: _jsx(IconLayoutBoard, { size: ICON_SIZE }),
         ariaLabel: 'Block',
         tooltip: 'Block (no flex / no grid)',
     },
     {
         value: 'flex-row',
-        label: _jsx(IconArrowRight, { size: ICON_SIZE, stroke: 1.75 }),
+        label: _jsx(IconArrowRight, { size: ICON_SIZE }),
         ariaLabel: 'Flex row',
         tooltip: 'Flex row — children flow horizontally',
     },
     {
         value: 'flex-column',
-        label: _jsx(IconArrowDown, { size: ICON_SIZE, stroke: 1.75 }),
+        label: _jsx(IconArrowDown, { size: ICON_SIZE }),
         ariaLabel: 'Flex column',
         tooltip: 'Flex column — children flow vertically',
     },
     {
         value: 'grid',
-        label: _jsx(IconLayoutGrid, { size: ICON_SIZE, stroke: 1.75 }),
+        label: _jsx(IconLayoutGrid, { size: ICON_SIZE }),
         ariaLabel: 'Grid',
         tooltip: 'Grid — 2D layout',
     },
@@ -49,19 +49,19 @@ const LAYOUT_OPTIONS = [
 const WRAP_OPTIONS = [
     {
         value: 'nowrap',
-        label: _jsx(IconTextWrapDisabled, { size: ICON_SIZE, stroke: 1.75 }),
+        label: _jsx(IconTextWrapDisabled, { size: ICON_SIZE }),
         ariaLabel: 'No wrap',
         tooltip: 'No wrap — children stay on one line and shrink to fit',
     },
     {
         value: 'wrap',
-        label: _jsx(IconTextWrap, { size: ICON_SIZE, stroke: 1.75 }),
+        label: _jsx(IconTextWrap, { size: ICON_SIZE }),
         ariaLabel: 'Wrap',
         tooltip: 'Wrap — children that don’t fit start a new line',
     },
     {
         value: 'wrap-reverse',
-        label: (_jsx(IconTextWrap, { size: ICON_SIZE, stroke: 1.75, className: styles.flipY })),
+        label: (_jsx(IconTextWrap, { size: ICON_SIZE, className: styles.flipY })),
         ariaLabel: 'Wrap reverse',
         tooltip: 'Wrap reverse — new lines stack in the opposite direction',
     },
@@ -234,5 +234,5 @@ export const LayoutSection = ({ elementId }) => {
                                                 ? 'vertical'
                                                 : 'horizontal' }), label: "Gap", title: "Gap between flex children", value: element.gap, mixed: isMixed('gap'), onChange: (value) => patchElement(elementId, { gap: value }), min: 0, tokens: spacingTokens, ...themeProps }))] })] }), _jsxs(Row, { label: "", children: [_jsx(SegmentedControl, { value: element.flexWrap, mixed: isMixed('flexWrap'), options: WRAP_OPTIONS, onChange: (value) => patchElement(elementId, { flexWrap: value }), title: "Wrap" }), wrapping && (_jsx(EnumSelect, { value: element.alignContent, mixed: isMixed('alignContent'), options: ALIGN_CONTENT_OPTIONS, onChange: (value) => patchElement(elementId, { alignContent: value }), title: "Align content \u2014 how wrapped lines pack" }))] }), _jsx(Row, { label: "", children: _jsxs("button", { type: "button", className: `${styles.reverseButton} ${reversed ? styles.reverseButtonActive : ''}`, onClick: handleToggleReverse, "aria-pressed": reversed, "aria-label": "Reverse direction", title: reversed
                                 ? 'Reversed — children run from the end. Click to restore.'
-                                : 'Reverse — run children from the end (row-reverse / column-reverse)', children: [_jsx(IconArrowsLeftRight, { size: 13, stroke: 1.75 }), reversed ? 'Reversed' : 'Reverse'] }) })] })), isGrid && (_jsxs(_Fragment, { children: [_jsx(Row, { label: "", children: _jsx(GridTemplateEditor, { columns: element.gridTemplateColumns, rows: element.gridTemplateRows, onChange: (patch) => patchElement(elementId, patch) }) }), _jsxs(Row, { label: "", children: [_jsx(SpaceValueInput, { prefix: _jsx(GapIcon, { orientation: "horizontal" }), label: "Column gap", title: "column-gap", value: element.columnGap, mixed: isMixed('columnGap'), onChange: (value) => patchElement(elementId, { columnGap: value }), min: 0, tokens: spacingTokens, ...themeProps }), _jsx(SpaceValueInput, { prefix: _jsx(GapIcon, { orientation: "vertical" }), label: "Row gap", title: "row-gap", value: element.rowGap, mixed: isMixed('rowGap'), onChange: (value) => patchElement(elementId, { rowGap: value }), min: 0, tokens: spacingTokens, ...themeProps })] }), _jsxs(Row, { label: "", children: [_jsx(EnumSelect, { value: element.alignItems, mixed: isMixed('alignItems'), options: ALIGN_OPTIONS, onChange: (value) => patchElement(elementId, { alignItems: value }), title: "Align items" }), _jsx(EnumSelect, { value: element.justifyItems, mixed: isMixed('justifyItems'), options: GRID_SELF_OPTIONS, onChange: (value) => patchElement(elementId, { justifyItems: value }), title: "Justify items" })] })] }))] }));
+                                : 'Reverse — run children from the end (row-reverse / column-reverse)', children: [_jsx(IconArrowsLeftRight, { size: 13 }), reversed ? 'Reversed' : 'Reverse'] }) })] })), isGrid && (_jsxs(_Fragment, { children: [_jsx(Row, { label: "", children: _jsx(GridTemplateEditor, { columns: element.gridTemplateColumns, rows: element.gridTemplateRows, onChange: (patch) => patchElement(elementId, patch) }) }), _jsxs(Row, { label: "", children: [_jsx(SpaceValueInput, { prefix: _jsx(GapIcon, { orientation: "horizontal" }), label: "Column gap", title: "column-gap", value: element.columnGap, mixed: isMixed('columnGap'), onChange: (value) => patchElement(elementId, { columnGap: value }), min: 0, tokens: spacingTokens, ...themeProps }), _jsx(SpaceValueInput, { prefix: _jsx(GapIcon, { orientation: "vertical" }), label: "Row gap", title: "row-gap", value: element.rowGap, mixed: isMixed('rowGap'), onChange: (value) => patchElement(elementId, { rowGap: value }), min: 0, tokens: spacingTokens, ...themeProps })] }), _jsxs(Row, { label: "", children: [_jsx(EnumSelect, { value: element.alignItems, mixed: isMixed('alignItems'), options: ALIGN_OPTIONS, onChange: (value) => patchElement(elementId, { alignItems: value }), title: "Align items" }), _jsx(EnumSelect, { value: element.justifyItems, mixed: isMixed('justifyItems'), options: GRID_SELF_OPTIONS, onChange: (value) => patchElement(elementId, { justifyItems: value }), title: "Justify items" })] })] }))] }));
 };

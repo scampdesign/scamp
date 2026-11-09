@@ -205,7 +205,7 @@ const SnapshotRow = ({ snapshot, now, onSelect }: RowProps): JSX.Element => {
       <Tooltip label={absolute}>
         <button type="button" className={styles.rowButton} onClick={onSelect}>
           <span className={styles.icon} aria-hidden="true">
-            <Icon size={14} stroke={2} />
+            <Icon size={14} />
           </span>
           <span className={styles.label}>
             {snapshot.label}

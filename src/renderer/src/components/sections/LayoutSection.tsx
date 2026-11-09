@@ -64,25 +64,25 @@ const LAYOUT_OPTIONS: ReadonlyArray<{
 }> = [
   {
     value: 'block',
-    label: <IconLayoutBoard size={ICON_SIZE} stroke={1.75} />,
+    label: <IconLayoutBoard size={ICON_SIZE} />,
     ariaLabel: 'Block',
     tooltip: 'Block (no flex / no grid)',
   },
   {
     value: 'flex-row',
-    label: <IconArrowRight size={ICON_SIZE} stroke={1.75} />,
+    label: <IconArrowRight size={ICON_SIZE} />,
     ariaLabel: 'Flex row',
     tooltip: 'Flex row — children flow horizontally',
   },
   {
     value: 'flex-column',
-    label: <IconArrowDown size={ICON_SIZE} stroke={1.75} />,
+    label: <IconArrowDown size={ICON_SIZE} />,
     ariaLabel: 'Flex column',
     tooltip: 'Flex column — children flow vertically',
   },
   {
     value: 'grid',
-    label: <IconLayoutGrid size={ICON_SIZE} stroke={1.75} />,
+    label: <IconLayoutGrid size={ICON_SIZE} />,
     ariaLabel: 'Grid',
     tooltip: 'Grid — 2D layout',
   },
@@ -96,20 +96,20 @@ const WRAP_OPTIONS: ReadonlyArray<{
 }> = [
   {
     value: 'nowrap',
-    label: <IconTextWrapDisabled size={ICON_SIZE} stroke={1.75} />,
+    label: <IconTextWrapDisabled size={ICON_SIZE} />,
     ariaLabel: 'No wrap',
     tooltip: 'No wrap — children stay on one line and shrink to fit',
   },
   {
     value: 'wrap',
-    label: <IconTextWrap size={ICON_SIZE} stroke={1.75} />,
+    label: <IconTextWrap size={ICON_SIZE} />,
     ariaLabel: 'Wrap',
     tooltip: 'Wrap — children that don’t fit start a new line',
   },
   {
     value: 'wrap-reverse',
     label: (
-      <IconTextWrap size={ICON_SIZE} stroke={1.75} className={styles.flipY} />
+      <IconTextWrap size={ICON_SIZE} className={styles.flipY} />
     ),
     ariaLabel: 'Wrap reverse',
     tooltip: 'Wrap reverse — new lines stack in the opposite direction',
@@ -470,7 +470,7 @@ export const LayoutSection = ({ elementId }: Props): JSX.Element | null => {
                   : 'Reverse — run children from the end (row-reverse / column-reverse)'
               }
             >
-              <IconArrowsLeftRight size={13} stroke={1.75} />
+              <IconArrowsLeftRight size={13} />
               {reversed ? 'Reversed' : 'Reverse'}
             </button>
           </Row>

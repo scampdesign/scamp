@@ -45,7 +45,7 @@ itself in each agent's config (`agentConfig.ts`).
     instructions like "make this match the header".
 - The **agent setting** in the embedded window picks who works the queue:
   **Scamp Agent** (the API key, as today) or **My agent** (Claude Code and
-  others). With My agent, the queue doesn't run itself: the Changes tab
+  others). With My agent, the queue doesn't run itself: the Agent tab
   shows a line to paste into the user's agent once per session, such as
   "Do my Scamp edits, and keep checking for new ones."
 - The setup screen's agent check passes with either choice, so a user with
@@ -73,14 +73,14 @@ itself in each agent's config (`agentConfig.ts`).
   configs written with `writeAgentConfigs`, skipping any the project
   tracks in git, and added to `.git/info/exclude`. The choice is kept in
   `embeddedAgent.json` in the app's data folder.
-- The setup screen's agent check passes with My agent; the Changes tab's
+- The setup screen's agent check passes with My agent; the Agent tab's
   `AgentChoice` shows the connection, the line to paste, and the manual
   `claude mcp add` command when a config was skipped.
 - A terminal under My agent (`AgentTerminal`, the app's `TerminalView`
   with the embedded preload), opened in the project's folder: main allows
   that window's folder as its terminal root (`allowTerminalRoot`), and
   only that window's. **Start Claude Code** types `claude`; **Paste the
-  prompt** types the line. The Changes tab stays mounted (hidden) when
+  prompt** types the line. The Agent tab stays mounted (hidden) when
   another tab is open, so the agent's session survives a switch.
 - Not in A1: design checks still need the Scamp Agent, and Accept still
   commits whole files (a user edit in a file the agent also changed goes

@@ -78,7 +78,7 @@ export const TableColumnsEditor = ({
           }
           title="Define this table's columns"
         >
-          <IconColumns size={13} stroke={1.75} />
+          <IconColumns size={13} />
           Define {seed} columns
         </button>
       </div>

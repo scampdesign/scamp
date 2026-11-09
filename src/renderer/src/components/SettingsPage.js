@@ -68,13 +68,13 @@ export const SettingsPage = ({ onBack, onProjectOpened }) => {
                                                     : 'Choose a default folder first. The tutorial creates its project there.' }), tutorialError && _jsx("div", { className: styles.rowHint, children: tutorialError })] }), _jsx("div", { className: styles.rowControl, children: _jsx("button", { className: styles.smallButton, type: "button", disabled: !folder, onClick: () => folder && void handleStartTutorial(folder), children: "Start the tutorial" }) })] }), _jsxs("div", { className: styles.row, children: [_jsxs("div", { className: styles.rowLabel, children: [_jsx("div", { children: "Learn checklist" }), _jsx("div", { className: styles.rowHint, children: "Shows your tutorial progress in the sidebar of every project." })] }), _jsxs("div", { className: styles.rowControl, children: [_jsx("button", { type: "button", className: `${styles.smallButton} ${!learnHidden ? styles.smallButtonActive : ''}`, "aria-pressed": !learnHidden, onClick: () => setLearnHidden(false), children: "Show" }), _jsx("button", { type: "button", className: `${styles.smallButton} ${learnHidden ? styles.smallButtonActive : ''}`, "aria-pressed": learnHidden, onClick: () => setLearnHidden(true), children: "Hide" })] })] })] }), _jsxs("div", { className: styles.section, children: [_jsx("h2", { className: styles.sectionTitle, children: "Appearance" }), _jsxs("div", { className: styles.row, children: [_jsxs("div", { className: styles.rowLabel, children: [_jsx("div", { children: "Theme" }), _jsx("div", { className: styles.rowHint, children: "Changes Scamp\u2019s interface only \u2014 your project\u2019s design is unaffected." })] }), _jsx("div", { className: styles.rowControl, children: _jsx("div", { className: styles.themeToggle, children: _jsx(SegmentedControl, { value: settings.theme, options: [
                                                     {
                                                         value: 'dark',
-                                                        label: _jsx(IconMoon, { size: 16, stroke: 1.75 }),
+                                                        label: _jsx(IconMoon, { size: 16 }),
                                                         ariaLabel: 'Dark',
                                                         tooltip: 'Dark',
                                                     },
                                                     {
                                                         value: 'light',
-                                                        label: _jsx(IconSun, { size: 16, stroke: 1.75 }),
+                                                        label: _jsx(IconSun, { size: 16 }),
                                                         ariaLabel: 'Light',
                                                         tooltip: 'Light',
                                                     },

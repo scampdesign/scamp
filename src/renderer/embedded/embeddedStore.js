@@ -18,6 +18,7 @@ export const useEmbeddedStore = create((set) => ({
     pseudo: 'none',
     held: [],
     layersOpen: true,
+    panelTab: 'style',
     dragNote: null,
     undo: [],
     redo: [],

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { IconGitBranch, IconPointer, IconSnowflake } from '@tabler/icons-react';
 
 import { AgentStatus } from './AgentStatus';
 import { useEmbeddedStore } from './embeddedStore';
@@ -15,6 +16,7 @@ export const AppToolbar = (): JSX.Element => {
   const held = useEmbeddedStore((s) => s.held);
   const toast = useEmbeddedStore((s) => s.toast);
   const name = useEmbeddedStore((s) => s.preflight?.name ?? s.folder?.split(/[\\/]/).pop() ?? 'Project');
+  const branch = useEmbeddedStore((s) => s.branch);
   // F8 freezes from here too; inside the page, the inspector answers it.
   useEffect(() => {
     const handleKey = (e: KeyboardEvent): void => {
@@ -28,7 +30,22 @@ export const AppToolbar = (): JSX.Element => {
 
   return (
     <header className={styles.bar} data-mac={MAC}>
-      <p className={styles.name}>{name}</p>
+      <div className={styles.project}>
+        <p className={styles.name}>{name}</p>
+        {branch !== null && (
+          // The branch, muted; a click opens History, where branches are switched, pushed, and pulled.
+          <button
+            type="button"
+            className={styles.branch}
+            onClick={() => useEmbeddedStore.getState().set({ panelTab: 'history' })}
+            title="Your work happens on this branch. Click to switch branches, push, or pull."
+            data-testid="embedded-branch"
+          >
+            <IconGitBranch className={styles.branchIcon} aria-hidden="true" />
+            {branch}
+          </button>
+        )}
+      </div>
       <div className={styles.group}>
         {toast !== null && (
           <span className={styles.toast} role="status" data-testid="embedded-toast">
@@ -52,6 +69,7 @@ export const AppToolbar = (): JSX.Element => {
           title="Keep menus, popovers, and tooltips open while you style them (F8, with the pointer on the page)"
           data-testid="embedded-freeze-toggle"
         >
+          <IconSnowflake className={styles.pillIcon} aria-hidden="true" />
           Freeze State
         </button>
         <button
@@ -62,6 +80,7 @@ export const AppToolbar = (): JSX.Element => {
           title="Click elements to select and style them. Turn off to use the app."
           data-testid="embedded-edit-toggle"
         >
+          <IconPointer className={styles.pillIcon} aria-hidden="true" />
           Editing
         </button>
         <AgentStatus />

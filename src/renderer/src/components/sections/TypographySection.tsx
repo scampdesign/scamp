@@ -143,7 +143,7 @@ export const TypographySection = ({ elementId }: Props): JSX.Element | null => {
   // weight/leading/tracking) at once. Only shown when styles are defined.
   const textStyleAccessory = (
     <PresetMenu
-      icon={<IconTypography size={14} stroke={1.75} />}
+      icon={<IconTypography size={14} />}
       ariaLabel="Apply text style"
       testId="text-style-select"
       active={currentStyleName !== ''}

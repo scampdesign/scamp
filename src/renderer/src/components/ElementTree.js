@@ -202,7 +202,7 @@ const Row = ({ element, depth, dragOver, setDragOver, showToggle, collapsed, has
                         });
                     }, children: [element.type === 'component-instance' || isComponentRoot ? (
                         // The sidebar's Components icon, in the component purple, as Figma marks them.
-                        _jsx("span", { className: `${styles.icon} ${styles.componentIcon}`, "aria-hidden": "true", children: _jsx(IconComponents, { size: 12, stroke: 2 }) })) : (_jsx("span", { className: styles.icon, "aria-hidden": "true", children: element.type === 'text' ? 'T' : element.type === 'image' && element.tag === 'svg' ? '✦' : '▢' })), renaming ? (_jsx("input", { ref: inputRef, type: "text", className: styles.renameInput, value: draft, onChange: (e) => setDraft(e.target.value), onBlur: () => {
+                        _jsx("span", { className: `${styles.icon} ${styles.componentIcon}`, "aria-hidden": "true", children: _jsx(IconComponents, { size: 12 }) })) : (_jsx("span", { className: styles.icon, "aria-hidden": "true", children: element.type === 'text' ? 'T' : element.type === 'image' && element.tag === 'svg' ? '✦' : '▢' })), renaming ? (_jsx("input", { ref: inputRef, type: "text", className: styles.renameInput, value: draft, onChange: (e) => setDraft(e.target.value), onBlur: () => {
                                 const slug = slugifyName(draft);
                                 patchElement(element.id, {
                                     name: slug.length > 0 ? slug : undefined,

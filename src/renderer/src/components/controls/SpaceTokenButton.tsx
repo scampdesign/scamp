@@ -102,7 +102,7 @@ export const SpaceTokenButton = ({
                 onClick={() => handleSelect(token)}
               >
                 <span className={styles.tokenRowIcon} aria-hidden="true">
-                  <IconColorSwatch size={14} stroke={1.75} />
+                  <IconColorSwatch size={14} />
                 </span>
                 <span className={styles.tokenRowName}>{token.name}</span>
                 <span className={styles.tokenRowValue}>{token.value}</span>
@@ -127,7 +127,7 @@ export const SpaceTokenButton = ({
         onMouseDown={(e) => e.preventDefault()}
         aria-label={ariaLabel}
       >
-        <IconColorSwatch size={14} stroke={1.75} />
+        <IconColorSwatch size={14} />
       </button>
       {popoverEl !== null && createPortal(popoverEl, document.body)}
     </>

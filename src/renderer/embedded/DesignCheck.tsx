@@ -1,9 +1,9 @@
 import { AgentMarkdown } from '../src/components/agent/AgentMarkdown';
 import { useEmbeddedStore } from './embeddedStore';
-import styles from './ChecksTab.module.css';
+import styles from './DesignCheck.module.css';
 
-/** A read of the whole project: tokens, accessibility, scales and duplicated styles. */
-export const ChecksTab = (): JSX.Element => {
+/** A read of the whole project, in the Agent tab: tokens, accessibility, scales and duplicated styles. */
+export const DesignCheck = (): JSX.Element => {
   const report = useEmbeddedStore((s) => s.report);
   const checking = useEmbeddedStore((s) => s.checking);
   const set = useEmbeddedStore((s) => s.set);

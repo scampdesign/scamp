@@ -194,7 +194,7 @@ export const TokenOrNumberInput = ({
         onClick={popover.toggle}
         aria-label="Pick token"
       >
-        <IconColorSwatch size={14} stroke={1.75} />
+        <IconColorSwatch size={14} />
       </button>
     </div>
   );
@@ -243,7 +243,7 @@ export const TokenOrNumberInput = ({
               onClick={() => selectToken(token)}
             >
               <span className={styles.tokenRowIcon} aria-hidden="true">
-                <IconColorSwatch size={14} stroke={1.75} />
+                <IconColorSwatch size={14} />
               </span>
               <span className={styles.tokenRowName}>{token.name}</span>
               <span className={styles.tokenRowValue}>{token.value}</span>

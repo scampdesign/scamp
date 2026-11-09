@@ -42,7 +42,7 @@ export const TableColumnsEditor = ({ table, elements, onChange, }) => {
         return (_jsxs("div", { className: styles.editor, children: [_jsx("p", { className: styles.hint, children: "A table's column widths live here, so a change moves the header and the body together." }), _jsxs("button", { type: "button", className: styles.define, onClick: () => onChange({
                         display: 'grid',
                         gridTemplateColumns: serializeGridTemplate(makeFrTracks(seed)),
-                    }), title: "Define this table's columns", children: [_jsx(IconColumns, { size: 13, stroke: 1.75 }), "Define ", seed, " columns"] })] }));
+                    }), title: "Define this table's columns", children: [_jsx(IconColumns, { size: 13 }), "Define ", seed, " columns"] })] }));
     }
     return (_jsxs("div", { className: styles.editor, children: [_jsx(GridTrackList, { label: "Columns", template: table.gridTemplateColumns, onChange: (next) => onChange({ gridTemplateColumns: next }) }), _jsx("p", { className: styles.hint, children: "Every row follows these tracks. Cells take their width from the column they sit in." })] }));
 };

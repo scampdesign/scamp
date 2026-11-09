@@ -184,7 +184,7 @@ Related: [the plan](embedded-scamp-plan.md),
   already real. A PNG of the selection would be **S** if wanted.
 - **Preview:** not needed: the running app is the preview.
 - **History and snapshots:** git does this job (Accept, Revert, branches).
-  A list of Scamp's commits exists on the Changes tab.
+  The History tab lists them as a timeline (P3).
 - **Terminal:** the dev server's output shows only on the setup screen.
   Showing it after start (for build errors after an agent edit) would be
   **S**.
@@ -248,7 +248,7 @@ before.
   Scamp.
 - **After Accept:** that's **Revert**, which exists. Undo doesn't reach
   past a commit.
-- The **Changes** tab lists the undo stack, so it's clear what the next
+- The **History** tab lists the undo stack, so it's clear what the next
   undo does.
 
 ### P3: A history of Scamp's changes, like the canvas's History panel
@@ -259,7 +259,7 @@ commit bodies from `commitMessageFor` over the queue's `doneSummary`. The
 history starts at the fork from `main` (or `master`, `develop`), so earlier
 sessions on the branch show too.
 
-Today the **Changes** tab ends with **Scamp's commits**: each commit's
+Before this, the old **Changes** tab ended with **Scamp's commits**: each commit's
 subject and a **Revert** button. The subject is the commit message
 (`Scamp: update src/Card.module.css` unless the user typed one), which
 says which file, not what changed. **Revert** adds a commit that undoes

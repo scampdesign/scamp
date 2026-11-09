@@ -240,7 +240,7 @@ export const FontPicker = ({ value, fonts, fontTokens = [], onChange, title, mix
         // default UI font alongside a swatch icon.
         style: !mixed && triggerLabel && !triggerIsToken
             ? { fontFamily: quoteFamilyName(triggerLabel) }
-            : undefined, children: [!mixed && triggerIsToken && (_jsx("span", { className: styles.triggerIcon, "aria-hidden": "true", children: _jsx(IconColorSwatch, { size: 14, stroke: 1.75 }) })), _jsx("span", { className: `${styles.triggerLabel} ${triggerLabel && !mixed ? '' : styles.triggerPlaceholder}`, children: mixed ? 'Mixed' : triggerLabel ?? 'System font' }), _jsx("span", { className: styles.triggerCaret, children: "\u25BE" })] }));
+            : undefined, children: [!mixed && triggerIsToken && (_jsx("span", { className: styles.triggerIcon, "aria-hidden": "true", children: _jsx(IconColorSwatch, { size: 14 }) })), _jsx("span", { className: `${styles.triggerLabel} ${triggerLabel && !mixed ? '' : styles.triggerPlaceholder}`, children: mixed ? 'Mixed' : triggerLabel ?? 'System font' }), _jsx("span", { className: styles.triggerCaret, children: "\u25BE" })] }));
     const tooltip = withTokenValues(title, mixed ? undefined : value, themeTokens);
     return (_jsxs(_Fragment, { children: [tooltip ? _jsx(Tooltip, { label: tooltip, children: triggerEl }) : triggerEl, popover.open && popover.position && (_jsxs("div", { ref: popover.popoverRef, className: styles.popover, style: {
                     left: popover.position.left,
@@ -265,7 +265,7 @@ export const FontPicker = ({ value, fonts, fontTokens = [], onChange, title, mix
                                         // Prevent blur of the search input (which would
                                         // close the popover) before onClick fires.
                                         e.preventDefault();
-                                    }, onClick: () => commit(option), children: [option.isToken && (_jsx("span", { className: styles.rowIcon, "aria-hidden": "true", children: _jsx(IconColorSwatch, { size: 14, stroke: 1.75 }) })), _jsx("span", { className: styles.rowLabel, children: option.custom
+                                    }, onClick: () => commit(option), children: [option.isToken && (_jsx("span", { className: styles.rowIcon, "aria-hidden": "true", children: _jsx(IconColorSwatch, { size: 14 }) })), _jsx("span", { className: styles.rowLabel, children: option.custom
                                                 ? `Use "${option.label}"`
                                                 : option.unknown
                                                     ? `Custom: ${option.label}`

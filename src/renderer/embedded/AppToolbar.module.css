@@ -39,7 +39,9 @@
 /* Freeze State and Editing: accent-dark with an accent border when on. */
 .pill {
   height: 24px;
-  min-width: 81px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 8px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -50,6 +52,12 @@
   text-align: center;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.pillIcon {
+  flex: none;
+  width: 14px;
+  height: 14px;
 }
 
 .pill:hover {
@@ -97,4 +105,40 @@
   color: var(--text-inverse);
   font: inherit;
   cursor: pointer;
+}
+
+.project {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.branch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.branch:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.branchIcon {
+  flex: none;
+  width: 13px;
+  height: 13px;
 }

@@ -53,7 +53,11 @@ test('restyles a card live, the agent writes it into the CSS Module, and accept 
         await expect.poll(() => inPage(embedded, `document.querySelector('article').style.padding`)).toBe('');
         await expect.poll(() => inPage(embedded, paddingOf(0)), { timeout: 15_000 }).toBe('24px');
         // Review and accept: one commit, only the agent's file.
-        await embedded.getByTestId('embedded-tab-changes').click();
+        // The branch name beside the project opens History, with the branch controls first.
+        await expect(embedded.getByTestId('embedded-branch')).toHaveText(/^scamp\//);
+        await embedded.getByTestId('embedded-branch').click();
+        await expect(embedded.getByTestId('embedded-tab-history')).toHaveAttribute('aria-selected', 'true');
+        await expect(embedded.getByTestId('embedded-branch-section').getByLabel('Switch branch')).toHaveValue(/^scamp\//);
         await expect(embedded.getByTestId('embedded-review')).toContainText('src/Card.module.css');
         await expect(embedded.getByTestId('embedded-diff')).toContainText('+  padding: 24px;');
         await embedded.getByTestId('embedded-accept').click();

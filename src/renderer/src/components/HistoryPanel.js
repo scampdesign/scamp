@@ -83,7 +83,7 @@ const SnapshotRow = ({ snapshot, now, onSelect }) => {
     const ts = Date.parse(snapshot.timestamp);
     const relative = formatRelativeTime(ts, now);
     const absolute = new Date(ts).toLocaleString();
-    return (_jsx("li", { className: styles.row, children: _jsx(Tooltip, { label: absolute, children: _jsxs("button", { type: "button", className: styles.rowButton, onClick: onSelect, children: [_jsx("span", { className: styles.icon, "aria-hidden": "true", children: _jsx(Icon, { size: 14, stroke: 2 }) }), _jsxs("span", { className: styles.label, children: [snapshot.label, _jsxs("span", { className: styles.secondary, children: [' · ', formatPageCount(snapshot.pageCount)] })] }), _jsx("span", { className: styles.timestamp, children: relative })] }) }) }));
+    return (_jsx("li", { className: styles.row, children: _jsx(Tooltip, { label: absolute, children: _jsxs("button", { type: "button", className: styles.rowButton, onClick: onSelect, children: [_jsx("span", { className: styles.icon, "aria-hidden": "true", children: _jsx(Icon, { size: 14 }) }), _jsxs("span", { className: styles.label, children: [snapshot.label, _jsxs("span", { className: styles.secondary, children: [' · ', formatPageCount(snapshot.pageCount)] })] }), _jsx("span", { className: styles.timestamp, children: relative })] }) }) }));
 };
 const UndoRow = ({ entry, elements, now, isCurrent, isFuture, onJump, }) => {
     const label = formatHistoryLabel(entry, elements);

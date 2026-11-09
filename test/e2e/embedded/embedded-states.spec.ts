@@ -44,7 +44,7 @@ test('freeze holds CSS hover, a forced :hover state takes its own edits, and the
     await embedded.getByTestId('embedded-edit-toggle').click();
 
     // Pause the agent so the hover edit waits in the queue.
-    await embedded.getByTestId('embedded-tab-changes').click();
+    await embedded.getByTestId('embedded-tab-agent').click();
     await embedded.getByTestId('embedded-pause').click();
     await embedded.getByTestId('embedded-tab-style').click();
 
@@ -67,7 +67,7 @@ test('freeze holds CSS hover, a forced :hover state takes its own edits, and the
     expect(await titleStyle(embedded, 'padding-top')).toBe('0px');
 
     // The queue says the edit is for :hover.
-    await embedded.getByTestId('embedded-tab-changes').click();
+    await embedded.getByTestId('embedded-tab-agent').click();
     await expect(embedded.getByTestId('embedded-queue')).toContainText('<h1:hover> padding → 30px');
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
@@ -89,14 +89,14 @@ test('the path field lists routes found on load, and an element Scamp can’t ma
 
     // An element no JSX wrote: no source, no React debug info.
     await inPage(embedded, `(() => { const d = document.createElement('div'); d.className = 'injected'; d.textContent = 'Injected note'; d.style.padding = '4px'; document.body.append(d); })()`);
-    await embedded.getByTestId('embedded-tab-changes').click();
+    await embedded.getByTestId('embedded-tab-agent').click();
     await embedded.getByTestId('embedded-pause').click();
     await embedded.getByTestId('embedded-tab-style').click();
     await clickInPage(embedded, '.injected');
     await expect(embedded.getByTestId('embedded-source-note')).toContainText('Your edits still work');
     await commitInput(panelInputByPrefix(embedded, 'Spacing', 'Padding'), '20');
     await expect.poll(() => inPage<string>(embedded, `getComputedStyle(document.querySelector('.injected')).paddingTop`)).toBe('20px');
-    await embedded.getByTestId('embedded-tab-changes').click();
+    await embedded.getByTestId('embedded-tab-agent').click();
     await expect(embedded.getByTestId('embedded-queue')).toContainText('<div> padding → 20px');
   } finally {
     await fs.rm(dir, { recursive: true, force: true });

@@ -521,7 +521,7 @@ export const ColorInput = ({
                         onClick={() => void handleEyedropperClick()}
                         aria-label="Pick color from screen"
                       >
-                        <IconColorPicker size={14} stroke={2.2} />
+                        <IconColorPicker size={14} />
                       </button>
                     </Tooltip>
                   )}

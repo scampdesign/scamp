@@ -14,15 +14,15 @@ const ICON = 14;
 const typeIcon = (type, orientation) => {
     switch (type) {
         case 'px':
-            return _jsx(IconRulerMeasure, { size: ICON, stroke: 1.75 });
+            return _jsx(IconRulerMeasure, { size: ICON });
         case 'percent':
-            return _jsx(IconPercentage, { size: ICON, stroke: 1.75 });
+            return _jsx(IconPercentage, { size: ICON });
         case 'fill':
-            return orientation === 'horizontal' ? (_jsx(IconArrowsHorizontal, { size: ICON, stroke: 1.75 })) : (_jsx(IconArrowsVertical, { size: ICON, stroke: 1.75 }));
+            return orientation === 'horizontal' ? (_jsx(IconArrowsHorizontal, { size: ICON })) : (_jsx(IconArrowsVertical, { size: ICON }));
         case 'hug':
             return _jsx(HugIcon, { orientation: orientation, size: ICON });
         case 'auto':
-            return _jsx(IconArrowAutofitContent, { size: ICON, stroke: 1.75 });
+            return _jsx(IconArrowAutofitContent, { size: ICON });
         default:
             return sizeTypeLabel(type);
     }

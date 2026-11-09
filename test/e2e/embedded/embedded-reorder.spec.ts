@@ -30,10 +30,10 @@ test('dragging on the page and in the layers tree reorders siblings and queues e
   try {
     const embedded = await openEmbedded(app, window, dir);
     await startEmbedded(embedded);
-    await embedded.getByTestId('embedded-tab-changes').click();
+    await embedded.getByTestId('embedded-tab-agent').click();
     await embedded.getByTestId('embedded-pause').click();
     const queue = embedded.getByTestId('embedded-queue');
-    // The queue only shows on Changes, the drag note only on Style: check each where it is.
+    // The queue only shows on Agent, the drag note only on Style: check each where it is.
     await embedded.getByTestId('embedded-tab-style').click();
 
     // On the page: select the first card's title and drag it past the third card. The title
@@ -54,7 +54,7 @@ test('dragging on the page and in the layers tree reorders siblings and queues e
     await embedded.mouse.up();
     await expect.poll(() => cardOrder(embedded)).toBe('Grace Hopper,Katherine Johnson,Ada Lovelace');
     await expect(embedded.getByTestId('embedded-drag-note')).toContainText('Moving the <article> around it');
-    await embedded.getByTestId('embedded-tab-changes').click();
+    await embedded.getByTestId('embedded-tab-agent').click();
     await expect(queue).toContainText('Move <article> after <article> “Katherine Johnson”');
     await embedded.getByTestId('embedded-tab-style').click();
 
@@ -67,7 +67,7 @@ test('dragging on the page and in the layers tree reorders siblings and queues e
     await embedded.mouse.move(solo.x + 40, solo.y - 60, { steps: 8 });
     await embedded.mouse.up();
     await expect(embedded.getByTestId('embedded-drag-note')).toContainText('no siblings to move between');
-    await embedded.getByTestId('embedded-tab-changes').click();
+    await embedded.getByTestId('embedded-tab-agent').click();
     await expect(queue.locator('li')).toHaveCount(1);
 
     // In the tree: drag the hint above the title. Block flow can't preview it; it's marked instead.

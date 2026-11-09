@@ -18,7 +18,7 @@ const VERTICAL_PATHS = [
  */
 export const GapIcon = ({ orientation, size = 16 }) => {
     const paths = orientation === 'horizontal' ? HORIZONTAL_PATHS : VERTICAL_PATHS;
-    return (_jsx("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", 
+    return (_jsx("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", 
         // Match the muted colour of the old text prefix; `block` avoids the
         // inline-svg baseline gap so it centres cleanly in the input row.
         style: { display: 'block', color: 'var(--text-secondary)' }, "aria-hidden": true, children: paths.map((d) => (_jsx("path", { d: d }, d))) }));

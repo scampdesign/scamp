@@ -37,7 +37,7 @@ test('with My agent chosen, the user’s agent takes the edits over MCP and Scam
         const claude = JSON.parse(await fs.readFile(path.join(dir, '.mcp.json'), 'utf8'));
         expect(claude.mcpServers.scamp.url).toBe(mcp.url);
         expect(execFileSync('git', ['status', '--porcelain', '--untracked-files=all'], { cwd: dir, encoding: 'utf8' })).not.toContain('.mcp.json');
-        await embedded.getByTestId('embedded-tab-changes').click();
+        await embedded.getByTestId('embedded-tab-agent').click();
         await expect(embedded.getByTestId('embedded-worker-own')).toHaveAttribute('aria-pressed', 'true');
         await expect(embedded.getByTestId('embedded-own-agent')).toContainText('Waiting for your agent to connect');
         // A terminal in the project's folder, beside the choice, that survives a switch of tabs.
@@ -49,7 +49,7 @@ test('with My agent chosen, the user’s agent takes the edits over MCP and Scam
         await embedded.getByTestId('embedded-terminal-paste').click();
         await expect(rows).toContainText('Work my Scamp edit queue');
         await embedded.getByTestId('embedded-tab-style').click();
-        await embedded.getByTestId('embedded-tab-changes').click();
+        await embedded.getByTestId('embedded-tab-agent').click();
         await expect(rows).toContainText(path.basename(dir));
         // An edit to every card waits for the user's agent.
         await embedded.getByTestId('embedded-tab-style').click();
@@ -65,7 +65,7 @@ test('with My agent chosen, the user’s agent takes the edits over MCP and Scam
         const css = path.join(dir, 'src', 'Card.module.css');
         await fs.writeFile(css, (await fs.readFile(css, 'utf8')).replace('padding: 16px', 'padding: 30px'));
         expect(await callTool(mcp, 'scamp_embedded_done', { summary: 'Set the card padding to 30px.' })).toBe('Done. Scamp sees changes in: src/Card.module.css.');
-        await embedded.getByTestId('embedded-tab-changes').click();
+        await embedded.getByTestId('embedded-tab-history').click();
         await expect(embedded.getByTestId('embedded-agent-status')).toHaveText(/Done/);
         await expect(embedded.getByTestId('embedded-review')).toContainText('src/Card.module.css');
         await expect(embedded.getByTestId('embedded-own-agent')).toContainText('Your agent is connected');

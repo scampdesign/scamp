@@ -157,7 +157,7 @@ styled-component, or a plain stylesheet.
 
 To collect several edits and send them together:
 
-1. Click the **Changes** tab, and then click **Pause**.
+1. Click the **Agent** tab, and then click **Pause**.
 1. Make your edits. Each one waits in the queue, and you can remove one with
    **✕**.
 1. Click **Run now** to send them all as one batch, or **Resume** to go back
@@ -173,11 +173,11 @@ changes instead of the Scamp Agent, signed in the way it already is. You
 don't need an API key.
 
 1. On the setup screen, click **Use my own agent instead**. Or, in the
-   **Changes** tab, click **My agent**.
+   **Agent** tab, click **My agent**.
 1. Click **Start**. Scamp connects to your agent through its MCP server
    and adds the connection to your agent's settings in the project, such
    as `.mcp.json` for Claude Code. Scamp keeps that file out of git.
-1. In the **Changes** tab, under **My agent**, there's a terminal open in
+1. In the **Agent** tab, under **My agent**, there's a terminal open in
    your project's folder. Click **Start Claude Code**, or start another
    agent there. If it asks whether to use the `scamp` server, allow it.
 1. Click **Paste the prompt**, and press **Enter**.
@@ -186,17 +186,17 @@ You can also use your agent in a terminal of your own: open it in the
 project's folder, and paste the line from **Copy**.
 
 Your agent then waits for your edits, writes each batch, and waits for
-more until you tell it to stop. The **Changes** tab shows whether it's
+more until you tell it to stop. The **Agent** tab shows whether it's
 connected and when it's writing. You review, accept, and discard its
 changes the same way.
 
 **Note:** If your project already tracks the agent's settings file in
-git, Scamp doesn't change it. The **Changes** tab shows a command to
+git, Scamp doesn't change it. The **Agent** tab shows a command to
 connect Claude Code yourself instead.
 
 ## Review and keep changes
 
-When the agent has written something, the **Changes** tab shows the files
+When the agent has written something, the **History** tab shows the files
 it changed and their diff.
 
 - To keep the changes, edit the commit message if you want, and then click
@@ -206,6 +206,16 @@ it changed and their diff.
   as they were, and deletes any file the agent created.
 - To go back to before a change you already accepted, use the
   **History**. See [Go back in the history](#go-back-in-the-history).
+
+## The panel's tabs
+
+The panel on the right has three tabs:
+
+- **Style:** the selected element, its states, and the Scamp panel.
+- **History:** undo and redo, the agent's changes to review and accept,
+  what you've accepted, and branches.
+- **Agent:** which agent writes your changes and how it connects, what's
+  waiting for it, and design checks.
 
 ## Undo and redo
 
@@ -220,13 +230,15 @@ newest first:
   Scamp leaves it and says which.
 - **After you accept:** undo goes back a step in the history.
 
-A short note in the toolbar says what each undo or redo did. Undo works
+A short note in the toolbar says what each undo or redo did. The **History**
+tab has **Undo** and **Redo** buttons too, with the steps they take, newest
+first. Undo works
 from anywhere in the window except a text field or the terminal, which
 have their own.
 
 ## Go back in the history
 
-The **History** section of the **Changes** tab lists each change you
+The **History** tab lists each change you
 accepted, oldest first, with what it changed in plain words and when.
 The point the project is at now is marked.
 
@@ -257,7 +269,7 @@ edit shows the width, such as `<article @390>`.
 
 ## Work with branches and GitHub
 
-The **Changes** tab also has git actions:
+The **History** tab also has git actions:
 
 - **Switch branch:** select a branch from the list. Accept or discard the
   agent's changes first.
@@ -268,7 +280,7 @@ The **Changes** tab also has git actions:
 
 ## Check your project's design
 
-On the **Checks** tab, click **Run design check**. The agent reads your
+On the **Agent** tab, under **Design check**, click **Run design check**. The agent reads your
 whole project and reports, with a file and line for each finding:
 
 - One-off colors, sizes, or spacing where your project has a token.

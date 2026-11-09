@@ -76,7 +76,7 @@ export const PathField = () => {
                         input.current?.focus();
                     else
                         setOpen((was) => !was);
-                }, children: _jsx(IconChevronDown, { className: styles.chevronGlyph, stroke: 2, "aria-hidden": "true" }) }), open && shown.length > 0 && (_jsx("ul", { className: styles.menu, id: "embedded-routes", role: "listbox", "data-testid": "embedded-routes", children: shown.map((route, i) => (_jsxs("li", { role: "option", "aria-selected": i === active, className: styles.option, 
+                }, children: _jsx(IconChevronDown, { className: styles.chevronGlyph, "aria-hidden": "true" }) }), open && shown.length > 0 && (_jsx("ul", { className: styles.menu, id: "embedded-routes", role: "listbox", "data-testid": "embedded-routes", children: shown.map((route, i) => (_jsxs("li", { role: "option", "aria-selected": i === active, className: styles.option, 
                     // Keep focus in the field, so the click lands before blur closes the list.
                     onMouseDown: (e) => e.preventDefault(), onMouseEnter: () => setActive(i), onClick: () => handleChoose(route), children: [route, routeHasParams(route) && _jsx("span", { className: styles.params, children: "fill in" })] }, route))) }))] }));
 };

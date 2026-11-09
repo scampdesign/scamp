@@ -44,12 +44,12 @@ test('Cmd+Z undoes a queued edit and an agent run, the history goes back and for
     await startEmbedded(embedded);
     const queue = embedded.getByTestId('embedded-queue');
     const pauseQueue = async (): Promise<void> => {
-      await embedded.getByTestId('embedded-tab-changes').click();
+      await embedded.getByTestId('embedded-tab-agent').click();
       if ((await embedded.getByTestId('embedded-pause').getAttribute('aria-pressed')) !== 'true') await embedded.getByTestId('embedded-pause').click();
     };
     // Cmd+Z from the window, not a field: a click on a tab moves focus there.
     const press = async (keys: string): Promise<void> => {
-      await embedded.getByTestId('embedded-tab-changes').click();
+      await embedded.getByTestId('embedded-tab-history').click();
       await embedded.keyboard.press(keys);
     };
 
@@ -69,15 +69,20 @@ test('Cmd+Z undoes a queued edit and an agent run, the history goes back and for
     await expect.poll(() => padding(embedded, 2)).toBe('30px');
 
     // Undo and redo what the agent wrote.
+    await embedded.getByTestId('embedded-tab-agent').click();
     await embedded.getByTestId('embedded-pause').click();
     await expect(embedded.getByTestId('embedded-agent-status')).toHaveText(/Done/, { timeout: 30_000 });
     expect(await fs.readFile(cssFile, 'utf8')).toContain('padding: 30px');
-    await press('ControlOrMeta+z');
+    // The History tab lists the run as the next step back, and its Undo button takes it.
+    await embedded.getByTestId('embedded-tab-history').click();
+    await expect(embedded.getByTestId('embedded-undo-steps')).toContainText('Agent wrote: <article> padding → 30px (all)');
+    await embedded.getByTestId('embedded-undo').click();
     await expect.poll(async () => fs.readFile(cssFile, 'utf8')).toContain('padding: 16px');
     await press('ControlOrMeta+Shift+z');
     await expect.poll(async () => fs.readFile(cssFile, 'utf8')).toContain('padding: 30px');
 
     // Accept: the change is in the history, which goes back and forward.
+    await embedded.getByTestId('embedded-tab-history').click();
     await embedded.getByTestId('embedded-accept').click();
     const history = embedded.getByTestId('embedded-history');
     await expect(history).toContainText('padding → 30px (all)');
@@ -97,7 +102,7 @@ test('Cmd+Z undoes a queued edit and an agent run, the history goes back and for
     await clickInPage(embedded, 'article', 'corner');
     await commitInput(panelInputByPrefix(embedded, 'Spacing', 'Padding'), '10');
     await expect.poll(() => padding(embedded)).toBe('10px');
-    await embedded.getByTestId('embedded-tab-changes').click();
+    await embedded.getByTestId('embedded-tab-agent').click();
     await expect(queue).toContainText('<article @390> padding → 10px');
     await embedded.getByTestId('embedded-viewport-desktop').click();
     await expect.poll(() => padding(embedded)).toBe('30px');

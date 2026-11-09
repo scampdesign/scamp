@@ -189,13 +189,13 @@ export const SettingsPage = ({ onBack, onProjectOpened }: Props): JSX.Element =>
                   options={[
                     {
                       value: 'dark',
-                      label: <IconMoon size={16} stroke={1.75} />,
+                      label: <IconMoon size={16} />,
                       ariaLabel: 'Dark',
                       tooltip: 'Dark',
                     },
                     {
                       value: 'light',
-                      label: <IconSun size={16} stroke={1.75} />,
+                      label: <IconSun size={16} />,
                       ariaLabel: 'Light',
                       tooltip: 'Light',
                     },

@@ -129,6 +129,9 @@ const ElementRenderer = (props: any) => { ... };
   (`--bg-raised`, `--text-secondary`), not numeric scales.
 - One-off colors that genuinely have no reuse (e.g. a specific brand
   illustration) can stay as literals, but flag in a comment.
+- Icons are Tabler (`@tabler/icons-react`) at a 1.5px stroke, set once
+  for every icon by `.tabler-icon` in `src/renderer/src/styles/global.css`.
+  Don't pass a `stroke` prop; a hand-drawn SVG icon uses 1.5 too.
 - The user-facing `theme.css` inside a project is a SEPARATE file
   (design tokens for the user's exported CSS) — don't conflate it
   with the app's chrome theme.

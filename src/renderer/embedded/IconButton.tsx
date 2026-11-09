@@ -28,6 +28,6 @@ export const IconButton = ({ icon: Glyph, label, onClick, pressed, disabled, tes
     onClick={onClick}
     data-testid={testId}
   >
-    <Glyph className={styles.glyph} stroke={2} aria-hidden="true" />
+    <Glyph className={styles.glyph} aria-hidden="true" />
   </button>
 );

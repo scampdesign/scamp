@@ -302,7 +302,7 @@ const Row = ({
         {element.type === 'component-instance' || isComponentRoot ? (
           // The sidebar's Components icon, in the component purple, as Figma marks them.
           <span className={`${styles.icon} ${styles.componentIcon}`} aria-hidden="true">
-            <IconComponents size={12} stroke={2} />
+            <IconComponents size={12} />
           </span>
         ) : (
           <span className={styles.icon} aria-hidden="true">

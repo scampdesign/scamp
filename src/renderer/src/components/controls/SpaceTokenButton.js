@@ -44,11 +44,11 @@ export const SpaceTokenButton = ({ tokens, onSelect, onOpenTheme, active = false
                 // mousedown — the parent's blur handler would commit
                 // a stale draft and overwrite the token we're about
                 // to set.
-                onMouseDown: (e) => e.preventDefault(), onClick: () => handleSelect(token), children: [_jsx("span", { className: styles.tokenRowIcon, "aria-hidden": "true", children: _jsx(IconColorSwatch, { size: 14, stroke: 1.75 }) }), _jsx("span", { className: styles.tokenRowName, children: token.name }), _jsx("span", { className: styles.tokenRowValue, children: token.value })] }, token.name))) })) })) : null;
+                onMouseDown: (e) => e.preventDefault(), onClick: () => handleSelect(token), children: [_jsx("span", { className: styles.tokenRowIcon, "aria-hidden": "true", children: _jsx(IconColorSwatch, { size: 14 }) }), _jsx("span", { className: styles.tokenRowName, children: token.name }), _jsx("span", { className: styles.tokenRowValue, children: token.value })] }, token.name))) })) })) : null;
     return (_jsxs(_Fragment, { children: [_jsx("button", { ref: popover.triggerRef, type: "button", className: `${styles.tokenButton} ${active ? styles.tokenButtonActive : ''}`, onClick: popover.toggle, 
                 // Same mousedown swallow as the rows above — clicking the
                 // trigger while the parent input is focused must NOT blur it,
                 // otherwise PrefixSuffixInput would commit and we'd race
                 // with our own onSelect.
-                onMouseDown: (e) => e.preventDefault(), "aria-label": ariaLabel, children: _jsx(IconColorSwatch, { size: 14, stroke: 1.75 }) }), popoverEl !== null && createPortal(popoverEl, document.body)] }));
+                onMouseDown: (e) => e.preventDefault(), "aria-label": ariaLabel, children: _jsx(IconColorSwatch, { size: 14 }) }), popoverEl !== null && createPortal(popoverEl, document.body)] }));
 };

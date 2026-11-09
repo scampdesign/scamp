@@ -104,7 +104,7 @@ export const TypographySection = ({ elementId }) => {
     // The Text style picker lives in the section header (next to the eye
     // toggle) as an icon menu — it applies a whole preset (family/size/
     // weight/leading/tracking) at once. Only shown when styles are defined.
-    const textStyleAccessory = (_jsx(PresetMenu, { icon: _jsx(IconTypography, { size: 14, stroke: 1.75 }), ariaLabel: "Apply text style", testId: "text-style-select", active: currentStyleName !== '', options: textStyles.map((s) => ({ value: s.name, label: s.label })), onSelect: applyTextStyle }));
+    const textStyleAccessory = (_jsx(PresetMenu, { icon: _jsx(IconTypography, { size: 14 }), ariaLabel: "Apply text style", testId: "text-style-select", active: currentStyleName !== '', options: textStyles.map((s) => ({ value: s.name, label: s.label })), onSelect: applyTextStyle }));
     return (_jsxs(Section, { title: "Typography", elementId: elementId, groupToggle: groupToggle, groupAccessory: textStyleAccessory, fields: [
             'fontFamily',
             'fontSize',

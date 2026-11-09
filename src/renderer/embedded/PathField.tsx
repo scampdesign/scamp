@@ -102,7 +102,7 @@ export const PathField = (): JSX.Element => {
           else setOpen((was) => !was);
         }}
       >
-        <IconChevronDown className={styles.chevronGlyph} stroke={2} aria-hidden="true" />
+        <IconChevronDown className={styles.chevronGlyph} aria-hidden="true" />
       </button>
       {open && shown.length > 0 && (
         <ul className={styles.menu} id="embedded-routes" role="listbox" data-testid="embedded-routes">

@@ -1,0 +1,5 @@
+/* global.css pads #root for the main window's fixed 36px title bar. This
+   window draws its own bar in the layout, so that padding is just a gap. */
+#root {
+  padding-top: 0;
+}

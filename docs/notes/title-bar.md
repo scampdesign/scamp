@@ -13,7 +13,9 @@ font and match the theme — a native title bar can do neither.
   controls don't flash the wrong palette before the renderer mounts.
 - **Renderer** draws the strip (fixed 36px). It's `position: fixed` at the top
   and drags the window via `-webkit-app-region: drag`; `#root` gets a matching
-  `padding-top: 36px` (global.css) so app content sits below it. The title is
+  `padding-top: 36px` (global.css) so app content sits below it. The Edit
+  React Project window also loads global.css but draws its own bar in its
+  layout, so `src/renderer/embedded/embedded.css` sets that padding back to 0. The title is
   centered across the full window (short app name; never reaches the controls).
 
 ## The bottom-border trick

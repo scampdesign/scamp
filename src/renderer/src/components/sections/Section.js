@@ -34,7 +34,7 @@ export const Section = ({ title, children, collapsible = false, defaultOpen = tr
                 // collapse button).
                 e.stopPropagation();
                 groupToggle.onChange(!groupToggle.isOn);
-            }, "aria-label": groupToggle.isOn ? `Hide ${groupLabel}` : `Show ${groupLabel}`, "aria-pressed": !groupToggle.isOn, children: groupToggle.isOn ? (_jsx(IconEye, { size: 14, stroke: 2 })) : (_jsx(IconEyeOff, { size: 14, stroke: 2 })) }) })) : null;
+            }, "aria-label": groupToggle.isOn ? `Hide ${groupLabel}` : `Show ${groupLabel}`, "aria-pressed": !groupToggle.isOn, children: groupToggle.isOn ? (_jsx(IconEye, { size: 14 })) : (_jsx(IconEyeOff, { size: 14 })) }) })) : null;
     const groupOff = groupToggle?.isOn === false;
     // Pick the tooltip whose header / body wraps the title row when an
     // indicator is active. Duplicates take priority because they signal
@@ -72,7 +72,7 @@ export const Section = ({ title, children, collapsible = false, defaultOpen = tr
         return (_jsxs("section", { className: styles.section, "data-panel-section": title, children: [wrapWithTooltip(_jsxs("div", { className: styles.titleRow, children: [_jsx("h3", { className: styles.heading, children: title }), countBadge, duplicateDot, overrideDot, hasActions && (_jsxs("div", { className: styles.titleActions, children: [groupAccessory && (_jsx("span", { className: styles.groupAccessory, children: groupAccessory })), groupToggleButton, titleAccessory && (_jsx("span", { className: styles.titleAccessory, children: titleAccessory }))] }))] })), wrappedContent] }));
     }
     const handleToggle = () => setOpen((v) => !v);
-    return (_jsxs("section", { className: styles.section, "data-panel-section": title, children: [_jsxs("div", { className: styles.titleRow, children: [wrapWithTooltip(_jsx("button", { className: styles.toggle, type: "button", onClick: handleToggle, "aria-expanded": open, "aria-label": count !== undefined && count > 0 ? `${title}, ${count}` : title })), _jsx("span", { className: styles.heading, children: title }), countBadge, duplicateDot, overrideDot, _jsxs("span", { className: styles.titleActions, children: [groupAccessory && (_jsx("span", { className: styles.groupAccessory, children: groupAccessory })), groupToggleButton, _jsx(IconChevronDown, { size: 14, stroke: 2, className: `${styles.caret} ${open ? '' : styles.caretCollapsed}`, "aria-hidden": "true" })] })] }), open && wrappedContent] }));
+    return (_jsxs("section", { className: styles.section, "data-panel-section": title, children: [_jsxs("div", { className: styles.titleRow, children: [wrapWithTooltip(_jsx("button", { className: styles.toggle, type: "button", onClick: handleToggle, "aria-expanded": open, "aria-label": count !== undefined && count > 0 ? `${title}, ${count}` : title })), _jsx("span", { className: styles.heading, children: title }), countBadge, duplicateDot, overrideDot, _jsxs("span", { className: styles.titleActions, children: [groupAccessory && (_jsx("span", { className: styles.groupAccessory, children: groupAccessory })), groupToggleButton, _jsx(IconChevronDown, { size: 14, className: `${styles.caret} ${open ? '' : styles.caretCollapsed}`, "aria-hidden": "true" })] })] }), open && wrappedContent] }));
 };
 /**
  * Yellow warning state for a section title — fires when the parser
