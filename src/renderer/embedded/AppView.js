@@ -6,6 +6,7 @@ import styles from './AppView.module.css';
 /** The project's running app, in a webview of its own session. */
 export const AppView = () => {
     const url = useEmbeddedStore((s) => s.url);
+    const viewport = useEmbeddedStore((s) => s.viewport);
     const set = useEmbeddedStore((s) => s.set);
     const ref = useRef(null);
     useEffect(() => {
@@ -40,5 +41,7 @@ export const AppView = () => {
     }, [url, set]);
     if (url === null)
         return _jsx("div", { className: styles.view });
-    return (_jsx("div", { className: styles.view, children: _jsx("webview", { ref: ref, src: url, className: styles.webview, partition: "persist:scamp-embedded", "data-testid": "embedded-webview" }) }));
+    return (_jsx("div", { className: styles.view, children: _jsx("webview", { ref: ref, src: url, className: styles.webview, 
+            // A set width sizes the app like a device; desktop fills the window.
+            style: viewport === null ? undefined : { flex: 'none', width: `${viewport}px` }, "data-sized": viewport !== null, partition: "persist:scamp-embedded", "data-testid": "embedded-webview" }) }));
 };

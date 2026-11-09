@@ -1,5 +1,5 @@
 import { type InspectorCommand } from '@shared/embedded';
-import type { EmbeddedPseudoState } from '@shared/types';
+import type { EmbeddedGitResult, EmbeddedPseudoState } from '@shared/types';
 /** How long editing pauses before an edit goes to the agent's queue. */
 export declare const ENQUEUE_DELAY_MS = 900;
 type WebviewLike = HTMLElement & {
@@ -16,6 +16,19 @@ export declare const selectTreeNode: (id: string) => void;
 export declare const hoverTreeNode: (id: string | null) => void;
 /** Move a layer next to a sibling; the page answers with `moved`, which queues it. */
 export declare const moveTreeNode: (id: string, targetId: string, position: "before" | "after") => void;
+/** Take an item out of the queue with ✕: its preview goes, and so does its undo step. */
+export declare const removeQueued: (id: string) => Promise<void>;
+/** Accept or Discard ends what runs undo can reach: from there it's the history. */
+export declare const dropRunEntries: () => void;
+export declare const undo: () => Promise<void>;
+export declare const redo: () => Promise<void>;
+export declare const refreshHistory: () => Promise<void>;
+/** Move the project to a point in its history; the result says why when it can't. */
+export declare const goToHistory: (sha: string) => Promise<EmbeddedGitResult>;
+/** Read the widths the app's stylesheets break at. */
+export declare const refreshBreakpoints: () => Promise<void>;
+/** Size the app as a phone, a tablet, a width of your own, or the window (null). */
+export declare const setViewport: (width: number | null) => void;
 /** Force a pseudo-class on the selection; later edits style that state. */
 export declare const setPseudo: (state: EmbeddedPseudoState) => void;
 /** Let go of every held state: freeze and the forced pseudo-class. */

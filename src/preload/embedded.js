@@ -25,6 +25,7 @@ const embeddedApi = {
     onStartProgress: (listener) => on(IPC.EmbeddedStartProgress, listener),
     stop: () => ipcRenderer.invoke(IPC.EmbeddedStop),
     enqueue: (item) => ipcRenderer.invoke(IPC.EmbeddedEnqueue, item),
+    /** False when the item wasn't in the queue: the agent has it, or it's gone. */
     removeQueued: (id) => ipcRenderer.invoke(IPC.EmbeddedRemoveQueued, { id }),
     setPaused: (paused) => ipcRenderer.invoke(IPC.EmbeddedSetPaused, { paused }),
     runNow: () => ipcRenderer.invoke(IPC.EmbeddedRunNow),
@@ -41,6 +42,10 @@ const embeddedApi = {
     pull: () => ipcRenderer.invoke(IPC.EmbeddedPull),
     /** Apply the page's `data-scamp-force` marks as forced pseudo-classes. */
     syncPseudo: () => ipcRenderer.invoke(IPC.EmbeddedSyncPseudo),
+    history: () => ipcRenderer.invoke(IPC.EmbeddedHistory),
+    historyGoTo: (sha) => ipcRenderer.invoke(IPC.EmbeddedHistoryGoTo, { sha }),
+    /** Undo (or redo) what one agent run wrote. */
+    undoRun: (runId, redo = false) => ipcRenderer.invoke(IPC.EmbeddedUndoRun, { runId, redo }),
     /** Who writes changes: Scamp's agent or the user's own, over MCP. */
     setWorker: (worker) => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
     ownAgentStatus: () => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),

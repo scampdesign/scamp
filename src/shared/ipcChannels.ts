@@ -294,6 +294,9 @@ export const IPC = {
   EmbeddedSyncPseudo: 'embedded:sync-pseudo',
   EmbeddedResolveSource: 'embedded:resolve-source',
   EmbeddedRoutes: 'embedded:routes',
+  EmbeddedHistory: 'embedded:history',
+  EmbeddedHistoryGoTo: 'embedded:history-go-to',
+  EmbeddedUndoRun: 'embedded:undo-run',
   EmbeddedSetWorker: 'embedded:set-worker',
   EmbeddedOwnAgentStatus: 'embedded:own-agent-status',
   /** renderer → main, fire and forget: the selection changed. */

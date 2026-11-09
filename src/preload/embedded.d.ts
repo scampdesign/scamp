@@ -1,4 +1,4 @@
-import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedPreflight, EmbeddedElementRef, EmbeddedOwnAgentStatus, EmbeddedQueueItem, EmbeddedWorker, TerminalCreateArgs, TerminalCreateResult, TerminalDataPayload, TerminalExitPayload, TerminalKillArgs, TerminalResizeArgs, TerminalWriteArgs, EmbeddedRawSource, EmbeddedRecentProject, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
+import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedHistory, EmbeddedPreflight, EmbeddedElementRef, EmbeddedOwnAgentStatus, EmbeddedQueueItem, EmbeddedWorker, TerminalCreateArgs, TerminalCreateResult, TerminalDataPayload, TerminalExitPayload, TerminalKillArgs, TerminalResizeArgs, TerminalWriteArgs, EmbeddedRawSource, EmbeddedRecentProject, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
 declare const embeddedApi: {
     chooseFolder: () => Promise<EmbeddedChooseResult>;
     /** Recent projects, with whether each folder is still there. */
@@ -19,7 +19,8 @@ declare const embeddedApi: {
     onStartProgress: (listener: (p: EmbeddedStartProgress) => void) => (() => void);
     stop: () => Promise<void>;
     enqueue: (item: EmbeddedQueueItem) => Promise<boolean>;
-    removeQueued: (id: string) => Promise<void>;
+    /** False when the item wasn't in the queue: the agent has it, or it's gone. */
+    removeQueued: (id: string) => Promise<boolean>;
     setPaused: (paused: boolean) => Promise<void>;
     runNow: () => Promise<void>;
     cancel: () => Promise<void>;
@@ -37,6 +38,10 @@ declare const embeddedApi: {
     pull: () => Promise<EmbeddedGitResult>;
     /** Apply the page's `data-scamp-force` marks as forced pseudo-classes. */
     syncPseudo: () => Promise<boolean>;
+    history: () => Promise<EmbeddedHistory | null>;
+    historyGoTo: (sha: string) => Promise<EmbeddedGitResult>;
+    /** Undo (or redo) what one agent run wrote. */
+    undoRun: (runId: string, redo?: boolean) => Promise<EmbeddedGitResult>;
     /** Who writes changes: Scamp's agent or the user's own, over MCP. */
     setWorker: (worker: EmbeddedWorker) => Promise<EmbeddedOwnAgentStatus | null>;
     ownAgentStatus: () => Promise<EmbeddedOwnAgentStatus | null>;

@@ -119,12 +119,21 @@ const scopeLine = (scope, el) => scope === 'all'
     : el !== null && el.instanceCount > 1
         ? 'Scope: this instance only. Leave the other instances as they are: override it where this one is used (a prop, a modifier class, or the call site), not in the shared definition.'
         : 'Scope: this element.';
+/** What the agent is told about an edit made below desktop width. */
+const breakpointLine = (bp) => {
+    const project = bp.project.length > 0 ? ` The project's breakpoints are ${bp.project.map((w) => `${w}px`).join(', ')}${bp.direction === 'min' ? ', written mobile-first (`min-width`)' : bp.direction === 'max' ? ', written desktop-first (`max-width`)' : ''}.` : '';
+    const how = bp.direction === 'min'
+        ? ' In a mobile-first project, set the new value at the smallest size and restore the current value at the next breakpoint up (for Tailwind, an unprefixed class and the current one with the next prefix, such as `p-4 md:p-6`).'
+        : ' Use the project\'s own breakpoints and style of media query or Tailwind prefix.';
+    return `Breakpoint: the user made this edit with the app ${bp.width}px wide. Apply it at widths up to ${bp.upTo}px (\`@media (max-width: ${bp.upTo}px)\`), and leave wider widths as they are.${project}${how}`;
+};
 /** One queued edit, as the agent reads it. */
 export const describeQueueItem = (item, index) => {
     if (item.kind === 'style') {
         const changes = item.changes.map((c) => `  - \`${c.property}\`: ${c.from === '' ? '(not set)' : `\`${c.from}\``} → \`${c.to}\``).join('\n');
+        const bp = item.breakpoint === undefined ? '' : `\n- ${breakpointLine(item.breakpoint)}`;
         const state = item.state === undefined ? '' : `\n- State: \`:${item.state}\`. Style the element only while it's in that state (a \`:${item.state}\` rule, or Tailwind's \`${item.state}:\` prefix), leaving its normal styles as they are.`;
-        return `### Edit ${index + 1}: style${item.state === undefined ? '' : ` (:${item.state})`}\n${describeElement(item.element)}\n- ${scopeLine(item.scope, item.element)}${state}\n- Change:\n${changes}`;
+        return `### Edit ${index + 1}: style${item.state === undefined ? '' : ` (:${item.state})`}\n${describeElement(item.element)}\n- ${scopeLine(item.scope, item.element)}${state}${bp}\n- Change:\n${changes}`;
     }
     if (item.kind === 'move') {
         const how = item.fromList
@@ -165,6 +174,60 @@ export const mergeRoutes = (known, found, limit = 300) => {
     return [...all]
         .sort((a, b) => Number(routeHasParams(a)) - Number(routeHasParams(b)) || a.localeCompare(b))
         .slice(0, limit);
+};
+/** One queued edit in a few words: the queue list, the history, and commit messages. */
+export const shortQueueItem = (item) => {
+    if (item.kind === 'move') {
+        return `Move <${item.element.tag}> ${item.position} <${item.target.tag}>${item.target.text.length > 0 ? ` “${item.target.text.slice(0, 24)}”` : ''}`;
+    }
+    if (item.kind === 'instruction')
+        return item.text;
+    const where = `${item.state !== undefined ? `:${item.state}` : ''}${item.breakpoint !== undefined ? ` @${item.breakpoint.width}` : ''}`;
+    return `<${item.element.tag}${where}> ${item.changes.map((c) => `${c.property} → ${c.to}`).join(', ')}${item.scope === 'all' ? ' (all)' : ''}`;
+};
+/** An Accept's commit: a subject (the user's, or the first change) and one body line per change. */
+export const commitMessageFor = (subject, changes, files) => {
+    const typed = subject.trim();
+    const first = changes[0];
+    const auto = first === undefined ? `update ${files.join(', ')}` : changes.length === 1 ? first : `${first}, and ${changes.length - 1} more`;
+    return { subject: (typed.length > 0 ? typed : auto).slice(0, 120), body: changes.map((c) => `- ${c}`).join('\n') };
+};
+/** Unit and record separators, which no commit message contains. */
+const UNIT = '\x1f';
+const RECORD = '\x1e';
+/** For `git log --name-only`: each record starts with the separator, and the file list ends it. */
+export const HISTORY_LOG_FORMAT = '%x1e%H%x1f%ct%x1f%s%x1f%b%x1f';
+/** `git log --format=HISTORY_LOG_FORMAT --name-only` read into entries, newest first. */
+export const parseHistoryLog = (text) => text.split(RECORD).flatMap((record) => {
+    const [sha, time, subject, body, files] = record.split(UNIT);
+    if (sha === undefined || !/^[0-9a-f]{7,40}$/.test(sha))
+        return [];
+    return [
+        {
+            sha,
+            time: Number(time ?? 0),
+            subject: subject ?? '',
+            changes: (body ?? '')
+                .split('\n')
+                .filter((l) => l.startsWith('- '))
+                .map((l) => l.slice(2)),
+            files: (files ?? '')
+                .split('\n')
+                .map((f) => f.trim())
+                .filter((f) => f.length > 0),
+        },
+    ];
+});
+/**
+ * The breakpoint an edit made `width` pixels wide applies up to: just under
+ * the project's next breakpoint above it, or the width itself when the
+ * project has none above. Null at desktop (no width set).
+ */
+export const breakpointFor = (width, project, direction) => {
+    if (width === null)
+        return null;
+    const above = [...project].sort((a, b) => a - b).find((w) => w > width);
+    return { width, upTo: above === undefined ? width : above - 1, project: [...project].sort((a, b) => a - b), direction };
 };
 /** Messages from the inspector arrive as console lines starting with this. */
 export const INSPECTOR_PREFIX = '__scamp_inspector__';
@@ -207,7 +270,11 @@ export const installInspector = (config) => {
         frozenForce: new Map(),
         panelForce: null,
         forcedNow: new Set(),
+        /** Preview rules, keyed by media and selector: for states and breakpoints, which inline styles can't express. */
         rules: new Map(),
+        /** What each tagged edit replaced, so `undoTag` can put exactly that back. */
+        tags: new Map(),
+        moveCount: 0,
         drag: null,
         suppressClick: false,
         /** Moves the page can't preview (block flow), marked until the agent writes them. */
@@ -506,7 +573,8 @@ export const installInspector = (config) => {
         return { target: under, position };
     };
     /** Preview a move where `order` can show it, mark it where it can't, and tell the window. */
-    const applyMove = (el, target, position) => {
+    const applyMove = (el, target, position, given) => {
+        const tag = given ?? `m-${Date.now().toString(36)}-${(state.moveCount += 1)}`;
         const parent = el.parentElement;
         if (parent === null || target.parentElement !== parent || el === target)
             return;
@@ -517,13 +585,8 @@ export const installInspector = (config) => {
         const previewed = /flex|grid/.test(getComputedStyle(parent).display);
         if (previewed) {
             next.forEach((kid, i) => {
-                if (!(kid instanceof HTMLElement))
-                    return;
-                const saved = state.overrides.get(kid) ?? new Map();
-                if (!saved.has('order'))
-                    saved.set('order', { value: kid.style.getPropertyValue('order'), priority: kid.style.getPropertyPriority('order') });
-                kid.style.setProperty('order', String(i), 'important');
-                state.overrides.set(kid, saved);
+                if (kid instanceof HTMLElement)
+                    setInline(kid, 'order', String(i), tag);
             });
         }
         else {
@@ -533,11 +596,12 @@ export const installInspector = (config) => {
             box.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483646;background:repeating-linear-gradient(90deg,#4a8cff 0 6px,transparent 6px 10px);';
             document.documentElement.append(box);
             state.marks.push({ box, target, position });
+            tagRecord(tag).marks.push(box);
         }
         const a = describe(el);
         const b = describe(target);
         const key = keyOf(el);
-        send({ type: 'moved', element: a.element, raw: a.raw, target: b.element, targetRaw: b.raw, position, fromList: key !== null && key === keyOf(target), previewed });
+        send({ type: 'moved', tag, uid: uidOf(el), targetUid: uidOf(target), element: a.element, raw: a.raw, target: b.element, targetRaw: b.raw, position, fromList: key !== null && key === keyOf(target), previewed });
     };
     window.addEventListener('pointerdown', (e) => {
         if (!state.edit || e.button !== 0)
@@ -649,32 +713,142 @@ export const installInspector = (config) => {
         }
         if ((state.frozen || state.edit) && e.key === 'Escape')
             swallow(e);
+        // In edit mode the page is Scamp's canvas: Cmd+Z undoes Scamp's edits, not the app's.
+        if (state.edit && (e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'z') {
+            swallow(e);
+            send({ type: e.shiftKey ? 'redo' : 'undo' });
+        }
     }, true);
-    const targets = (scope) => {
-        const sel = state.selected;
-        if (!(sel instanceof HTMLElement))
+    /** The element an edit is about: by id, or the selection. */
+    const baseOf = (uid) => (uid !== undefined ? (byUid.get(uid)?.deref() ?? null) : state.selected);
+    const targets = (scope, base) => {
+        if (!(base instanceof HTMLElement))
             return [];
-        return scope === 'all' ? sameSource(sel) : [sel];
+        return scope === 'all' ? sameSource(base) : [base];
     };
-    /** The selector a state's preview rule uses for the edit's targets. */
-    const stateSelector = (scope, pseudo) => {
-        const sel = state.selected;
-        if (sel === null)
+    /** The selector a preview rule uses for the edit's targets, with its pseudo-class. */
+    const ruleSelector = (scope, pseudo, base) => {
+        if (base === null)
             return null;
-        const attr = sel.getAttribute(api.config.attr);
+        const suffix = pseudo === 'none' ? '' : `:${pseudo}`;
+        const attr = base.getAttribute(api.config.attr);
         if (scope === 'all' && attr !== null)
-            return `[${api.config.attr}="${CSS.escape(attr)}"]:${pseudo}`;
-        const ids = targets(scope).map((el) => {
+            return `[${api.config.attr}="${CSS.escape(attr)}"]${suffix}`;
+        const ids = targets(scope, base).map((el) => {
             const id = uidOf(el);
             el.setAttribute(UID_ATTR, id);
-            return `[${UID_ATTR}="${id}"]:${pseudo}`;
+            return `[${UID_ATTR}="${id}"]${suffix}`;
         });
         return ids.length === 0 ? null : ids.join(', ');
     };
+    const ruleKey = (media, selector) => `${media ?? ''}|${selector}`;
     const writeRules = () => {
-        preview.textContent = Array.from(state.rules)
-            .map(([selector, props]) => `${selector} { ${Object.entries(props).map(([p, v]) => `${p}: ${v} !important;`).join(' ')} }`)
+        preview.textContent = Array.from(state.rules.values())
+            .map(({ media, selector, props }) => {
+            const body = `${selector} { ${Object.entries(props).map(([p, v]) => `${p}: ${v} !important;`).join(' ')} }`;
+            return media === null ? body : `@media ${media} { ${body} }`;
+        })
             .join('\n');
+    };
+    const tagRecord = (tag) => {
+        let rec = state.tags.get(tag);
+        if (rec === undefined) {
+            rec = { inline: [], rules: [], marks: [] };
+            state.tags.set(tag, rec);
+        }
+        return rec;
+    };
+    /** Set an inline preview style, remembering the page's own value and, per tag, what this replaced. */
+    const setInline = (el, prop, value, tag) => {
+        const saved = state.overrides.get(el) ?? new Map();
+        if (!saved.has(prop))
+            saved.set(prop, { value: el.style.getPropertyValue(prop), priority: el.style.getPropertyPriority(prop) });
+        state.overrides.set(el, saved);
+        if (tag !== undefined) {
+            const rec = tagRecord(tag);
+            if (!rec.inline.some((i) => i.el === el && i.prop === prop)) {
+                rec.inline.push({ el, prop, value: el.style.getPropertyValue(prop), priority: el.style.getPropertyPriority(prop) });
+            }
+        }
+        el.style.setProperty(prop, value, 'important');
+    };
+    const setRule = (media, selector, props, tag) => {
+        const key = ruleKey(media, selector);
+        const rule = state.rules.get(key) ?? { media, selector, props: {} };
+        for (const [prop, value] of Object.entries(props)) {
+            if (tag !== undefined) {
+                const rec = tagRecord(tag);
+                if (!rec.rules.some((r) => r.key === key && r.prop === prop))
+                    rec.rules.push({ key, prop, prev: rule.props[prop] });
+            }
+            rule.props[prop] = value;
+        }
+        state.rules.set(key, rule);
+        writeRules();
+    };
+    /** Put back everything one tagged edit or move previewed. */
+    const undoTag = (tag) => {
+        const rec = state.tags.get(tag);
+        if (rec === undefined)
+            return;
+        state.tags.delete(tag);
+        for (const i of [...rec.inline].reverse()) {
+            if (i.value === '')
+                i.el.style.removeProperty(i.prop);
+            else
+                i.el.style.setProperty(i.prop, i.value, i.priority);
+            // Back to the page's own value: no longer an override `clear` has to restore.
+            const saved = state.overrides.get(i.el);
+            const original = saved?.get(i.prop);
+            if (saved !== undefined && original !== undefined && original.value === i.value && original.priority === i.priority)
+                saved.delete(i.prop);
+        }
+        for (const r of [...rec.rules].reverse()) {
+            const rule = state.rules.get(r.key);
+            if (rule === undefined)
+                continue;
+            if (r.prev === undefined)
+                delete rule.props[r.prop];
+            else
+                rule.props[r.prop] = r.prev;
+            if (Object.keys(rule.props).length === 0)
+                state.rules.delete(r.key);
+        }
+        for (const box of rec.marks)
+            box.remove();
+        state.marks = state.marks.filter((m) => !rec.marks.includes(m.box));
+        writeRules();
+    };
+    /** Widths the page's own stylesheets break at, from their media queries. */
+    const breakpoints = () => {
+        const min = new Set();
+        const max = new Set();
+        const QUERY = /\(\s*(?:(min|max)-width\s*:\s*|width\s*(>=|>|<=|<)\s*)([\d.]+)(px|em|rem)\s*\)/g;
+        const walk = (rules) => {
+            for (const rule of Array.from(rules)) {
+                if (rule instanceof CSSMediaRule) {
+                    for (const m of rule.media.mediaText.matchAll(QUERY)) {
+                        const px = Math.round(Number(m[3]) * (m[4] === 'px' ? 1 : 16));
+                        const isMin = m[1] === 'min' || m[2] === '>=' || m[2] === '>';
+                        if (px > 0 && px < 4000)
+                            (isMin ? min : max).add(px);
+                    }
+                }
+                if ('cssRules' in rule)
+                    walk(rule.cssRules);
+            }
+        };
+        for (const sheet of Array.from(document.styleSheets)) {
+            if (sheet.ownerNode instanceof Element && isOverlay(sheet.ownerNode))
+                continue;
+            try {
+                walk(sheet.cssRules);
+            }
+            catch {
+                // A cross-origin stylesheet can't be read; its breakpoints go unseen.
+            }
+        }
+        return { min: [...min].sort((a, b) => a - b), max: [...max].sort((a, b) => a - b) };
     };
     const SKIP = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE', 'LINK', 'META']);
     const MAX_NODES = 3000;
@@ -718,8 +892,10 @@ export const installInspector = (config) => {
     api = {
         config,
         tree,
+        breakpoints,
         run: (raw) => {
             const cmd = raw;
+            const media = cmd.media ?? null;
             const pseudo = cmd.state ?? 'none';
             if (cmd.type === 'edit') {
                 state.edit = cmd.on === true;
@@ -763,45 +939,48 @@ export const installInspector = (config) => {
                 const el = byUid.get(cmd.id ?? '')?.deref();
                 const target = byUid.get(cmd.targetId ?? '')?.deref();
                 if (el !== undefined && target !== undefined)
-                    applyMove(el, target, cmd.position === 'after' ? 'after' : 'before');
+                    applyMove(el, target, cmd.position === 'after' ? 'after' : 'before', cmd.tag);
             }
             else if (cmd.type === 'hoverId') {
                 state.treeHover = cmd.id === null ? null : (byUid.get(cmd.id ?? '')?.deref() ?? null);
             }
             else if (cmd.type === 'apply') {
-                if (pseudo !== 'none') {
-                    const selector = stateSelector(cmd.scope ?? 'instance', pseudo);
+                const base = baseOf(cmd.uid);
+                const scope = cmd.scope ?? 'instance';
+                // A state or a breakpoint previews as a rule; anything else inline.
+                if (pseudo !== 'none' || media !== null) {
+                    const selector = ruleSelector(scope, pseudo, base);
                     if (selector !== null)
-                        state.rules.set(selector, { ...(state.rules.get(selector) ?? {}), ...(cmd.styles ?? {}) });
-                    writeRules();
+                        setRule(media, selector, cmd.styles ?? {}, cmd.tag);
                     return;
                 }
-                for (const el of targets(cmd.scope ?? 'instance')) {
-                    const saved = state.overrides.get(el) ?? new Map();
-                    for (const [prop, value] of Object.entries(cmd.styles ?? {})) {
-                        if (!saved.has(prop))
-                            saved.set(prop, { value: el.style.getPropertyValue(prop), priority: el.style.getPropertyPriority(prop) });
-                        el.style.setProperty(prop, value, 'important');
-                    }
-                    state.overrides.set(el, saved);
+                for (const el of targets(scope, base)) {
+                    for (const [prop, value] of Object.entries(cmd.styles ?? {}))
+                        setInline(el, prop, value, cmd.tag);
                 }
+            }
+            else if (cmd.type === 'undoTag') {
+                undoTag(cmd.tag ?? '');
             }
             else if (cmd.type === 'restore') {
                 const props = cmd.properties ?? [];
-                if (pseudo !== 'none') {
-                    for (const [selector, rule] of state.rules) {
-                        if (!selector.endsWith(`:${pseudo}`) && !selector.includes(`:${pseudo},`))
+                const base = baseOf(cmd.uid);
+                if (pseudo !== 'none' || media !== null) {
+                    for (const scope of ['all', 'instance']) {
+                        const selector = ruleSelector(scope, pseudo, base);
+                        const rule = selector === null ? undefined : state.rules.get(ruleKey(media, selector));
+                        if (rule === undefined || selector === null)
                             continue;
                         for (const prop of props)
-                            delete rule[prop];
-                        if (Object.keys(rule).length === 0)
-                            state.rules.delete(selector);
+                            delete rule.props[prop];
+                        if (Object.keys(rule.props).length === 0)
+                            state.rules.delete(ruleKey(media, selector));
                     }
                     writeRules();
                     return;
                 }
                 // Back to what the page had, for properties an edit returned to their start.
-                for (const el of targets('all').concat(targets('instance'))) {
+                for (const el of targets('all', base).concat(targets('instance', base))) {
                     const saved = state.overrides.get(el);
                     if (saved === undefined)
                         continue;
@@ -828,6 +1007,7 @@ export const installInspector = (config) => {
                 }
                 state.overrides.clear();
                 state.rules.clear();
+                state.tags.clear();
                 for (const m of state.marks)
                     m.box.remove();
                 state.marks = [];
@@ -840,5 +1020,7 @@ export const installInspector = (config) => {
 /** The source text that installs the inspector, then runs `cmd` if given. */
 export const inspectorScript = (config, cmd) => `(${installInspector.toString()})(${JSON.stringify(config)});` +
     (cmd === undefined ? '' : `window.__scampInspector.run(${JSON.stringify(cmd)});`);
+/** The source text that returns the widths the page's stylesheets break at. */
+export const inspectorBreakpointsScript = (config) => `(${installInspector.toString()})(${JSON.stringify(config)}); window.__scampInspector.breakpoints();`;
 /** The source text that returns the page's tree, installing the inspector first. */
 export const inspectorTreeScript = (config) => `(${installInspector.toString()})(${JSON.stringify(config)}); window.__scampInspector.tree();`;

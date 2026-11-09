@@ -1,2 +1,2 @@
-/** Navigation, the edit and freeze modes, the branch, and the agent's state. */
+/** The title bar, as the scamp-ui Layout design: the project, then Freeze, Editing, and the agent. */
 export declare const AppToolbar: () => JSX.Element;

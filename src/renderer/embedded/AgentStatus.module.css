@@ -1,31 +1,34 @@
-.pill {
+/* The scamp-ui Layout design's agent status: a raised pill with a coloured dot. */
+.status {
+  height: 24px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 12px;
   background: var(--bg-raised);
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+  font-family: var(--font-ui);
+  font-size: 11px;
   white-space: nowrap;
 }
 
 .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-tertiary);
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--status-success);
 }
 
-.pill[data-phase='thinking'] .dot,
-.pill[data-phase='writing'] .dot {
+.status[data-phase='thinking'] .dot,
+.status[data-phase='writing'] .dot {
   background: var(--accent);
   animation: pulse 1s ease-in-out infinite;
 }
 
-.pill[data-phase='done'] .dot { background: var(--status-success); }
-.pill[data-phase='error'] .dot { background: var(--status-error); }
-.pill[data-phase='paused'] .dot { background: var(--status-warn); }
+.status[data-phase='paused'] .dot { background: var(--status-warn); }
+.status[data-phase='error'] .dot { background: var(--status-error); }
 
 .count {
   color: var(--text-tertiary);
@@ -36,5 +39,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pill .dot { animation: none !important; }
+  .dot { animation: none !important; }
 }

@@ -115,7 +115,7 @@ export const ownAgentInvoker = (deps) => {
                 return errorResult('You have no batch to finish. Call scamp_embedded_wait_for_edits to take one.');
             const files = before === null ? [] : changedBetween(before, await changedFiles(deps.folder));
             before = null;
-            agent.finishBatch(typeof args['summary'] === 'string' ? args['summary'] : '', files);
+            await agent.finishBatch(typeof args['summary'] === 'string' ? args['summary'] : '', files);
             return textResult(files.length === 0 ? 'Done. Scamp saw no file changes.' : `Done. Scamp sees changes in: ${files.join(', ')}.`);
         }
         return errorResult(`Unknown tool: ${name}`);

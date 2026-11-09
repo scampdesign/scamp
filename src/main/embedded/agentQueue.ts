@@ -1,6 +1,6 @@
 import type { BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 
-import { buildAgentPrompt } from '@shared/embedded';
+import { buildAgentPrompt, shortQueueItem } from '@shared/embedded';
 import type { EmbeddedAgentEvent, EmbeddedAgentState, EmbeddedIdiom, EmbeddedQueueItem, EmbeddedWorker } from '@shared/types';
 
 import { runTurn, type AgentToolInvoker } from '../agent/harness';
@@ -26,6 +26,9 @@ export type EmbeddedAgentDeps = {
   /** For tests; real runs use the project's file tools. */
   invoker?: (touched: Set<string>, readOnly: boolean) => AgentToolInvoker;
   batchDelayMs?: number;
+  /** Around every run, either agent's: for recording what it wrote, so it can be undone. */
+  onRunStart?: (runId: string) => Promise<void>;
+  onRunEnd?: (runId: string) => Promise<void>;
 };
 
 export const embeddedSystemPrompt = (folder: string, idioms: ReadonlyArray<EmbeddedIdiom>): string =>
@@ -57,7 +60,8 @@ const DESIGN_CHECK_PROMPT = [
 export type EmbeddedAgent = {
   state: () => EmbeddedAgentState;
   enqueue: (item: EmbeddedQueueItem) => void;
-  remove: (id: string) => void;
+  /** False when the item wasn't queued (the agent has it, or it's gone). */
+  remove: (id: string) => boolean;
   setPaused: (paused: boolean) => void;
   runNow: () => void;
   cancel: () => void;
@@ -65,6 +69,10 @@ export type EmbeddedAgent = {
   /** Files the agent has written since the last accept or discard. */
   touched: () => string[];
   clearTouched: (paths?: ReadonlyArray<string>) => void;
+  /** Files a redo wrote back. */
+  addTouched: (paths: ReadonlyArray<string>) => void;
+  /** The changes written since the last accept or discard, in a few words each: the next commit's body. */
+  doneSummary: () => string[];
   dispose: () => void;
   worker: () => EmbeddedWorker;
   setWorker: (worker: EmbeddedWorker) => void;
@@ -75,7 +83,7 @@ export type EmbeddedAgent = {
    */
   takeBatch: (timeoutMs: number) => Promise<EmbeddedQueueItem[] | null>;
   /** The user's agent finished the batch it took. False when it held none. */
-  finishBatch: (summary: string, files: ReadonlyArray<string>) => boolean;
+  finishBatch: (summary: string, files: ReadonlyArray<string>) => Promise<boolean>;
   /** The batch the user's agent holds, if any. */
   heldBatch: () => EmbeddedQueueItem[] | null;
 };
@@ -92,6 +100,11 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
   /** Run now, for the user's agent: the next take goes through even while paused. */
   let releaseOnce = false;
   let lastChange = 0;
+  let runCount = 0;
+  let heldRunId: string | null = null;
+  /** Items written since the last accept or discard, for the commit message. */
+  let doneItems: EmbeddedQueueItem[] = [];
+  const nextRunId = (): string => `run-${Date.now().toString(36)}-${(runCount += 1)}`;
   const delay = deps.batchDelayMs ?? BATCH_DELAY_MS;
   const invokerFor = deps.invoker ?? ((t: Set<string>, readOnly: boolean) => embeddedToolInvoker(deps.folder, t, readOnly));
 
@@ -121,6 +134,8 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
     }
     running = true;
     const items = state.queued.splice(0);
+    const runId = nextRunId();
+    await deps.onRunStart?.(runId);
     abort = new AbortController();
     publish({ phase: 'thinking', lastText: '', message: undefined });
     let said = '';
@@ -146,16 +161,19 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
       },
     });
     history = result.history;
+    await deps.onRunEnd?.(runId);
     running = false;
     abort = null;
     if (result.outcome === 'done') {
-      publish({ phase: 'done', lastText: said.trim(), lastRunItemIds: items.map((i) => i.id) });
+      doneItems = [...doneItems, ...items];
+      publish({ phase: 'done', lastText: said.trim(), lastRunItemIds: items.map((i) => i.id), lastRunId: runId });
     } else if (result.outcome === 'cancelled') {
-      // A cancelled batch goes back to the front of the queue, untouched.
+      // A cancelled batch goes back to the front of the queue; what it wrote can still be undone.
       state.queued.unshift(...items);
-      publish({ phase: state.paused ? 'paused' : 'idle', lastText: said.trim(), message: 'Stopped.' });
+      publish({ phase: state.paused ? 'paused' : 'idle', lastText: said.trim(), message: 'Stopped.', lastRunId: runId, lastRunItemIds: [] });
     } else {
-      publish({ phase: 'error', lastText: said.trim(), lastRunItemIds: items.map((i) => i.id), message: result.message ?? 'The agent stopped before it finished.' });
+      doneItems = [...doneItems, ...items];
+      publish({ phase: 'error', lastText: said.trim(), lastRunItemIds: items.map((i) => i.id), lastRunId: runId, message: result.message ?? 'The agent stopped before it finished.' });
     }
     schedule();
   };
@@ -170,9 +188,11 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
       schedule();
     },
     remove: (id) => {
+      const had = state.queued.some((q) => q.id === id);
       state.queued = state.queued.filter((q) => q.id !== id);
       publish({});
       schedule();
+      return had;
     },
     setPaused: (paused) => {
       publish({ paused, phase: running ? state.phase : paused ? 'paused' : 'idle' });
@@ -190,7 +210,10 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
         state.queued.unshift(...held);
         held = null;
         running = false;
-        publish({ phase: state.paused ? 'paused' : 'idle', message: 'Stopped. Your agent may have written part of it: check the diff.' });
+        const runId = heldRunId;
+        heldRunId = null;
+        publish({ phase: state.paused ? 'paused' : 'idle', message: 'Stopped. Your agent may have written part of it: check the diff.', lastRunItemIds: [] });
+        if (runId !== null) void deps.onRunEnd?.(runId).then(() => publish({ lastRunId: runId }));
         schedule();
         return;
       }
@@ -239,9 +262,13 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
     },
     touched: () => [...touched].sort(),
     clearTouched: (paths) => {
-      if (paths === undefined) touched.clear();
-      else paths.forEach((p) => touched.delete(p));
+      if (paths === undefined) {
+        touched.clear();
+        doneItems = [];
+      } else paths.forEach((p) => touched.delete(p));
     },
+    addTouched: (paths) => paths.forEach((p) => touched.add(p)),
+    doneSummary: () => doneItems.map(shortQueueItem),
     dispose: () => {
       if (timer !== null) clearTimeout(timer);
       abort?.abort();
@@ -262,17 +289,24 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
       }
       releaseOnce = false;
       running = true;
-      held = state.queued.splice(0);
+      const taken = state.queued.splice(0);
+      held = taken;
+      heldRunId = nextRunId();
+      await deps.onRunStart?.(heldRunId);
       publish({ phase: 'writing', lastText: '', message: 'Your agent is writing these changes.' });
-      return held;
+      return taken;
     },
-    finishBatch: (summary, files) => {
+    finishBatch: async (summary, files) => {
       if (held === null) return false;
       const items = held;
+      const runId = heldRunId;
       held = null;
-      running = false;
+      heldRunId = null;
       files.forEach((f) => touched.add(f));
-      publish({ phase: 'done', lastText: summary.trim(), lastRunItemIds: items.map((i) => i.id), message: undefined });
+      if (runId !== null) await deps.onRunEnd?.(runId);
+      running = false;
+      doneItems = [...doneItems, ...items];
+      publish({ phase: 'done', lastText: summary.trim(), lastRunItemIds: items.map((i) => i.id), lastRunId: runId ?? undefined, message: undefined });
       schedule();
       return true;
     },

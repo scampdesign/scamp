@@ -8,6 +8,7 @@ import type {
   EmbeddedChooseResult,
   EmbeddedGitResult,
   EmbeddedGitStatus,
+  EmbeddedHistory,
   EmbeddedPreflight,
   EmbeddedElementRef,
   EmbeddedOwnAgentStatus,
@@ -54,7 +55,8 @@ const embeddedApi = {
   stop: (): Promise<void> => ipcRenderer.invoke(IPC.EmbeddedStop),
 
   enqueue: (item: EmbeddedQueueItem): Promise<boolean> => ipcRenderer.invoke(IPC.EmbeddedEnqueue, item),
-  removeQueued: (id: string): Promise<void> => ipcRenderer.invoke(IPC.EmbeddedRemoveQueued, { id }),
+  /** False when the item wasn't in the queue: the agent has it, or it's gone. */
+  removeQueued: (id: string): Promise<boolean> => ipcRenderer.invoke(IPC.EmbeddedRemoveQueued, { id }),
   setPaused: (paused: boolean): Promise<void> => ipcRenderer.invoke(IPC.EmbeddedSetPaused, { paused }),
   runNow: (): Promise<void> => ipcRenderer.invoke(IPC.EmbeddedRunNow),
   cancel: (): Promise<void> => ipcRenderer.invoke(IPC.EmbeddedCancel),
@@ -71,6 +73,10 @@ const embeddedApi = {
   pull: (): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedPull),
   /** Apply the page's `data-scamp-force` marks as forced pseudo-classes. */
   syncPseudo: (): Promise<boolean> => ipcRenderer.invoke(IPC.EmbeddedSyncPseudo),
+  history: (): Promise<EmbeddedHistory | null> => ipcRenderer.invoke(IPC.EmbeddedHistory),
+  historyGoTo: (sha: string): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedHistoryGoTo, { sha }),
+  /** Undo (or redo) what one agent run wrote. */
+  undoRun: (runId: string, redo = false): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedUndoRun, { runId, redo }),
   /** Who writes changes: Scamp's agent or the user's own, over MCP. */
   setWorker: (worker: EmbeddedWorker): Promise<EmbeddedOwnAgentStatus | null> => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
   ownAgentStatus: (): Promise<EmbeddedOwnAgentStatus | null> => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),

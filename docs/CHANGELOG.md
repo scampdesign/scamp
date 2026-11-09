@@ -37,6 +37,20 @@ release time.
   don't need an API key. See
   [Use your own agent](user_docs/edit-react-project.md#use-your-own-agent).
 
+- **In Edit React Project, Cmd+Z undoes your edits and the agent's.**
+  Undo takes back an edit still in the queue, with its preview, or what
+  the agent wrote, file by file; Cmd+Shift+Z redoes it. See
+  [Undo and redo](user_docs/edit-react-project.md#undo-and-redo).
+- **In Edit React Project, the History lists what you accepted, and
+  goes back to any point.** Each entry says what changed in plain words.
+  Click one to put the project back there, and click a later one to go
+  forward again. See
+  [Go back in the history](user_docs/edit-react-project.md#go-back-in-the-history).
+- **In Edit React Project, you can edit at a tablet or phone width.** Size
+  the app as a tablet, a phone, a width you type, or one of your app's own
+  breakpoints. An edit made there applies at that width and narrower. See
+  [Edit at a tablet or phone width](user_docs/edit-react-project.md#edit-at-a-tablet-or-phone-width).
+
 ### 0.14.0 (2026-11-05)
 
 **Added**

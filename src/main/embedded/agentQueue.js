@@ -1,4 +1,4 @@
-import { buildAgentPrompt } from '@shared/embedded';
+import { buildAgentPrompt, shortQueueItem } from '@shared/embedded';
 import { runTurn } from '../agent/harness';
 import { EMBEDDED_READ_TOOLS, EMBEDDED_TOOLS, EMBEDDED_WRITE_TOOL_NAMES, embeddedToolInvoker } from './fileTools';
 import { describeIdioms } from './idiom';
@@ -45,6 +45,11 @@ export const createEmbeddedAgent = (deps) => {
     /** Run now, for the user's agent: the next take goes through even while paused. */
     let releaseOnce = false;
     let lastChange = 0;
+    let runCount = 0;
+    let heldRunId = null;
+    /** Items written since the last accept or discard, for the commit message. */
+    let doneItems = [];
+    const nextRunId = () => `run-${Date.now().toString(36)}-${(runCount += 1)}`;
     const delay = deps.batchDelayMs ?? BATCH_DELAY_MS;
     const invokerFor = deps.invoker ?? ((t, readOnly) => embeddedToolInvoker(deps.folder, t, readOnly));
     const publish = (patch) => {
@@ -74,6 +79,8 @@ export const createEmbeddedAgent = (deps) => {
         }
         running = true;
         const items = state.queued.splice(0);
+        const runId = nextRunId();
+        await deps.onRunStart?.(runId);
         abort = new AbortController();
         publish({ phase: 'thinking', lastText: '', message: undefined });
         let said = '';
@@ -103,18 +110,21 @@ export const createEmbeddedAgent = (deps) => {
             },
         });
         history = result.history;
+        await deps.onRunEnd?.(runId);
         running = false;
         abort = null;
         if (result.outcome === 'done') {
-            publish({ phase: 'done', lastText: said.trim(), lastRunItemIds: items.map((i) => i.id) });
+            doneItems = [...doneItems, ...items];
+            publish({ phase: 'done', lastText: said.trim(), lastRunItemIds: items.map((i) => i.id), lastRunId: runId });
         }
         else if (result.outcome === 'cancelled') {
-            // A cancelled batch goes back to the front of the queue, untouched.
+            // A cancelled batch goes back to the front of the queue; what it wrote can still be undone.
             state.queued.unshift(...items);
-            publish({ phase: state.paused ? 'paused' : 'idle', lastText: said.trim(), message: 'Stopped.' });
+            publish({ phase: state.paused ? 'paused' : 'idle', lastText: said.trim(), message: 'Stopped.', lastRunId: runId, lastRunItemIds: [] });
         }
         else {
-            publish({ phase: 'error', lastText: said.trim(), lastRunItemIds: items.map((i) => i.id), message: result.message ?? 'The agent stopped before it finished.' });
+            doneItems = [...doneItems, ...items];
+            publish({ phase: 'error', lastText: said.trim(), lastRunItemIds: items.map((i) => i.id), lastRunId: runId, message: result.message ?? 'The agent stopped before it finished.' });
         }
         schedule();
     };
@@ -130,9 +140,11 @@ export const createEmbeddedAgent = (deps) => {
             schedule();
         },
         remove: (id) => {
+            const had = state.queued.some((q) => q.id === id);
             state.queued = state.queued.filter((q) => q.id !== id);
             publish({});
             schedule();
+            return had;
         },
         setPaused: (paused) => {
             publish({ paused, phase: running ? state.phase : paused ? 'paused' : 'idle' });
@@ -153,7 +165,11 @@ export const createEmbeddedAgent = (deps) => {
                 state.queued.unshift(...held);
                 held = null;
                 running = false;
-                publish({ phase: state.paused ? 'paused' : 'idle', message: 'Stopped. Your agent may have written part of it: check the diff.' });
+                const runId = heldRunId;
+                heldRunId = null;
+                publish({ phase: state.paused ? 'paused' : 'idle', message: 'Stopped. Your agent may have written part of it: check the diff.', lastRunItemIds: [] });
+                if (runId !== null)
+                    void deps.onRunEnd?.(runId).then(() => publish({ lastRunId: runId }));
                 schedule();
                 return;
             }
@@ -202,11 +218,15 @@ export const createEmbeddedAgent = (deps) => {
         },
         touched: () => [...touched].sort(),
         clearTouched: (paths) => {
-            if (paths === undefined)
+            if (paths === undefined) {
                 touched.clear();
+                doneItems = [];
+            }
             else
                 paths.forEach((p) => touched.delete(p));
         },
+        addTouched: (paths) => paths.forEach((p) => touched.add(p)),
+        doneSummary: () => doneItems.map(shortQueueItem),
         dispose: () => {
             if (timer !== null)
                 clearTimeout(timer);
@@ -229,18 +249,26 @@ export const createEmbeddedAgent = (deps) => {
             }
             releaseOnce = false;
             running = true;
-            held = state.queued.splice(0);
+            const taken = state.queued.splice(0);
+            held = taken;
+            heldRunId = nextRunId();
+            await deps.onRunStart?.(heldRunId);
             publish({ phase: 'writing', lastText: '', message: 'Your agent is writing these changes.' });
-            return held;
+            return taken;
         },
-        finishBatch: (summary, files) => {
+        finishBatch: async (summary, files) => {
             if (held === null)
                 return false;
             const items = held;
+            const runId = heldRunId;
             held = null;
-            running = false;
+            heldRunId = null;
             files.forEach((f) => touched.add(f));
-            publish({ phase: 'done', lastText: summary.trim(), lastRunItemIds: items.map((i) => i.id), message: undefined });
+            if (runId !== null)
+                await deps.onRunEnd?.(runId);
+            running = false;
+            doneItems = [...doneItems, ...items];
+            publish({ phase: 'done', lastText: summary.trim(), lastRunItemIds: items.map((i) => i.id), lastRunId: runId ?? undefined, message: undefined });
             schedule();
             return true;
         },

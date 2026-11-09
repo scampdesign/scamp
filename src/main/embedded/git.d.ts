@@ -47,7 +47,7 @@ export declare const ensureSessionBranch: (folder: string, now: Date) => Promise
 /** The unified diff of `paths` (all changes when empty), new files included. */
 export declare const gitDiff: (folder: string, paths: ReadonlyArray<string>) => Promise<string>;
 /** Accept: commit exactly these files, never anything else in the tree. */
-export declare const commitFiles: (folder: string, paths: ReadonlyArray<string>, subject: string) => Promise<EmbeddedGitResult>;
+export declare const commitFiles: (folder: string, paths: ReadonlyArray<string>, subject: string, body?: string) => Promise<EmbeddedGitResult>;
 /** Discard: put these files back as the last commit has them, deleting ones the agent created. */
 export declare const discardFiles: (folder: string, paths: ReadonlyArray<string>) => Promise<EmbeddedGitResult>;
 export declare const revertCommit: (folder: string, sha: string) => Promise<EmbeddedGitResult>;

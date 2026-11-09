@@ -1,5 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { IconChevronDown } from '@tabler/icons-react';
 import { routeHasParams } from '@shared/embedded';
 import { useEmbeddedStore } from './embeddedStore';
 import { openPath } from './session';
@@ -21,6 +22,7 @@ export const PathField = () => {
     const routes = useEmbeddedStore((s) => s.routes);
     const [draft, setDraft] = useState(pathOf(pageUrl));
     const [open, setOpen] = useState(false);
+    const input = useRef(null);
     const [active, setActive] = useState(0);
     /** Enter picks the highlighted route only after the arrow keys moved to it. */
     const [arrowed, setArrowed] = useState(false);
@@ -61,12 +63,20 @@ export const PathField = () => {
             e.preventDefault();
             setOpen(false);
             openPath(draft);
-        }, children: [_jsx("input", { className: styles.url, value: draft, onChange: (e) => {
+        }, children: [_jsx("input", { ref: input, className: styles.url, value: draft, onChange: (e) => {
                     setDraft(e.target.value);
                     setOpen(true);
                     setActive(0);
                     setArrowed(false);
-                }, onFocus: () => setOpen(true), onBlur: () => setOpen(false), onKeyDown: handleKeyDown, role: "combobox", "aria-expanded": open && shown.length > 0, "aria-controls": "embedded-routes", "aria-autocomplete": "list", "aria-label": "Page path", "data-testid": "embedded-path" }), open && shown.length > 0 && (_jsx("ul", { className: styles.menu, id: "embedded-routes", role: "listbox", "data-testid": "embedded-routes", children: shown.map((route, i) => (_jsxs("li", { role: "option", "aria-selected": i === active, className: styles.option, 
+                }, onFocus: () => setOpen(true), onBlur: () => setOpen(false), onKeyDown: handleKeyDown, role: "combobox", "aria-expanded": open && shown.length > 0, "aria-controls": "embedded-routes", "aria-autocomplete": "list", "aria-label": "Page path", "data-testid": "embedded-path" }), _jsx("button", { type: "button", className: styles.chevron, "aria-label": "Show the app's routes", tabIndex: -1, 
+                // Keep focus in the field: the list closes when it loses focus.
+                onMouseDown: (e) => {
+                    e.preventDefault();
+                    if (document.activeElement !== input.current)
+                        input.current?.focus();
+                    else
+                        setOpen((was) => !was);
+                }, children: _jsx(IconChevronDown, { className: styles.chevronGlyph, stroke: 2, "aria-hidden": "true" }) }), open && shown.length > 0 && (_jsx("ul", { className: styles.menu, id: "embedded-routes", role: "listbox", "data-testid": "embedded-routes", children: shown.map((route, i) => (_jsxs("li", { role: "option", "aria-selected": i === active, className: styles.option, 
                     // Keep focus in the field, so the click lands before blur closes the list.
                     onMouseDown: (e) => e.preventDefault(), onMouseEnter: () => setActive(i), onClick: () => handleChoose(route), children: [route, routeHasParams(route) && _jsx("span", { className: styles.params, children: "fill in" })] }, route))) }))] }));
 };

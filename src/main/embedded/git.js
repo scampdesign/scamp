@@ -153,13 +153,15 @@ export const gitDiff = async (folder, paths) => {
     return out;
 };
 /** Accept: commit exactly these files, never anything else in the tree. */
-export const commitFiles = async (folder, paths, subject) => {
+export const commitFiles = async (folder, paths, subject, body = '') => {
     if (paths.length === 0)
         return { ok: false, error: 'There is nothing to commit.' };
     const add = await git(folder, ['add', '-A', '--', ...paths]);
     if (!add.ok)
         return { ok: false, error: reason(add, 'Couldn’t stage the changes.') };
-    const commit = await git(folder, ['commit', '-m', `${SCAMP_COMMIT_PREFIX}${subject}`, '--', ...paths]);
+    // The body lists each change in plain words, which the history reads back.
+    const message = body.length > 0 ? ['-m', `${SCAMP_COMMIT_PREFIX}${subject}`, '-m', body] : ['-m', `${SCAMP_COMMIT_PREFIX}${subject}`];
+    const commit = await git(folder, ['commit', ...message, '--', ...paths]);
     return commit.ok ? { ok: true } : { ok: false, error: reason(commit, 'The commit failed.') };
 };
 /** Discard: put these files back as the last commit has them, deleting ones the agent created. */

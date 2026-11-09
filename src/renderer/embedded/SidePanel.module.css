@@ -1,6 +1,7 @@
 .panel {
   flex: none;
-  width: 320px;
+  /* Wider than the design's 230px: it holds Scamp's own properties panel, laid out for 260. */
+  width: 260px;
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--border);
@@ -9,13 +10,19 @@
 }
 
 .tabs {
+  /* The design's panel header. */
+  flex: none;
+  height: 50px;
   display: flex;
+  align-items: stretch;
+  padding: 0 8px;
   border-bottom: 1px solid var(--border);
 }
 
 .tab {
   flex: 1;
-  height: 36px;
+  font-family: var(--font-ui);
+  font-size: 12px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;

@@ -1,4 +1,4 @@
-import { EMBEDDED_COMPUTED_PROPERTIES, INSPECTOR_PREFIX, inspectorScript, inspectorTreeScript, mergeRoutes } from '@shared/embedded';
+import { breakpointFor, EMBEDDED_COMPUTED_PROPERTIES, INSPECTOR_PREFIX, inspectorBreakpointsScript, inspectorScript, inspectorTreeScript, mergeRoutes, shortQueueItem, } from '@shared/embedded';
 import { flattenRoutes, readRoutesFn } from '@shared/reactRoutes';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { STAND_IN_ID, standInTree, styleChanges } from '@lib/embeddedStandIn';
@@ -43,7 +43,7 @@ export const installInPage = async () => {
     await runInspector({ type: 'freeze', on: frozen });
     if (layersOpen)
         await refreshTree();
-    await discoverRoutes();
+    await Promise.all([discoverRoutes(), refreshBreakpoints()]);
 };
 let fileRoutesAsked = false;
 /** Find the app's routes: from its files once (Next.js), and from its router and links on every page. */
@@ -93,7 +93,7 @@ export const hoverTreeNode = (id) => {
 };
 /** Move a layer next to a sibling; the page answers with `moved`, which queues it. */
 export const moveTreeNode = (id, targetId, position) => {
-    void runInspector({ type: 'move', id, targetId, position });
+    void runInspector({ type: 'move', id, targetId, position, tag: newId() });
 };
 /** An element as the agent should see it: with its source looked up when React only gave a location (Next.js). */
 const withSource = async (element, raw) => {
@@ -106,7 +106,166 @@ const withSource = async (element, raw) => {
 const queueMove = async (msg) => {
     flushPending();
     const [element, target] = await Promise.all([withSource(msg.element, msg.raw), withSource(msg.target, msg.targetRaw)]);
-    await window.scampEmbedded.enqueue({ id: newId(), kind: 'move', element, target, position: msg.position, fromList: msg.fromList });
+    // The page tagged its preview with this id: the queue item takes it, so undo can take back both.
+    const item = { id: msg.tag, kind: 'move', element, target, position: msg.position, fromList: msg.fromList };
+    await window.scampEmbedded.enqueue(item);
+    pushUndo({ kind: 'item', id: item.id, item, label: shortQueueItem(item), redo: [{ type: 'move', id: msg.uid, targetId: msg.targetUid, position: msg.position, tag: msg.tag }] });
+};
+// --- Undo and redo. see docs/plans/embedded-canvas-gaps.md (P2)
+/** A new step: it goes on the undo stack, and ends what redo could bring back. */
+const pushUndo = (entry) => {
+    const { undo, set } = useEmbeddedStore.getState();
+    // An edit sent again (a scope switch) replaces its own entry.
+    const rest = entry.kind === 'item' ? undo.filter((e) => !(e.kind === 'item' && e.id === entry.id)) : undo;
+    set({ undo: [...rest, entry], redo: [] });
+};
+let toastTimer = null;
+const toast = (text) => {
+    useEmbeddedStore.getState().set({ toast: text });
+    if (toastTimer !== null)
+        clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => useEmbeddedStore.getState().set({ toast: null }), 3000);
+};
+/** Take an item out of the queue with ✕: its preview goes, and so does its undo step. */
+export const removeQueued = async (id) => {
+    await window.scampEmbedded.removeQueued(id);
+    await runInspector({ type: 'undoTag', tag: id });
+    const { undo, set } = useEmbeddedStore.getState();
+    set({ undo: undo.filter((e) => !(e.kind === 'item' && e.id === id)) });
+};
+/** Accept or Discard ends what runs undo can reach: from there it's the history. */
+export const dropRunEntries = () => {
+    const { undo, redo, set } = useEmbeddedStore.getState();
+    set({ undo: undo.filter((e) => e.kind !== 'run'), redo: redo.filter((e) => e.kind !== 'run') });
+};
+export const undo = async () => {
+    flushPending();
+    const store = useEmbeddedStore.getState();
+    const entry = store.undo[store.undo.length - 1];
+    if (entry === undefined) {
+        await historyStep('back');
+        return;
+    }
+    if (entry.kind === 'item') {
+        // Main decides: the window's copy of the queue can lag an edit sent a moment ago.
+        if (!(await window.scampEmbedded.removeQueued(entry.id))) {
+            toast('The agent is writing that change. Stop it first, or undo once it’s done.');
+            return;
+        }
+        await runInspector({ type: 'undoTag', tag: entry.id });
+        if (store.pending?.id === entry.id) {
+            // The panel shows the edit undone: read the element again.
+            store.set({ pending: null });
+            void runInspector({ type: 'reselect' });
+        }
+    }
+    else {
+        const result = await window.scampEmbedded.undoRun(entry.runId);
+        if (!result.ok) {
+            toast(result.error);
+            return;
+        }
+        void refreshGit();
+    }
+    const now = useEmbeddedStore.getState();
+    now.set({ undo: now.undo.slice(0, -1), redo: [...now.redo, entry] });
+    toast(`Undid: ${entry.label}`);
+};
+export const redo = async () => {
+    flushPending();
+    const store = useEmbeddedStore.getState();
+    const entry = store.redo[store.redo.length - 1];
+    if (entry === undefined) {
+        await historyStep('forward');
+        return;
+    }
+    if (entry.kind === 'item') {
+        await window.scampEmbedded.enqueue(entry.item);
+        for (const cmd of entry.redo)
+            await runInspector(cmd);
+    }
+    else {
+        const result = await window.scampEmbedded.undoRun(entry.runId, true);
+        if (!result.ok) {
+            toast(result.error);
+            return;
+        }
+        void refreshGit();
+    }
+    const now = useEmbeddedStore.getState();
+    now.set({ redo: now.redo.slice(0, -1), undo: [...now.undo, entry] });
+    toast(`Redid: ${entry.label}`);
+};
+// --- History. see docs/plans/embedded-canvas-gaps.md (P3)
+export const refreshHistory = async () => {
+    useEmbeddedStore.getState().set({ history: await window.scampEmbedded.history() });
+};
+/** Move the project to a point in its history; the result says why when it can't. */
+export const goToHistory = async (sha) => {
+    flushPending();
+    const result = await window.scampEmbedded.historyGoTo(sha);
+    if (result.ok) {
+        // The files changed under the page: drop the preview, and read everything again.
+        void runInspector({ type: 'clear' });
+        useEmbeddedStore.getState().set({ pending: null });
+        void runInspector({ type: 'reselect' });
+    }
+    await Promise.all([refreshHistory(), refreshGit()]);
+    return result;
+};
+/** Cmd+Z past every edit and run goes back a step in the history; Cmd+Shift+Z forward. */
+const historyStep = async (direction) => {
+    await refreshHistory();
+    const history = useEmbeddedStore.getState().history;
+    if (history === null)
+        return;
+    const entries = history.entries;
+    const at = entries.findIndex((e) => e.current);
+    const target = direction === 'back'
+        ? at === -1
+            ? null
+            : (entries[at + 1]?.sha ?? history.base)
+        : at === -1
+            ? (entries[entries.length - 1]?.undone === true ? entries[entries.length - 1]?.sha : null)
+            : entries[at - 1]?.undone === true
+                ? entries[at - 1]?.sha
+                : null;
+    if (target === null || target === undefined) {
+        toast(direction === 'back' ? 'Nothing to undo.' : 'Nothing to redo.');
+        return;
+    }
+    const result = await goToHistory(target);
+    toast(result.ok ? (direction === 'back' ? 'Went back a step in the history.' : 'Went forward a step in the history.') : result.error);
+};
+// --- Breakpoints. see docs/plans/embedded-canvas-gaps.md (P4)
+/** The breakpoint an edit made now applies up to, or null at desktop. */
+const currentBreakpoint = () => {
+    const { viewport, pageBreakpoints: b } = useEmbeddedStore.getState();
+    const project = [...new Set([...b.min, ...b.max])];
+    const direction = b.min.length === 0 && b.max.length === 0 ? null : b.min.length >= b.max.length ? 'min' : 'max';
+    return breakpointFor(viewport, project, direction);
+};
+const mediaFor = (bp) => (bp === null ? null : `(max-width: ${bp.upTo}px)`);
+/** Read the widths the app's stylesheets break at. */
+export const refreshBreakpoints = async () => {
+    if (webview === null)
+        return;
+    try {
+        const found = (await webview.executeJavaScript(inspectorBreakpointsScript(config)));
+        if (found !== null)
+            useEmbeddedStore.getState().set({ pageBreakpoints: found });
+    }
+    catch {
+        // Mid-navigation: the next load reads them.
+    }
+};
+/** Size the app as a phone, a tablet, a width of your own, or the window (null). */
+export const setViewport = (width) => {
+    flushPending();
+    const clean = width === null ? null : Math.max(240, Math.min(3000, Math.round(width)));
+    useEmbeddedStore.getState().set({ viewport: clean });
+    // The page reflows at the new width: once it has, the panel reads the element again.
+    setTimeout(() => void runInspector({ type: 'reselect' }), 250);
 };
 /** Force a pseudo-class on the selection; later edits style that state. */
 export const setPseudo = (state) => {
@@ -222,6 +381,12 @@ export const handleConsoleLine = (line) => {
             void refreshTree();
         void discoverRoutes();
     }
+    else if (msg.type === 'undo') {
+        void undo();
+    }
+    else if (msg.type === 'redo') {
+        void redo();
+    }
     else if (msg.type === 'freeze') {
         useEmbeddedStore.getState().set({ frozen: msg.on });
     }
@@ -252,7 +417,16 @@ const queueItemFor = () => {
     // Unmapped elements are edited too: the prompt carries what the agent needs to find them.
     if (pending === null || selection === null || pending.changes.length === 0)
         return null;
-    return { id: pending.id, kind: 'style', element: selection.element, scope, changes: pending.changes, ...(pseudo !== 'none' ? { state: pseudo } : {}) };
+    const breakpoint = currentBreakpoint();
+    return {
+        id: pending.id,
+        kind: 'style',
+        element: selection.element,
+        scope,
+        changes: pending.changes,
+        ...(pseudo !== 'none' ? { state: pseudo } : {}),
+        ...(breakpoint !== null ? { breakpoint } : {}),
+    };
 };
 /** Send the edit in progress to the agent now. */
 export const flushPending = () => {
@@ -266,15 +440,28 @@ export const flushPending = () => {
     if (item === null)
         return;
     void window.scampEmbedded.enqueue(item);
-    const { pending, set } = useEmbeddedStore.getState();
+    const { pending, set, selection, scope, pseudo } = useEmbeddedStore.getState();
     if (pending !== null)
         set({ pending: { ...pending, sent: true } });
+    if (item.kind === 'style') {
+        const styles = Object.fromEntries(item.changes.map((c) => [c.property, c.to]));
+        const redoApply = { type: 'apply', uid: selection?.uid, scope, state: pseudo, styles, media: mediaFor(item.breakpoint ?? null), tag: item.id };
+        pushUndo({ kind: 'item', id: item.id, item, label: shortQueueItem(item), redo: [redoApply] });
+    }
 };
 /** Apply the edit's current CSS to the page. */
 const showOnPage = (changes) => {
-    const { scope, pseudo } = useEmbeddedStore.getState();
+    const { scope, pseudo, selection, pending } = useEmbeddedStore.getState();
     if (changes.length > 0) {
-        void runInspector({ type: 'apply', scope, state: pseudo, styles: Object.fromEntries(changes.map((c) => [c.property, c.to])) });
+        void runInspector({
+            type: 'apply',
+            uid: selection?.uid,
+            scope,
+            state: pseudo,
+            media: mediaFor(currentBreakpoint()),
+            tag: pending?.id,
+            styles: Object.fromEntries(changes.map((c) => [c.property, c.to])),
+        });
     }
 };
 /** A panel edit landed on the stand-in: measure it, show it, and queue it. */
@@ -293,8 +480,9 @@ const handleStandInChange = () => {
     const back = pending.changes.filter((c) => !now.has(c.property));
     const restore = back.filter((c) => !pending.carried.includes(c.property)).map((c) => c.property);
     const keep = back.filter((c) => pending.carried.includes(c.property)).map((c) => ({ property: c.property, to: c.from }));
-    if (restore.length > 0)
-        void runInspector({ type: 'restore', scope: 'all', properties: restore, state: store.pseudo });
+    if (restore.length > 0) {
+        void runInspector({ type: 'restore', uid: store.selection.uid, scope: 'all', properties: restore, state: store.pseudo, media: mediaFor(currentBreakpoint()) });
+    }
     showOnPage([...changes, ...keep]);
     const applied = [...new Set([...pending.applied.filter((p) => !restore.includes(p)), ...changes.map((c) => c.property)])];
     store.set({ pending: { ...pending, changes, applied, sent: false } });
@@ -304,9 +492,10 @@ const handleStandInChange = () => {
 };
 /** Switch between this instance and all of them, moving the page's preview with it. */
 export const setScope = (scope) => {
-    const { pending, set, pseudo } = useEmbeddedStore.getState();
-    if (pending !== null && pending.applied.length > 0)
-        void runInspector({ type: 'restore', scope: 'all', properties: pending.applied, state: pseudo });
+    const { pending, set, pseudo, selection } = useEmbeddedStore.getState();
+    if (pending !== null && pending.applied.length > 0) {
+        void runInspector({ type: 'restore', uid: selection?.uid, scope: 'all', properties: pending.applied, state: pseudo, media: mediaFor(currentBreakpoint()) });
+    }
     set({ scope, ...(pending !== null ? { pending: { ...pending, sent: false } } : {}) });
     if (pending !== null && pending.changes.length > 0) {
         showOnPage(pending.changes);
@@ -322,12 +511,15 @@ export const sendInstruction = async (text) => {
         return;
     flushPending();
     const { selection, scope } = useEmbeddedStore.getState();
-    await window.scampEmbedded.enqueue({ id: newId(), kind: 'instruction', element: selection?.element ?? null, scope, text: trimmed });
+    const item = { id: newId(), kind: 'instruction', element: selection?.element ?? null, scope, text: trimmed };
+    await window.scampEmbedded.enqueue(item);
+    pushUndo({ kind: 'item', id: item.id, item, label: shortQueueItem(item), redo: [] });
 };
 export const refreshGit = async () => {
     const git = await window.scampEmbedded.gitStatus();
     useEmbeddedStore.getState().set({ git, ...(git !== null ? { branch: git.branch } : {}) });
 };
+const handledRuns = new Set();
 const handleAgentEvent = (event) => {
     const store = useEmbeddedStore.getState();
     if (event.kind === 'state') {
@@ -346,6 +538,16 @@ const handleAgentEvent = (event) => {
                     sent: false,
                 },
             });
+        }
+        // A run finished: its items' undo entries become one entry for what it wrote.
+        const runId = event.state.lastRunId;
+        if (runId !== undefined && !handledRuns.has(runId) && (event.state.phase === 'done' || event.state.phase === 'error')) {
+            handledRuns.add(runId);
+            const ids = new Set(event.state.lastRunItemIds);
+            const { undo } = useEmbeddedStore.getState();
+            const labels = undo.filter((e) => e.kind === 'item' && ids.has(e.id)).map((e) => e.label);
+            const label = labels.length === 0 ? 'the agent’s changes' : labels.length === 1 ? (labels[0] ?? '') : `${labels[0]}, and ${labels.length - 1} more`;
+            useEmbeddedStore.getState().set({ undo: [...undo.filter((e) => !(e.kind === 'item' && ids.has(e.id))), { kind: 'run', runId, label }], redo: [] });
         }
         if (wasRunning && (event.state.phase === 'done' || event.state.phase === 'error')) {
             void refreshGit();
@@ -385,6 +587,16 @@ export const startSession = () => {
         handleStandInChange();
     });
     window.scampEmbedded.onAgentEvent(handleAgentEvent);
+    // Cmd+Z in the window (not in a field or the terminal, which have their own).
+    window.addEventListener('keydown', (e) => {
+        if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== 'z')
+            return;
+        const t = e.target;
+        if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable))
+            return;
+        e.preventDefault();
+        void (e.shiftKey ? redo() : undo());
+    });
     // Main answers the user's own agent's "what's selected" from this.
     let selected = useEmbeddedStore.getState().selection?.element ?? null;
     useEmbeddedStore.subscribe((st) => {

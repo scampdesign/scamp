@@ -1,0 +1,10 @@
+.header {
+  flex: none;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}

@@ -1,8 +1,22 @@
 .view {
   flex: 1;
   display: flex;
+  justify-content: center;
   min-width: 0;
+  min-height: 0;
+  overflow-x: auto;
+  /* The design's artboard: the canvas colour, with the page inset from its edges. */
+  padding: 14px 20px 20px;
   background: var(--bg-canvas);
+}
+
+.webview {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.webview[data-sized='true'] {
+  outline: 1px solid var(--border);
 }
 
 .webview {

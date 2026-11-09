@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import { promises as fs } from 'fs';
 import { homedir } from 'os';
 import { basename, join } from 'path';
+import { commitMessageFor } from '@shared/embedded';
 import { IPC } from '@shared/ipcChannels';
 import { agentConnected, agentSignedIn, embeddedAgentProvider } from '../ipc/agent';
 import { appFeatures } from '../ipc/auth';
@@ -15,7 +16,9 @@ import { commitFiles, discardFiles, ensureSessionBranch, excludeFromGit, git, gi
 import { viteCommand, writeInstrumentation } from './instrument';
 import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
+import { goToCommit, headSha, historyBase, readHistory } from './history';
 import { OWN_AGENT_TOOLS, ownAgentInvoker } from './ownAgent';
+import { recordRun, redoRun, snapshotRun, undoRun } from './runs';
 import { listProjectFiles } from './projectFiles';
 import { syncPseudo } from './pseudo';
 import { parseRecent, removeRecent, upsertRecent } from './recent';
@@ -36,6 +39,10 @@ const newSession = (folder, win) => ({
     mcpReport: { written: [], skipped: [] },
     ownAgentSeen: false,
     selection: null,
+    historyBase: null,
+    historyTip: null,
+    runs: new Map(),
+    snapshots: new Map(),
 });
 const endSession = async (session) => {
     session.agent?.dispose();
@@ -150,6 +157,9 @@ export const openEmbeddedWindow = async () => {
         show: false,
     });
     const id = win.webContents.id;
+    // No File, Edit, View menu bar on Windows and Linux: the window has its own toolbar.
+    // Text fields keep copy, paste, and undo, which Chromium handles without a menu.
+    win.removeMenu();
     // The project's page may open popups or links: the system browser takes
     // web links, and nothing opens inside Scamp.
     win.webContents.on('did-attach-webview', (_e, contents) => {
@@ -244,6 +254,8 @@ export const registerEmbeddedIpc = () => {
         const branch = await ensureSessionBranch(session.folder, new Date());
         if (!branch.ok)
             return { ok: false, error: branch.error };
+        session.historyBase = await historyBase(session.folder);
+        session.historyTip = await headSha(session.folder);
         // Next.js runs as it is: sources come from React's debug info, resolved in `resolveSource`.
         session.framework = check.framework;
         const next = check.framework === 'next';
@@ -263,6 +275,15 @@ export const registerEmbeddedIpc = () => {
             idioms: check.idioms,
             getProvider: embeddedAgentProvider,
             emit: (event) => send(e.sender, IPC.EmbeddedAgentEvent, event),
+            onRunStart: async (runId) => {
+                session.snapshots.set(runId, await snapshotRun(session.folder));
+            },
+            onRunEnd: async (runId) => {
+                const before = session.snapshots.get(runId);
+                session.snapshots.delete(runId);
+                if (before !== undefined)
+                    session.runs.set(runId, await recordRun(session.folder, runId, before));
+            },
         });
         session.idioms = check.idioms;
         const worker = await readWorker();
@@ -330,7 +351,7 @@ export const registerEmbeddedIpc = () => {
         agent.enqueue(item);
         return true;
     }));
-    ipcMain.handle(IPC.EmbeddedRemoveQueued, (e, args) => withAgent(e, undefined, (agent) => agent.remove(String(args?.id ?? ''))));
+    ipcMain.handle(IPC.EmbeddedRemoveQueued, (e, args) => withAgent(e, false, (agent) => agent.remove(String(args?.id ?? ''))));
     ipcMain.handle(IPC.EmbeddedSetPaused, (e, args) => withAgent(e, undefined, (agent) => agent.setPaused(args?.paused === true)));
     ipcMain.handle(IPC.EmbeddedRunNow, (e) => withAgent(e, undefined, (agent) => agent.runNow()));
     ipcMain.handle(IPC.EmbeddedCancel, (e) => withAgent(e, undefined, (agent) => agent.cancel()));
@@ -355,10 +376,14 @@ export const registerEmbeddedIpc = () => {
         if (session?.agent == null)
             return { ok: false, error: 'Nothing to accept.' };
         const files = session.agent.touched();
-        const subject = (typeof args?.message === 'string' && args.message.trim().length > 0 ? args.message.trim() : `update ${files.join(', ')}`).slice(0, 120);
-        const result = await commitFiles(session.folder, files, subject);
-        if (result.ok)
+        const message = commitMessageFor(typeof args?.message === 'string' ? args.message : '', session.agent.doneSummary(), files);
+        const result = await commitFiles(session.folder, files, message.subject, message.body);
+        if (result.ok) {
             session.agent.clearTouched();
+            // Committed: undo goes through the history from here, and the new commit is its newest step.
+            session.runs.clear();
+            session.historyTip = await headSha(session.folder);
+        }
         return result;
     });
     ipcMain.handle(IPC.EmbeddedDiscard, async (e) => {
@@ -366,13 +391,61 @@ export const registerEmbeddedIpc = () => {
         if (session?.agent == null)
             return { ok: false, error: 'Nothing to discard.' };
         const result = await discardFiles(session.folder, session.agent.touched());
-        if (result.ok)
+        if (result.ok) {
             session.agent.clearTouched();
+            session.runs.clear();
+        }
         return result;
     });
     ipcMain.handle(IPC.EmbeddedRevert, async (e, args) => {
         const session = sessionOf(e);
-        return session === null ? { ok: false, error: 'Open a project first.' } : revertCommit(session.folder, String(args?.sha ?? ''));
+        if (session === null)
+            return { ok: false, error: 'Open a project first.' };
+        const result = await revertCommit(session.folder, String(args?.sha ?? ''));
+        if (result.ok)
+            session.historyTip = await headSha(session.folder);
+        return result;
+    });
+    ipcMain.handle(IPC.EmbeddedHistory, async (e) => {
+        const session = sessionOf(e);
+        return session === null ? null : readHistory(session.folder, session.historyBase, session.historyTip);
+    });
+    /** Move the project to a point in its history, keeping the newer steps reachable. */
+    ipcMain.handle(IPC.EmbeddedHistoryGoTo, async (e, args) => {
+        const session = sessionOf(e);
+        if (session === null)
+            return { ok: false, error: 'Open a project first.' };
+        const before = await headSha(session.folder);
+        const result = await goToCommit(session.folder, String(args?.sha ?? ''), {
+            base: session.historyBase,
+            tip: session.historyTip,
+            pendingAgentFiles: session.agent?.touched().length ?? 0,
+        });
+        // The first step back makes where the project was the tip, so it's reachable again.
+        if (result.ok && session.historyTip === null)
+            session.historyTip = before;
+        return result;
+    });
+    /** Undo or redo what one agent run wrote, if its files are as it left them. */
+    ipcMain.handle(IPC.EmbeddedUndoRun, async (e, args) => {
+        const session = sessionOf(e);
+        const run = session?.runs.get(String(args?.runId ?? ''));
+        if (session === null || session.agent === null || run === undefined) {
+            return { ok: false, error: 'That change was accepted or discarded, so it’s in the history now.' };
+        }
+        const redo = args?.redo === true;
+        const result = await (redo ? redoRun : undoRun)(session.folder, run);
+        if (!result.ok)
+            return result;
+        const paths = run.files.map((f) => f.path);
+        if (redo)
+            session.agent.addTouched(paths);
+        else {
+            // A file back to how HEAD has it is no longer the agent's to accept.
+            const still = new Set((await gitStatus(session.folder)).changed.map((c) => c.path));
+            session.agent.clearTouched(paths.filter((p) => !still.has(p)));
+        }
+        return { ok: true };
     });
     ipcMain.handle(IPC.EmbeddedSwitchBranch, async (e, args) => {
         const session = sessionOf(e);

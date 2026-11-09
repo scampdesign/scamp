@@ -17,12 +17,16 @@ export type EmbeddedAgentDeps = {
     /** For tests; real runs use the project's file tools. */
     invoker?: (touched: Set<string>, readOnly: boolean) => AgentToolInvoker;
     batchDelayMs?: number;
+    /** Around every run, either agent's: for recording what it wrote, so it can be undone. */
+    onRunStart?: (runId: string) => Promise<void>;
+    onRunEnd?: (runId: string) => Promise<void>;
 };
 export declare const embeddedSystemPrompt: (folder: string, idioms: ReadonlyArray<EmbeddedIdiom>) => string;
 export type EmbeddedAgent = {
     state: () => EmbeddedAgentState;
     enqueue: (item: EmbeddedQueueItem) => void;
-    remove: (id: string) => void;
+    /** False when the item wasn't queued (the agent has it, or it's gone). */
+    remove: (id: string) => boolean;
     setPaused: (paused: boolean) => void;
     runNow: () => void;
     cancel: () => void;
@@ -30,6 +34,10 @@ export type EmbeddedAgent = {
     /** Files the agent has written since the last accept or discard. */
     touched: () => string[];
     clearTouched: (paths?: ReadonlyArray<string>) => void;
+    /** Files a redo wrote back. */
+    addTouched: (paths: ReadonlyArray<string>) => void;
+    /** The changes written since the last accept or discard, in a few words each: the next commit's body. */
+    doneSummary: () => string[];
     dispose: () => void;
     worker: () => EmbeddedWorker;
     setWorker: (worker: EmbeddedWorker) => void;
@@ -40,7 +48,7 @@ export type EmbeddedAgent = {
      */
     takeBatch: (timeoutMs: number) => Promise<EmbeddedQueueItem[] | null>;
     /** The user's agent finished the batch it took. False when it held none. */
-    finishBatch: (summary: string, files: ReadonlyArray<string>) => boolean;
+    finishBatch: (summary: string, files: ReadonlyArray<string>) => Promise<boolean>;
     /** The batch the user's agent holds, if any. */
     heldBatch: () => EmbeddedQueueItem[] | null;
 };

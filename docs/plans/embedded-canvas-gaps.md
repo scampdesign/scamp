@@ -1,6 +1,8 @@
 # Embedded Scamp — gaps with the Scamp canvas
 
-Status: **priorities set** (2026-11-09); see [Priorities](#priorities). A list of what the Scamp canvas
+Status: **priorities set** (2026-11-09); see [Priorities](#priorities).
+P2, P3, and P4 are built on `feat/embedded-undo-history-breakpoints`
+(2026-11-09), ready for manual testing. A list of what the Scamp canvas
 does that Embedded Scamp doesn't, or does differently, to choose which
 gaps to close. Each has a possible approach and a rough size: **S** (a
 day or so), **M** (a few days), **L** (a week or more, or a design
@@ -223,6 +225,17 @@ parent with siblings, and the notes. Next, from manual testing:
 
 ### P2: Cmd+Z undo (gap 5)
 
+**Built.** One stack in the window (`undo` and `redo` in `embeddedStore`,
+`undo()`/`redo()` in `session.ts`): a queued item's entry carries the
+inspector commands that redo its preview; every preview is tagged with the
+item's id, so `undoTag` takes back exactly that. A finished run becomes one
+entry; main keeps each run's files before and after (`runs.ts`, from a git
+snapshot at the run's start, for either agent) and refuses a file changed
+since. Accept and Discard drop run entries; an empty stack steps the
+history. Main decides whether an item was still queued (`remove` returns
+it), since the window's copy of the queue can lag an edit sent a moment
+before.
+
 - **Before the agent writes:** **Cmd+Z** undoes the last panel edit or
   move: it restores the page's preview, as the panel's own reset does
   (`restore`, the move's saved `order` or its marker), and takes the item
@@ -239,6 +252,12 @@ parent with siblings, and the notes. Next, from manual testing:
   undo does.
 
 ### P3: A history of Scamp's changes, like the canvas's History panel
+
+**Built.** `history.ts` (the timeline, `goToCommit` with `reset --keep`,
+and the refusals: `pending`, `pushed`, `changed`), `HistoryList.tsx`, and
+commit bodies from `commitMessageFor` over the queue's `doneSummary`. The
+history starts at the fork from `main` (or `master`, `develop`), so earlier
+sessions on the branch show too.
 
 Today the **Changes** tab ends with **Scamp's commits**: each commit's
 subject and a **Revert** button. The subject is the commit message
@@ -283,6 +302,14 @@ Make it work like the canvas's History panel (`docs/user_docs/undo-redo.md`):
   timeline: the timeline is only what's committed.
 
 ### P4: Breakpoint switcher (gap 6)
+
+**Built.** `ViewportControl.tsx` sizes the webview; the inspector reads the
+page's breakpoints from its stylesheets (`min-width`/`max-width` and the
+range syntax Tailwind 4 writes, in px, em, or rem); `breakpointFor` gives
+the range an edit applies to (up to just under the next breakpoint up);
+the preview is a rule inside that media query, and the queue item carries
+the breakpoint for the prompt. Not yet: a project's breakpoints from its
+Tailwind config before any stylesheet using them has loaded.
 
 - A width control above the app: **Desktop**, **Tablet** (768), **Mobile**
   (390), and a custom width. It resizes the webview, so the app's own

@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildAgentPrompt, computedToDeclarations, describeQueueItem, mergeRoutes, routeHasParams } from '@shared/embedded';
+import {
+  breakpointFor,
+  buildAgentPrompt,
+  commitMessageFor,
+  computedToDeclarations,
+  describeQueueItem,
+  HISTORY_LOG_FORMAT,
+  mergeRoutes,
+  parseHistoryLog,
+  routeHasParams,
+  shortQueueItem,
+} from '@shared/embedded';
 import type { EmbeddedElementRef } from '@shared/types';
 
 const computed = (patch: Record<string, string>): Record<string, string> => ({
@@ -202,5 +213,89 @@ describe('routeHasParams', () => {
     expect(routeHasParams('/blog/[slug]')).toBe(true);
     expect(routeHasParams('/docs/[[...slug]]')).toBe(true);
     expect(routeHasParams('/about')).toBe(false);
+  });
+});
+
+describe('breakpointFor', () => {
+  it('is null at desktop', () => {
+    expect(breakpointFor(null, [640, 768], 'min')).toBeNull();
+  });
+
+  it('applies up to just under the project’s next breakpoint above the width', () => {
+    expect(breakpointFor(390, [1024, 640, 768], 'min')).toEqual({ width: 390, upTo: 639, project: [640, 768, 1024], direction: 'min' });
+    expect(breakpointFor(768, [640, 768, 1024], 'min')?.upTo).toBe(1023);
+  });
+
+  it('applies up to the width itself when the project has nothing above it, or no breakpoints', () => {
+    expect(breakpointFor(1200, [640, 768], 'min')?.upTo).toBe(1200);
+    expect(breakpointFor(390, [], null)).toEqual({ width: 390, upTo: 390, project: [], direction: null });
+  });
+});
+
+describe('describeQueueItem with a breakpoint', () => {
+  it('tells the agent the width, the range, and the project’s direction', () => {
+    const text = describeQueueItem(
+      { id: 'b', kind: 'style', element: element(), scope: 'all', breakpoint: { width: 390, upTo: 639, project: [640, 768], direction: 'min' }, changes: [{ property: 'padding', from: '24px', to: '12px' }] },
+      0
+    );
+    expect(text).toContain('Breakpoint: the user made this edit with the app 390px wide. Apply it at widths up to 639px (`@media (max-width: 639px)`)');
+    expect(text).toContain('640px, 768px, written mobile-first (`min-width`)');
+    expect(text).toContain('`p-4 md:p-6`');
+  });
+});
+
+describe('shortQueueItem', () => {
+  it('names the state and the width an edit was made at', () => {
+    expect(
+      shortQueueItem({ id: 's', kind: 'style', element: element({ tag: 'a' }), scope: 'instance', state: 'hover', breakpoint: { width: 390, upTo: 390, project: [], direction: null }, changes: [{ property: 'color', from: '', to: 'red' }] })
+    ).toBe('<a:hover @390> color → red');
+  });
+
+  it('describes moves and instructions', () => {
+    expect(shortQueueItem({ id: 'm', kind: 'move', element: element({ tag: 'p' }), target: element({ tag: 'h1', text: 'Team' }), position: 'before', fromList: false })).toBe('Move <p> before <h1> “Team”');
+    expect(shortQueueItem({ id: 'i', kind: 'instruction', element: null, scope: 'instance', text: 'tighten it' })).toBe('tighten it');
+  });
+});
+
+describe('commitMessageFor', () => {
+  it('uses the user’s subject when they typed one, with every change in the body', () => {
+    expect(commitMessageFor('  Restyle the cards ', ['<div> padding → 24px (all)', 'Move <p> before <h1>'], ['a.css'])).toEqual({
+      subject: 'Restyle the cards',
+      body: '- <div> padding → 24px (all)\n- Move <p> before <h1>',
+    });
+  });
+
+  it('makes the subject from the first change, counting the rest', () => {
+    expect(commitMessageFor('', ['<div> padding → 24px (all)', 'b', 'c'], ['a.css']).subject).toBe('<div> padding → 24px (all), and 2 more');
+    expect(commitMessageFor('', ['<div> padding → 24px (all)'], ['a.css']).subject).toBe('<div> padding → 24px (all)');
+  });
+
+  it('falls back to the files when there are no changes to name', () => {
+    expect(commitMessageFor('', [], ['a.css', 'b.css'])).toEqual({ subject: 'update a.css, b.css', body: '' });
+  });
+});
+
+describe('parseHistoryLog', () => {
+  const record = (sha: string, time: number, subject: string, body: string, files: string[]): string =>
+    HISTORY_LOG_FORMAT.replace('%x1e', '\x1e')
+      .replace('%H', sha)
+      .replace('%ct', String(time))
+      .replace('%s', subject)
+      .replace('%b', body)
+      .replaceAll('%x1f', '\x1f') + `\n\n${files.join('\n')}\n`;
+
+  it('reads each commit with its changes and files, newest first', () => {
+    const text =
+      record('a'.repeat(40), 200, 'Scamp: <div> padding → 24px', '- <div> padding → 24px\n- Move <p> before <h1>\n', ['src/Card.module.css', 'src/App.jsx']) +
+      record('b'.repeat(40), 100, 'my own commit', '', ['README.md']);
+    expect(parseHistoryLog(text)).toEqual([
+      { sha: 'a'.repeat(40), time: 200, subject: 'Scamp: <div> padding → 24px', changes: ['<div> padding → 24px', 'Move <p> before <h1>'], files: ['src/Card.module.css', 'src/App.jsx'] },
+      { sha: 'b'.repeat(40), time: 100, subject: 'my own commit', changes: [], files: ['README.md'] },
+    ]);
+  });
+
+  it('ignores empty output and records without a commit id', () => {
+    expect(parseHistoryLog('')).toEqual([]);
+    expect(parseHistoryLog('\x1enot-a-sha\x1f1\x1fs\x1f\x1f')).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-import type { EmbeddedEditScope, EmbeddedIdiom, EmbeddedPseudoState, EmbeddedQueueItem } from './types';
+import type { EmbeddedBreakpoint, EmbeddedEditScope, EmbeddedHistoryEntry, EmbeddedIdiom, EmbeddedPseudoState, EmbeddedQueueItem } from './types';
 /**
  * Embedded Scamp's shared vocabulary: the properties the inspector reads
  * from the page, how they become declarations Scamp's parser understands,
@@ -26,6 +26,23 @@ export declare const OWN_AGENT_LINE = "Work my Scamp edit queue: call scamp_embe
 export declare const routeHasParams: (path: string) => boolean;
 /** Known routes plus newly found ones: one each, pages before parameterised paths, then alphabetical. */
 export declare const mergeRoutes: (known: ReadonlyArray<string>, found: ReadonlyArray<string>, limit?: number) => string[];
+/** One queued edit in a few words: the queue list, the history, and commit messages. */
+export declare const shortQueueItem: (item: EmbeddedQueueItem) => string;
+/** An Accept's commit: a subject (the user's, or the first change) and one body line per change. */
+export declare const commitMessageFor: (subject: string, changes: ReadonlyArray<string>, files: ReadonlyArray<string>) => {
+    subject: string;
+    body: string;
+};
+/** For `git log --name-only`: each record starts with the separator, and the file list ends it. */
+export declare const HISTORY_LOG_FORMAT = "%x1e%H%x1f%ct%x1f%s%x1f%b%x1f";
+/** `git log --format=HISTORY_LOG_FORMAT --name-only` read into entries, newest first. */
+export declare const parseHistoryLog: (text: string) => Array<Omit<EmbeddedHistoryEntry, "undone" | "current">>;
+/**
+ * The breakpoint an edit made `width` pixels wide applies up to: just under
+ * the project's next breakpoint above it, or the width itself when the
+ * project has none above. Null at desktop (no width set).
+ */
+export declare const breakpointFor: (width: number | null, project: ReadonlyArray<number>, direction: "min" | "max" | null) => EmbeddedBreakpoint | null;
 /** Messages from the inspector arrive as console lines starting with this. */
 export declare const INSPECTOR_PREFIX = "__scamp_inspector__";
 export type InspectorConfig = {
@@ -40,16 +57,33 @@ export type InspectorCommand = {
 } | {
     type: 'freeze';
     on: boolean;
-} | {
+}
+/**
+ * Preview styles on the page. `uid` is the element the edit is about (the
+ * selection when omitted), `media` wraps it in a media query (an edit made
+ * below desktop width), and `tag` (the queue item's id) lets `undoTag`
+ * take back exactly what this edit set.
+ */
+ | {
     type: 'apply';
     scope: EmbeddedEditScope;
     styles: Record<string, string>;
     state: InspectorState;
+    uid?: string;
+    media?: string | null;
+    tag?: string;
 } | {
     type: 'restore';
     scope: EmbeddedEditScope;
     properties: ReadonlyArray<string>;
     state: InspectorState;
+    uid?: string;
+    media?: string | null;
+}
+/** Take back everything an edit or move with this tag previewed. */
+ | {
+    type: 'undoTag';
+    tag: string;
 } | {
     type: 'clear';
 } | {
@@ -80,6 +114,7 @@ export type InspectorCommand = {
     id: string;
     targetId: string;
     position: 'before' | 'after';
+    tag: string;
 };
 /**
  * Runs IN the page, installed by `webview.executeJavaScript`. Must be
@@ -102,5 +137,7 @@ export type InspectorCommand = {
 export declare const installInspector: (config: InspectorConfig) => void;
 /** The source text that installs the inspector, then runs `cmd` if given. */
 export declare const inspectorScript: (config: InspectorConfig, cmd?: InspectorCommand) => string;
+/** The source text that returns the widths the page's stylesheets break at. */
+export declare const inspectorBreakpointsScript: (config: InspectorConfig) => string;
 /** The source text that returns the page's tree, installing the inspector first. */
 export declare const inspectorTreeScript: (config: InspectorConfig) => string;

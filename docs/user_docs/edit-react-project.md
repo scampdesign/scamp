@@ -204,8 +204,56 @@ it changed and their diff.
   uncommitted changes in other files stay uncommitted.
 - To throw the changes away, click **Discard**. Scamp puts those files back
   as they were, and deletes any file the agent created.
-- To undo a change you already accepted, find it under **Scamp's commits**,
-  and click **Revert**.
+- To go back to before a change you already accepted, use the
+  **History**. See [Go back in the history](#go-back-in-the-history).
+
+## Undo and redo
+
+Press **Cmd+Z** to undo, and **Cmd+Shift+Z** to redo. On Windows and
+Linux, press **Ctrl+Z** and **Ctrl+Shift+Z**. Each undo takes back one step,
+newest first:
+
+- **An edit or move still in the queue:** it leaves the queue, and the
+  page drops its preview.
+- **What the agent wrote:** the files it changed go back to how they were
+  before. If a file changed again since, for example in your editor,
+  Scamp leaves it and says which.
+- **After you accept:** undo goes back a step in the history.
+
+A short note in the toolbar says what each undo or redo did. Undo works
+from anywhere in the window except a text field or the terminal, which
+have their own.
+
+## Go back in the history
+
+The **History** section of the **Changes** tab lists each change you
+accepted, oldest first, with what it changed in plain words and when.
+The point the project is at now is marked.
+
+- Click an entry to put the project back to how it was right after that
+  change. Click **Session start** to go back to before every change in this
+  session.
+- The entries after that point dim, below **Undone**. Click one to go
+  forward to it again.
+- Accepting a new change from an earlier point drops the dimmed entries.
+
+Your own uncommitted changes are kept. If one is in a file the step would
+change, Scamp doesn't move, and says so. If you pushed the branch past that
+point, going back would rewrite what you pushed, so Scamp offers **Revert
+this change instead**, which adds a commit that undoes it.
+
+## Edit at a tablet or phone width
+
+In the toolbar, click **Tablet** or **Mobile** to size the app like that
+device, or type a width. If your app's stylesheets have breakpoints, Scamp
+lists them beside the width, so you can go straight to one. Click
+**Desktop** to fill the window again.
+
+An edit you make below desktop width applies at that width and narrower:
+up to just under your project's next breakpoint. The page previews it that
+way, so wider widths keep their styles. The agent writes it with your
+project's own media queries or Tailwind prefixes. In the queue, such an
+edit shows the width, such as `<article @390>`.
 
 ## Work with branches and GitHub
 

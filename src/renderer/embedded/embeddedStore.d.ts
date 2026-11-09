@@ -1,4 +1,5 @@
-import type { EmbeddedAgentState, EmbeddedEditScope, EmbeddedElementRef, EmbeddedGitStatus, EmbeddedHeld, EmbeddedPreflight, EmbeddedPseudoState, EmbeddedRawSource, EmbeddedStyleChange, EmbeddedTreeNode } from '@shared/types';
+import type { InspectorCommand } from '@shared/embedded';
+import type { EmbeddedAgentState, EmbeddedEditScope, EmbeddedElementRef, EmbeddedGitStatus, EmbeddedHistory, EmbeddedHeld, EmbeddedPreflight, EmbeddedQueueItem, EmbeddedPseudoState, EmbeddedRawSource, EmbeddedStyleChange, EmbeddedTreeNode } from '@shared/types';
 import type { ScampElement } from '@lib/element';
 /**
  * The Embedded Scamp window's own state: which screen, the running app,
@@ -28,6 +29,22 @@ export type PendingEdit = {
     /** Properties an earlier edit (now with the agent) set on the page, which stay. */
     carried: string[];
     sent: boolean;
+};
+/**
+ * One step Cmd+Z takes back: an edit or move still in the queue (its
+ * preview goes, and it leaves the queue), or what one agent run wrote (its
+ * files go back). Past the last Accept, undo steps through the history.
+ */
+export type UndoEntry = {
+    kind: 'item';
+    id: string;
+    item: EmbeddedQueueItem;
+    redo: InspectorCommand[];
+    label: string;
+} | {
+    kind: 'run';
+    runId: string;
+    label: string;
 };
 export type AgentLogEntry = {
     kind: 'text' | 'tool';
@@ -59,6 +76,18 @@ type State = {
     /** Elements with a state held in the page, frozen or forced. */
     held: EmbeddedHeld[];
     layersOpen: boolean;
+    undo: UndoEntry[];
+    redo: UndoEntry[];
+    /** A short note about the last undo or redo, shown in the toolbar for a moment. */
+    toast: string | null;
+    history: EmbeddedHistory | null;
+    /** The app's width, or null at desktop (the window's width). */
+    viewport: number | null;
+    /** Widths the app's own stylesheets break at. */
+    pageBreakpoints: {
+        min: number[];
+        max: number[];
+    };
     /** Why the last drag moved something else, or nothing; cleared by the next selection. */
     dragNote: string | null;
     /** Paths of the app found so far: its router, its files (Next.js), and links on pages visited. */

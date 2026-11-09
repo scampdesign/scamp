@@ -1,19 +1,16 @@
 import { useEffect, useState } from 'react';
 
-import type { EmbeddedGitResult, EmbeddedQueueItem } from '@shared/types';
+import { shortQueueItem } from '@shared/embedded';
+import type { EmbeddedGitResult } from '@shared/types';
 
 import { AgentChoice } from './AgentChoice';
 import { DiffView } from './DiffView';
+import { HistoryList } from './HistoryList';
 import { useEmbeddedStore } from './embeddedStore';
-import { refreshGit, runInspector } from './session';
+import { dropRunEntries, refreshGit, refreshHistory, removeQueued, runInspector } from './session';
 import styles from './ChangesTab.module.css';
 
-const summary = (item: EmbeddedQueueItem): string =>
-  item.kind === 'style'
-    ? `<${item.element.tag}${item.state !== undefined ? `:${item.state}` : ''}> ${item.changes.map((c) => `${c.property} → ${c.to}`).join(', ')}${item.scope === 'all' ? ' (all)' : ''}`
-    : item.kind === 'move'
-      ? `Move <${item.element.tag}> ${item.position} <${item.target.tag}>${item.target.text.length > 0 ? ` “${item.target.text.slice(0, 24)}”` : ''}`
-      : item.text;
+const summary = shortQueueItem;
 
 /** The agent's queue and controls, review of what it wrote, and git. */
 type Props = {
@@ -56,7 +53,7 @@ export const ChangesTab = ({ active }: Props): JSX.Element => {
     const result = await fn();
     setBusy(false);
     set({ notice: result.ok ? (result.message ?? done ?? null) : result.error });
-    await refreshGit();
+    await Promise.all([refreshGit(), refreshHistory()]);
   };
 
   return (
@@ -97,7 +94,7 @@ export const ChangesTab = ({ active }: Props): JSX.Element => {
             {agent.queued.map((item) => (
               <li key={item.id} className={styles.item}>
                 <span className={styles.itemText}>{summary(item)}</span>
-                <button type="button" className={styles.remove} onClick={() => void window.scampEmbedded.removeQueued(item.id)} aria-label="Remove from queue">
+                <button type="button" className={styles.remove} onClick={() => void removeQueued(item.id)} aria-label="Remove from queue">
                   ✕
                 </button>
               </li>
@@ -117,7 +114,14 @@ export const ChangesTab = ({ active }: Props): JSX.Element => {
           {diff.length > 0 && <DiffView diff={diff} />}
           <input className={styles.input} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Commit message" aria-label="Commit message" />
           <div className={styles.row}>
-            <button type="button" className={styles.primary} disabled={busy || running} onClick={() => void act(() => window.scampEmbedded.accept(message), 'Committed.')} data-testid="embedded-accept">
+            <button type="button" className={styles.primary} disabled={busy || running} onClick={() =>
+                void act(async () => {
+                  const result = await window.scampEmbedded.accept(message);
+                  // Committed: undo goes through the history from here.
+                  if (result.ok) dropRunEntries();
+                  return result;
+                }, 'Committed.')
+              } data-testid="embedded-accept">
               Accept
             </button>
             <button
@@ -127,7 +131,10 @@ export const ChangesTab = ({ active }: Props): JSX.Element => {
               onClick={() =>
                 void act(async () => {
                   const result = await window.scampEmbedded.discard();
-                  if (result.ok) await runInspector({ type: 'clear' });
+                  if (result.ok) {
+                    await runInspector({ type: 'clear' });
+                    dropRunEntries();
+                  }
                   return result;
                 }, 'Discarded.')
               }
@@ -183,21 +190,7 @@ export const ChangesTab = ({ active }: Props): JSX.Element => {
 
       {notice !== null && <p className={styles.notice} data-testid="embedded-notice">{notice}</p>}
 
-      {git !== null && git.scampCommits.length > 0 && (
-        <section className={styles.section}>
-          <h3 className={styles.title}>Scamp&rsquo;s commits</h3>
-          <ul className={styles.list} data-testid="embedded-commits">
-            {git.scampCommits.map((c) => (
-              <li key={c.sha} className={styles.item}>
-                <span className={styles.itemText}>{c.subject}</span>
-                <button type="button" className={styles.button} disabled={busy} onClick={() => void act(() => window.scampEmbedded.revert(c.sha), 'Reverted.')}>
-                  Revert
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <HistoryList active={active} />
 
       {log.length > 0 && (
         <details className={styles.log}>

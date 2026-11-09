@@ -192,6 +192,9 @@ export declare const IPC: {
     readonly EmbeddedSyncPseudo: "embedded:sync-pseudo";
     readonly EmbeddedResolveSource: "embedded:resolve-source";
     readonly EmbeddedRoutes: "embedded:routes";
+    readonly EmbeddedHistory: "embedded:history";
+    readonly EmbeddedHistoryGoTo: "embedded:history-go-to";
+    readonly EmbeddedUndoRun: "embedded:undo-run";
     readonly EmbeddedSetWorker: "embedded:set-worker";
     readonly EmbeddedOwnAgentStatus: "embedded:own-agent-status";
     /** renderer → main, fire and forget: the selection changed. */

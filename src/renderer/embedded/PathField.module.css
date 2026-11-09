@@ -1,19 +1,25 @@
 .form {
   position: relative;
   flex: 1;
-  max-width: 520px;
+  min-width: 120px;
 }
 
 .url {
+  /* The scamp-ui design's URL bar: an input-coloured row with a subtle border, room for the chevron. */
   width: 100%;
-  height: 26px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
+  height: 24px;
+  padding: 0 26px 0 6px;
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   background: var(--bg-input);
   color: var(--text-primary);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 12px;
+}
+
+.url:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .menu {
@@ -53,4 +59,29 @@
   color: var(--text-tertiary);
   font-family: var(--font-sans, inherit);
   font-size: 11px;
+}
+
+.chevron {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  width: 22px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.chevron:hover {
+  color: var(--text-primary);
+}
+
+.chevronGlyph {
+  width: 14px;
+  height: 14px;
 }

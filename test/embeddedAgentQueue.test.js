@@ -143,7 +143,7 @@ describe('the user’s own agent working the queue', () => {
         agent.setWorker('own');
         agent.enqueue(item('a', '20px'));
         await agent.takeBatch(1000);
-        expect(agent.finishBatch('Set the padding in Card.module.css.', ['src/Card.module.css'])).toBe(true);
+        expect(await agent.finishBatch('Set the padding in Card.module.css.', ['src/Card.module.css'])).toBe(true);
         expect(agent.touched()).toEqual(['src/Card.module.css']);
         expect(agent.heldBatch()).toBeNull();
         const last = events.filter((e) => e.kind === 'state').at(-1);
@@ -156,8 +156,8 @@ describe('the user’s own agent working the queue', () => {
         await agent.takeBatch(1000);
         agent.enqueue(item('b', '24px'));
         expect(await agent.takeBatch(50)).toBeNull();
-        agent.finishBatch('', []);
-        expect(agent.finishBatch('', [])).toBe(false);
+        await agent.finishBatch('', []);
+        expect(await agent.finishBatch('', [])).toBe(false);
         expect((await agent.takeBatch(1000))?.map((i) => i.id)).toEqual(['b']);
     });
     it('waits out the timeout with an empty queue', async () => {
@@ -190,5 +190,72 @@ describe('the user’s own agent working the queue', () => {
         const { agent } = setup(null);
         agent.enqueue(item('a', '20px'));
         expect(await agent.takeBatch(60)).toBeNull();
+    });
+});
+describe('runs, for undo and the commit message', () => {
+    it('calls the run hooks around a run of the Scamp Agent, and names the run in its state', async () => {
+        const calls = [];
+        const events = [];
+        const agent = createEmbeddedAgent({
+            folder: '/p/app',
+            idioms: ['css-modules'],
+            getProvider: async () => createScriptedProvider([{ content: [{ type: 'text', text: 'Done.' }] }]),
+            emit: (e) => events.push(e),
+            batchDelayMs: 10,
+            invoker: () => async () => ({ content: [{ type: 'text', text: 'ok' }] }),
+            onRunStart: async (id) => {
+                calls.push(`start ${id}`);
+            },
+            onRunEnd: async (id) => {
+                calls.push(`end ${id}`);
+            },
+        });
+        agent.enqueue(item('a', '20px'));
+        await until(() => agent.state().phase === 'done');
+        const runId = agent.state().lastRunId;
+        expect(runId).toMatch(/^run-/);
+        expect(calls).toEqual([`start ${runId}`, `end ${runId}`]);
+    });
+    it('calls the run hooks around the user’s agent’s batch too', async () => {
+        const calls = [];
+        const agent = createEmbeddedAgent({
+            folder: '/p/app',
+            idioms: [],
+            getProvider: async () => null,
+            emit: () => undefined,
+            batchDelayMs: 10,
+            onRunStart: async (id) => {
+                calls.push(`start ${id}`);
+            },
+            onRunEnd: async (id) => {
+                calls.push(`end ${id}`);
+            },
+        });
+        agent.setWorker('own');
+        agent.enqueue(item('a', '20px'));
+        await agent.takeBatch(1000);
+        await agent.finishBatch('Done.', []);
+        expect(calls).toHaveLength(2);
+        expect(calls[1]).toBe(`end ${agent.state().lastRunId}`);
+    });
+    it('keeps a summary of what was written until an accept or discard clears it', async () => {
+        const { agent } = setup(null);
+        agent.setWorker('own');
+        agent.enqueue(item('a', '20px'));
+        await agent.takeBatch(1000);
+        await agent.finishBatch('', ['src/Card.module.css']);
+        agent.enqueue(item('b', '24px'));
+        await agent.takeBatch(1000);
+        await agent.finishBatch('', ['src/Card.module.css']);
+        expect(agent.doneSummary()).toEqual(['<div> padding → 20px', '<div> padding → 24px']);
+        agent.clearTouched(['src/Card.module.css']);
+        expect(agent.doneSummary()).toHaveLength(2);
+        agent.clearTouched();
+        expect(agent.doneSummary()).toEqual([]);
+    });
+    it('adds files back to the touched list, for a redo', () => {
+        const { agent } = setup(null);
+        agent.addTouched(['b.css', 'a.css']);
+        expect(agent.touched()).toEqual(['a.css', 'b.css']);
     });
 });

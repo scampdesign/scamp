@@ -1636,6 +1636,21 @@ export type EmbeddedElementRef = {
 
 export type EmbeddedEditScope = 'instance' | 'all';
 
+/**
+ * An edit made with the app narrower than desktop: it applies up to `upTo`
+ * pixels wide, and wider widths keep their styles.
+ */
+export type EmbeddedBreakpoint = {
+  /** The app's width when the edit was made. */
+  width: number;
+  /** The widest the edit applies at: just under the project's next breakpoint up, or `width`. */
+  upTo: number;
+  /** The project's breakpoints, as its stylesheets use them. */
+  project: number[];
+  /** `min` for mobile-first (`min-width` queries), `max` for desktop-first, null when unknown. */
+  direction: 'min' | 'max' | null;
+};
+
 /** A pseudo-class forced on the selection; an edit made in one targets that state. */
 export type EmbeddedPseudoState = 'none' | 'hover' | 'focus' | 'active';
 
@@ -1675,6 +1690,8 @@ export type EmbeddedQueueItem =
       changes: EmbeddedStyleChange[];
       /** Set when the edit was made with a pseudo-class forced: it styles that state. */
       state?: Exclude<EmbeddedPseudoState, 'none'>;
+      /** Set when the edit was made below desktop width. */
+      breakpoint?: EmbeddedBreakpoint;
     }
   | {
       id: string;
@@ -1724,6 +1741,8 @@ export type EmbeddedAgentState = {
   lastText: string;
   /** The items the last run wrote, so their layer-1 styles can be cleared. */
   lastRunItemIds: string[];
+  /** The last run's id, for undoing what it wrote. */
+  lastRunId?: string;
   message?: string;
 };
 
@@ -1750,7 +1769,35 @@ export type EmbeddedGitStatus = {
   scampCommits: Array<{ sha: string; subject: string }>;
 };
 
-export type EmbeddedGitResult = { ok: true; message?: string } | { ok: false; error: string };
+export type EmbeddedGitResult =
+  | { ok: true; message?: string }
+  | {
+      ok: false;
+      error: string;
+      /** `pushed`: moving the branch would drop commits already pushed. `changed`: files changed since. `pending`: unaccepted agent changes in the way. */
+      code?: 'pushed' | 'changed' | 'pending';
+    };
+
+/** One entry of the session's history: a commit on the `scamp/` branch. */
+export type EmbeddedHistoryEntry = {
+  sha: string;
+  /** Unix seconds. */
+  time: number;
+  subject: string;
+  /** What changed, in plain words, from the commit's body. */
+  changes: string[];
+  files: string[];
+  /** Ahead of where the project is now: a step that was gone back past, still reachable. */
+  undone: boolean;
+  current: boolean;
+};
+
+export type EmbeddedHistory = {
+  entries: EmbeddedHistoryEntry[];
+  /** The commit the session started from: going back to it undoes every entry. */
+  base: string | null;
+  atBase: boolean;
+};
 
 /** What the inspector in the page reports to the window. */
 export type EmbeddedInspectorMessage =
@@ -1775,11 +1822,18 @@ export type EmbeddedInspectorMessage =
   | { type: 'forced'; held: EmbeddedHeld[] }
   /** The page's DOM changed: the layers tree should ask again. */
   | { type: 'treeChanged' }
+  /** Cmd+Z or Cmd+Shift+Z in the page, in edit mode. */
+  | { type: 'undo' }
+  | { type: 'redo' }
   /** Why a drag moved something other than the selection, or nothing. */
   | { type: 'dragNote'; text: string }
   /** The user dropped an element next to a sibling; the page previews it where it can. */
   | {
       type: 'moved';
+      /** The queue item's id, and the tag its preview carries, so undo can take back just this. */
+      tag: string;
+      uid: string;
+      targetUid: string;
       element: EmbeddedElementRef;
       raw: EmbeddedRawSource | null;
       target: EmbeddedElementRef;
