@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import type { EmbeddedRecentProject } from '@shared/types';
 
+import { Tooltip } from '../src/components/controls/Tooltip';
 import { useEmbeddedStore } from './embeddedStore';
 import styles from './ChooseScreen.module.css';
 
@@ -68,16 +69,17 @@ export const ChooseScreen = (): JSX.Element => {
             <ul className={styles.recentList} data-testid="embedded-recent">
               {recent.map((p) => (
                 <li key={p.folder} className={styles.recentRow}>
-                  <button
-                    type="button"
-                    className={styles.recentOpen}
-                    onClick={() => void openFolder(p.folder)}
-                    disabled={busy || !p.exists}
-                    title={p.exists ? p.folder : `${p.folder} isn’t there any more`}
-                  >
-                    <span className={styles.recentName}>{p.name}</span>
-                    <span className={styles.recentPath}>{p.exists ? p.folder : 'Folder not found'}</span>
-                  </button>
+                  <Tooltip label={p.exists ? p.folder : `${p.folder} isn’t there any more`}>
+                    <button
+                      type="button"
+                      className={styles.recentOpen}
+                      onClick={() => void openFolder(p.folder)}
+                      disabled={busy || !p.exists}
+                    >
+                      <span className={styles.recentName}>{p.name}</span>
+                      <span className={styles.recentPath}>{p.exists ? p.folder : 'Folder not found'}</span>
+                    </button>
+                  </Tooltip>
                   <span className={styles.recentDate}>{shortDate.format(new Date(p.lastOpened))}</span>
                   <button type="button" className={styles.recentForget} onClick={() => void handleForget(p.folder)} aria-label={`Remove ${p.name} from the list`}>
                     ✕

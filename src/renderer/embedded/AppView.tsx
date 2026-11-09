@@ -43,7 +43,7 @@ export const AppView = (): JSX.Element => {
 
   if (url === null) return <div className={styles.view} />;
   return (
-    <div className={styles.view}>
+    <div className={styles.view} data-sized={viewport !== null}>
       <webview
         ref={ref}
         src={url}

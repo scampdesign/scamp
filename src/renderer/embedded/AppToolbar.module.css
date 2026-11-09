@@ -36,40 +36,6 @@
   min-width: 0;
 }
 
-/* Freeze State and Editing: accent-dark with an accent border when on. */
-.pill {
-  height: 24px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--bg-raised);
-  color: var(--text-secondary);
-  font-family: var(--font-ui);
-  font-size: 11px;
-  text-align: center;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.pillIcon {
-  flex: none;
-  width: 14px;
-  height: 14px;
-}
-
-.pill:hover {
-  color: var(--text-primary);
-}
-
-.pill[aria-pressed='true'] {
-  border-color: var(--accent);
-  background: var(--accent-dark);
-  color: var(--text-primary);
-}
-
 .toast {
   max-width: 260px;
   overflow: hidden;

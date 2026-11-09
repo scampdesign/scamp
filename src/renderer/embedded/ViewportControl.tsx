@@ -1,5 +1,6 @@
 import { IconDeviceDesktop, IconDeviceMobile, IconDeviceTablet } from '@tabler/icons-react';
 
+import { Tooltip } from '../src/components/controls/Tooltip';
 import { useEmbeddedStore } from './embeddedStore';
 import { IconButton } from './IconButton';
 import { setViewport } from './session';
@@ -25,7 +26,8 @@ export const ViewportControl = (): JSX.Element => {
           key={p.label}
           icon={p.icon}
           variant="bare"
-          label={p.width === null ? `${p.label}: full width` : `${p.label} (${p.width}px)`}
+          label={p.label}
+          tooltip={p.width === null ? `${p.label} — The app at the window's full width.` : `${p.label} — The app ${p.width}px wide. Edits made here apply at this width and narrower.`}
           pressed={viewport === p.width}
           onClick={() => setViewport(p.width)}
           testId={`embedded-viewport-${p.label.toLowerCase()}`}

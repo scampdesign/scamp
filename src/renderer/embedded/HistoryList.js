@@ -1,11 +1,12 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useEffect, useState } from 'react';
 import { formatRelativeTime } from '@store/formatHistoryLabel';
+import { Tooltip } from '../src/components/controls/Tooltip';
 import { useEmbeddedStore } from './embeddedStore';
 import { goToHistory, refreshGit, refreshHistory } from './session';
 import styles from './HistoryList.module.css';
 const exact = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-const Row = ({ label, details, time, files, current, undone, now, disabled, onGo }) => (_jsx("li", { className: styles.row, "data-current": current, "data-undone": undone, children: _jsxs("button", { type: "button", className: styles.go, onClick: onGo, disabled: disabled || current, "aria-current": current ? 'step' : undefined, "data-testid": "embedded-history-entry", children: [_jsx("span", { className: styles.label, children: label }), details.length > 0 && (_jsx("ul", { className: styles.details, children: details.map((d) => (_jsx("li", { children: d }, d))) })), _jsxs("span", { className: styles.meta, children: [time !== null && _jsx("span", { title: exact.format(new Date(time * 1000)), children: formatRelativeTime(time * 1000, now) }), files.length > 0 && _jsx("span", { title: files.join('\n'), children: files.length === 1 ? files[0] : `${files.length} files` })] })] }) }));
+const Row = ({ label, details, time, files, current, undone, now, disabled, onGo }) => (_jsx("li", { className: styles.row, "data-current": current, "data-undone": undone, children: _jsxs("button", { type: "button", className: styles.go, onClick: onGo, disabled: disabled || current, "aria-current": current ? 'step' : undefined, "data-testid": "embedded-history-entry", children: [_jsx("span", { className: styles.label, children: label }), details.length > 0 && (_jsx("ul", { className: styles.details, children: details.map((d) => (_jsx("li", { children: d }, d))) })), _jsxs("span", { className: styles.meta, children: [time !== null && (_jsx(Tooltip, { label: exact.format(new Date(time * 1000)), children: _jsx("span", { children: formatRelativeTime(time * 1000, now) }) })), files.length > 0 && (_jsx(Tooltip, { label: files.join('\n'), children: _jsx("span", { children: files.length === 1 ? files[0] : `${files.length} files` }) }))] })] }) }));
 /**
  * Scamp's changes on this branch as a timeline, like the canvas's History
  * panel: oldest first, the project's current point marked, and the steps

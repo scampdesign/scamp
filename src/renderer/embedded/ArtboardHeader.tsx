@@ -2,12 +2,13 @@ import { IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconReload 
 
 import { useEmbeddedStore } from './embeddedStore';
 import { IconButton } from './IconButton';
+import { ModeToggles } from './ModeToggles';
 import { PathField } from './PathField';
 import { navigatePage, refreshTree } from './session';
 import { ViewportControl } from './ViewportControl';
 import styles from './ArtboardHeader.module.css';
 
-/** Above the app, as the design's artboard header: the layers toggle, the page's path, reload, and its width. */
+/** Above the app, as the design's artboard header: the layers toggle, the page's path, reload, its width, then Freeze and Editing. */
 export const ArtboardHeader = (): JSX.Element => {
   const layersOpen = useEmbeddedStore((s) => s.layersOpen);
   return (
@@ -25,6 +26,7 @@ export const ArtboardHeader = (): JSX.Element => {
       <PathField />
       <IconButton icon={IconReload} variant="bare" label="Reload" onClick={() => navigatePage('reload')} />
       <ViewportControl />
+      <ModeToggles />
     </div>
   );
 };

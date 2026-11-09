@@ -41,7 +41,7 @@ export const AppView = () => {
     }, [url, set]);
     if (url === null)
         return _jsx("div", { className: styles.view });
-    return (_jsx("div", { className: styles.view, children: _jsx("webview", { ref: ref, src: url, className: styles.webview, 
+    return (_jsx("div", { className: styles.view, "data-sized": viewport !== null, children: _jsx("webview", { ref: ref, src: url, className: styles.webview, 
             // A set width sizes the app like a device; desktop fills the window.
             style: viewport === null ? undefined : { flex: 'none', width: `${viewport}px` }, "data-sized": viewport !== null, partition: "persist:scamp-embedded", "data-testid": "embedded-webview" }) }));
 };

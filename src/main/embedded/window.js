@@ -24,6 +24,18 @@ import { syncPseudo } from './pseudo';
 import { parseRecent, removeRecent, upsertRecent } from './recent';
 import { nextRoutes } from './routes';
 import { resolveSource } from './sourceResolve';
+/**
+ * Scamp's thin overlay scrollbars (global.css) for the running app, so the
+ * artboard matches the rest of the window. A user stylesheet: anything the
+ * app sets for its own scrollbars still wins. The thumb is a neutral grey,
+ * not Scamp's theme token, so it shows on the app's own background.
+ */
+const GUEST_SCROLLBARS = `
+::-webkit-scrollbar { width: 10px; height: 10px; background: transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background-color: rgba(128, 128, 128, 0.45); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background-color: rgba(128, 128, 128, 0.7); }
+`;
 /** Embedded Scamp's own range, clear of the canvas's (39841 and up), so both can run. */
 const EMBEDDED_MCP_PORT = 39861;
 const newSession = (folder, win) => ({
@@ -164,6 +176,10 @@ export const openEmbeddedWindow = async () => {
     // web links, and nothing opens inside Scamp.
     win.webContents.on('did-attach-webview', (_e, contents) => {
         guests.set(id, contents);
+        // Every page load is a new document: add the scrollbars again.
+        contents.on('dom-ready', () => {
+            void contents.insertCSS(GUEST_SCROLLBARS, { cssOrigin: 'user' }).catch(() => undefined);
+        });
         contents.setWindowOpenHandler((details) => {
             if (details.url.startsWith('http://') || details.url.startsWith('https://'))
                 void shell.openExternal(details.url);

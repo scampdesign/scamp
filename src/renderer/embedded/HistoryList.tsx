@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { EmbeddedHistoryEntry } from '@shared/types';
 import { formatRelativeTime } from '@store/formatHistoryLabel';
 
+import { Tooltip } from '../src/components/controls/Tooltip';
 import { useEmbeddedStore } from './embeddedStore';
 import { goToHistory, refreshGit, refreshHistory } from './session';
 import styles from './HistoryList.module.css';
@@ -33,8 +34,16 @@ const Row = ({ label, details, time, files, current, undone, now, disabled, onGo
         </ul>
       )}
       <span className={styles.meta}>
-        {time !== null && <span title={exact.format(new Date(time * 1000))}>{formatRelativeTime(time * 1000, now)}</span>}
-        {files.length > 0 && <span title={files.join('\n')}>{files.length === 1 ? files[0] : `${files.length} files`}</span>}
+        {time !== null && (
+          <Tooltip label={exact.format(new Date(time * 1000))}>
+            <span>{formatRelativeTime(time * 1000, now)}</span>
+          </Tooltip>
+        )}
+        {files.length > 0 && (
+          <Tooltip label={files.join('\n')}>
+            <span>{files.length === 1 ? files[0] : `${files.length} files`}</span>
+          </Tooltip>
+        )}
       </span>
     </button>
   </li>

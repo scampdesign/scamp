@@ -5,17 +5,17 @@
   min-width: 0;
   min-height: 0;
   overflow-x: auto;
-  /* The design's artboard: the canvas colour, with the page inset from its edges. */
-  padding: 14px 20px 20px;
   background: var(--bg-canvas);
 }
 
-.webview {
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+/* At a device width the app sits on the canvas, inset like the design's artboard; at desktop it fills it. */
+.view[data-sized='true'] {
+  padding: 14px 20px 20px;
 }
 
 .webview[data-sized='true'] {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
   outline: 1px solid var(--border);
 }
 
