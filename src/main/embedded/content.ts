@@ -318,3 +318,6 @@ export const moduleClassAt = (code: string, source: string): { file: string; cla
   }
   return null;
 };
+
+// The JSX helpers, for the list check in listOrigin.ts.
+export { elementAt, parseFile, splitSource, type Node as JsxNode };

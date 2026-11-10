@@ -169,23 +169,34 @@ parent.
 - **In the Layers panel:** drag a row above or below a row at the same
   level.
 
-If the element you drag is the only one in its parent, such as the title
-of a card, Scamp moves the nearest element around it that has siblings,
-such as the card itself. Scamp outlines what's moving and says so. If
-nothing around it has siblings, Scamp says that instead.
+If the element you drag is the only one showing in its parent, such as the
+title of a card or the summary of a closed `<details>`, Scamp moves the
+nearest element around it that has siblings, such as the card itself.
+Scamp outlines what's moving and says so. If nothing around it has
+siblings, Scamp says that instead.
 
-When the parent lays out its children in a row, a column, or a grid, the
-page shows the new order at once. Otherwise a dashed line marks where the
-element goes, and the page shows it when the agent has written the change.
+To select the element around the one you clicked, such as a `<details>`
+that its summary covers completely, click **Select parent** at the top of
+the **Style** tab.
 
-If the elements come from a list in your code, the agent reorders the list.
-If their order comes from data, such as an API, the agent can't change it
-and says so.
+While you drag, the page shows the element where it would land, and the
+rest of the page moves out of its way, so you see the result before you let
+go. After you drop it, the page keeps showing it there while the agent
+writes the change. What you see is a copy of the element: it doesn't
+respond to clicks in your app until the agent's change is in.
+
+If the elements are drawn by a list, Scamp checks where the list comes
+from before it queues the move:
+
+- **Written in your code,** such as an array in the component or in a data
+  file it imports: the agent reorders the items there.
+- **Data,** such as state, a prop, an API, or a value your app works out
+  while it runs: nothing in the code sets the order, so Scamp puts the
+  element back and says why. Change the order where the data comes from.
 
 To move an element into another parent, use the **Layers** panel: drop a
 row on the middle of another row. The element goes inside it, as its last
-child. The page dims the element and outlines its new parent until the
-agent has written the move.
+child. The page shows it there right away, as it will look.
 
 ## Style a hover, focus, or active state
 

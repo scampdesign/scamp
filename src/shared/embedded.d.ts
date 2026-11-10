@@ -163,6 +163,10 @@ export type InspectorCommand = {
     position: 'before' | 'after' | 'inside';
     tag: string;
 }
+/** Select the selection's parent: the way to an element the page lets no click reach. */
+ | {
+    type: 'selectParent';
+}
 /** Preview a delete (hidden), a duplicate (a copy after it), or a wrap (outlined). */
  | {
     type: 'structure';

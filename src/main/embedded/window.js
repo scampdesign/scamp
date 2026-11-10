@@ -18,6 +18,7 @@ import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
 import { classifyContent, freeFileName, jsxLines } from './content';
 import { directStyleWrite } from './fastPath';
+import { aliasesFrom, listOrigin } from './listOrigin';
 import { goToCommit, headSha, historyBase, readHistory } from './history';
 import { OWN_AGENT_TOOLS, ownAgentInvoker } from './ownAgent';
 import { recordRun, redoRun, snapshotRun, undoRun } from './runs';
@@ -380,6 +381,16 @@ export const registerEmbeddedIpc = () => {
         const code = await readProjectFile(session.folder, file);
         const found = code === null ? null : jsxLines(code, args.source);
         return found === null ? null : { file, ...found };
+    });
+    /** Where a list's order comes from, before a move among its items is queued. */
+    ipcMain.handle(IPC.EmbeddedListOrigin, async (e, args) => {
+        const session = sessionOf(e);
+        const sources = Array.isArray(args?.sources) ? args.sources.filter((s) => typeof s === 'string').slice(0, 4) : [];
+        if (session === null || sources.length === 0)
+            return null;
+        const read = (file) => readProjectFile(session.folder, file);
+        const config = (await read('tsconfig.json')) ?? (await read('jsconfig.json'));
+        return listOrigin({ sources, read, aliases: config === null ? [] : aliasesFrom(config) }).catch(() => null);
     });
     /** Copy an image from disk into the project's `public/`, served at `/name`; the agent's change to accept or discard. */
     ipcMain.handle(IPC.EmbeddedChooseImage, async (e) => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconBoxMargin, IconCopy, IconTrash } from '@tabler/icons-react';
+import { IconArrowBarUp, IconBoxMargin, IconCopy, IconTrash } from '@tabler/icons-react';
 
 import { scopeWords } from '@shared/embedded';
 import type { EmbeddedPseudoState } from '@shared/types';
@@ -10,7 +10,7 @@ import { CodeSection } from './CodeSection';
 import { ContentSection } from './ContentSection';
 import { IconButton } from './IconButton';
 import { useEmbeddedStore } from './embeddedStore';
-import { sendInstruction, setPseudo, setScope, structureEdit } from './session';
+import { selectParent, sendInstruction, setPseudo, setScope, structureEdit } from './session';
 import styles from './StyleTab.module.css';
 
 const STATES: ReadonlyArray<{ state: EmbeddedPseudoState; label: string }> = [
@@ -78,6 +78,7 @@ export const StyleTab = (): JSX.Element => {
             &lt;{element.tag}&gt;{element.components[0] !== undefined && <span className={styles.component}> in {element.components[0]}</span>}
           </div>
           <div className={styles.actions}>
+            <IconButton icon={IconArrowBarUp} variant="bare" label="Select parent" tooltip="Select parent — Select the element this one is inside, to style or move it" onClick={selectParent} testId="embedded-select-parent" />
             <IconButton icon={IconCopy} variant="bare" label="Duplicate" tooltip="Duplicate — Cmd+D" onClick={() => void structureEdit('duplicate')} testId="embedded-duplicate" />
             <IconButton icon={IconBoxMargin} variant="bare" label="Wrap in a container" onClick={() => void structureEdit('wrap')} testId="embedded-wrap" />
             <IconButton icon={IconTrash} variant="bare" label="Delete" tooltip="Delete — Delete key" onClick={() => void structureEdit('delete')} testId="embedded-delete" />

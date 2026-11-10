@@ -103,6 +103,10 @@ export const refreshTree = async () => {
         // Mid-navigation: dom-ready asks again.
     }
 };
+export const selectParent = () => {
+    flushPending();
+    void runInspector({ type: 'selectParent' });
+};
 export const selectTreeNode = (id) => {
     void runInspector({ type: 'selectId', id });
 };
@@ -124,8 +128,22 @@ const withSource = async (element, raw) => {
 const queueMove = async (msg) => {
     flushPending();
     const [element, target] = await Promise.all([withSource(msg.element, msg.raw), withSource(msg.target, msg.targetRaw)]);
+    // A list's order is where its items are written; when they're data, nothing in the code can reorder them.
+    let listAt;
+    if (msg.fromList) {
+        const origin = await window.scampEmbedded.listOrigin([element.source, element.usedAt].filter((s) => s !== null));
+        if (origin?.kind === 'data') {
+            await runInspector({ type: 'undoTag', tag: msg.tag });
+            const why = `These can’t be reordered here: ${origin.reason}, so the order is the data’s. Change the order where the data comes from.`;
+            useEmbeddedStore.getState().set({ dragNote: why });
+            toast(why);
+            return;
+        }
+        if (origin?.kind === 'written')
+            listAt = origin.at;
+    }
     // The page tagged its preview with this id: the queue item takes it, so undo can take back both.
-    const item = { id: msg.tag, kind: 'move', element, target, position: msg.position, fromList: msg.fromList };
+    const item = { id: msg.tag, kind: 'move', element, target, position: msg.position, fromList: msg.fromList, ...(listAt !== undefined ? { listAt } : {}) };
     await window.scampEmbedded.enqueue(item);
     pushUndo({ kind: 'item', id: item.id, item, ...labelled(item), redo: [{ type: 'move', id: msg.uid, targetId: msg.targetUid, position: msg.position, tag: msg.tag }] });
 };

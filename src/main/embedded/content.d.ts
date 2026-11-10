@@ -1,4 +1,28 @@
 import type { EmbeddedContentField, EmbeddedContentOrigin } from '@shared/types';
+/**
+ * Where an element's text, image, or link comes from, read from its JSX:
+ * written in the code (editable), passed in as a prop with a value written
+ * where the component is used (editable there), or data (not editable from
+ * Scamp: a list item, state, an API, an expression). When the parse can't
+ * decide, it says so, and Scamp treats it as data. Pure apart from `read`.
+ * see docs/plans/embedded-canvas-gaps.md (P5)
+ */
+type Node = {
+    type: string;
+    start?: number | null;
+    end?: number | null;
+    loc?: {
+        start: {
+            line: number;
+            column: number;
+        };
+        end?: {
+            line: number;
+            column: number;
+        };
+    } | null;
+    [key: string]: unknown;
+};
 /** Where a component is used, from React's props in the page (`data-scamp-call`), innermost first. */
 export type ComponentCall = {
     name: string;
@@ -12,6 +36,17 @@ export type ContentQuery = {
     /** Reads a project file by its project-relative path; null when it can't. */
     read: (file: string) => Promise<string | null>;
 };
+declare const parseFile: (code: string, file: string) => Node | null;
+/** The JSX element whose opening tag starts at `line`:`column` (1-based), with its ancestors. */
+declare const elementAt: (root: Node, line: number, column: number) => {
+    element: Node;
+    ancestors: Node[];
+} | null;
+declare const splitSource: (source: string) => {
+    file: string;
+    line: number;
+    column: number;
+} | null;
 /** Where the content of `field` on the element comes from, following props to where components are used. */
 export declare const classifyContent: (query: ContentQuery) => Promise<EmbeddedContentOrigin>;
 /**
@@ -37,3 +72,4 @@ export declare const moduleClassAt: (code: string, source: string) => {
     file: string;
     className: string;
 } | null;
+export { elementAt, parseFile, splitSource, type Node as JsxNode };

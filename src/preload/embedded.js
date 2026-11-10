@@ -52,6 +52,8 @@ const embeddedApi = {
     chooseImage: () => ipcRenderer.invoke(IPC.EmbeddedChooseImage),
     /** The JSX of the element written at `source`, for the code view. */
     readSource: (source) => ipcRenderer.invoke(IPC.EmbeddedReadSource, { source }),
+    /** Where the order of the list an element is drawn by comes from: its JSX first, then where its component is used. */
+    listOrigin: (sources) => ipcRenderer.invoke(IPC.EmbeddedListOrigin, { sources }),
     /** Who writes changes: Scamp's agent or the user's own, over MCP. */
     setWorker: (worker) => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
     ownAgentStatus: () => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),

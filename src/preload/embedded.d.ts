@@ -1,4 +1,4 @@
-import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedHistory, EmbeddedPreflight, EmbeddedContentField, EmbeddedChooseImageResult, EmbeddedSourceLines, EmbeddedContentOrigin, EmbeddedElementRef, EmbeddedOwnAgentStatus, EmbeddedQueueItem, EmbeddedWorker, TerminalCreateArgs, TerminalCreateResult, TerminalDataPayload, TerminalExitPayload, TerminalKillArgs, TerminalResizeArgs, TerminalWriteArgs, EmbeddedRawSource, EmbeddedRecentProject, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
+import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedHistory, EmbeddedPreflight, EmbeddedContentField, EmbeddedChooseImageResult, EmbeddedSourceLines, EmbeddedListOrigin, EmbeddedContentOrigin, EmbeddedElementRef, EmbeddedOwnAgentStatus, EmbeddedQueueItem, EmbeddedWorker, TerminalCreateArgs, TerminalCreateResult, TerminalDataPayload, TerminalExitPayload, TerminalKillArgs, TerminalResizeArgs, TerminalWriteArgs, EmbeddedRawSource, EmbeddedRecentProject, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
 declare const embeddedApi: {
     chooseFolder: () => Promise<EmbeddedChooseResult>;
     /** Recent projects, with whether each folder is still there. */
@@ -51,6 +51,8 @@ declare const embeddedApi: {
     chooseImage: () => Promise<EmbeddedChooseImageResult>;
     /** The JSX of the element written at `source`, for the code view. */
     readSource: (source: string) => Promise<EmbeddedSourceLines | null>;
+    /** Where the order of the list an element is drawn by comes from: its JSX first, then where its component is used. */
+    listOrigin: (sources: string[]) => Promise<EmbeddedListOrigin | null>;
     /** Who writes changes: Scamp's agent or the user's own, over MCP. */
     setWorker: (worker: EmbeddedWorker) => Promise<EmbeddedOwnAgentStatus | null>;
     ownAgentStatus: () => Promise<EmbeddedOwnAgentStatus | null>;

@@ -13,6 +13,7 @@ import type {
   EmbeddedContentField,
   EmbeddedChooseImageResult,
   EmbeddedSourceLines,
+  EmbeddedListOrigin,
   EmbeddedContentOrigin,
   EmbeddedElementRef,
   EmbeddedOwnAgentStatus,
@@ -88,6 +89,8 @@ const embeddedApi = {
   chooseImage: (): Promise<EmbeddedChooseImageResult> => ipcRenderer.invoke(IPC.EmbeddedChooseImage),
   /** The JSX of the element written at `source`, for the code view. */
   readSource: (source: string): Promise<EmbeddedSourceLines | null> => ipcRenderer.invoke(IPC.EmbeddedReadSource, { source }),
+  /** Where the order of the list an element is drawn by comes from: its JSX first, then where its component is used. */
+  listOrigin: (sources: string[]): Promise<EmbeddedListOrigin | null> => ipcRenderer.invoke(IPC.EmbeddedListOrigin, { sources }),
   /** Who writes changes: Scamp's agent or the user's own, over MCP. */
   setWorker: (worker: EmbeddedWorker): Promise<EmbeddedOwnAgentStatus | null> => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
   ownAgentStatus: (): Promise<EmbeddedOwnAgentStatus | null> => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),

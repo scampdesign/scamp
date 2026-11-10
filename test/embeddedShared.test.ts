@@ -257,6 +257,11 @@ describe('describeQueueItem', () => {
     expect(text).toContain('If the element is the root of a component, move where that component is used instead.');
   });
 
+  it('says where a list’s items are written, when Scamp found them', () => {
+    const text = describeQueueItem({ id: 'l', kind: 'move', element: element(), target: element({ text: 'Grace Hopper' }), position: 'after', fromList: true, listAt: 'src/data/index.ts:2' }, 0);
+    expect(text).toContain('whose items are written at src/data/index.ts:2. Reorder the items there, so this one comes after the other.');
+  });
+
   it('says the order of a list is the data’s, and not to invent a change', () => {
     const text = describeQueueItem({ id: 'l', kind: 'move', element: element(), target: element({ text: 'Grace Hopper' }), position: 'after', fromList: true }, 0);
     expect(text).toContain('their order is the data');

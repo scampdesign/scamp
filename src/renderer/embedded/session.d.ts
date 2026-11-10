@@ -13,6 +13,7 @@ export declare const installInPage: () => Promise<void>;
 export declare const discoverRoutes: () => Promise<void>;
 /** Ask the page for its element tree, for the layers panel. */
 export declare const refreshTree: () => Promise<void>;
+export declare const selectParent: () => void;
 export declare const selectTreeNode: (id: string) => void;
 export declare const hoverTreeNode: (id: string | null) => void;
 /** Move a layer next to a sibling; the page answers with `moved`, which queues it. */

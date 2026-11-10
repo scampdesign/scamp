@@ -216,9 +216,11 @@ Decided 2026-11-09. Everything else above waits.
 
 ### P1: Reorder improvements (in progress)
 
-Built on `feat/embedded-reorder`: drag on the page and in the tree, the
-`order` preview, the block-flow marker, lifting an only child to its
-parent with siblings, and the notes. Next, from manual testing:
+Built on `feat/embedded-reorder`: drag on the page and in the tree,
+lifting an only child to its parent with siblings, and the notes. The
+`order` preview and the block-flow marker are replaced (2026-11-10) by a
+stand-in copy that shows the move as it'll look, live while dragging; see
+`docs/notes/embedded-move-preview.md`. Next, from manual testing:
 
 - Try it on real projects with the real agent: a plain move, a component
   root, a `.map()` list, and a Next.js page.
@@ -427,8 +429,8 @@ Tailwind config before any stylesheet using them has loaded.
   to add is a design question.
 - **8, move into another parent.** In the tree only: the middle of a row
   drops inside (`dropPosition`), and another parent's row only takes
-  `inside`. A `move` item with `position: 'inside'`; the page dims the
-  element and outlines the parent.
+  `inside`. A `move` item with `position: 'inside'`. Every move now
+  previews with a stand-in copy (see `docs/notes/embedded-move-preview.md`).
 - **9, multi-select.** Shift- or Cmd-click on the page adds elements;
   style and structure edits reach them, and the item lists them as
   `also`. The panel shows the first element's values, not shared ones. Not

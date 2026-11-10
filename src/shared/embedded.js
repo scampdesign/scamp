@@ -285,7 +285,9 @@ export const describeQueueItem = (item, index) => {
     }
     if (item.kind === 'move') {
         const how = item.fromList
-            ? 'Both are drawn from one line of JSX, by a list (`.map()` or similar), so their order is the data\'s. If the list is written in the project, reorder its items. If it comes from an API, a database or elsewhere, change nothing and say so.'
+            ? item.listAt !== undefined
+                ? `Both are drawn from one line of JSX, by a list (\`.map()\`) whose items are written at ${item.listAt}. Reorder the items there, so this one comes ${item.position} the other. Change nothing else.`
+                : 'Both are drawn from one line of JSX, by a list (`.map()` or similar), so their order is the data\'s. If the list is written in the project, reorder its items. If it comes from an API, a database or elsewhere, change nothing and say so.'
             : 'Move the element\'s JSX so it renders just ' + item.position + ' the other. If the element is the root of a component, move where that component is used instead. Keep everything else as it is, keys included.';
         return `### Edit ${index + 1}: move\n${describeElement(item.element)}\n- Move it to just **${item.position}** this sibling (same parent):\n${describeElement(item.target).replace(/^- /gm, '  - ')}\n- ${how}`;
     }
@@ -527,8 +529,12 @@ export const installInspector = (config) => {
         moveCount: 0,
         drag: null,
         suppressClick: false,
-        /** Moves the page can't preview (block flow), marked until the agent writes them. */
-        marks: [],
+        /**
+         * Moves shown as they'll look: the original hidden, and a stand-in copy
+         * where it goes. `prev` is the copy an earlier move of it showed, put
+         * back on undo. see docs/notes/embedded-move-preview.md
+         */
+        ghosts: new Map(),
         /** Elements added to the selection with Shift- or Cmd-click: edits reach them too. */
         also: [],
     };
@@ -553,14 +559,11 @@ export const installInspector = (config) => {
             'font:11px/16px system-ui,sans-serif;padding:0 6px;border-radius:3px;white-space:nowrap;';
     const preview = document.createElement('style');
     preview.setAttribute('data-scamp-overlay', '');
-    const insertLine = document.createElement('div');
-    insertLine.setAttribute('data-scamp-overlay', '');
-    insertLine.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483647;display:none;background:#4a8cff;border-radius:2px;';
     // Over the page while frozen: nothing under it can be hovered, clicked, or focused, so the page holds still.
     const shield = document.createElement('div');
     shield.setAttribute('data-scamp-overlay', '');
     shield.style.cssText = 'position:fixed;inset:0;z-index:2147483645;display:none;background:transparent;';
-    document.documentElement.append(hoverBox, selectBox, label, preview, insertLine, shield);
+    document.documentElement.append(hoverBox, selectBox, label, preview, shield);
     // Ids for the layers tree, kept off the DOM.
     let nextUid = 1;
     const uids = new WeakMap();
@@ -606,7 +609,7 @@ export const installInspector = (config) => {
     const sameSource = (el) => {
         const attr = el.getAttribute(api.config.attr);
         if (attr !== null)
-            return Array.from(document.querySelectorAll(`[${api.config.attr}="${CSS.escape(attr)}"]`));
+            return Array.from(document.querySelectorAll(`[${api.config.attr}="${CSS.escape(attr)}"]`)).filter((o) => !isOverlay(o));
         const key = keyOf(el);
         if (key === null)
             return el instanceof HTMLElement ? [el] : [];
@@ -802,20 +805,18 @@ export const installInspector = (config) => {
         // A hot reload can replace the selected node: find it again from its source line.
         if (state.selected !== null && !state.selected.isConnected && state.selectedKey !== null) {
             const key = state.selectedKey;
-            const again = Array.from(document.querySelectorAll('*')).filter((o) => keyOf(o) === key)[state.selectedIndex] ?? null;
+            const again = Array.from(document.querySelectorAll('*')).filter((o) => keyOf(o) === key && !isOverlay(o))[state.selectedIndex] ?? null;
             state.selected = again;
             if (again !== null)
                 send(describe(again));
         }
-        const hover = state.drag?.active === true ? state.drag.el : state.treeHover ?? (state.edit && state.hovered !== state.selected ? state.hovered : null);
-        place(hoverBox, hover);
-        for (const m of state.marks)
-            drawLine(m.box, m.target, m.position);
-        place(selectBox, state.selected);
+        const hover = state.drag?.active === true ? (state.drag.copy ?? state.drag.el) : state.treeHover ?? (state.edit && state.hovered !== state.selected ? state.hovered : null);
+        place(hoverBox, hover === null ? null : shownOf(hover));
+        place(selectBox, state.selected === null ? null : shownOf(state.selected));
         for (const a of state.also)
-            place(a.box, a.el);
+            place(a.box, shownOf(a.el));
         if (state.selected !== null && state.selected.isConnected) {
-            const r = state.selected.getBoundingClientRect();
+            const r = shownOf(state.selected).getBoundingClientRect();
             const src = state.selected.getAttribute(api.config.attr);
             label.textContent = `${state.selected.tagName.toLowerCase()}${src !== null ? `  ${src.replace(/:\d+$/, '')}` : ''}`;
             label.style.display = 'block';
@@ -828,11 +829,67 @@ export const installInspector = (config) => {
         requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-    const isOverlay = (t) => t instanceof Element && t.hasAttribute('data-scamp-overlay');
-    /** The page's element at a point, under Scamp's overlays and the freeze shield. */
-    const pageAt = (x, y) => document.elementsFromPoint(x, y).find((el) => !isOverlay(el)) ?? null;
-    /** What an event is about: through the freeze shield to the page under it. */
-    const targetOf = (e) => (e.target === shield && e instanceof MouseEvent ? pageAt(e.clientX, e.clientY) : e.target);
+    /** Scamp's own: its outlines, the shield, a duplicate's copy, or a move's stand-in, and anything inside them. */
+    const isOverlay = (t) => t instanceof Element && t.closest('[data-scamp-overlay],[data-scamp-ghost]') !== null;
+    /** The page's element at a point, under Scamp's overlays and the freeze shield; a move's stand-in counts as its original. */
+    const pageAt = (x, y) => {
+        const hit = document.elementsFromPoint(x, y).find((el) => el.closest('[data-scamp-overlay]') === null);
+        return hit === undefined ? null : originalOf(hit);
+    };
+    /** What an event is about: through the freeze shield, and from a stand-in to its original. */
+    const targetOf = (e) => e.target === shield && e instanceof MouseEvent ? pageAt(e.clientX, e.clientY) : e.target instanceof Element ? originalOf(e.target) : e.target;
+    /** Child indexes from `root` down to `node`, or null when it isn't inside. */
+    const pathFrom = (root, node) => {
+        const path = [];
+        for (let at = node; at !== root; at = at.parentElement) {
+            if (at === null || at.parentElement === null)
+                return null;
+            path.unshift(Array.prototype.indexOf.call(at.parentElement.children, at));
+        }
+        return path;
+    };
+    const follow = (root, path) => path.reduce((at, i) => at?.children[i] ?? null, root);
+    /** A spot in a move's stand-in, as the same spot in the hidden original. */
+    const originalOf = (node) => {
+        const copy = node.closest('[data-scamp-ghost]');
+        if (copy === null)
+            return node;
+        for (const [orig, g] of state.ghosts) {
+            if (g.copy !== copy)
+                continue;
+            const path = pathFrom(copy, node);
+            return (path === null ? null : follow(orig, path)) ?? orig;
+        }
+        return node;
+    };
+    /** Where an element shows now: in its stand-in, when a move hid it. */
+    const shownOf = (el) => {
+        for (const [orig, g] of state.ghosts) {
+            if (orig !== el && !orig.contains(el))
+                continue;
+            const path = pathFrom(orig, el);
+            return (path === null ? null : follow(g.copy, path)) ?? g.copy;
+        }
+        return el;
+    };
+    /** A stand-in copy of `el`: looks like it, isn't the app's, and has no ids to clash. */
+    const standIn = (el) => {
+        const copy = el.cloneNode(true);
+        copy.setAttribute('data-scamp-ghost', '');
+        copy.title = 'Moves here once the agent writes it';
+        for (const n of [copy, ...Array.from(copy.querySelectorAll('[id]'))])
+            n.removeAttribute('id');
+        copy.style.removeProperty('display');
+        return copy;
+    };
+    const putAt = (copy, target, position) => {
+        if (position === 'inside')
+            target.append(copy);
+        else if (position === 'before')
+            target.before(copy);
+        else
+            target.after(copy);
+    };
     const swallow = (e) => {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -850,29 +907,13 @@ export const installInspector = (config) => {
         }
         return 'y';
     };
-    const drawLine = (box, target, position) => {
-        const parent = target.parentElement;
-        if (!target.isConnected || parent === null) {
-            box.style.display = 'none';
-            return;
-        }
-        const r = target.getBoundingClientRect();
-        const axis = axisOf(parent, target, target.previousElementSibling ?? target.nextElementSibling ?? target);
-        box.style.display = 'block';
-        if (axis === 'x') {
-            box.style.left = `${(position === 'before' ? r.left : r.right) - 2}px`;
-            box.style.top = `${r.top}px`;
-            box.style.width = '3px';
-            box.style.height = `${r.height}px`;
-        }
-        else {
-            box.style.left = `${r.left}px`;
-            box.style.top = `${(position === 'before' ? r.top : r.bottom) - 2}px`;
-            box.style.width = `${r.width}px`;
-            box.style.height = '3px';
-        }
-    };
     const kidsOf = (parent) => Array.from(parent.children).filter((c) => !isOverlay(c) && !SKIP.has(c.tagName));
+    /**
+     * The children the page shows: a closed `<details>` hides all but its
+     * `<summary>`, so those aren't anywhere to move to. `checkVisibility`,
+     * since Chromium hides them with `content-visibility`, which keeps their boxes.
+     */
+    const shownKids = (parent) => kidsOf(parent).filter((c) => c.checkVisibility());
     /**
      * What a drag of `el` moves: `el`, or, when it's an only child (a card's
      * title, say), the nearest ancestor that has siblings to move between.
@@ -883,75 +924,92 @@ export const installInspector = (config) => {
             const parent = at.parentElement;
             if (parent === null || parent === document.body || parent === document.documentElement)
                 return null;
-            if (kidsOf(parent).length > 1)
+            if (shownKids(parent).length > 1)
                 return at;
         }
         return null;
     };
-    /** The sibling of `el` under the point, and which side of it. */
-    const dropAt = (el, x, y) => {
-        const parent = el.parentElement;
-        if (parent === null)
+    /** The sibling nearest the point, from the boxes the drag began with, and which side of it. */
+    const dropAt = (boxes, axis, x, y) => {
+        let best = null;
+        for (const { el, r } of boxes) {
+            const d = Math.hypot(Math.max(r.left - x, 0, x - r.right), Math.max(r.top - y, 0, y - r.bottom));
+            if (best === null || d < best.d)
+                best = { el, r, d };
+        }
+        if (best === null)
             return null;
-        let under = pageAt(x, y);
-        while (under !== null && under.parentElement !== parent)
-            under = under.parentElement;
-        if (under === null || under === el || isOverlay(under))
-            return null;
-        const r = under.getBoundingClientRect();
-        const axis = axisOf(parent, under, el);
-        const position = (axis === 'x' ? x < r.left + r.width / 2 : y < r.top + r.height / 2) ? 'before' : 'after';
-        return { target: under, position };
+        const { r } = best;
+        return { target: best.el, position: (axis === 'x' ? x < r.left + r.width / 2 : y < r.top + r.height / 2) ? 'before' : 'after' };
     };
-    /** Preview a move where `order` can show it, mark it where it can't, and tell the window. */
+    /**
+     * Show a move as it'll look: hide the original and put a stand-in copy
+     * where it goes, so the page lays out around it. React's own nodes stay
+     * where React put them. Then tell the window. see docs/notes/embedded-move-preview.md
+     */
     const applyMove = (el, target, position, given) => {
         const tag = given ?? `m-${Date.now().toString(36)}-${(state.moveCount += 1)}`;
         const parent = el.parentElement;
-        if (position === 'inside') {
-            // Into another parent: React's DOM can't be moved, so the element is dimmed and its new parent outlined.
-            if (el === target || el.contains(target) || !(el instanceof HTMLElement) || !(target instanceof HTMLElement))
-                return;
-            setInline(el, 'opacity', '0.35', tag);
-            setInline(target, 'outline', '2px dashed #4a8cff', tag);
-            setInline(target, 'outline-offset', '2px', tag);
-            const a = describe(el);
-            const b = describe(target);
-            send({ type: 'moved', tag, uid: uidOf(el), targetUid: uidOf(target), element: a.element, raw: a.raw, target: b.element, targetRaw: b.raw, position, fromList: false, previewed: false });
+        if (!(el instanceof HTMLElement) || el === target || el.contains(target))
             return;
-        }
-        if (parent === null || target.parentElement !== parent || el === target)
+        if (position !== 'inside' && (parent === null || target.parentElement !== parent))
             return;
-        const kids = kidsOf(parent);
-        const without = kids.filter((k) => k !== el);
-        const at = without.indexOf(target) + (position === 'after' ? 1 : 0);
-        const next = [...without.slice(0, at), el, ...without.slice(at)];
-        const previewed = /flex|grid/.test(getComputedStyle(parent).display);
-        if (previewed) {
-            next.forEach((kid, i) => {
-                if (kid instanceof HTMLElement)
-                    setInline(kid, 'order', String(i), tag);
-            });
+        const copy = standIn(el);
+        // Moved again: this copy replaces the last one, which undo puts back.
+        const was = state.ghosts.get(el);
+        let prev = null;
+        if (was !== undefined && was.copy.parentElement !== null) {
+            prev = { copy: was.copy, tag: was.tag, parent: was.copy.parentElement, next: was.copy.nextSibling };
+            was.copy.remove();
         }
-        else {
-            const box = document.createElement('div');
-            box.setAttribute('data-scamp-overlay', '');
-            box.title = 'Moves here once the agent writes it';
-            box.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483646;background:repeating-linear-gradient(90deg,#4a8cff 0 6px,transparent 6px 10px);';
-            document.documentElement.append(box);
-            state.marks.push({ box, target, position });
-            tagRecord(tag).marks.push(box);
-        }
+        putAt(copy, target, position);
+        setInline(el, 'display', 'none', tag);
+        state.ghosts.set(el, { copy, tag, prev });
         const a = describe(el);
         const b = describe(target);
         const key = keyOf(el);
-        send({ type: 'moved', tag, uid: uidOf(el), targetUid: uidOf(target), element: a.element, raw: a.raw, target: b.element, targetRaw: b.raw, position, fromList: key !== null && key === keyOf(target), previewed });
+        send({ type: 'moved', tag, uid: uidOf(el), targetUid: uidOf(target), element: a.element, raw: a.raw, target: b.element, targetRaw: b.raw, position, fromList: position !== 'inside' && key !== null && key === keyOf(target), previewed: true });
+    };
+    /** Take back a move's stand-in: the copy before it comes back, or the original shows again (its display, by its tag). */
+    const dropGhost = (el) => {
+        const g = state.ghosts.get(el);
+        if (g === undefined)
+            return;
+        g.copy.remove();
+        if (g.prev !== null && g.prev.parent.isConnected) {
+            g.prev.parent.insertBefore(g.prev.copy, g.prev.next !== null && g.prev.next.parentNode === g.prev.parent ? g.prev.next : null);
+            state.ghosts.set(el, { copy: g.prev.copy, tag: g.prev.tag, prev: null });
+        }
+        else
+            state.ghosts.delete(el);
+    };
+    /** React changed a parent a stand-in sits in: the code has caught up (or moved on), so the page shows React's own again. */
+    const retireGhosts = (records) => {
+        const touched = new Set();
+        for (const r of records) {
+            if (isOverlay(r.target))
+                continue;
+            if ([...Array.from(r.addedNodes), ...Array.from(r.removedNodes)].some((n) => !isOverlay(n)))
+                touched.add(r.target);
+        }
+        if (touched.size === 0)
+            return;
+        for (const [orig, g] of [...state.ghosts]) {
+            if (!touched.has(g.copy.parentElement) && !touched.has(orig.parentElement) && orig.isConnected)
+                continue;
+            g.copy.remove();
+            state.ghosts.delete(orig);
+            undoTag(g.tag);
+            if (g.prev !== null)
+                undoTag(g.prev.tag);
+        }
     };
     window.addEventListener('pointerdown', (e) => {
         if (!state.edit || e.button !== 0)
             return;
         const t = targetOf(e);
         if (state.selected !== null && t instanceof Node && state.selected.contains(t)) {
-            state.drag = { el: state.selected, x: e.clientX, y: e.clientY, active: false, target: null, position: 'before' };
+            state.drag = { el: state.selected, x: e.clientX, y: e.clientY, active: false, target: null, position: 'before', boxes: [], axis: 'y', copy: null, hidden: null };
         }
     }, true);
     window.addEventListener('pointermove', (e) => {
@@ -972,28 +1030,56 @@ export const installInspector = (config) => {
             drag.el = moving;
             drag.active = true;
             if (moving !== state.selected)
-                send({ type: 'dragNote', text: `Moving the <${moving.tagName.toLowerCase()}> around it: the selected element has no siblings.` });
+                send({ type: 'dragNote', text: `Moving the <${moving.tagName.toLowerCase()}> around it: the selected element has nothing showing beside it to move between.` });
+            // The layout as it is now, before the preview changes it.
+            const parent = moving.parentElement;
+            drag.boxes = parent === null ? [] : shownKids(parent).filter((k) => k !== moving).map((k) => ({ el: k, r: k.getBoundingClientRect() }));
+            drag.axis = parent === null ? 'y' : axisOf(parent, drag.boxes[0]?.el ?? moving, moving);
+            // Lift it out: the page shows it only where it would land.
+            const ghost = state.ghosts.get(moving);
+            if (ghost !== undefined)
+                ghost.copy.style.setProperty('display', 'none', 'important');
+            else if (moving instanceof HTMLElement) {
+                drag.hidden = { value: moving.style.getPropertyValue('display'), priority: moving.style.getPropertyPriority('display') };
+                moving.style.setProperty('display', 'none', 'important');
+            }
         }
-        const drop = dropAt(drag.el, e.clientX, e.clientY);
-        drag.target = drop?.target ?? null;
-        if (drop === null)
-            insertLine.style.display = 'none';
-        else {
-            drag.position = drop.position;
-            drawLine(insertLine, drop.target, drop.position);
-        }
+        const drop = dropAt(drag.boxes, drag.axis, e.clientX, e.clientY);
+        if (drop === null || (drop.target === drag.target && drop.position === drag.position))
+            return;
+        drag.target = drop.target;
+        drag.position = drop.position;
+        drag.copy = drag.copy ?? standIn(drag.el);
+        putAt(drag.copy, drop.target, drop.position);
     }, true);
-    window.addEventListener('pointerup', () => {
+    /** End a drag: the preview goes, and the original (or its earlier stand-in) shows again. */
+    const endDrag = () => {
         const drag = state.drag;
         state.drag = null;
-        insertLine.style.display = 'none';
         if (drag === null || !drag.active)
+            return null;
+        drag.copy?.remove();
+        const ghost = state.ghosts.get(drag.el);
+        if (ghost !== undefined)
+            ghost.copy.style.removeProperty('display');
+        if (drag.hidden !== null && drag.el instanceof HTMLElement) {
+            if (drag.hidden.value === '')
+                drag.el.style.removeProperty('display');
+            else
+                drag.el.style.setProperty('display', drag.hidden.value, drag.hidden.priority);
+        }
+        return { el: drag.el, target: drag.target, position: drag.position };
+    };
+    window.addEventListener('pointerup', () => {
+        const ended = endDrag();
+        if (ended === null)
             return;
         // The click that follows a drag isn't a selection.
         state.suppressClick = true;
-        if (drag.target !== null)
-            applyMove(drag.el, drag.target, drag.position);
+        if (ended.target !== null)
+            applyMove(ended.el, ended.target, ended.position);
     }, true);
+    window.addEventListener('pointercancel', () => void endDrag(), true);
     const inEditor = (t) => state.editing !== null && t instanceof Node && state.editing.box.contains(t);
     for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'dblclick', 'contextmenu', 'auxclick']) {
         window.addEventListener(type, (e) => {
@@ -1218,7 +1304,9 @@ export const installInspector = (config) => {
         }
         for (const box of rec.marks)
             box.remove();
-        state.marks = state.marks.filter((m) => !rec.marks.includes(m.box));
+        for (const [orig, g] of [...state.ghosts])
+            if (g.tag === tag)
+                dropGhost(orig);
         for (const c of [...rec.content].reverse())
             writeContent(c.el, c.field, c.prev);
         writeRules();
@@ -1490,6 +1578,7 @@ export const installInspector = (config) => {
     // The tree goes stale as the page renders: say so, and the window asks again.
     let treeTimer = null;
     new MutationObserver((records) => {
+        retireGhosts(records);
         if (records.every((r) => isOverlay(r.target) || Array.from(r.addedNodes).every(isOverlay)))
             return;
         if (treeTimer !== null)
@@ -1543,6 +1632,13 @@ export const installInspector = (config) => {
                     el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
                     clearAlso();
                     select(el);
+                }
+            }
+            else if (cmd.type === 'selectParent') {
+                const parent = state.selected?.parentElement ?? null;
+                if (parent !== null && parent !== document.body && parent !== document.documentElement) {
+                    clearAlso();
+                    select(parent);
                 }
             }
             else if (cmd.type === 'move') {
@@ -1655,9 +1751,9 @@ export const installInspector = (config) => {
                 for (const rec of state.tags.values())
                     rec.marks.forEach((m) => m.remove());
                 state.tags.clear();
-                for (const m of state.marks)
-                    m.box.remove();
-                state.marks = [];
+                for (const g of state.ghosts.values())
+                    g.copy.remove();
+                state.ghosts.clear();
                 writeRules();
             }
         },

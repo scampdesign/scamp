@@ -1600,6 +1600,11 @@ export type EmbeddedChooseResult =
   | { kind: 'cancelled' }
   | { kind: 'ok'; folder: string };
 
+/** Where a list's order comes from: an array written in the project, or data Scamp can't reorder. */
+export type EmbeddedListOrigin =
+  | { kind: 'written'; at: string; name: string }
+  | { kind: 'data'; reason: string; at: null };
+
 /** An element's JSX as written: `lines` start at line `start` of `file`. */
 export type EmbeddedSourceLines = { file: string; start: number; lines: string[] };
 
@@ -1748,6 +1753,8 @@ export type EmbeddedQueueItem =
       position: 'before' | 'after' | 'inside';
       /** Both come from one JSX line in a `.map()`: the order is the data's. */
       fromList: boolean;
+      /** For a list, where its items are written in the project, which is where the order changes. */
+      listAt?: string;
     }
   | {
       id: string;

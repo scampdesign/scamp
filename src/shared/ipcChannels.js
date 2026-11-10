@@ -271,6 +271,7 @@ export const IPC = {
     EmbeddedContentOrigin: 'embedded:content-origin',
     EmbeddedChooseImage: 'embedded:choose-image',
     EmbeddedReadSource: 'embedded:read-source',
+    EmbeddedListOrigin: 'embedded:list-origin',
     EmbeddedHistory: 'embedded:history',
     EmbeddedHistoryGoTo: 'embedded:history-go-to',
     EmbeddedUndoRun: 'embedded:undo-run',
