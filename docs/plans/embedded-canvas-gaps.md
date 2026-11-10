@@ -335,7 +335,9 @@ Tailwind config before any stylesheet using them has loaded.
 - Where a component is used comes from the build: the Vite transform now
   tags every component's JSX with `data-scamp-call="file:line:col"` (a
   prop, read from React's fiber in the page; fragments are left alone).
-  Next.js has no transform, so its props classify as unknown.
+  Next.js has no transform: there, the inspector sends React's own record
+  of where each component was created (`_debugStack`), and the window
+  resolves it through the source maps, the same way as an element's line.
 - The inspector previews text in the element's existing text node (React
   keeps the node, so its DOM isn't disturbed) and attributes with
   `setAttribute`, tagged for undo. The in-page editor is a
@@ -343,7 +345,10 @@ Tailwind config before any stylesheet using them has loaded.
   the app never hears.
 - A `content` queue item tells the agent the old and new value and where
   it's written; the Style tab's Content section shows each field with its
-  origin. Not yet: replacing an image from a file on disk.
+  origin. **Choose file…** copies an image into `public/` under a free
+  name (compared without case) and points `src` at `/name`; the copy is
+  one of the agent's touched files, so Accept commits it and Discard
+  deletes it.
 
 - **Text:** double-click to edit in place on the page (on an overlay, not
   React's own DOM). **Images:** replace the source and edit the alt text.
@@ -370,20 +375,21 @@ Tailwind config before any stylesheet using them has loaded.
 
 ### P6: Component edits from the page, without a component editor (gap 12)
 
-This mostly works today: every element a component draws carries the
-component file's source line, so a `Card` used three times shows **This
-one** and **All 3**. **All** asks the agent to change the component's
-definition; **This one** asks it to override that instance where it's
-used. What's left:
+**Built** (2026-11-10), ready for manual testing.
 
-- **Check it** on real projects: a border on a component's root, on an
-  element inside it, and on an instance inside a `.map()`. There, "this
-  one" has no call site of its own, so the agent needs a condition (by
-  index or key) or says it can't.
-- **Say it's a component.** The scope buttons read **This Card** and
-  **Every Card**, with how many are on this page, when the element is
-  drawn by a component. **Every** reaches the component's other pages
-  too, which the label should say.
-- **Instances on other pages.** The count is per page. Scamp can't count
-  other pages without visiting them, so the label says "on this page".
+- **The buttons name the component.** The inspector reports
+  `instanceOf` when each element of the same source line sits in its own
+  instance of the nearest component (compared by fiber, or its
+  alternate); a `.map()` inside one component isn't. The buttons then read
+  **This Card** and **Every Card · 3**, with Scamp tooltips that say
+  **Every** reaches other pages too. Otherwise **This one** and **All 3**.
+- **The exact call site.** `usedAt` comes from the nearest component's
+  `data-scamp-call` (Next.js: from `_debugStack`, resolved in the window),
+  so "this one" names the line where that instance is used.
+- **This one, in a list.** When every instance comes from one call site
+  (`usedInList`), the prompt says it's number N of M from one line in a
+  list, and asks for a condition on its key, index, or data, or for no
+  change and a note saying so.
+- **Instances on other pages.** The count is per page; the label says
+  "on this page".
 - A component editor (props, variants, the component on its own) waits.

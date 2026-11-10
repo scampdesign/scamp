@@ -2,7 +2,7 @@ import { promises as fs, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { test, expect } from '../fixtures/app';
+import { test, expect, stubOpenDialog } from '../fixtures/app';
 import { clickInPage, copyEmbeddedApp, guestPage, inPage, openEmbedded, pointInPage, startEmbedded } from '../fixtures/embedded';
 
 /**
@@ -47,7 +47,10 @@ test('text, props, links, and alt text written in the code are editable; text fr
     await embedded.getByTestId('embedded-tab-style').click();
 
     // From data: a card's name comes from a list. Not editable, and it says why.
+    // The scope buttons are named after the component the cards are.
     await clickInPage(embedded, 'article h2');
+    await expect(embedded.getByTestId('embedded-scope-one')).toHaveText('This Card');
+    await expect(embedded.getByTestId('embedded-scope-all')).toHaveText('Every Card · 3');
     await expect(embedded.getByTestId('embedded-content-text-note')).toContainText('can’t be edited here');
     await expect(embedded.getByTestId('embedded-content-text')).toBeDisabled();
     const card = await pointInPage(embedded, 'article h2', 'center');
@@ -74,6 +77,17 @@ test('text, props, links, and alt text written in the code are editable; text fr
     await embedded.getByTestId('embedded-content-alt').press('Enter');
     await expect.poll(() => inPage<string>(embedded, `document.querySelector('.logo').getAttribute('alt')`)).toBe('Scamp logo');
 
+    // An image from disk: copied into public/ under a free name, and the page shows it.
+    const picked = path.join(os.tmpdir(), `scamp-e2e-pick-${process.pid}`, 'logo.svg');
+    await fs.mkdir(path.dirname(picked), { recursive: true });
+    await fs.copyFile(path.join(dir, 'public', 'logo.svg'), picked);
+    await stubOpenDialog(app, picked);
+    await embedded.getByTestId('embedded-content-choose-image').click();
+    await expect.poll(() => inPage<string>(embedded, `document.querySelector('.logo').getAttribute('src')`)).toBe('/logo-2.svg');
+    await expect(embedded.getByTestId('embedded-content-src')).toHaveValue('/logo-2.svg');
+    expect((await fs.stat(path.join(dir, 'public', 'logo-2.svg'))).isFile()).toBe(true);
+    await fs.rm(path.dirname(picked), { recursive: true, force: true });
+
     // Double-click text written in the JSX: the in-page editor opens, and Enter keeps it.
     const title = await pointInPage(embedded, '.title', 'center');
     await embedded.mouse.dblclick(title.x, title.y);
@@ -87,7 +101,8 @@ test('text, props, links, and alt text written in the code are editable; text fr
     await expect(queue).toContainText('Changed the text on Badge');
     await expect(queue).toContainText('Changed the link on Link');
     await expect(queue).toContainText('Changed the alt text on Image');
-    await expect(queue.locator('li')).toHaveCount(4);
+    await expect(queue).toContainText('Changed the image on Image');
+    await expect(queue.locator('li')).toHaveCount(5);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }

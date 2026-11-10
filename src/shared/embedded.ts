@@ -125,12 +125,39 @@ const describeElement = (el: EmbeddedElementRef): string => {
   return lines.join('\n');
 };
 
-const scopeLine = (scope: EmbeddedEditScope, el: EmbeddedElementRef | null): string =>
-  scope === 'all'
-    ? 'Scope: every instance. Change the shared definition, so all of them change.'
-    : el !== null && el.instanceCount > 1
-      ? 'Scope: this instance only. Leave the other instances as they are: override it where this one is used (a prop, a modifier class, or the call site), not in the shared definition.'
-      : 'Scope: this element.';
+const scopeLine = (scope: EmbeddedEditScope, el: EmbeddedElementRef | null): string => {
+  if (scope === 'all') return 'Scope: every instance. Change the shared definition, so all of them change.';
+  if (el === null || el.instanceCount <= 1) return 'Scope: this element.';
+  const n = el.instanceCount;
+  if (el.usedInList === true) {
+    return `Scope: this instance only, number ${(el.instanceIndex ?? 0) + 1} of ${n} on the page. All ${n} come from one line in a list (a \`.map()\` or loop)${el.usedAt === null ? '' : ` at ${el.usedAt}`}, so this one has no line of its own. To change only it, add a condition on its key, index, or data in that list, such as a modifier class when the item matches. If nothing picks it out reliably, change nothing and say so in your summary.`;
+  }
+  if (el.usedAt !== null) {
+    return `Scope: this instance only, the one used at ${el.usedAt}. Override it there (a prop or a modifier class on that call), not in the shared definition, so the other ${n - 1} stay as they are.`;
+  }
+  return 'Scope: this instance only. Leave the other instances as they are: override it where this one is used (a prop, a modifier class, or the call site), not in the shared definition.';
+};
+
+/** The scope buttons' words: named after the component when the instances are its own. */
+export const scopeWords = (el: EmbeddedElementRef): { one: string; every: string; oneTip: string; everyTip: string } => {
+  const n = el.instanceCount;
+  const name = el.instanceOf ?? null;
+  const noun = name ?? 'one';
+  return {
+    one: `This ${noun}`,
+    every: name === null ? `All ${n}` : `Every ${name} · ${n}`,
+    oneTip:
+      el.usedInList === true
+        ? `Changes only this ${noun}, number ${(el.instanceIndex ?? 0) + 1} of ${n} in a list`
+        : el.usedAt !== null && name !== null
+          ? `Changes only this ${noun}, where it’s used at ${el.usedAt}`
+          : `Changes only this ${noun}`,
+    everyTip:
+      name === null
+        ? `Changes the shared code: all ${n} on this page`
+        : `Changes the ${name} component: all ${n} on this page, and anywhere else it’s used`,
+  };
+};
 
 /** What the agent is told about an edit made below desktop width. */
 const breakpointLine = (bp: EmbeddedBreakpoint): string => {
@@ -424,6 +451,7 @@ export const installInspector = (config: InspectorConfig): void => {
   type Fiber = {
     type?: unknown;
     return?: Fiber | null;
+    alternate?: Fiber | null;
     stateNode?: unknown;
     _debugSource?: { fileName: string; lineNumber: number; columnNumber?: number } | null;
     _debugStack?: { stack?: string } | null;
@@ -501,8 +529,9 @@ export const installInspector = (config: InspectorConfig): void => {
   };
   const INTERNAL = /\/node_modules\/(react|react-dom|scheduler|next)\/|node_modules_(react|next)[_.]|\/next\/dist\/|react-dom|react-server-dom|jsx-dev-runtime|jsx-runtime|\[turbopack\]|<anonymous>/;
   /** Where React says the element's JSX is, for an element Scamp couldn't tag at build time. */
-  const rawSourceOf = (el: Element): EmbeddedRawSource | null => {
-    const fiber = fiberOf(el);
+  const rawSourceOf = (el: Element): EmbeddedRawSource | null => rawSourceOfFiber(fiberOf(el));
+  /** Where React says a fiber's JSX was written: an element's own tag, or where a component is used. */
+  const rawSourceOfFiber = (fiber: Fiber | null | undefined): EmbeddedRawSource | null => {
     const ds = fiber?._debugSource;
     if (ds !== undefined && ds !== null) return { kind: 'file', path: ds.fileName, line: ds.lineNumber, column: ds.columnNumber ?? 0 };
     const stack = fiber?._debugStack?.stack ?? '';
@@ -576,12 +605,45 @@ export const installInspector = (config: InspectorConfig): void => {
     send({ type: 'forced', held: heldList() });
   };
 
+  /**
+   * Which instance this is, and whether every instance comes from one place
+   * where the component is used (a list): then "this one" has no line of
+   * its own to change.
+   */
+  const instanceFacts = (el: Element): { instanceIndex: number; usedInList: boolean; instanceOf: string | null } => {
+    const all = sameSource(el);
+    const firstCall = (e: Element): string | null => callsOf(e).find((c) => c.call !== null)?.call ?? null;
+    const call = firstCall(el);
+    const owner = ownerOf(el);
+    const sameOwner = (e: Element): boolean => {
+      const o = ownerOf(e);
+      return o !== null && owner !== null && (o.fiber === owner.fiber || o.fiber === owner.fiber.alternate);
+    };
+    return {
+      instanceIndex: Math.max(0, all.indexOf(el as HTMLElement)),
+      usedInList: all.length > 1 && call !== null && all.every((e) => firstCall(e) === call),
+      // Instances of a component when each has its own; a .map() inside one component isn't.
+      instanceOf: all.length > 1 && owner !== null && !all.some((e) => e !== el && sameOwner(e)) ? owner.name : null,
+    };
+  };
+  /** The nearest component above the element, and its name. */
+  const ownerOf = (el: Element): { fiber: Fiber; name: string } | null => {
+    let fiber: Fiber | null | undefined = fiberOf(el)?.return;
+    for (let i = 0; fiber && i < 200; i += 1, fiber = fiber.return) {
+      const t = fiber.type as { displayName?: string; name?: string; render?: { name?: string } } | string | undefined | null;
+      if (t === undefined || t === null || typeof t === 'string') continue;
+      const name = (typeof t === 'function' ? (t as { displayName?: string }).displayName ?? (t as { name?: string }).name : t.displayName ?? t.render?.name) ?? '';
+      if (/^[A-Z]/.test(name)) return { fiber, name };
+    }
+    return null;
+  };
   const describe = (el: Element): unknown => {
     const attr = el.getAttribute(api.config.attr);
     const raw = attr === null ? rawSourceOf(el) : null;
     const src = attr ?? null;
     const file = src === null ? null : src.replace(/:\d+:\d+$/, '');
-    let usedAt: string | null = null;
+    // Where the nearest component is used, from the build's tag; else the nearest tagged ancestor in another file.
+    let usedAt: string | null = callsOf(el).find((c) => c.call !== null)?.call ?? null;
     for (let a = el.parentElement; a !== null && usedAt === null; a = a.parentElement) {
       const s = a.getAttribute(api.config.attr);
       if (s !== null && s.replace(/:\d+:\d+$/, '') !== file) usedAt = s;
@@ -614,6 +676,7 @@ export const installInspector = (config: InspectorConfig): void => {
         classes: Array.from(el.classList),
         components: componentsOf(el),
         instanceCount: sameSource(el).length || 1,
+        ...instanceFacts(el),
         usedAt,
         text: text.length > 60 ? `${text.slice(0, 57)}…` : text,
       },
@@ -1013,8 +1076,8 @@ export const installInspector = (config: InspectorConfig): void => {
     writeContent(el, field, value);
   };
   /** The selection's chain of components, with where each is used when the build tagged it. */
-  const callsOf = (el: Element): Array<{ name: string; call: string | null }> => {
-    const out: Array<{ name: string; call: string | null }> = [];
+  const callsOf = (el: Element): Array<{ name: string; call: string | null; raw: EmbeddedRawSource | null }> => {
+    const out: Array<{ name: string; call: string | null; raw: EmbeddedRawSource | null }> = [];
     let fiber: Fiber | null | undefined = fiberOf(el);
     for (let i = 0; fiber && i < 200 && out.length < 8; i += 1, fiber = fiber.return) {
       const t = fiber.type as { displayName?: string; name?: string } | string | undefined | null;
@@ -1023,7 +1086,8 @@ export const installInspector = (config: InspectorConfig): void => {
       if (!/^[A-Z]/.test(name)) continue;
       const props = (fiber as { memoizedProps?: Record<string, unknown> | null }).memoizedProps ?? null;
       const call = props !== null && typeof props[api.config.callAttr] === 'string' ? (props[api.config.callAttr] as string) : null;
-      if (out[out.length - 1]?.name !== name) out.push({ name, call });
+      // Without the build's tag (Next.js), React's own record of where the component was created.
+      if (out[out.length - 1]?.name !== name) out.push({ name, call, raw: call === null ? rawSourceOfFiber(fiber) : null });
     }
     return out;
   };

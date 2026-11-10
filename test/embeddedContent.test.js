@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyContent } from '../src/main/embedded/content';
+import { classifyContent, freeFileName } from '../src/main/embedded/content';
 /**
  * Where an element's text, image, or link comes from: written in the
  * code (editable), a prop with a value written where the component is
@@ -87,5 +87,19 @@ describe('classifyContent: data', () => {
         expect(await classify('src/Missing.jsx:1:1', 'text')).toMatchObject({ kind: 'data' });
         expect(await classify('src/App.jsx:99:1', 'text')).toMatchObject({ kind: 'data' });
         expect(await classify('not a source', 'text')).toMatchObject({ kind: 'data' });
+    });
+});
+describe('freeFileName', () => {
+    it('keeps a name that isn’t taken', () => {
+        expect(freeFileName('logo.png', ['hero.jpg'])).toBe('logo.png');
+    });
+    it('adds a number when the name is taken, ignoring case', () => {
+        expect(freeFileName('logo.png', ['Logo.PNG'])).toBe('logo-2.png');
+        expect(freeFileName('logo.png', ['logo.png', 'logo-2.png'])).toBe('logo-3.png');
+    });
+    it('turns spaces into dashes, and names an empty name', () => {
+        expect(freeFileName('my photo.jpg', [])).toBe('my-photo.jpg');
+        expect(freeFileName('  ', [])).toBe('image');
+        expect(freeFileName('README', ['readme'])).toBe('README-2');
     });
 });

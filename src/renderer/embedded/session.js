@@ -454,21 +454,34 @@ const lookUpOrigins = async (uid) => {
     if (fields.length === 0)
         return;
     const source = start.element.source;
+    // Without the build's tag (Next.js), find each call site from React's record of it.
+    const calls = await Promise.all(start.calls.map(async (c) => c.call !== null || c.raw == null
+        ? c
+        : { ...c, call: (await window.scampEmbedded.resolveSource(c.raw, { tag: c.name, classes: [], text: '' })).source }));
     const found = {};
     for (const field of fields) {
         found[field] =
             source === null
                 ? { kind: 'unknown', reason: start.element.library !== null ? `it comes from ${start.element.library}` : 'Scamp couldn’t find where this element is written' }
-                : await window.scampEmbedded.contentOrigin(source, field, start.calls);
+                : await window.scampEmbedded.contentOrigin(source, field, calls);
     }
     const { selection, set } = useEmbeddedStore.getState();
     if (selection === null || selection.uid !== uid)
         return;
-    set({ selection: { ...selection, origins: { ...selection.origins, ...found } } });
+    const usedAt = selection.element.usedAt ?? calls.find((c) => c.call !== null)?.call ?? null;
+    set({ selection: { ...selection, element: { ...selection.element, usedAt }, origins: { ...selection.origins, ...found } } });
 };
 const editable = (origin) => origin !== undefined && (origin.kind === 'literal' || origin.kind === 'import' || origin.kind === 'prop');
 /** Why a field can't be edited here, or null when it can (or Scamp is still looking). */
 export const notEditableReason = (origin) => origin === undefined || editable(origin) ? null : `This can’t be edited here: ${origin.reason}.`;
+/** Pick an image from disk: Scamp copies it into `public/` and points the selected image at it. */
+export const chooseImage = async () => {
+    const result = await window.scampEmbedded.chooseImage();
+    if (result.kind === 'error')
+        toast(result.error);
+    else if (result.kind === 'ok')
+        await commitContent('src', result.url);
+};
 /** Show new content on the page at once, and queue it for the agent. */
 export const commitContent = async (field, value) => {
     flushPending();

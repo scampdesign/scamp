@@ -248,3 +248,19 @@ export const classifyContent = async (query: ContentQuery): Promise<EmbeddedCont
   if (via !== null) return { kind: 'prop', value: result.value, at: result.at, prop: via.prop, component: via.component };
   return result.kind === 'import' ? { kind: 'import', value: result.value, at: result.at } : { kind: 'literal', value: result.value, at: result.at };
 };
+
+/**
+ * A file name not already in `taken`, compared without case (macOS folders
+ * ignore it): `logo.png`, then `logo-2.png`, and so on. Spaces become dashes,
+ * so the name works as a URL.
+ */
+export const freeFileName = (name: string, taken: ReadonlyArray<string>): string => {
+  const clean = name.trim().replace(/\s+/g, '-') || 'image';
+  const dot = clean.lastIndexOf('.');
+  const stem = dot > 0 ? clean.slice(0, dot) : clean;
+  const ext = dot > 0 ? clean.slice(dot) : '';
+  const used = new Set(taken.map((t) => t.toLowerCase()));
+  let candidate = clean;
+  for (let n = 2; used.has(candidate.toLowerCase()); n += 1) candidate = `${stem}-${n}${ext}`;
+  return candidate;
+};

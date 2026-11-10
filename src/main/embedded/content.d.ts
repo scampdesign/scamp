@@ -14,3 +14,9 @@ export type ContentQuery = {
 };
 /** Where the content of `field` on the element comes from, following props to where components are used. */
 export declare const classifyContent: (query: ContentQuery) => Promise<EmbeddedContentOrigin>;
+/**
+ * A file name not already in `taken`, compared without case (macOS folders
+ * ignore it): `logo.png`, then `logo-2.png`, and so on. Spaces become dashes,
+ * so the name works as a URL.
+ */
+export declare const freeFileName: (name: string, taken: ReadonlyArray<string>) => string;

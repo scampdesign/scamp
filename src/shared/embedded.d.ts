@@ -1,4 +1,4 @@
-import type { EmbeddedBreakpoint, EmbeddedContentField, EmbeddedEditScope, EmbeddedHistoryEntry, EmbeddedIdiom, EmbeddedPseudoState, EmbeddedQueueItem } from './types';
+import type { EmbeddedBreakpoint, EmbeddedContentField, EmbeddedEditScope, EmbeddedHistoryEntry, EmbeddedElementRef, EmbeddedIdiom, EmbeddedPseudoState, EmbeddedQueueItem } from './types';
 /**
  * Embedded Scamp's shared vocabulary: the properties the inspector reads
  * from the page, how they become declarations Scamp's parser understands,
@@ -16,6 +16,13 @@ export declare const computedToDeclarations: (computed: Record<string, string>) 
     prop: string;
     value: string;
 }>;
+/** The scope buttons' words: named after the component when the instances are its own. */
+export declare const scopeWords: (el: EmbeddedElementRef) => {
+    one: string;
+    every: string;
+    oneTip: string;
+    everyTip: string;
+};
 /** One queued edit, as the agent reads it. */
 export declare const describeQueueItem: (item: EmbeddedQueueItem, index: number) => string;
 /** A batch of queued edits as one message to the agent. */

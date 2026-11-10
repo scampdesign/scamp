@@ -50,6 +50,8 @@ export declare const handleConsoleLine: (line: string) => boolean;
 export declare const contentFields: (selection: EmbeddedSelection) => EmbeddedContentField[];
 /** Why a field can't be edited here, or null when it can (or Scamp is still looking). */
 export declare const notEditableReason: (origin: EmbeddedContentOrigin | undefined) => string | null;
+/** Pick an image from disk: Scamp copies it into `public/` and points the selected image at it. */
+export declare const chooseImage: () => Promise<void>;
 /** Show new content on the page at once, and queue it for the agent. */
 export declare const commitContent: (field: EmbeddedContentField, value: string) => Promise<void>;
 /** Send the edit in progress to the agent now. */

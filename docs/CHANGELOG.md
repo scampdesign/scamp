@@ -54,8 +54,13 @@ release time.
 - **In Edit React Project, you can edit text, images, and links.** Change
   them in the Content section of the Style tab, or double-click text on
   the page. Scamp only edits content written in your code, and says when
-  content comes from data instead. See
+  content comes from data instead. To use an image from your computer,
+  click **Choose file…**. See
   [Edit text, images, and links](user_docs/edit-react-project.md#edit-text-images-and-links).
+- **In Edit React Project, the scope buttons name the component.** Select
+  a card, and the buttons read **This Card** and **Every Card · 3**, so
+  you know whether an edit changes one card or the component. For a card
+  in a list, the agent picks out the one you selected, or says it can't.
 
 ### 0.14.0 (2026-11-05)
 

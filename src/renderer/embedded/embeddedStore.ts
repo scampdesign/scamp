@@ -38,7 +38,7 @@ export type EmbeddedSelection = {
   raw: EmbeddedRawSource | null;
   element: EmbeddedElementRef;
   /** Its components, innermost first, with where each is used. */
-  calls: Array<{ name: string; call: string | null }>;
+  calls: Array<{ name: string; call: string | null; raw?: EmbeddedRawSource | null }>;
   /** Its content as the page has it now. */
   content: Record<EmbeddedContentField, string | null>;
   /** Where each content field comes from, once main has looked; absent while it looks. */

@@ -66,9 +66,19 @@ debug information and the dev server's source maps. While it looks, the
 1. Change its styles in the panel. The page updates at once.
 
 When the same line of JSX draws more than one element, such as a card in
-a list, the **Style** tab shows **This one** and **All**. Click **This
-one** to change only the element you selected, or **All** to change the
-shared definition, so every instance changes.
+a list, the **Style** tab shows two buttons. When the elements are
+instances of a component, the buttons name it: **This Card** and **Every
+Card · 3**, with how many are on this page.
+
+- **This Card** changes only the instance you selected. The agent changes
+  it where that card is used. If every card comes from one list, the
+  agent picks this one out by its place or its data in the list, or says
+  it can't.
+- **Every Card** changes the component itself, so every card changes,
+  on this page and on any other page that uses it.
+
+For a list inside one component, the buttons read **This one** and
+**All**. Hold the pointer over a button to see what it changes.
 
 If Scamp can't map an element to a line, or the element comes from a
 library, you can still style it. The **Style** tab says so in a short note.
@@ -98,7 +108,10 @@ the panel, in the toolbar, click **Layers**.
 When you select an element that has text, or an image or a link, the
 **Style** tab shows a **Content** section. Change the **Text**, **Image**,
 **Alt text**, or **Link** there and press **Enter**. The page shows the
-change at once, and the agent writes it into your code. You can also
+change at once, and the agent writes it into your code. To use an image
+from your computer, click **Choose file…** next to **Image**. Scamp copies
+it into your project's `public` folder and points the image at it; when
+you discard the agent's changes, the copy goes too. You can also
 double-click text on the page to edit it in place; press **Enter** to keep
 it or **Esc** to cancel.
 
@@ -114,10 +127,6 @@ it says where the content comes from:
 - **Can't be edited here:** the content comes from data, such as a list
   being drawn, state, or an API, so changing it would mean changing that
   data. Scamp says why. You can still style the element.
-
-**Note:** For a Next.js project, Scamp can't yet tell where a
-component's props come from, so text set through props shows as not
-editable there.
 
 ## Reorder elements
 

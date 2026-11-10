@@ -30,8 +30,15 @@
   font-size: 11px;
 }
 
+.row {
+  display: flex;
+  gap: 6px;
+}
+
 /* The scamp-ui design's PanelRow. */
 .input {
+  flex: 1;
+  min-width: 0;
   height: 24px;
   padding: 0 6px;
   border: 1px solid var(--border-subtle);
@@ -66,4 +73,26 @@
   margin: 0;
   color: var(--text-tertiary);
   font-size: 11px;
+}
+
+.pick {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pick:hover:not(:disabled) {
+  border-color: var(--border);
+}
+
+.pick:disabled {
+  color: var(--text-tertiary);
+  cursor: default;
 }

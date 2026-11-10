@@ -1,23 +1,43 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-import type { EmbeddedContentField, EmbeddedContentOrigin } from '@shared/types';
+import type {
+  EmbeddedContentField,
+  EmbeddedContentOrigin,
+} from "@shared/types";
 
-import { useEmbeddedStore } from './embeddedStore';
-import { commitContent, contentFields, notEditableReason } from './session';
-import styles from './ContentSection.module.css';
+import { useEmbeddedStore } from "./embeddedStore";
+import {
+  chooseImage,
+  commitContent,
+  contentFields,
+  notEditableReason,
+} from "./session";
+import styles from "./ContentSection.module.css";
 
-const LABEL: Record<EmbeddedContentField, string> = { text: 'Text', src: 'Image', alt: 'Alt text', href: 'Link' };
+const LABEL: Record<EmbeddedContentField, string> = {
+  text: "Text",
+  src: "Image",
+  alt: "Alt text",
+  href: "Link",
+};
 
 /** Where the content comes from, in a few words; null while Scamp looks. */
 const originNote = (origin: EmbeddedContentOrigin | undefined): string => {
-  if (origin === undefined) return 'Checking where this comes from…';
-  if (origin.kind === 'literal') return `Written at ${origin.at}`;
-  if (origin.kind === 'import') return `Imported from ${origin.value}, at ${origin.at}`;
-  if (origin.kind === 'prop') return `Set where ${origin.component} is used, at ${origin.at}`;
-  return notEditableReason(origin) ?? '';
+  if (origin === undefined) return "Checking where this comes from…";
+  if (origin.kind === "literal") return `Written at ${origin.at}`;
+  if (origin.kind === "import")
+    return `Imported from ${origin.value}, at ${origin.at}`;
+  if (origin.kind === "prop")
+    return `Set where ${origin.component} is used, at ${origin.at}`;
+  return notEditableReason(origin) ?? "";
 };
 
-type FieldProps = { field: EmbeddedContentField; value: string; origin: EmbeddedContentOrigin | undefined; uid: string };
+type FieldProps = {
+  field: EmbeddedContentField;
+  value: string;
+  origin: EmbeddedContentOrigin | undefined;
+  uid: string;
+};
 
 const Field = ({ field, value, origin, uid }: FieldProps): JSX.Element => {
   const [draft, setDraft] = useState(value);
@@ -31,23 +51,40 @@ const Field = ({ field, value, origin, uid }: FieldProps): JSX.Element => {
     <div className={styles.field} data-field={field}>
       <label className={styles.label}>
         <span>{LABEL[field]}</span>
-        <input
-          className={styles.input}
-          value={draft}
-          disabled={locked}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              commit();
-            } else if (e.key === 'Escape') setDraft(value);
-          }}
-          placeholder={field === 'alt' ? 'Describe the image' : undefined}
-          data-testid={`embedded-content-${field}`}
-        />
+        <span className={styles.row}>
+          <input
+            className={styles.input}
+            value={draft}
+            disabled={locked}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commit();
+              } else if (e.key === "Escape") setDraft(value);
+            }}
+            placeholder={field === "alt" ? "Describe the image" : undefined}
+            data-testid={`embedded-content-${field}`}
+          />
+          {field === "src" && (
+            <button
+              type="button"
+              className={styles.pick}
+              disabled={locked}
+              onClick={() => void chooseImage()}
+              data-testid="embedded-content-choose-image"
+            >
+              Choose file…
+            </button>
+          )}
+        </span>
       </label>
-      <p className={styles.note} data-locked={origin !== undefined && locked} data-testid={`embedded-content-${field}-note`}>
+      <p
+        className={styles.note}
+        data-locked={origin !== undefined && locked}
+        data-testid={`embedded-content-${field}-note`}
+      >
         {originNote(origin)}
       </p>
     </div>
@@ -68,11 +105,20 @@ export const ContentSection = (): JSX.Element | null => {
     <section className={styles.section} data-testid="embedded-content">
       <h3 className={styles.title}>Content</h3>
       {fields.map((field) => (
-        <Field key={field} field={field} value={selection.content[field] ?? ''} origin={selection.origins[field]} uid={selection.uid} />
+        <Field
+          key={field}
+          field={field}
+          value={selection.content[field] ?? ""}
+          origin={selection.origins[field]}
+          uid={selection.uid}
+        />
       ))}
-      {fields.includes('text') && notEditableReason(selection.origins.text) === null && (
-        <p className={styles.hint}>You can also double-click the text on the page to edit it there.</p>
-      )}
+      {fields.includes("text") &&
+        notEditableReason(selection.origins.text) === null && (
+          <p className={styles.hint}>
+            You can also double-click the text on the page to edit it there.
+          </p>
+        )}
     </section>
   );
 };

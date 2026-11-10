@@ -269,6 +269,7 @@ export const IPC = {
     EmbeddedResolveSource: 'embedded:resolve-source',
     EmbeddedRoutes: 'embedded:routes',
     EmbeddedContentOrigin: 'embedded:content-origin',
+    EmbeddedChooseImage: 'embedded:choose-image',
     EmbeddedHistory: 'embedded:history',
     EmbeddedHistoryGoTo: 'embedded:history-go-to',
     EmbeddedUndoRun: 'embedded:undo-run',

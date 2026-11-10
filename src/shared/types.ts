@@ -1600,6 +1600,12 @@ export type EmbeddedChooseResult =
   | { kind: 'cancelled' }
   | { kind: 'ok'; folder: string };
 
+/** An image chosen from disk and copied into the project's `public/`: `url` is its path on the site. */
+export type EmbeddedChooseImageResult =
+  | { kind: 'cancelled' }
+  | { kind: 'ok'; url: string }
+  | { kind: 'error'; error: string };
+
 export type EmbeddedStartProgress =
   | { kind: 'log'; text: string }
   | { kind: 'phase'; phase: 'branch' | 'configure' | 'installing' | 'starting' };
@@ -1632,6 +1638,12 @@ export type EmbeddedElementRef = {
   usedAt: string | null;
   /** A short piece of its text, to help find it. */
   text: string;
+  /** Which of the instances this is, from 0, in page order. */
+  instanceIndex?: number;
+  /** Every instance comes from one place a component is used, a list: none has a line of its own. */
+  usedInList?: boolean;
+  /** The component these are separate instances of, such as `Card`; null for a list inside one component. */
+  instanceOf?: string | null;
 };
 
 export type EmbeddedEditScope = 'instance' | 'all';
@@ -1833,7 +1845,7 @@ export type EmbeddedInspectorMessage =
       /** React's debug location, for an element with no build-time tag, for main to resolve. */
       raw: EmbeddedRawSource | null;
       /** Its components, innermost first, with where each is used (`data-scamp-call`) when the build tagged it. */
-      calls: Array<{ name: string; call: string | null }>;
+      calls: Array<{ name: string; call: string | null; raw?: EmbeddedRawSource | null }>;
       /** Its text (when it's only text), an image's source and alt text, a link's target; null where it has none. */
       content: { text: string | null; src: string | null; alt: string | null; href: string | null };
       element: EmbeddedElementRef;

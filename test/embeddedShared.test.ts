@@ -11,6 +11,7 @@ import {
   mergeRoutes,
   parseHistoryLog,
   routeHasParams,
+  scopeWords,
   shortQueueItem,
 } from '@shared/embedded';
 import type { EmbeddedElementRef } from '@shared/types';
@@ -170,6 +171,52 @@ describe('describeQueueItem', () => {
   it('carries an instruction, with or without a selection', () => {
     expect(describeQueueItem({ id: 'b', kind: 'instruction', element: null, scope: 'instance', text: 'tighten the spacing' }, 0)).toBe('### Edit 1: instruction\n- Do this: tighten the spacing');
     expect(describeQueueItem({ id: 'b', kind: 'instruction', element: element({ instanceCount: 1 }), scope: 'instance', text: 'make it bold' }, 0)).toContain('Scope: this element.');
+  });
+});
+
+describe('this instance only', () => {
+  const style = (patch: Partial<EmbeddedElementRef>): string =>
+    describeQueueItem({ id: 'a', kind: 'style', element: element(patch), scope: 'instance', changes: [{ property: 'color', from: '', to: 'red' }] }, 0);
+
+  it('names the exact place this instance is used', () => {
+    expect(style({ usedInList: false })).toContain('Scope: this instance only, the one used at src/CardList.tsx:8:7. Override it there');
+    expect(style({ usedInList: false })).toContain('so the other 2 stay as they are');
+  });
+
+  it('says which one of a list it is, and to pick it out by key or index, or change nothing', () => {
+    const text = style({ usedInList: true, instanceIndex: 1 });
+    expect(text).toContain('number 2 of 3 on the page');
+    expect(text).toContain('one line in a list (a `.map()` or loop) at src/CardList.tsx:8:7');
+    expect(text).toContain('add a condition on its key, index, or data');
+    expect(text).toContain('change nothing and say so');
+  });
+
+  it('falls back to the general wording without a place it’s used', () => {
+    expect(style({ usedAt: null })).toContain('Scope: this instance only. Leave the other instances as they are');
+  });
+});
+
+describe('scopeWords', () => {
+  it('names the buttons after the component its instances are', () => {
+    expect(scopeWords(element({ instanceOf: 'Card' }))).toEqual({
+      one: 'This Card',
+      every: 'Every Card · 3',
+      oneTip: 'Changes only this Card, where it’s used at src/CardList.tsx:8:7',
+      everyTip: 'Changes the Card component: all 3 on this page, and anywhere else it’s used',
+    });
+  });
+
+  it('says which of a list this one is', () => {
+    expect(scopeWords(element({ instanceOf: 'Card', usedInList: true, instanceIndex: 0 })).oneTip).toBe('Changes only this Card, number 1 of 3 in a list');
+  });
+
+  it('falls back to plain words for a list inside one component', () => {
+    expect(scopeWords(element({ instanceOf: null }))).toEqual({
+      one: 'This one',
+      every: 'All 3',
+      oneTip: 'Changes only this one',
+      everyTip: 'Changes the shared code: all 3 on this page',
+    });
   });
 });
 

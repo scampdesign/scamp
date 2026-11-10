@@ -48,6 +48,8 @@ const embeddedApi = {
     undoRun: (runId, redo = false) => ipcRenderer.invoke(IPC.EmbeddedUndoRun, { runId, redo }),
     /** Where an element's text, image, or link comes from. */
     contentOrigin: (source, field, calls) => ipcRenderer.invoke(IPC.EmbeddedContentOrigin, { source, field, calls }),
+    /** Pick an image and copy it into the project's `public/`. */
+    chooseImage: () => ipcRenderer.invoke(IPC.EmbeddedChooseImage),
     /** Who writes changes: Scamp's agent or the user's own, over MCP. */
     setWorker: (worker) => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
     ownAgentStatus: () => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),

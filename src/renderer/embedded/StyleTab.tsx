@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
+import { scopeWords } from '@shared/embedded';
 import type { EmbeddedPseudoState } from '@shared/types';
 
+import { Tooltip } from '../src/components/controls/Tooltip';
 import { UiPanel } from '../src/components/UiPanel';
 import { ContentSection } from './ContentSection';
 import { useEmbeddedStore } from './embeddedStore';
@@ -64,6 +66,7 @@ export const StyleTab = (): JSX.Element => {
     );
   }
   const { element } = selection;
+  const words = scopeWords(element);
   return (
     <div className={styles.tab} data-testid="embedded-style-tab">
       <div className={styles.head}>
@@ -81,12 +84,16 @@ export const StyleTab = (): JSX.Element => {
         )}
         {element.instanceCount > 1 && (
           <div className={styles.scope} role="group" aria-label="Which instances this edit changes">
-            <button type="button" aria-pressed={scope === 'instance'} onClick={() => setScope('instance')}>
-              This one
-            </button>
-            <button type="button" aria-pressed={scope === 'all'} onClick={() => setScope('all')} data-testid="embedded-scope-all">
-              All {element.instanceCount}
-            </button>
+            <Tooltip label={words.oneTip}>
+              <button type="button" aria-pressed={scope === 'instance'} onClick={() => setScope('instance')} data-testid="embedded-scope-one">
+                {words.one}
+              </button>
+            </Tooltip>
+            <Tooltip label={words.everyTip}>
+              <button type="button" aria-pressed={scope === 'all'} onClick={() => setScope('all')} data-testid="embedded-scope-all">
+                {words.every}
+              </button>
+            </Tooltip>
           </div>
         )}
         <div className={styles.scope} role="group" aria-label="Which state of the element to show and style" data-testid="embedded-states">

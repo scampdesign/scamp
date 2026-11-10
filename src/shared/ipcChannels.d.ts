@@ -193,6 +193,7 @@ export declare const IPC: {
     readonly EmbeddedResolveSource: "embedded:resolve-source";
     readonly EmbeddedRoutes: "embedded:routes";
     readonly EmbeddedContentOrigin: "embedded:content-origin";
+    readonly EmbeddedChooseImage: "embedded:choose-image";
     readonly EmbeddedHistory: "embedded:history";
     readonly EmbeddedHistoryGoTo: "embedded:history-go-to";
     readonly EmbeddedUndoRun: "embedded:undo-run";

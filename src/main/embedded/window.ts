@@ -9,6 +9,7 @@ import type {
   EmbeddedAgentEvent,
   EmbeddedChooseResult,
   EmbeddedContentField,
+  EmbeddedChooseImageResult,
   EmbeddedContentOrigin,
   EmbeddedElementRef,
   EmbeddedOwnAgentStatus,
@@ -51,7 +52,7 @@ import {
 import { viteCommand, writeInstrumentation } from './instrument';
 import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
-import { classifyContent, type ComponentCall } from './content';
+import { classifyContent, freeFileName, type ComponentCall } from './content';
 import { goToCommit, headSha, historyBase, readHistory } from './history';
 import { OWN_AGENT_TOOLS, ownAgentInvoker } from './ownAgent';
 import { recordRun, redoRun, snapshotRun, undoRun, type RunRecord, type RunSnapshot } from './runs';
@@ -454,6 +455,31 @@ export const registerEmbeddedIpc = (): void => {
       return classifyContent({ source: args.source, field: args.field, calls, read }).catch(() => ({ kind: 'unknown' as const, reason: 'Scamp couldn’t read the code' }));
     }
   );
+
+  /** Copy an image from disk into the project's `public/`, served at `/name`; the agent's change to accept or discard. */
+  ipcMain.handle(IPC.EmbeddedChooseImage, async (e): Promise<EmbeddedChooseImageResult> => {
+    const session = sessionOf(e);
+    if (session === null || session.agent === null) return { kind: 'error', error: 'Start the app first.' };
+    const parent = BrowserWindow.fromWebContents(e.sender);
+    const options = {
+      title: 'Choose an image',
+      properties: ['openFile' as const],
+      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif'] }],
+    };
+    const result = parent ? await dialog.showOpenDialog(parent, options) : await dialog.showOpenDialog(options);
+    const file = result.filePaths[0];
+    if (result.canceled || file === undefined) return { kind: 'cancelled' };
+    try {
+      const pub = join(session.folder, 'public');
+      await fs.mkdir(pub, { recursive: true });
+      const name = freeFileName(basename(file), await fs.readdir(pub));
+      await fs.copyFile(file, join(pub, name));
+      session.agent.addTouched([`public/${name}`]);
+      return { kind: 'ok', url: `/${name}` };
+    } catch {
+      return { kind: 'error', error: 'Scamp couldn’t copy that image into public/.' };
+    }
+  });
 
   ipcMain.handle(IPC.EmbeddedSyncPseudo, async (e): Promise<boolean> => {
     const guest = guests.get(e.sender.id);

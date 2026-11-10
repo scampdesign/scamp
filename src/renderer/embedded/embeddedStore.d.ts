@@ -20,6 +20,7 @@ export type EmbeddedSelection = {
     calls: Array<{
         name: string;
         call: string | null;
+        raw?: EmbeddedRawSource | null;
     }>;
     /** Its content as the page has it now. */
     content: Record<EmbeddedContentField, string | null>;
