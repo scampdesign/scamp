@@ -258,6 +258,34 @@ describe('shortQueueItem', () => {
   });
 });
 
+describe('content edits', () => {
+  const heading = element({ tag: 'h1', components: ['App'], text: 'Team' });
+  it('tells the agent the value, and where it’s written: the JSX, an import, or where the component is used', () => {
+    const literal = describeQueueItem({ id: 'c', kind: 'content', element: heading, field: 'text', from: 'Team', to: 'Our team', origin: { kind: 'literal', value: 'Team', at: 'src/App.jsx:8' } }, 0);
+    expect(literal).toContain('### Edit 1: text');
+    expect(literal).toContain('- Change the text from “Team” to “Our team”.');
+    expect(literal).toContain('It’s written in the code at src/App.jsx:8. Change it there.'.replace('’', "'"));
+    const prop = describeQueueItem(
+      { id: 'p', kind: 'content', element: heading, field: 'text', from: 'New', to: 'Fresh', origin: { kind: 'prop', value: 'New', at: 'src/App.jsx:22', prop: 'label', component: 'Badge' } },
+      0
+    );
+    expect(prop).toContain('It comes from the `label` prop of Badge, written where Badge is used, at src/App.jsx:22.');
+    expect(prop).toContain("don't change Badge itself or its default");
+    const image = describeQueueItem(
+      { id: 'i', kind: 'content', element: element({ tag: 'img' }), field: 'src', from: '', to: '/new.png', origin: { kind: 'import', value: './logo.png', at: 'src/App.jsx:1' } },
+      0
+    );
+    expect(image).toContain('Change the image from (none) to “/new.png”.');
+    expect(image).toContain('imported file (`./logo.png`)');
+  });
+
+  it('describes a content edit plainly, with the old and new values as detail', () => {
+    expect(
+      describeChange({ id: 'c', kind: 'content', element: element({ tag: 'a', components: ['App'] }), field: 'href', from: '/about', to: '/team', origin: { kind: 'literal', value: '/about', at: 'x:1' } })
+    ).toEqual({ text: 'Changed the link on Link', detail: '<a> link “/about” → “/team”' });
+  });
+});
+
 describe('describeChange', () => {
   const card = element({ tag: 'article', components: ['Card', 'App'], text: 'Ada' });
   const style = (patch: Record<string, unknown>, changes: Array<{ property: string; from: string; to: string }>) =>

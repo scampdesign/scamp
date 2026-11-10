@@ -93,6 +93,32 @@ over a row to outline that element on the page, and click a row to select
 it. When you select an element on the page, the tree opens to it. To hide
 the panel, in the toolbar, click **Layers**.
 
+## Edit text, images, and links
+
+When you select an element that has text, or an image or a link, the
+**Style** tab shows a **Content** section. Change the **Text**, **Image**,
+**Alt text**, or **Link** there and press **Enter**. The page shows the
+change at once, and the agent writes it into your code. You can also
+double-click text on the page to edit it in place; press **Enter** to keep
+it or **Esc** to cancel.
+
+Scamp only edits content that's written in your code. Under each field,
+it says where the content comes from:
+
+- **Written at:** the text or value is written in the element's JSX, or
+  in a constant next to it.
+- **Set where a component is used:** the element shows a prop, and its
+  value is written where the component is used, such as
+  `<Badge label="New" />`. The change is made there, for that use only.
+- **Imported from:** an image imported as a file.
+- **Can't be edited here:** the content comes from data, such as a list
+  being drawn, state, or an API, so changing it would mean changing that
+  data. Scamp says why. You can still style the element.
+
+**Note:** For a Next.js project, Scamp can't yet tell where a
+component's props come from, so text set through props shows as not
+editable there.
+
 ## Reorder elements
 
 You can move an element before or after one of its siblings, in the same

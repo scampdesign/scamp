@@ -53,6 +53,16 @@ export const inPage = <T = unknown>(embedded: Page, code: string): Promise<T> =>
     code
   ) as Promise<T>;
 
+/**
+ * The running app's own page, for typing into it: keys pressed on the
+ * window reach the webview as key presses, but their characters don't.
+ */
+export const guestPage = (app: ElectronApplication): Page => {
+  const guest = app.windows().find((w) => w.url().startsWith('http://localhost'));
+  if (guest === undefined) throw new Error('the running app has no page yet');
+  return guest;
+};
+
 /** A point on an element of the page, in the window's coordinates. */
 export const pointInPage = async (embedded: Page, selector: string, at: 'center' | 'corner'): Promise<{ x: number; y: number }> => {
   const point = await inPage<{ x: number; y: number } | null>(

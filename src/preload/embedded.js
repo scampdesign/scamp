@@ -46,6 +46,8 @@ const embeddedApi = {
     historyGoTo: (sha) => ipcRenderer.invoke(IPC.EmbeddedHistoryGoTo, { sha }),
     /** Undo (or redo) what one agent run wrote. */
     undoRun: (runId, redo = false) => ipcRenderer.invoke(IPC.EmbeddedUndoRun, { runId, redo }),
+    /** Where an element's text, image, or link comes from. */
+    contentOrigin: (source, field, calls) => ipcRenderer.invoke(IPC.EmbeddedContentOrigin, { source, field, calls }),
     /** Who writes changes: Scamp's agent or the user's own, over MCP. */
     setWorker: (worker) => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
     ownAgentStatus: () => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),

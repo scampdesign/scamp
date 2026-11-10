@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { pathToFileURL } from 'url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { SOURCE_ATTR, WRAPPER_CONFIG, wrapperConfigSource } from '../../src/main/embedded/instrument';
+import { CALL_ATTR, SOURCE_ATTR, WRAPPER_CONFIG, wrapperConfigSource } from '../../src/main/embedded/instrument';
 const VIRTUAL = '\0scamp-jsx-dev-runtime';
 let project;
 const loadWrapper = async () => {
@@ -51,9 +51,19 @@ describe('the scamp-source transform', () => {
         const out = plugin?.transform(code, `${project}/src/A.jsx`)?.code ?? '';
         expect(out).toContain(`<section ${SOURCE_ATTR}="src/A.jsx:4:3" className="x">`);
         expect(out).toContain(`<span ${SOURCE_ATTR}="src/A.jsx:6:5">`);
-        expect(out).toContain('<Card />');
+        // A component gets where it's used, as a prop the page reads from React.
+        expect(out).toContain(`<Card ${CALL_ATTR}="src/A.jsx:5:5" />`);
         // No lines added: every line keeps its number.
         expect(out.split('\n')).toHaveLength(code.split('\n').length);
+    });
+    it('tags dotted components, leaves a Fragment alone, and keeps a call tag already there', async () => {
+        const plugin = (await loadWrapper()).plugins.find((p) => p.name === 'scamp-source');
+        const code = `import { Fragment } from 'react';\nexport const F = () => (\n  <Fragment>\n    <UI.Button />\n    <React.Fragment><Card ${CALL_ATTR}="given" /></React.Fragment>\n  </Fragment>\n);\n`;
+        const out = plugin?.transform(code, `${project}/src/F.jsx`)?.code ?? '';
+        expect(out).toContain(`<UI.Button ${CALL_ATTR}="src/F.jsx:4:5" />`);
+        expect(out).toContain('<Fragment>');
+        expect(out).toContain('<React.Fragment>');
+        expect(out).toContain(`<Card ${CALL_ATTR}="given" />`);
     });
     it('reads TypeScript, keeps a tag already there, and skips files that aren’t the project’s', async () => {
         const plugin = (await loadWrapper()).plugins.find((p) => p.name === 'scamp-source');

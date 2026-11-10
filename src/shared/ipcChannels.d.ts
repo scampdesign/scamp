@@ -192,6 +192,7 @@ export declare const IPC: {
     readonly EmbeddedSyncPseudo: "embedded:sync-pseudo";
     readonly EmbeddedResolveSource: "embedded:resolve-source";
     readonly EmbeddedRoutes: "embedded:routes";
+    readonly EmbeddedContentOrigin: "embedded:content-origin";
     readonly EmbeddedHistory: "embedded:history";
     readonly EmbeddedHistoryGoTo: "embedded:history-go-to";
     readonly EmbeddedUndoRun: "embedded:undo-run";

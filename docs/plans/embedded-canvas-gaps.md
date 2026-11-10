@@ -325,6 +325,26 @@ Tailwind config before any stylesheet using them has loaded.
 
 ### P5: Edit text, images, and links, and show what comes from data (gaps 10, 11)
 
+**Built** (2026-11-09), ready for manual testing.
+
+- `content.ts` (main) classifies a field with `@babel/parser`, now a
+  direct dependency: a literal in the element's JSX (or a `const` with a
+  string, or an import for an image), a prop followed to where its
+  component is used, up to three components, or data. A missing
+  attribute is one to add, so it's editable.
+- Where a component is used comes from the build: the Vite transform now
+  tags every component's JSX with `data-scamp-call="file:line:col"` (a
+  prop, read from React's fiber in the page; fragments are left alone).
+  Next.js has no transform, so its props classify as unknown.
+- The inspector previews text in the element's existing text node (React
+  keeps the node, so its DOM isn't disturbed) and attributes with
+  `setAttribute`, tagged for undo. The in-page editor is a
+  `contenteditable` copy over the element, styled like it, whose keys
+  the app never hears.
+- A `content` queue item tells the agent the old and new value and where
+  it's written; the Style tab's Content section shows each field with its
+  origin. Not yet: replacing an image from a file on disk.
+
 - **Text:** double-click to edit in place on the page (on an overlay, not
   React's own DOM). **Images:** replace the source and edit the alt text.
   **Links:** edit the target. Each is queued for the agent like a style

@@ -1,5 +1,6 @@
 import { type InspectorCommand } from '@shared/embedded';
-import type { EmbeddedGitResult, EmbeddedPseudoState } from '@shared/types';
+import type { EmbeddedContentField, EmbeddedContentOrigin, EmbeddedGitResult, EmbeddedPseudoState } from '@shared/types';
+import { type EmbeddedSelection } from './embeddedStore';
 /** How long editing pauses before an edit goes to the agent's queue. */
 export declare const ENQUEUE_DELAY_MS = 900;
 type WebviewLike = HTMLElement & {
@@ -45,6 +46,12 @@ export declare const setModes: (patch: {
 }) => void;
 /** A console line from the page. Returns true when it was the inspector's. */
 export declare const handleConsoleLine: (line: string) => boolean;
+/** The selection's content fields: text when it's only text, an image's source and alt, a link's target. */
+export declare const contentFields: (selection: EmbeddedSelection) => EmbeddedContentField[];
+/** Why a field can't be edited here, or null when it can (or Scamp is still looking). */
+export declare const notEditableReason: (origin: EmbeddedContentOrigin | undefined) => string | null;
+/** Show new content on the page at once, and queue it for the agent. */
+export declare const commitContent: (field: EmbeddedContentField, value: string) => Promise<void>;
 /** Send the edit in progress to the agent now. */
 export declare const flushPending: () => void;
 /** Switch between this instance and all of them, moving the page's preview with it. */

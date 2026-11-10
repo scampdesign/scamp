@@ -1,4 +1,4 @@
-import type { EmbeddedBreakpoint, EmbeddedEditScope, EmbeddedHistoryEntry, EmbeddedIdiom, EmbeddedPseudoState, EmbeddedQueueItem } from './types';
+import type { EmbeddedBreakpoint, EmbeddedContentField, EmbeddedEditScope, EmbeddedHistoryEntry, EmbeddedIdiom, EmbeddedPseudoState, EmbeddedQueueItem } from './types';
 /**
  * Embedded Scamp's shared vocabulary: the properties the inspector reads
  * from the page, how they become declarations Scamp's parser understands,
@@ -59,6 +59,8 @@ export declare const INSPECTOR_PREFIX = "__scamp_inspector__";
 export type InspectorConfig = {
     prefix: string;
     attr: string;
+    /** The prop on a component's JSX saying where it's used (`data-scamp-call`). */
+    callAttr: string;
     properties: ReadonlyArray<string>;
 };
 export type InspectorState = EmbeddedPseudoState;
@@ -95,6 +97,19 @@ export type InspectorCommand = {
  | {
     type: 'undoTag';
     tag: string;
+}
+/** Preview new text, an image source or alt text, or a link target on one element. */
+ | {
+    type: 'setContent';
+    uid: string;
+    field: EmbeddedContentField;
+    value: string;
+    tag: string;
+}
+/** Open the in-page text editor on an element. */
+ | {
+    type: 'beginTextEdit';
+    uid: string;
 } | {
     type: 'clear';
 } | {

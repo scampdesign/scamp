@@ -19,6 +19,12 @@ import { ALWAYS_EXCLUDED, excludeFromGit } from './git';
 export const INSTRUMENT_DIR = join('.scamp', 'embedded');
 export const WRAPPER_CONFIG = join(INSTRUMENT_DIR, 'vite.config.scamp.mjs');
 export const SOURCE_ATTR = 'data-scamp-src';
+/**
+ * Where a component is used: a prop on every component's JSX, not a DOM
+ * attribute. The page reads it from React's props, so text a component
+ * gets as a prop can be traced to where it's written. see docs/plans/embedded-canvas-gaps.md (P5)
+ */
+export const CALL_ATTR = 'data-scamp-call';
 
 /**
  * The generated config. Plain ESM, resolved from the project's own `vite`.
@@ -45,6 +51,7 @@ import { loadConfigFromFile, mergeConfig } from 'vite';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rootPosix = root.split(path.sep).join('/');
 const ATTR = '${SOURCE_ATTR}';
+const CALL = '${CALL_ATTR}';
 const VIRTUAL = '\0scamp-jsx-dev-runtime';
 
 let babelParse = null;
@@ -80,12 +87,15 @@ export function tagSources(code, file) {
       for (const child of node) visit(child);
       return;
     }
-    if (
-      node.type === 'JSXOpeningElement' &&
-      node.name && node.name.type === 'JSXIdentifier' && /^[a-z]/.test(node.name.name) &&
-      !node.attributes.some((a) => a.type === 'JSXAttribute' && a.name && a.name.name === ATTR)
-    ) {
-      inserts.push([node.name.end, ' ' + ATTR + '="' + rel + ':' + node.loc.start.line + ':' + (node.loc.start.column + 1) + '"']);
+    if (node.type === 'JSXOpeningElement' && node.name) {
+      const where = rel + ':' + node.loc.start.line + ':' + (node.loc.start.column + 1);
+      const has = (name) => node.attributes.some((a) => a.type === 'JSXAttribute' && a.name && a.name.name === name);
+      const intrinsic = node.name.type === 'JSXIdentifier' && /^[a-z]/.test(node.name.name);
+      // A component (Card, Foo.Bar), but not a Fragment, which takes no props but key.
+      const fragment = (node.name.type === 'JSXIdentifier' && node.name.name === 'Fragment') ||
+        (node.name.type === 'JSXMemberExpression' && node.name.property && node.name.property.name === 'Fragment');
+      if (intrinsic && !has(ATTR)) inserts.push([node.name.end, ' ' + ATTR + '="' + where + '"']);
+      else if (!intrinsic && !fragment && !has(CALL)) inserts.push([node.name.end, ' ' + CALL + '="' + where + '"']);
     }
     for (const key in node) {
       if (key !== 'loc' && key !== 'start' && key !== 'end' && key !== 'extra') visit(node[key]);

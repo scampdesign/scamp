@@ -14,6 +14,12 @@ export declare const INSTRUMENT_DIR: string;
 export declare const WRAPPER_CONFIG: string;
 export declare const SOURCE_ATTR = "data-scamp-src";
 /**
+ * Where a component is used: a prop on every component's JSX, not a DOM
+ * attribute. The page reads it from React's props, so text a component
+ * gets as a prop can be traced to where it's written. see docs/plans/embedded-canvas-gaps.md (P5)
+ */
+export declare const CALL_ATTR = "data-scamp-call";
+/**
  * The generated config. Plain ESM, resolved from the project's own `vite`.
  * Written with `String.raw` so its backslashes are the file's own.
  *

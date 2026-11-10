@@ -34,6 +34,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
+    "@babel/parser": "^7.29.2",
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/lang-css": "^6.3.1",
     "@codemirror/lang-javascript": "^6.2.5",

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { EmbeddedPseudoState } from '@shared/types';
 
 import { UiPanel } from '../src/components/UiPanel';
+import { ContentSection } from './ContentSection';
 import { useEmbeddedStore } from './embeddedStore';
 import { sendInstruction, setPseudo, setScope } from './session';
 import styles from './StyleTab.module.css';
@@ -110,6 +111,7 @@ export const StyleTab = (): JSX.Element => {
         )}
       </div>
       {/* The app's own panel wrapper, so it's found the same way in both windows. */}
+      <ContentSection />
       <div data-testid="properties-panel">
         <UiPanel />
       </div>

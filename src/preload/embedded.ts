@@ -10,6 +10,8 @@ import type {
   EmbeddedGitStatus,
   EmbeddedHistory,
   EmbeddedPreflight,
+  EmbeddedContentField,
+  EmbeddedContentOrigin,
   EmbeddedElementRef,
   EmbeddedOwnAgentStatus,
   EmbeddedQueueItem,
@@ -77,6 +79,9 @@ const embeddedApi = {
   historyGoTo: (sha: string): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedHistoryGoTo, { sha }),
   /** Undo (or redo) what one agent run wrote. */
   undoRun: (runId: string, redo = false): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedUndoRun, { runId, redo }),
+  /** Where an element's text, image, or link comes from. */
+  contentOrigin: (source: string, field: EmbeddedContentField, calls: Array<{ name: string; call: string | null }>): Promise<EmbeddedContentOrigin> =>
+    ipcRenderer.invoke(IPC.EmbeddedContentOrigin, { source, field, calls }),
   /** Who writes changes: Scamp's agent or the user's own, over MCP. */
   setWorker: (worker: EmbeddedWorker): Promise<EmbeddedOwnAgentStatus | null> => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
   ownAgentStatus: (): Promise<EmbeddedOwnAgentStatus | null> => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),

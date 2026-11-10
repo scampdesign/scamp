@@ -13,6 +13,8 @@ import { flattenRoutes, readRoutesFn, type RawRoute } from '@shared/reactRoutes'
 import type {
   EmbeddedAgentEvent,
   EmbeddedBreakpoint,
+  EmbeddedContentField,
+  EmbeddedContentOrigin,
   EmbeddedElementRef,
   EmbeddedGitResult,
   EmbeddedInspectorMessage,
@@ -52,7 +54,7 @@ let loading = false;
 
 const newId = (): string => `e${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-const config = { prefix: INSPECTOR_PREFIX, attr: SOURCE_ATTR, properties: [...EMBEDDED_COMPUTED_PROPERTIES] };
+const config = { prefix: INSPECTOR_PREFIX, attr: SOURCE_ATTR, callAttr: 'data-scamp-call', properties: [...EMBEDDED_COMPUTED_PROPERTIES] };
 
 export const runInspector = async (cmd?: InspectorCommand): Promise<void> => {
   if (webview === null) return;
@@ -192,6 +194,7 @@ export const undo = async (): Promise<void> => {
       return;
     }
     await runInspector({ type: 'undoTag', tag: entry.id });
+    if (entry.item.kind === 'content') void runInspector({ type: 'reselect' });
     if (store.pending?.id === entry.id) {
       // The panel shows the edit undone: read the element again.
       store.set({ pending: null });
@@ -221,6 +224,7 @@ export const redo = async (): Promise<void> => {
   if (entry.kind === 'item') {
     await window.scampEmbedded.enqueue(entry.item);
     for (const cmd of entry.redo) await runInspector(cmd);
+    if (entry.item.kind === 'content') void runInspector({ type: 'reselect' });
   } else {
     const result = await window.scampEmbedded.undoRun(entry.runId, true);
     if (!result.ok) {
@@ -401,9 +405,20 @@ export const handleConsoleLine = (line: string): boolean => {
     if (selection?.uid !== msg.uid && !same) set({ pseudo: 'none' });
     // Keep a source main already resolved, rather than look it up again.
     const element = same && selection.raw !== null && msg.element.source === null ? { ...msg.element, source: selection.element.source } : msg.element;
-    loadStandIn({ uid: msg.uid, raw: msg.raw, element, computed: msg.computed, parentDisplay: msg.parentDisplay, textOnly: msg.textOnly });
+    loadStandIn({
+      uid: msg.uid,
+      raw: msg.raw,
+      element,
+      calls: msg.calls,
+      content: msg.content,
+      origins: {},
+      computed: msg.computed,
+      parentDisplay: msg.parentDisplay,
+      textOnly: msg.textOnly,
+    });
     if (selection?.uid !== msg.uid) set({ dragNote: null });
     if (msg.raw !== null && element.source === null && element.library === null) void resolveSelection(msg.uid);
+    else void lookUpOrigins(msg.uid);
   } else if (msg.type === 'forced') {
     useEmbeddedStore.getState().set({ held: msg.held });
     // Main applies the marks; then the panel reads the styles of the forced state.
@@ -415,6 +430,11 @@ export const handleConsoleLine = (line: string): boolean => {
   } else if (msg.type === 'treeChanged') {
     if (useEmbeddedStore.getState().layersOpen) void refreshTree();
     void discoverRoutes();
+  } else if (msg.type === 'requestTextEdit') {
+    void requestTextEdit(msg.uid);
+  } else if (msg.type === 'textEdited') {
+    const { selection } = useEmbeddedStore.getState();
+    if (selection?.uid === msg.uid) void commitContent('text', msg.text);
   } else if (msg.type === 'undo') {
     void undo();
   } else if (msg.type === 'redo') {
@@ -442,6 +462,75 @@ const resolveSelection = async (uid: string): Promise<void> => {
   }
   const library = source !== null && source.includes('node_modules/') ? (/node_modules\/((?:@[^/]+\/)?[^/]+)/.exec(source)?.[1] ?? null) : null;
   set({ resolving: false, selection: { ...selection, element: { ...selection.element, source: library === null ? source : null, library } } });
+  void lookUpOrigins(uid);
+};
+
+// --- Content: text, images, and links. see docs/plans/embedded-canvas-gaps.md (P5)
+
+/** The selection's content fields: text when it's only text, an image's source and alt, a link's target. */
+export const contentFields = (selection: EmbeddedSelection): EmbeddedContentField[] =>
+  (['text', 'src', 'alt', 'href'] as const).filter((f) => selection.content[f] !== null);
+
+/** Ask main where each of the selection's content fields comes from. */
+const lookUpOrigins = async (uid: string): Promise<void> => {
+  const start = useEmbeddedStore.getState().selection;
+  if (start === null || start.uid !== uid) return;
+  const fields = contentFields(start);
+  if (fields.length === 0) return;
+  const source = start.element.source;
+  const found: Partial<Record<EmbeddedContentField, EmbeddedContentOrigin>> = {};
+  for (const field of fields) {
+    found[field] =
+      source === null
+        ? { kind: 'unknown', reason: start.element.library !== null ? `it comes from ${start.element.library}` : 'Scamp couldn’t find where this element is written' }
+        : await window.scampEmbedded.contentOrigin(source, field, start.calls);
+  }
+  const { selection, set } = useEmbeddedStore.getState();
+  if (selection === null || selection.uid !== uid) return;
+  set({ selection: { ...selection, origins: { ...selection.origins, ...found } } });
+};
+
+const editable = (origin: EmbeddedContentOrigin | undefined): origin is Extract<EmbeddedContentOrigin, { kind: 'literal' | 'import' | 'prop' }> =>
+  origin !== undefined && (origin.kind === 'literal' || origin.kind === 'import' || origin.kind === 'prop');
+
+/** Why a field can't be edited here, or null when it can (or Scamp is still looking). */
+export const notEditableReason = (origin: EmbeddedContentOrigin | undefined): string | null =>
+  origin === undefined || editable(origin) ? null : `This can’t be edited here: ${origin.reason}.`;
+
+/** Show new content on the page at once, and queue it for the agent. */
+export const commitContent = async (field: EmbeddedContentField, value: string): Promise<void> => {
+  flushPending();
+  const { selection, set } = useEmbeddedStore.getState();
+  if (selection === null) return;
+  const origin = selection.origins[field];
+  const from = selection.content[field] ?? '';
+  if (!editable(origin) || value === from) return;
+  const item: EmbeddedQueueItem = { id: newId(), kind: 'content', element: selection.element, field, from, to: value, origin };
+  const preview: InspectorCommand = { type: 'setContent', uid: selection.uid, field, value, tag: item.id };
+  await runInspector(preview);
+  await window.scampEmbedded.enqueue(item);
+  pushUndo({ kind: 'item', id: item.id, item, ...labelled(item), redo: [preview] });
+  set({ selection: { ...selection, content: { ...selection.content, [field]: value } } });
+};
+
+/** A double-click on text in the page: open the editor if it's written in the code, or say why not. */
+const requestTextEdit = async (uid: string): Promise<void> => {
+  const store = useEmbeddedStore.getState();
+  if (store.selection?.uid !== uid) {
+    // The first click of the double-click selects; wait for the window to have it.
+    await runInspector({ type: 'selectId', id: uid });
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  const selection = useEmbeddedStore.getState().selection;
+  if (selection === null || selection.uid !== uid) return;
+  if (selection.origins.text === undefined) await lookUpOrigins(uid);
+  const origin = useEmbeddedStore.getState().selection?.origins.text;
+  const reason = notEditableReason(origin);
+  if (reason !== null) {
+    toast(reason);
+    return;
+  }
+  if (origin !== undefined) await runInspector({ type: 'beginTextEdit', uid });
 };
 
 const queueItemFor = (): EmbeddedQueueItem | null => {

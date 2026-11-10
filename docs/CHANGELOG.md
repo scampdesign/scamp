@@ -51,6 +51,12 @@ release time.
   breakpoints. An edit made there applies at that width and narrower. See
   [Edit at a tablet or phone width](user_docs/edit-react-project.md#edit-at-a-tablet-or-phone-width).
 
+- **In Edit React Project, you can edit text, images, and links.** Change
+  them in the Content section of the Style tab, or double-click text on
+  the page. Scamp only edits content written in your code, and says when
+  content comes from data instead. See
+  [Edit text, images, and links](user_docs/edit-react-project.md#edit-text-images-and-links).
+
 ### 0.14.0 (2026-11-05)
 
 **Added**

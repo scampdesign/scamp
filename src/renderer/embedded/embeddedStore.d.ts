@@ -1,5 +1,5 @@
 import type { InspectorCommand } from '@shared/embedded';
-import type { EmbeddedAgentState, EmbeddedEditScope, EmbeddedElementRef, EmbeddedGitStatus, EmbeddedHistory, EmbeddedHeld, EmbeddedPreflight, EmbeddedQueueItem, EmbeddedPseudoState, EmbeddedRawSource, EmbeddedStyleChange, EmbeddedTreeNode } from '@shared/types';
+import type { EmbeddedAgentState, EmbeddedEditScope, EmbeddedElementRef, EmbeddedGitStatus, EmbeddedHistory, EmbeddedHeld, EmbeddedContentField, EmbeddedContentOrigin, EmbeddedPreflight, EmbeddedQueueItem, EmbeddedPseudoState, EmbeddedRawSource, EmbeddedStyleChange, EmbeddedTreeNode } from '@shared/types';
 import type { ScampElement } from '@lib/element';
 /**
  * The Embedded Scamp window's own state: which screen, the running app,
@@ -16,6 +16,15 @@ export type EmbeddedSelection = {
     /** React's location, when main is still resolving the source (Next.js). */
     raw: EmbeddedRawSource | null;
     element: EmbeddedElementRef;
+    /** Its components, innermost first, with where each is used. */
+    calls: Array<{
+        name: string;
+        call: string | null;
+    }>;
+    /** Its content as the page has it now. */
+    content: Record<EmbeddedContentField, string | null>;
+    /** Where each content field comes from, once main has looked; absent while it looks. */
+    origins: Partial<Record<EmbeddedContentField, EmbeddedContentOrigin>>;
     computed: Record<string, string>;
     parentDisplay: string;
     textOnly: boolean;

@@ -1,4 +1,4 @@
-import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedHistory, EmbeddedPreflight, EmbeddedElementRef, EmbeddedOwnAgentStatus, EmbeddedQueueItem, EmbeddedWorker, TerminalCreateArgs, TerminalCreateResult, TerminalDataPayload, TerminalExitPayload, TerminalKillArgs, TerminalResizeArgs, TerminalWriteArgs, EmbeddedRawSource, EmbeddedRecentProject, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
+import type { AgentKeySetResult, AuthSignInResult, EmbeddedAgentEvent, EmbeddedChooseResult, EmbeddedGitResult, EmbeddedGitStatus, EmbeddedHistory, EmbeddedPreflight, EmbeddedContentField, EmbeddedContentOrigin, EmbeddedElementRef, EmbeddedOwnAgentStatus, EmbeddedQueueItem, EmbeddedWorker, TerminalCreateArgs, TerminalCreateResult, TerminalDataPayload, TerminalExitPayload, TerminalKillArgs, TerminalResizeArgs, TerminalWriteArgs, EmbeddedRawSource, EmbeddedRecentProject, EmbeddedResolvedSource, EmbeddedStartProgress, EmbeddedStartResult } from '@shared/types';
 declare const embeddedApi: {
     chooseFolder: () => Promise<EmbeddedChooseResult>;
     /** Recent projects, with whether each folder is still there. */
@@ -42,6 +42,11 @@ declare const embeddedApi: {
     historyGoTo: (sha: string) => Promise<EmbeddedGitResult>;
     /** Undo (or redo) what one agent run wrote. */
     undoRun: (runId: string, redo?: boolean) => Promise<EmbeddedGitResult>;
+    /** Where an element's text, image, or link comes from. */
+    contentOrigin: (source: string, field: EmbeddedContentField, calls: Array<{
+        name: string;
+        call: string | null;
+    }>) => Promise<EmbeddedContentOrigin>;
     /** Who writes changes: Scamp's agent or the user's own, over MCP. */
     setWorker: (worker: EmbeddedWorker) => Promise<EmbeddedOwnAgentStatus | null>;
     ownAgentStatus: () => Promise<EmbeddedOwnAgentStatus | null>;

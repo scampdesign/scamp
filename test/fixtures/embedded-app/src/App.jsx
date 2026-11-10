@@ -1,3 +1,4 @@
+import { Badge } from './Badge';
 import { Card } from './Card';
 import { Menu } from './Menu';
 
@@ -16,5 +17,9 @@ export const App = () => (
         <Card key={name} name={name} />
       ))}
     </section>
+    <footer className="foot">
+      <Badge label="New" />
+      <img className="logo" src="/logo.svg" alt="Logo" />
+    </footer>
   </main>
 );

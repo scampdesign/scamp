@@ -1,13 +1,15 @@
 import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { promises as fs } from 'fs';
 import { homedir } from 'os';
-import { basename, join } from 'path';
+import { basename, join, resolve as resolvePath, sep } from 'path';
 
 import { commitMessageFor } from '@shared/embedded';
 import { IPC } from '@shared/ipcChannels';
 import type {
   EmbeddedAgentEvent,
   EmbeddedChooseResult,
+  EmbeddedContentField,
+  EmbeddedContentOrigin,
   EmbeddedElementRef,
   EmbeddedOwnAgentStatus,
   EmbeddedWorker,
@@ -49,6 +51,7 @@ import {
 import { viteCommand, writeInstrumentation } from './instrument';
 import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
+import { classifyContent, type ComponentCall } from './content';
 import { goToCommit, headSha, historyBase, readHistory } from './history';
 import { OWN_AGENT_TOOLS, ownAgentInvoker } from './ownAgent';
 import { recordRun, redoRun, snapshotRun, undoRun, type RunRecord, type RunSnapshot } from './runs';
@@ -426,6 +429,31 @@ export const registerEmbeddedIpc = (): void => {
     const session = sessions.get(e.sender.id);
     if (session !== undefined) session.selection = element !== null && typeof element === 'object' ? element : null;
   });
+
+  /** Where an element's text, image, or link comes from: written in the code, a prop, or data. */
+  ipcMain.handle(
+    IPC.EmbeddedContentOrigin,
+    async (e, args: { source: string; field: EmbeddedContentField; calls: ComponentCall[] }): Promise<EmbeddedContentOrigin> => {
+      const session = sessionOf(e);
+      const fields: ReadonlyArray<EmbeddedContentField> = ['text', 'src', 'alt', 'href'];
+      if (session === null || typeof args?.source !== 'string' || !fields.includes(args.field)) {
+        return { kind: 'unknown', reason: 'Scamp couldn’t look this up' };
+      }
+      const calls = Array.isArray(args.calls)
+        ? args.calls.filter((c) => typeof c?.name === 'string').map((c) => ({ name: c.name, call: typeof c.call === 'string' ? c.call : null }))
+        : [];
+      const root = session.folder;
+      // Only the project's own files, by a path inside it.
+      const read = async (file: string): Promise<string | null> => {
+        const abs = resolvePath(root, file);
+        if (!abs.startsWith(root + sep) || file.includes('node_modules/')) return null;
+        const stat = await fs.stat(abs).catch(() => null);
+        if (stat === null || !stat.isFile() || stat.size > 2_000_000) return null;
+        return fs.readFile(abs, 'utf8').catch(() => null);
+      };
+      return classifyContent({ source: args.source, field: args.field, calls, read }).catch(() => ({ kind: 'unknown' as const, reason: 'Scamp couldn’t read the code' }));
+    }
+  );
 
   ipcMain.handle(IPC.EmbeddedSyncPseudo, async (e): Promise<boolean> => {
     const guest = guests.get(e.sender.id);

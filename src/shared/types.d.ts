@@ -1650,6 +1650,34 @@ export type EmbeddedBreakpoint = {
     /** `min` for mobile-first (`min-width` queries), `max` for desktop-first, null when unknown. */
     direction: 'min' | 'max' | null;
 };
+/** Content Scamp can edit on an element: its text, an image's source or alt text, a link's target. */
+export type EmbeddedContentField = 'text' | 'src' | 'alt' | 'href';
+/**
+ * Where content comes from, read from the JSX. `literal`, `import`, and
+ * `prop` (a value written where the component is used) are editable, at
+ * `at`; `data` and `unknown` aren't, and say why. see docs/plans/embedded-canvas-gaps.md (P5)
+ */
+export type EmbeddedContentOrigin = {
+    kind: 'literal';
+    value: string;
+    at: string;
+} | {
+    kind: 'import';
+    value: string;
+    at: string;
+} | {
+    kind: 'prop';
+    value: string;
+    at: string;
+    prop: string;
+    component: string;
+} | {
+    kind: 'data';
+    reason: string;
+} | {
+    kind: 'unknown';
+    reason: string;
+};
 /** A pseudo-class forced on the selection; an edit made in one targets that state. */
 export type EmbeddedPseudoState = 'none' | 'hover' | 'focus' | 'active';
 /** One element of the running page, as the layers tree shows it. */
@@ -1700,6 +1728,17 @@ export type EmbeddedQueueItem = {
     state?: Exclude<EmbeddedPseudoState, 'none'>;
     /** Set when the edit was made below desktop width. */
     breakpoint?: EmbeddedBreakpoint;
+} | {
+    id: string;
+    kind: 'content';
+    element: EmbeddedElementRef;
+    field: EmbeddedContentField;
+    from: string;
+    to: string;
+    /** Where it's written: in the element's JSX, an import, or a prop where its component is used. */
+    origin: Extract<EmbeddedContentOrigin, {
+        kind: 'literal' | 'import' | 'prop';
+    }>;
 } | {
     id: string;
     kind: 'move';
@@ -1821,6 +1860,18 @@ export type EmbeddedInspectorMessage = {
     uid: string;
     /** React's debug location, for an element with no build-time tag, for main to resolve. */
     raw: EmbeddedRawSource | null;
+    /** Its components, innermost first, with where each is used (`data-scamp-call`) when the build tagged it. */
+    calls: Array<{
+        name: string;
+        call: string | null;
+    }>;
+    /** Its text (when it's only text), an image's source and alt text, a link's target; null where it has none. */
+    content: {
+        text: string | null;
+        src: string | null;
+        alt: string | null;
+        href: string | null;
+    };
     element: EmbeddedElementRef;
     /** Computed styles of the properties the panel shows. */
     computed: Record<string, string>;
@@ -1846,6 +1897,17 @@ export type EmbeddedInspectorMessage = {
 /** The page's DOM changed: the layers tree should ask again. */
  | {
     type: 'treeChanged';
+}
+/** A double-click on text: may it be edited here? */
+ | {
+    type: 'requestTextEdit';
+    uid: string;
+}
+/** The in-page text editor closed with new text. */
+ | {
+    type: 'textEdited';
+    uid: string;
+    text: string;
 }
 /** Cmd+Z or Cmd+Shift+Z in the page, in edit mode. */
  | {

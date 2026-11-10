@@ -127,6 +127,8 @@ const breakpointLine = (bp) => {
         : ' Use the project\'s own breakpoints and style of media query or Tailwind prefix.';
     return `Breakpoint: the user made this edit with the app ${bp.width}px wide. Apply it at widths up to ${bp.upTo}px (\`@media (max-width: ${bp.upTo}px)\`), and leave wider widths as they are.${project}${how}`;
 };
+/** What each content field is called, in the prompt and the history. */
+const CONTENT_WORDS = { text: 'text', src: 'image', alt: 'alt text', href: 'link' };
 /** One queued edit, as the agent reads it. */
 export const describeQueueItem = (item, index) => {
     if (item.kind === 'style') {
@@ -134,6 +136,16 @@ export const describeQueueItem = (item, index) => {
         const bp = item.breakpoint === undefined ? '' : `\n- ${breakpointLine(item.breakpoint)}`;
         const state = item.state === undefined ? '' : `\n- State: \`:${item.state}\`. Style the element only while it's in that state (a \`:${item.state}\` rule, or Tailwind's \`${item.state}:\` prefix), leaving its normal styles as they are.`;
         return `### Edit ${index + 1}: style${item.state === undefined ? '' : ` (:${item.state})`}\n${describeElement(item.element)}\n- ${scopeLine(item.scope, item.element)}${state}${bp}\n- Change:\n${changes}`;
+    }
+    if (item.kind === 'content') {
+        const what = CONTENT_WORDS[item.field];
+        const origin = item.origin;
+        const where = origin.kind === 'prop'
+            ? `It comes from the \`${origin.prop}\` prop of ${origin.component}, written where ${origin.component} is used, at ${origin.at}. Change the value there, for this use only; don't change ${origin.component} itself or its default.`
+            : origin.kind === 'import'
+                ? `It's an imported file (\`${origin.value}\`), at ${origin.at}. Point the import at the new file, or use the new value directly if it's a URL.`
+                : `It's written in the code at ${origin.at}. Change it there.`;
+        return `### Edit ${index + 1}: ${what}\n${describeElement(item.element)}\n- Change the ${what} from ${item.from === '' ? '(none)' : `“${item.from}”`} to “${item.to}”.\n- ${where}`;
     }
     if (item.kind === 'move') {
         const how = item.fromList
@@ -182,6 +194,10 @@ export const shortQueueItem = (item) => {
     }
     if (item.kind === 'instruction')
         return item.text;
+    if (item.kind === 'content') {
+        const short = (v) => (v.length > 40 ? `${v.slice(0, 37)}…` : v);
+        return `<${item.element.tag}> ${CONTENT_WORDS[item.field]} “${short(item.from)}” → “${short(item.to)}”`;
+    }
     const where = `${item.state !== undefined ? `:${item.state}` : ''}${item.breakpoint !== undefined ? ` @${item.breakpoint.width}` : ''}`;
     return `<${item.element.tag}${where}> ${item.changes.map((c) => `${c.property} → ${c.to}`).join(', ')}${item.scope === 'all' ? ' (all)' : ''}`;
 };
@@ -243,6 +259,8 @@ export const describeChange = (item) => {
     const detail = shortQueueItem(item);
     if (item.kind === 'instruction')
         return { text: item.text.length > 80 ? `${item.text.slice(0, 77)}…` : item.text, detail: item.element === null ? '' : `<${item.element.tag}>` };
+    if (item.kind === 'content')
+        return { text: `Changed the ${CONTENT_WORDS[item.field]} on ${elementWords(item.element)}`, detail };
     if (item.kind === 'move') {
         const target = item.target.text.length > 0 ? `“${item.target.text.slice(0, 24)}”` : elementWords(item.target);
         return { text: `Moved ${elementWords(item.element)} ${item.position} ${target}`, detail };
@@ -358,6 +376,8 @@ export const installInspector = (config) => {
         rules: new Map(),
         /** What each tagged edit replaced, so `undoTag` can put exactly that back. */
         tags: new Map(),
+        /** The in-page text editor, while one is open. */
+        editing: null,
         moveCount: 0,
         drag: null,
         suppressClick: false,
@@ -518,6 +538,13 @@ export const installInspector = (config) => {
             type: 'select',
             uid: uidOf(el),
             raw,
+            calls: callsOf(el),
+            content: {
+                text: onlyText(el)?.nodeValue ?? null,
+                src: el.tagName === 'IMG' ? el.getAttribute('src') : null,
+                alt: el.tagName === 'IMG' ? (el.getAttribute('alt') ?? '') : null,
+                href: el.tagName === 'A' ? (el.getAttribute('href') ?? '') : null,
+            },
             element: {
                 source: library === null ? src : null,
                 library,
@@ -735,15 +762,30 @@ export const installInspector = (config) => {
         if (drag.target !== null)
             applyMove(drag.el, drag.target, drag.position);
     }, true);
+    const inEditor = (t) => state.editing !== null && t instanceof Node && state.editing.box.contains(t);
     for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'dblclick', 'contextmenu', 'auxclick']) {
         window.addEventListener(type, (e) => {
-            if (state.edit)
-                swallow(e);
+            if (!state.edit)
+                return;
+            // The text editor takes its own clicks, to place the caret and select words.
+            if (inEditor(e.target)) {
+                e.stopImmediatePropagation();
+                return;
+            }
+            swallow(e);
+            // Double-click asks the window whether this text can be edited here.
+            const t = e.target;
+            if (type === 'dblclick' && t instanceof Element && !isOverlay(t) && onlyText(t) !== null)
+                send({ type: 'requestTextEdit', uid: uidOf(t) });
         }, true);
     }
     window.addEventListener('click', (e) => {
         if (!state.edit)
             return;
+        if (inEditor(e.target)) {
+            e.stopImmediatePropagation();
+            return;
+        }
         swallow(e);
         if (state.suppressClick) {
             state.suppressClick = false;
@@ -786,6 +828,25 @@ export const installInspector = (config) => {
         }
         syncForce();
     };
+    for (const type of ['keydown', 'keyup', 'keypress', 'beforeinput', 'input']) {
+        window.addEventListener(type, (e) => {
+            if (state.editing === null || e.target !== state.editing.box)
+                return;
+            if (type === 'keydown') {
+                const k = e;
+                if (k.key === 'Escape') {
+                    e.preventDefault();
+                    endTextEdit(false);
+                }
+                else if (k.key === 'Enter' && !k.shiftKey) {
+                    e.preventDefault();
+                    endTextEdit(true);
+                }
+            }
+            // Typing in the editor is Scamp's: the app's own keyboard handlers don't see it.
+            e.stopImmediatePropagation();
+        }, true);
+    }
     window.addEventListener('keydown', (e) => {
         // F8 freezes without moving the pointer off the page, which would close
         // a menu that closes on leave before the toolbar could be reached.
@@ -837,7 +898,7 @@ export const installInspector = (config) => {
     const tagRecord = (tag) => {
         let rec = state.tags.get(tag);
         if (rec === undefined) {
-            rec = { inline: [], rules: [], marks: [] };
+            rec = { inline: [], rules: [], marks: [], content: [] };
             state.tags.set(tag, rec);
         }
         return rec;
@@ -901,7 +962,102 @@ export const installInspector = (config) => {
         for (const box of rec.marks)
             box.remove();
         state.marks = state.marks.filter((m) => !rec.marks.includes(m.box));
+        for (const c of [...rec.content].reverse())
+            writeContent(c.el, c.field, c.prev);
         writeRules();
+    };
+    /** An element's text, when its children are only text; null otherwise. */
+    const onlyText = (el) => {
+        const nodes = Array.from(el.childNodes).filter((n) => !(n.nodeType === Node.COMMENT_NODE));
+        return nodes.length === 1 && nodes[0]?.nodeType === Node.TEXT_NODE ? nodes[0] : null;
+    };
+    const readContent = (el, field) => field === 'text' ? (onlyText(el)?.nodeValue ?? null) : el.getAttribute(field);
+    /**
+     * Text goes into the existing text node's value: React keeps the node and
+     * sets its value again when it renders, so its DOM isn't disturbed.
+     */
+    const writeContent = (el, field, value) => {
+        if (field === 'text') {
+            const node = onlyText(el);
+            if (node !== null)
+                node.nodeValue = value ?? '';
+        }
+        else if (value === null)
+            el.removeAttribute(field);
+        else
+            el.setAttribute(field, value);
+    };
+    const setContent = (el, field, value, tag) => {
+        const rec = tagRecord(tag);
+        if (!rec.content.some((c) => c.el === el && c.field === field))
+            rec.content.push({ el, field, prev: readContent(el, field) });
+        writeContent(el, field, value);
+    };
+    /** The selection's chain of components, with where each is used when the build tagged it. */
+    const callsOf = (el) => {
+        const out = [];
+        let fiber = fiberOf(el);
+        for (let i = 0; fiber && i < 200 && out.length < 8; i += 1, fiber = fiber.return) {
+            const t = fiber.type;
+            if (t === undefined || t === null || typeof t === 'string')
+                continue;
+            const name = (typeof t === 'function' ? t.displayName ?? t.name : t.displayName) ?? '';
+            if (!/^[A-Z]/.test(name))
+                continue;
+            const props = fiber.memoizedProps ?? null;
+            const call = props !== null && typeof props[api.config.callAttr] === 'string' ? props[api.config.callAttr] : null;
+            if (out[out.length - 1]?.name !== name)
+                out.push({ name, call });
+        }
+        return out;
+    };
+    /** The in-page text editor: a copy of the element's text, styled like it, over it. */
+    const endTextEdit = (commit) => {
+        const editing = state.editing;
+        if (editing === null)
+            return;
+        state.editing = null;
+        const text = (editing.box.textContent ?? '').replace(/\s+/g, ' ').trim();
+        editing.box.remove();
+        if (editing.visibility === '')
+            editing.el.style.removeProperty('visibility');
+        else
+            editing.el.style.setProperty('visibility', editing.visibility, editing.priority);
+        if (commit && text !== (onlyText(editing.el)?.nodeValue ?? '').replace(/\s+/g, ' ').trim())
+            send({ type: 'textEdited', uid: uidOf(editing.el), text });
+    };
+    const beginTextEdit = (el) => {
+        if (!(el instanceof HTMLElement) || onlyText(el) === null)
+            return;
+        endTextEdit(true);
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        const box = document.createElement('div');
+        box.setAttribute('data-scamp-overlay', '');
+        box.setAttribute('data-scamp-editor', '');
+        box.contentEditable = 'plaintext-only';
+        box.textContent = onlyText(el)?.nodeValue ?? '';
+        // The element's own background goes with it (hiding it hides that too); where it has none,
+        // the editor is see-through, so what's behind the text shows as before.
+        const copy = [
+            'font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing', 'text-align', 'text-transform', 'color',
+            'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+            'background-color', 'background-image', 'background-size', 'background-position', 'background-repeat',
+            'border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius',
+        ];
+        box.style.cssText =
+            `position:fixed;z-index:2147483647;left:${r.left}px;top:${r.top}px;min-width:${r.width}px;min-height:${r.height}px;box-sizing:border-box;` +
+                'outline:2px solid #4a8cff;border-radius:2px;white-space:pre-wrap;cursor:text;pointer-events:auto;' +
+                copy.map((p) => `${p}:${cs.getPropertyValue(p)};`).join('');
+        document.documentElement.append(box);
+        state.editing = { el, box, visibility: el.style.getPropertyValue('visibility'), priority: el.style.getPropertyPriority('visibility') };
+        el.style.setProperty('visibility', 'hidden', 'important');
+        box.focus();
+        const range = document.createRange();
+        range.selectNodeContents(box);
+        window.getSelection()?.removeAllRanges();
+        window.getSelection()?.addRange(range);
+        box.addEventListener('blur', () => endTextEdit(true));
     };
     /** Widths the page's own stylesheets break at, from their media queries. */
     const breakpoints = () => {
@@ -1045,6 +1201,16 @@ export const installInspector = (config) => {
             }
             else if (cmd.type === 'undoTag') {
                 undoTag(cmd.tag ?? '');
+            }
+            else if (cmd.type === 'setContent') {
+                const el = byUid.get(cmd.uid ?? '')?.deref();
+                if (el !== undefined && typeof cmd.field === 'string' && typeof cmd.value === 'string')
+                    setContent(el, cmd.field, cmd.value, cmd.tag ?? '');
+            }
+            else if (cmd.type === 'beginTextEdit') {
+                const el = byUid.get(cmd.uid ?? '')?.deref();
+                if (el !== undefined)
+                    beginTextEdit(el);
             }
             else if (cmd.type === 'restore') {
                 const props = cmd.properties ?? [];

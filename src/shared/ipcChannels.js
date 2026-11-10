@@ -268,6 +268,7 @@ export const IPC = {
     EmbeddedSyncPseudo: 'embedded:sync-pseudo',
     EmbeddedResolveSource: 'embedded:resolve-source',
     EmbeddedRoutes: 'embedded:routes',
+    EmbeddedContentOrigin: 'embedded:content-origin',
     EmbeddedHistory: 'embedded:history',
     EmbeddedHistoryGoTo: 'embedded:history-go-to',
     EmbeddedUndoRun: 'embedded:undo-run',

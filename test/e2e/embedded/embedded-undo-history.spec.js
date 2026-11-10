@@ -90,7 +90,7 @@ test('Cmd+Z undoes a queued edit and an agent run, the history goes back and for
         await commitInput(panelInputByPrefix(embedded, 'Spacing', 'Padding'), '10');
         await expect.poll(() => padding(embedded)).toBe('10px');
         await embedded.getByTestId('embedded-tab-agent').click();
-        await expect(queue).toContainText('Changed spacing on Card on mobile');
+        await expect(queue).toContainText('Changed spacing on every Card on mobile');
         await embedded.getByTestId('embedded-viewport-desktop').click();
         await expect.poll(() => padding(embedded)).toBe('30px');
         await embedded.getByTestId('embedded-viewport-mobile').click();
