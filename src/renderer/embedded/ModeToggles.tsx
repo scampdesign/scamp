@@ -11,7 +11,7 @@ export const ModeToggles = (): JSX.Element => {
   const frozen = useEmbeddedStore((s) => s.frozen);
   return (
     <div className={styles.toggles}>
-      <Tooltip label="Freeze — Keep menus, popovers, and tooltips open while you style them. Press F8 with the pointer on the page.">
+      <Tooltip label="Freeze — Hold the page as it is: nothing in it reacts until you unfreeze. Press F8 with the pointer on a menu or tooltip to keep it open, or freeze from here to style elements in their normal state.">
       <button
         type="button"
         className={styles.toggle}

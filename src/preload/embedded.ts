@@ -12,6 +12,7 @@ import type {
   EmbeddedPreflight,
   EmbeddedContentField,
   EmbeddedChooseImageResult,
+  EmbeddedSourceLines,
   EmbeddedContentOrigin,
   EmbeddedElementRef,
   EmbeddedOwnAgentStatus,
@@ -85,6 +86,8 @@ const embeddedApi = {
     ipcRenderer.invoke(IPC.EmbeddedContentOrigin, { source, field, calls }),
   /** Pick an image and copy it into the project's `public/`. */
   chooseImage: (): Promise<EmbeddedChooseImageResult> => ipcRenderer.invoke(IPC.EmbeddedChooseImage),
+  /** The JSX of the element written at `source`, for the code view. */
+  readSource: (source: string): Promise<EmbeddedSourceLines | null> => ipcRenderer.invoke(IPC.EmbeddedReadSource, { source }),
   /** Who writes changes: Scamp's agent or the user's own, over MCP. */
   setWorker: (worker: EmbeddedWorker): Promise<EmbeddedOwnAgentStatus | null> => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
   ownAgentStatus: (): Promise<EmbeddedOwnAgentStatus | null> => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),

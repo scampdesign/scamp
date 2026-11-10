@@ -1,4 +1,4 @@
-import type { EmbeddedBreakpoint, EmbeddedContentField, EmbeddedEditScope, EmbeddedHistoryEntry, EmbeddedElementRef, EmbeddedIdiom, EmbeddedPseudoState, EmbeddedQueueItem } from './types';
+import type { EmbeddedBreakpoint, EmbeddedContentField, EmbeddedEditScope, EmbeddedHistoryEntry, EmbeddedElementRef, EmbeddedIdiom, EmbeddedMatchedRule, EmbeddedPseudoState, EmbeddedQueueItem, EmbeddedStructureAction } from './types';
 /**
  * Embedded Scamp's shared vocabulary: the properties the inspector reads
  * from the page, how they become declarations Scamp's parser understands,
@@ -6,7 +6,21 @@ import type { EmbeddedBreakpoint, EmbeddedContentField, EmbeddedEditScope, Embed
  * see docs/plans/embedded-scamp-plan.md
  */
 /** Computed properties the inspector reads for the panel. */
-export declare const EMBEDDED_COMPUTED_PROPERTIES: readonly ["display", "position", "top", "left", "width", "height", "min-width", "min-height", "max-width", "max-height", "padding-top", "padding-right", "padding-bottom", "padding-left", "margin-top", "margin-right", "margin-bottom", "margin-left", "flex-direction", "flex-wrap", "align-items", "justify-content", "align-content", "row-gap", "column-gap", "grid-template-columns", "grid-template-rows", "flex-grow", "flex-shrink", "flex-basis", "align-self", "background-color", "border-top-width", "border-right-width", "border-bottom-width", "border-left-width", "border-top-style", "border-top-color", "border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius", "color", "font-family", "font-size", "font-weight", "line-height", "letter-spacing", "text-align", "text-transform", "font-style", "opacity", "box-shadow", "overflow-x", "overflow-y", "transform", "z-index"];
+export declare const EMBEDDED_COMPUTED_PROPERTIES: readonly ["display", "position", "top", "left", "width", "height", "min-width", "min-height", "max-width", "max-height", "padding-top", "padding-right", "padding-bottom", "padding-left", "margin-top", "margin-right", "margin-bottom", "margin-left", "flex-direction", "flex-wrap", "align-items", "justify-content", "align-content", "row-gap", "column-gap", "grid-template-columns", "grid-template-rows", "flex-grow", "flex-shrink", "flex-basis", "align-self", "background-color", "border-top-width", "border-right-width", "border-bottom-width", "border-left-width", "border-top-style", "border-top-color", "border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius", "color", "font-family", "font-size", "font-weight", "line-height", "letter-spacing", "text-align", "text-transform", "font-style", "opacity", "box-shadow", "overflow-x", "overflow-y", "transform", "z-index", "filter", "backdrop-filter", "transition", "animation", "animation-name", "background-image", "background-size", "background-position", "background-repeat", "grid-column", "grid-row", "order", "transform-origin", "text-decoration-line", "text-shadow", "white-space", "cursor", "object-fit", "outline-width", "outline-style", "outline-color", "visibility"];
+/**
+ * A selector's specificity as [ids, classes, types]. Close enough for
+ * picking a winner among the rules that match one element: `:where()`
+ * counts nothing, and `:is()`, `:not()`, and `:has()` count their contents.
+ */
+export declare const specificity: (selector: string) => [number, number, number];
+/**
+ * Each property's value as written, from the rules that match the element:
+ * the winner by importance, layer, specificity, then order; an inline
+ * style beats any rule. Left out where it can't be shown as written: a
+ * keyword like `inherit`, Tailwind's spacing `calc()`, or a pixel value the
+ * page doesn't actually have (a rule Scamp couldn't see won).
+ */
+export declare const authoredStyles: (rules: ReadonlyArray<EmbeddedMatchedRule>, computed: Record<string, string>) => Record<string, string>;
 /**
  * The page's computed styles as declarations, shorthands where Scamp's
  * parser reads them. Values the browser reports at their default are left
@@ -146,7 +160,15 @@ export type InspectorCommand = {
     type: 'move';
     id: string;
     targetId: string;
-    position: 'before' | 'after';
+    position: 'before' | 'after' | 'inside';
+    tag: string;
+}
+/** Preview a delete (hidden), a duplicate (a copy after it), or a wrap (outlined). */
+ | {
+    type: 'structure';
+    uid: string;
+    action: EmbeddedStructureAction;
+    scope: EmbeddedEditScope;
     tag: string;
 };
 /**
@@ -172,5 +194,7 @@ export declare const installInspector: (config: InspectorConfig) => void;
 export declare const inspectorScript: (config: InspectorConfig, cmd?: InspectorCommand) => string;
 /** The source text that returns the widths the page's stylesheets break at. */
 export declare const inspectorBreakpointsScript: (config: InspectorConfig) => string;
+/** The source text that returns the page's design tokens, installing the inspector first. */
+export declare const inspectorTokensScript: (config: InspectorConfig) => string;
 /** The source text that returns the page's tree, installing the inspector first. */
 export declare const inspectorTreeScript: (config: InspectorConfig) => string;

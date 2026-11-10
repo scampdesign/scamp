@@ -21,6 +21,8 @@ export type EmbeddedAgentDeps = {
     /** Around every run, either agent's: for recording what it wrote, so it can be undone. */
     onRunStart?: (runId: string) => Promise<void>;
     onRunEnd?: (runId: string) => Promise<void>;
+    /** Write an edit without the agent when where it goes is certain; the file written, or null. see fastPath.ts */
+    writeDirect?: (item: EmbeddedQueueItem) => Promise<string | null>;
 };
 export declare const embeddedSystemPrompt: (folder: string, idioms: ReadonlyArray<EmbeddedIdiom>) => string;
 export type EmbeddedAgent = {

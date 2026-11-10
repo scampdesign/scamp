@@ -44,6 +44,7 @@
     "src/main/reactImport/appServer.ts",
     "src/main/embedded/agentQueue.ts",
     "src/main/embedded/content.ts",
+    "src/main/embedded/fastPath.ts",
     "src/main/embedded/fileTools.ts",
     "src/main/embedded/git.ts",
     "src/main/embedded/history.ts",

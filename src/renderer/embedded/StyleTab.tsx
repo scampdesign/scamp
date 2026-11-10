@@ -1,13 +1,16 @@
 import { useState } from 'react';
+import { IconBoxMargin, IconCopy, IconTrash } from '@tabler/icons-react';
 
 import { scopeWords } from '@shared/embedded';
 import type { EmbeddedPseudoState } from '@shared/types';
 
 import { Tooltip } from '../src/components/controls/Tooltip';
 import { UiPanel } from '../src/components/UiPanel';
+import { CodeSection } from './CodeSection';
 import { ContentSection } from './ContentSection';
+import { IconButton } from './IconButton';
 import { useEmbeddedStore } from './embeddedStore';
-import { sendInstruction, setPseudo, setScope } from './session';
+import { sendInstruction, setPseudo, setScope, structureEdit } from './session';
 import styles from './StyleTab.module.css';
 
 const STATES: ReadonlyArray<{ state: EmbeddedPseudoState; label: string }> = [
@@ -70,8 +73,15 @@ export const StyleTab = (): JSX.Element => {
   return (
     <div className={styles.tab} data-testid="embedded-style-tab">
       <div className={styles.head}>
-        <div className={styles.tag}>
-          &lt;{element.tag}&gt;{element.components[0] !== undefined && <span className={styles.component}> in {element.components[0]}</span>}
+        <div className={styles.titleRow}>
+          <div className={styles.tag}>
+            &lt;{element.tag}&gt;{element.components[0] !== undefined && <span className={styles.component}> in {element.components[0]}</span>}
+          </div>
+          <div className={styles.actions}>
+            <IconButton icon={IconCopy} variant="bare" label="Duplicate" tooltip="Duplicate — Cmd+D" onClick={() => void structureEdit('duplicate')} testId="embedded-duplicate" />
+            <IconButton icon={IconBoxMargin} variant="bare" label="Wrap in a container" onClick={() => void structureEdit('wrap')} testId="embedded-wrap" />
+            <IconButton icon={IconTrash} variant="bare" label="Delete" tooltip="Delete — Delete key" onClick={() => void structureEdit('delete')} testId="embedded-delete" />
+          </div>
         </div>
         {element.source !== null && <code className={styles.source} data-testid="embedded-source">{element.source}</code>}
         {element.source === null && resolving && <span className={styles.source}>Finding source…</span>}
@@ -103,6 +113,11 @@ export const StyleTab = (): JSX.Element => {
             </button>
           ))}
         </div>
+        {selection.also.length > 0 && (
+          <div className={styles.stateNote} data-testid="embedded-also">
+            {selection.also.length + 1} elements selected. Edits reach all of them; the panel shows the first.
+          </div>
+        )}
         {pseudo !== 'none' && (
           <div className={styles.stateNote}>Showing :{pseudo}. Edits style this state only.</div>
         )}
@@ -122,6 +137,7 @@ export const StyleTab = (): JSX.Element => {
       <div data-testid="properties-panel">
         <UiPanel />
       </div>
+      <CodeSection />
       {ask}
     </div>
   );

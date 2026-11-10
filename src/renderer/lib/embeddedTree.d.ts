@@ -15,3 +15,12 @@ export type TreeDrag = {
  * never moved. Null when there's nothing to move.
  */
 export declare const liftInTree: (tree: EmbeddedTreeNode, id: string) => TreeDrag | null;
+export type TreeDropPosition = 'before' | 'after' | 'inside';
+/**
+ * Where a drag over layer `id` would drop, from how far down its row the
+ * pointer is (0 to 1): before or after a sibling at its edges, inside it in
+ * the middle, and only inside a layer from another parent. Null where it
+ * can't go: onto itself, into its own children, into the parent it's
+ * already in, or into `body`.
+ */
+export declare const dropPosition: (tree: EmbeddedTreeNode, drag: TreeDrag, id: string, fraction: number) => TreeDropPosition | null;

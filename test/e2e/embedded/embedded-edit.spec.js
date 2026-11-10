@@ -40,7 +40,7 @@ test('restyles a card live, the agent writes it into the CSS Module, and accept 
         await expect.poll(() => inPage(embedded, `document.querySelectorAll('[data-scamp-src^="src/Card.jsx:4"]').length`)).toBe(3);
         await clickInPage(embedded, 'article', 'corner');
         await expect(embedded.getByTestId('embedded-source')).toContainText('src/Card.jsx:4');
-        await expect(embedded.getByTestId('embedded-scope-all')).toHaveText('All 3');
+        await expect(embedded.getByTestId('embedded-scope-all')).toHaveText('Every Card · 3');
         // Layer 1: the panel edit shows on the page at once, on this card only.
         await commitInput(panelInputByPrefix(embedded, 'Spacing', 'Padding'), '24');
         await expect.poll(() => inPage(embedded, paddingOf(0))).toBe('24px');

@@ -10,6 +10,7 @@ import type {
   EmbeddedChooseResult,
   EmbeddedContentField,
   EmbeddedChooseImageResult,
+  EmbeddedSourceLines,
   EmbeddedContentOrigin,
   EmbeddedElementRef,
   EmbeddedOwnAgentStatus,
@@ -52,7 +53,8 @@ import {
 import { viteCommand, writeInstrumentation } from './instrument';
 import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
-import { classifyContent, freeFileName, type ComponentCall } from './content';
+import { classifyContent, freeFileName, jsxLines, type ComponentCall } from './content';
+import { directStyleWrite } from './fastPath';
 import { goToCommit, headSha, historyBase, readHistory } from './history';
 import { OWN_AGENT_TOOLS, ownAgentInvoker } from './ownAgent';
 import { recordRun, redoRun, snapshotRun, undoRun, type RunRecord, type RunSnapshot } from './runs';
@@ -292,6 +294,15 @@ const preflight = async (folder: string): Promise<EmbeddedPreflight> =>
     await gatherPreflightFacts(folder, { signedIn: agentSignedIn(), agentConnected: await agentConnected(), ownAgent: (await readWorker()) === 'own' })
   );
 
+/** A project file by its project-relative path; null outside the project, in `node_modules`, or over 2MB. */
+const readProjectFile = async (root: string, file: string): Promise<string | null> => {
+  const abs = resolvePath(root, file);
+  if (!abs.startsWith(root + sep) || file.includes('node_modules/')) return null;
+  const stat = await fs.stat(abs).catch(() => null);
+  if (stat === null || !stat.isFile() || stat.size > 2_000_000) return null;
+  return fs.readFile(abs, 'utf8').catch(() => null);
+};
+
 export const registerEmbeddedIpc = (): void => {
   // The flag is checked here, not only by hiding the button.
   ipcMain.handle(IPC.EmbeddedOpenWindow, async (): Promise<boolean> => {
@@ -395,6 +406,12 @@ export const registerEmbeddedIpc = (): void => {
         session.snapshots.delete(runId);
         if (before !== undefined) session.runs.set(runId, await recordRun(session.folder, runId, before));
       },
+      writeDirect: async (item) => {
+        const out = await directStyleWrite(item, (file) => readProjectFile(session.folder, file));
+        if (out === null) return null;
+        await fs.writeFile(join(session.folder, out.file), out.content, 'utf8');
+        return out.file;
+      },
     });
     session.idioms = check.idioms;
     const worker = await readWorker();
@@ -443,18 +460,20 @@ export const registerEmbeddedIpc = (): void => {
       const calls = Array.isArray(args.calls)
         ? args.calls.filter((c) => typeof c?.name === 'string').map((c) => ({ name: c.name, call: typeof c.call === 'string' ? c.call : null }))
         : [];
-      const root = session.folder;
-      // Only the project's own files, by a path inside it.
-      const read = async (file: string): Promise<string | null> => {
-        const abs = resolvePath(root, file);
-        if (!abs.startsWith(root + sep) || file.includes('node_modules/')) return null;
-        const stat = await fs.stat(abs).catch(() => null);
-        if (stat === null || !stat.isFile() || stat.size > 2_000_000) return null;
-        return fs.readFile(abs, 'utf8').catch(() => null);
-      };
+      const read = (file: string): Promise<string | null> => readProjectFile(session.folder, file);
       return classifyContent({ source: args.source, field: args.field, calls, read }).catch(() => ({ kind: 'unknown' as const, reason: 'Scamp couldn’t read the code' }));
     }
   );
+
+  /** The selected element's JSX, for the code view. */
+  ipcMain.handle(IPC.EmbeddedReadSource, async (e, args: { source: string }): Promise<EmbeddedSourceLines | null> => {
+    const session = sessionOf(e);
+    const file = typeof args?.source === 'string' ? args.source.replace(/:\d+:\d+$/, '') : '';
+    if (session === null || file === '') return null;
+    const code = await readProjectFile(session.folder, file);
+    const found = code === null ? null : jsxLines(code, args.source);
+    return found === null ? null : { file, ...found };
+  });
 
   /** Copy an image from disk into the project's `public/`, served at `/name`; the agent's change to accept or discard. */
   ipcMain.handle(IPC.EmbeddedChooseImage, async (e): Promise<EmbeddedChooseImageResult> => {

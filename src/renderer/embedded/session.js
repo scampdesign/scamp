@@ -1,7 +1,8 @@
-import { breakpointFor, EMBEDDED_COMPUTED_PROPERTIES, INSPECTOR_PREFIX, inspectorBreakpointsScript, inspectorScript, inspectorTreeScript, mergeRoutes, describeChange, } from '@shared/embedded';
+import { breakpointFor, authoredStyles, EMBEDDED_COMPUTED_PROPERTIES, INSPECTOR_PREFIX, inspectorBreakpointsScript, inspectorTokensScript, inspectorScript, inspectorTreeScript, mergeRoutes, describeChange, } from '@shared/embedded';
 import { flattenRoutes, readRoutesFn } from '@shared/reactRoutes';
 import { ROOT_ELEMENT_ID } from '@lib/element';
 import { STAND_IN_ID, standInTree, styleChanges } from '@lib/embeddedStandIn';
+import { addAgentText, addAgentTool, endTurn, setTurnUndone, startTurn } from '@lib/embeddedChat';
 import { useCanvasStore } from '@store/canvasSlice';
 import { useEmbeddedStore } from './embeddedStore';
 /**
@@ -43,7 +44,24 @@ export const installInPage = async () => {
     await runInspector({ type: 'freeze', on: frozen });
     if (layersOpen)
         await refreshTree();
-    await Promise.all([discoverRoutes(), refreshBreakpoints()]);
+    await Promise.all([discoverRoutes(), refreshBreakpoints(), refreshTokens()]);
+};
+/**
+ * The page's `:root` custom properties become the panel's design system, so
+ * its pickers offer them, and a choice is sent as `var(--name)`.
+ * shortcut: a Tailwind v3 theme in `tailwind.config` isn't read; read it when a v3 project asks for tokens.
+ */
+const refreshTokens = async () => {
+    if (webview === null)
+        return;
+    try {
+        const found = (await webview.executeJavaScript(inspectorTokensScript(config)));
+        if (Array.isArray(found))
+            useCanvasStore.getState().setThemeTokens(found);
+    }
+    catch {
+        // Mid-navigation: the next load reads them.
+    }
 };
 let fileRoutesAsked = false;
 /** Find the app's routes: from its files once (Next.js), and from its router and links on every page. */
@@ -111,6 +129,24 @@ const queueMove = async (msg) => {
     await window.scampEmbedded.enqueue(item);
     pushUndo({ kind: 'item', id: item.id, item, ...labelled(item), redo: [{ type: 'move', id: msg.uid, targetId: msg.targetUid, position: msg.position, tag: msg.tag }] });
 };
+/** Delete, duplicate, or wrap the selection: previewed on the page, then queued for the agent. see docs/plans/embedded-canvas-gaps.md (gap 7) */
+export const structureEdit = async (action) => {
+    flushPending();
+    const { selection, scope, set } = useEmbeddedStore.getState();
+    if (selection === null)
+        return;
+    const reach = selection.element.instanceCount > 1 ? scope : 'instance';
+    const tag = newId();
+    const command = { type: 'structure', uid: selection.uid, action, scope: reach, tag };
+    await runInspector(command);
+    const item = { id: tag, kind: 'structure', action, element: selection.element, ...(selection.also.length > 0 ? { also: selection.also } : {}), scope: reach };
+    await window.scampEmbedded.enqueue(item);
+    pushUndo({ kind: 'item', id: item.id, item, ...labelled(item), redo: [command] });
+    if (action === 'delete') {
+        await runInspector({ type: 'deselect' });
+        set({ selection: null, pending: null });
+    }
+};
 // --- Undo and redo. see docs/plans/embedded-canvas-gaps.md (P2)
 /** An undo step's plain words, and its technical form for the tooltip. */
 const labelled = (item) => {
@@ -175,8 +211,20 @@ export const undo = async () => {
         void refreshGit();
     }
     const now = useEmbeddedStore.getState();
-    now.set({ undo: now.undo.slice(0, -1), redo: [...now.redo, entry] });
+    now.set({ undo: now.undo.slice(0, -1), redo: [...now.redo, entry], ...(entry.kind === 'run' ? { chat: setTurnUndone(now.chat, entry.runId, true) } : {}) });
     toast(`Undid: ${entry.label}`);
+};
+/** Undo one turn of the conversation: what its run wrote, if the files are still as it left them. */
+export const undoTurn = async (runId) => {
+    flushPending();
+    const result = await window.scampEmbedded.undoRun(runId);
+    if (!result.ok) {
+        toast(result.error);
+        return;
+    }
+    const { undo, chat, set } = useEmbeddedStore.getState();
+    set({ undo: undo.filter((e) => !(e.kind === 'run' && e.runId === runId)), chat: setTurnUndone(chat, runId, true) });
+    void refreshGit();
 };
 export const redo = async () => {
     flushPending();
@@ -202,7 +250,7 @@ export const redo = async () => {
         void refreshGit();
     }
     const now = useEmbeddedStore.getState();
-    now.set({ redo: now.redo.slice(0, -1), undo: [...now.undo, entry] });
+    now.set({ redo: now.redo.slice(0, -1), undo: [...now.undo, entry], ...(entry.kind === 'run' ? { chat: setTurnUndone(now.chat, entry.runId, false) } : {}) });
     toast(`Redid: ${entry.label}`);
 };
 // --- History. see docs/plans/embedded-canvas-gaps.md (P3)
@@ -375,7 +423,10 @@ export const handleConsoleLine = (line) => {
             calls: msg.calls,
             content: msg.content,
             origins: {},
-            computed: msg.computed,
+            // In a forced state the page's rules for it don't match, so only computed values are right.
+            computed: useEmbeddedStore.getState().pseudo === 'none' ? { ...msg.computed, ...authoredStyles(msg.rules, msg.computed) } : msg.computed,
+            rules: msg.rules,
+            also: (msg.also ?? []).map((a) => a.element),
             parentDisplay: msg.parentDisplay,
             textOnly: msg.textOnly,
         });
@@ -401,6 +452,9 @@ export const handleConsoleLine = (line) => {
         if (useEmbeddedStore.getState().layersOpen)
             void refreshTree();
         void discoverRoutes();
+    }
+    else if (msg.type === 'structureKey') {
+        void structureEdit(msg.action);
     }
     else if (msg.type === 'requestTextEdit') {
         void requestTextEdit(msg.uid);
@@ -531,6 +585,7 @@ const queueItemFor = () => {
         id: pending.id,
         kind: 'style',
         element: selection.element,
+        ...(selection.also.length > 0 ? { also: selection.also } : {}),
         scope,
         changes: pending.changes,
         ...(pseudo !== 'none' ? { state: pseudo } : {}),
@@ -633,6 +688,12 @@ const handleAgentEvent = (event) => {
     const store = useEmbeddedStore.getState();
     if (event.kind === 'state') {
         const wasRunning = store.agent.phase === 'thinking' || store.agent.phase === 'writing';
+        const nowRunning = event.state.phase === 'thinking' || event.state.phase === 'writing';
+        // A run began: the batch it took is the user's side of the turn.
+        if (!wasRunning && nowRunning) {
+            const taken = store.agent.queued.filter((q) => !event.state.queued.some((n) => n.id === q.id));
+            store.set({ chat: startTurn(store.chat, newId(), taken.map((q) => describeChange(q).text)) });
+        }
         store.set({ agent: event.state });
         // The agent took the edit in progress: further edits start from here, a new item.
         const { pending } = store;
@@ -660,6 +721,11 @@ const handleAgentEvent = (event) => {
             const detail = taken.map((e) => e.detail).filter((d) => d.length > 0).join('\n');
             useEmbeddedStore.getState().set({ undo: [...undo.filter((e) => !(e.kind === 'item' && ids.has(e.id))), { kind: 'run', runId, label, detail }], redo: [] });
         }
+        if (wasRunning && !nowRunning && runId !== undefined) {
+            const status = event.state.phase === 'done' ? 'done' : event.state.phase === 'error' ? 'error' : 'stopped';
+            const { chat, set } = useEmbeddedStore.getState();
+            set({ chat: endTurn(chat, runId, status, status === 'done' ? undefined : event.state.message) });
+        }
         if (wasRunning && (event.state.phase === 'done' || event.state.phase === 'error')) {
             void refreshGit();
             // The source now has what the page previewed; with nothing else in
@@ -674,10 +740,10 @@ const handleAgentEvent = (event) => {
         }
     }
     else if (event.kind === 'text') {
-        store.appendLog({ kind: 'text', text: event.text });
+        store.set({ chat: addAgentText(store.chat, event.text) });
     }
     else if (event.kind === 'tool') {
-        store.appendLog({ kind: 'tool', text: event.summary, ok: event.ok });
+        store.set({ chat: addAgentTool(store.chat, event.summary, event.ok) });
     }
     else if (event.kind === 'report') {
         store.set({ report: event.markdown, checking: false });
@@ -698,6 +764,10 @@ export const startSession = () => {
         handleStandInChange();
     });
     window.scampEmbedded.onAgentEvent(handleAgentEvent);
+    window.scampEmbedded.onStartProgress((p) => {
+        if (p.kind === 'log')
+            useEmbeddedStore.setState((s) => ({ startLog: (s.startLog + p.text).slice(-20000) }));
+    });
     // Cmd+Z in the window (not in a field or the terminal, which have their own).
     window.addEventListener('keydown', (e) => {
         if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== 'z')

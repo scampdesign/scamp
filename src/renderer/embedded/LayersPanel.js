@@ -1,7 +1,7 @@
 import { createElement as _createElement } from "react";
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { liftInTree } from '@lib/embeddedTree';
+import { dropPosition, liftInTree } from '@lib/embeddedTree';
 import { useEmbeddedStore } from './embeddedStore';
 import { hoverTreeNode, moveTreeNode, selectTreeNode } from './session';
 import styles from './LayersPanel.module.css';
@@ -29,19 +29,21 @@ const Row = (props) => {
     }, [isSelected]);
     const firstClass = node.cls.split(' ')[0] ?? '';
     return (_jsxs(_Fragment, { children: [_jsxs("div", { ref: ref, className: styles.row, style: { paddingLeft: 6 + depth * 12 }, "aria-selected": isSelected, role: "treeitem", "aria-expanded": node.kids.length > 0 ? isOpen : undefined, onMouseEnter: () => hoverTreeNode(node.id), onMouseLeave: () => hoverTreeNode(null), onClick: () => selectTreeNode(node.id), draggable: parentId !== null, onDragStart: (e) => {
-                    if (parentId === null || !props.onDragStart(node.id)) {
+                    if (parentId === null || !props.onDragStart(node.id, parentId)) {
                         e.preventDefault();
                         return;
                     }
                     e.dataTransfer.effectAllowed = 'move';
                     e.dataTransfer.setData('text/plain', node.id);
                 }, onDragOver: (e) => {
-                    // Only among siblings: moving into another parent isn't supported yet.
-                    if (drag === null || drag.parent !== parentId || drag.id === node.id)
+                    if (drag === null)
+                        return;
+                    const r = e.currentTarget.getBoundingClientRect();
+                    const position = dropPosition(props.tree, drag, node.id, (e.clientY - r.top) / Math.max(1, r.height));
+                    if (position === null)
                         return;
                     e.preventDefault();
-                    const r = e.currentTarget.getBoundingClientRect();
-                    props.onDragOver({ id: node.id, position: e.clientY < r.top + r.height / 2 ? 'before' : 'after' });
+                    props.onDragOver({ id: node.id, position });
                 }, onDragLeave: () => {
                     if (over?.id === node.id)
                         props.onDragOver(null);
@@ -61,17 +63,14 @@ export const LayersPanel = () => {
     const [drag, setDrag] = useState(null);
     const [over, setOver] = useState(null);
     const [note, setNote] = useState(null);
-    const handleDragStart = (id) => {
+    const handleDragStart = (id, parent) => {
         if (tree === null)
             return false;
-        const lifted = liftInTree(tree, id);
-        setNote(lifted === null
-            ? 'This layer and the ones around it have no siblings to move between.'
-            : lifted.id !== id
-                ? 'Moving the layer around it: this one has no siblings.'
-                : null);
+        // With no siblings around it, it can still go into another layer.
+        const lifted = liftInTree(tree, id) ?? { id, parent };
+        setNote(lifted.id !== id ? 'Moving the layer around it: this one has no siblings. Drop it on a layer to move it inside.' : null);
         setDrag(lifted);
-        return lifted !== null;
+        return true;
     };
     const path = useMemo(() => (tree === null || selected === null ? null : pathTo(tree, selected)), [tree, selected]);
     // Open the way down to the selection, and the first levels of a new page.
@@ -103,7 +102,7 @@ export const LayersPanel = () => {
             return next;
         });
     };
-    return (_jsxs("aside", { className: styles.panel, "aria-label": "Layers", "data-testid": "embedded-layers", children: [_jsx("div", { className: styles.head, children: "Layers" }), _jsx("div", { className: styles.tree, role: "tree", children: tree === null ? (_jsx("p", { className: styles.empty, children: "The page\u2019s elements appear here once it loads." })) : (_jsx(Row, { node: tree, parentId: null, depth: 0, open: open, selected: selected, onToggle: handleToggle, drag: drag, over: over, onDragStart: handleDragStart, onDragOver: setOver, onDrop: () => {
+    return (_jsxs("aside", { className: styles.panel, "aria-label": "Layers", "data-testid": "embedded-layers", children: [_jsx("div", { className: styles.head, children: "Layers" }), _jsx("div", { className: styles.tree, role: "tree", children: tree === null ? (_jsx("p", { className: styles.empty, children: "The page\u2019s elements appear here once it loads." })) : (_jsx(Row, { node: tree, parentId: null, depth: 0, open: open, selected: selected, onToggle: handleToggle, tree: tree, drag: drag, over: over, onDragStart: handleDragStart, onDragOver: setOver, onDrop: () => {
                         if (drag !== null && over !== null)
                             moveTreeNode(drag.id, over.id, over.position);
                         setDrag(null);

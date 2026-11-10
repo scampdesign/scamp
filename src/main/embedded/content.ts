@@ -11,7 +11,7 @@ import type { EmbeddedContentField, EmbeddedContentOrigin } from '@shared/types'
  * see docs/plans/embedded-canvas-gaps.md (P5)
  */
 
-type Node = { type: string; start?: number | null; end?: number | null; loc?: { start: { line: number; column: number } } | null; [key: string]: unknown };
+type Node = { type: string; start?: number | null; end?: number | null; loc?: { start: { line: number; column: number }; end?: { line: number; column: number } } | null; [key: string]: unknown };
 
 /** Where a component is used, from React's props in the page (`data-scamp-call`), innermost first. */
 export type ComponentCall = { name: string; call: string | null };
@@ -263,4 +263,58 @@ export const freeFileName = (name: string, taken: ReadonlyArray<string>): string
   let candidate = clean;
   for (let n = 2; used.has(candidate.toLowerCase()); n += 1) candidate = `${stem}-${n}${ext}`;
   return candidate;
+};
+
+/**
+ * The lines of the JSX element written at `source` (`file:line:col`), up to
+ * `max` of them; ten lines from `line` when the parse can't find it.
+ */
+export const jsxLines = (code: string, source: string, max = 40): { start: number; lines: string[] } | null => {
+  const at = splitSource(source);
+  if (at === null) return null;
+  const all = code.split('\n');
+  if (at.line < 1 || at.line > all.length) return null;
+  const program = parseFile(code, at.file);
+  const found = program === null ? null : elementAt(program, at.line, at.column);
+  const end = found?.element.loc?.end?.line ?? at.line + 9;
+  return { start: at.line, lines: all.slice(at.line - 1, Math.min(end, at.line + max - 1)) };
+};
+
+/**
+ * The CSS Module class the element at `source` is written with, when its
+ * `className` is exactly `{styles.name}` and `styles` is imported from a
+ * `*.module.css` file: that file, relative to the project, and the class.
+ */
+export const moduleClassAt = (code: string, source: string): { file: string; className: string } | null => {
+  const at = splitSource(source);
+  if (at === null) return null;
+  const program = parseFile(code, at.file);
+  const found = program === null ? null : elementAt(program, at.line, at.column);
+  if (program === null || found === null) return null;
+  const opening = found.element['openingElement'] as Node;
+  const attr = (opening['attributes'] as Node[]).find((a) => a.type === 'JSXAttribute' && (a['name'] as Node)['name'] === 'className');
+  const value = attr?.['value'] as Node | undefined;
+  const expr = value?.type === 'JSXExpressionContainer' ? (value['expression'] as Node) : undefined;
+  if (expr?.type !== 'MemberExpression') return null;
+  const object = expr['object'] as Node;
+  const property = expr['property'] as Node;
+  const className = expr['computed'] === true ? literalString(property) : property.type === 'Identifier' ? String(property['name']) : null;
+  if (object.type !== 'Identifier' || className === null) return null;
+  for (const st of program['body'] as Node[]) {
+    if (st.type !== 'ImportDeclaration') continue;
+    const from = String((st['source'] as Node)['value']);
+    const binds = (st['specifiers'] as Node[]).some((s) => s.type === 'ImportDefaultSpecifier' && (s['local'] as Node)['name'] === object['name']);
+    if (!binds || !/\.module\.css$/.test(from) || !from.startsWith('.')) continue;
+    const dir = at.file.includes('/') ? at.file.slice(0, at.file.lastIndexOf('/')) : '';
+    const parts = [...(dir === '' ? [] : dir.split('/')), ...from.split('/')];
+    const out: string[] = [];
+    for (const p of parts) {
+      if (p === '..') {
+        if (out.length === 0) return null;
+        out.pop();
+      } else if (p !== '.') out.push(p);
+    }
+    return { file: out.join('/'), className };
+  }
+  return null;
 };

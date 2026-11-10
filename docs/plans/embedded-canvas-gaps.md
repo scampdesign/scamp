@@ -1,8 +1,9 @@
 # Embedded Scamp — gaps with the Scamp canvas
 
-Status: **priorities set** (2026-11-09); see [Priorities](#priorities).
-P2, P3, and P4 are built on `feat/embedded-undo-history-breakpoints`
-(2026-11-09), ready for manual testing. A list of what the Scamp canvas
+Status: **mostly built** (2026-11-10); see [Priorities](#priorities).
+P2 to P6 and the remaining gaps (P7) are built on
+`feat/embedded-undo-history-breakpoints`, ready for manual testing. Still
+open: adding new elements, a component editor, and PNG export. A list of what the Scamp canvas
 does that Embedded Scamp doesn't, or does differently, to choose which
 gaps to close. Each has a possible approach and a rough size: **S** (a
 day or so), **M** (a few days), **L** (a week or more, or a design
@@ -393,3 +394,51 @@ Tailwind config before any stylesheet using them has loaded.
 - **Instances on other pages.** The count is per page; the label says
   "on this page".
 - A component editor (props, variants, the component on its own) waits.
+
+### P7: The remaining gaps (1–4, 7–9, 13–15)
+
+**Built** (2026-11-10), ready for manual testing.
+
+- **1, a fast path.** `fastPath.ts` writes a style edit itself when it's
+  certain: every instance (or the only one), no state, no breakpoint, one
+  element, and the element's `className` is exactly `{styles.x}` from a
+  `*.module.css` file with one plain `.x` rule. postcss changes only those
+  declarations (`initial` removes one). The queue tries it per item before
+  the agent, inside the run, so undo, Accept, and the history treat it as
+  a run; the rest goes to the agent. Shortcuts: a more specific rule can
+  still win over `.x`, and the user's own agent doesn't use the fast path.
+- **2, more properties.** The inspector reads filters, transitions,
+  animations, background images, grid placement, `order`,
+  `transform-origin`, text decoration and shadow, `white-space`, `cursor`,
+  `object-fit`, `outline`, and visibility, leaving out their defaults.
+- **3, values as written.** The inspector sends the CSS rules that match
+  the selection (with their `@layer`), and `authoredStyles` picks each
+  property's winner by importance, layer, specificity, and order. It skips
+  keywords, Tailwind's spacing `calc()`, and a pixel value the page doesn't
+  have (a rule Scamp couldn't see won). Off in a forced state, whose rules
+  `matches()` can't see.
+- **4, tokens.** `:root`, `html`, and `:host` custom properties (not
+  `--tw-*`) load as the panel's design system on each page load. A pick is
+  sent as `var(--name)`. Shortcut: a Tailwind v3 `tailwind.config` theme
+  isn't read.
+- **7, delete, duplicate, wrap.** A `structure` queue item. Previews:
+  hidden, a copy after it (outside React, removed on undo or `clear`), or
+  outlined. Delete and Cmd+D in the page. Adding new elements waits: what
+  to add is a design question.
+- **8, move into another parent.** In the tree only: the middle of a row
+  drops inside (`dropPosition`), and another parent's row only takes
+  `inside`. A `move` item with `position: 'inside'`; the page dims the
+  element and outlines the parent.
+- **9, multi-select.** Shift- or Cmd-click on the page adds elements;
+  style and structure edits reach them, and the item lists them as
+  `also`. The panel shows the first element's values, not shared ones. Not
+  in the tree yet.
+- **13, a conversation.** `embeddedChat.ts` builds turns from the run
+  events: the batch, the agent's text and tools, and an **Undo** per turn
+  (`undoRun`). A reply is an instruction. The agent already kept its
+  history across runs.
+- **14, a code view.** **Code** in the Style tab: the element's JSX
+  (`jsxLines`, the whole element up to 40 lines) and the matching rules.
+- **15, the dev server's output** stays in the store after start and shows
+  in the Agent tab. PNG export isn't built.
+

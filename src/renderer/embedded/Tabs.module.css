@@ -126,22 +126,6 @@
   color: var(--text-secondary);
 }
 
-.logLine {
-  margin: 6px 0 0;
-  white-space: pre-wrap;
-  font-size: 12px;
-}
-
-.logLine[data-kind='tool'] {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-
-.logLine[data-ok='false'] {
-  color: var(--error-text);
-}
-
 .key {
   margin-left: 4px;
   color: var(--text-tertiary);
@@ -155,4 +139,17 @@
 .item[data-current='true'] .itemText::before {
   content: '• ';
   color: var(--accent-text);
+}
+
+.serverOutput {
+  max-height: 260px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: pre-wrap;
 }

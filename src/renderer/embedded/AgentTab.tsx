@@ -1,6 +1,7 @@
 import { describeChange } from '@shared/embedded';
 
 import { Tooltip } from '../src/components/controls/Tooltip';
+import { AgentChat } from './AgentChat';
 import { AgentChoice } from './AgentChoice';
 import { DesignCheck } from './DesignCheck';
 import { useEmbeddedStore } from './embeddedStore';
@@ -15,7 +16,7 @@ type Props = {
 /** Everything about the agent: who it is and how it connects, what it's working on, and design checks. */
 export const AgentTab = ({ active }: Props): JSX.Element => {
   const agent = useEmbeddedStore((s) => s.agent);
-  const log = useEmbeddedStore((s) => s.agentLog);
+  const startLog = useEmbeddedStore((s) => s.startLog);
   const running = agent.phase === 'thinking' || agent.phase === 'writing';
 
   return (
@@ -69,17 +70,19 @@ export const AgentTab = ({ active }: Props): JSX.Element => {
             ))}
           </ul>
         )}
-        {log.length > 0 && (
-          <details className={styles.log}>
-            <summary>Agent log</summary>
-            {log.map((entry, i) => (
-              <p key={i} className={styles.logLine} data-kind={entry.kind} data-ok={entry.ok === false ? 'false' : 'true'}>
-                {entry.text}
-              </p>
-            ))}
-          </details>
-        )}
       </section>
+
+      <section className={styles.section}>
+        <h3 className={styles.title}>Conversation</h3>
+        <AgentChat />
+      </section>
+
+      {startLog.length > 0 && (
+        <details className={styles.log} data-testid="embedded-server-output">
+          <summary>Dev server output</summary>
+          <pre className={styles.serverOutput}>{startLog}</pre>
+        </details>
+      )}
 
       <section className={styles.section}>
         <h3 className={styles.title}>Design check</h3>

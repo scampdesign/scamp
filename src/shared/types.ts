@@ -1600,6 +1600,9 @@ export type EmbeddedChooseResult =
   | { kind: 'cancelled' }
   | { kind: 'ok'; folder: string };
 
+/** An element's JSX as written: `lines` start at line `start` of `file`. */
+export type EmbeddedSourceLines = { file: string; start: number; lines: string[] };
+
 /** An image chosen from disk and copied into the project's `public/`: `url` is its path on the site. */
 export type EmbeddedChooseImageResult =
   | { kind: 'cancelled' }
@@ -1647,6 +1650,9 @@ export type EmbeddedElementRef = {
 };
 
 export type EmbeddedEditScope = 'instance' | 'all';
+
+/** A change to the page's structure, made from the selection. */
+export type EmbeddedStructureAction = 'delete' | 'duplicate' | 'wrap';
 
 /**
  * An edit made with the app narrower than desktop: it applies up to `upTo`
@@ -1713,6 +1719,8 @@ export type EmbeddedQueueItem =
       id: string;
       kind: 'style';
       element: EmbeddedElementRef;
+      /** Other elements selected with it, which get the same change. */
+      also?: EmbeddedElementRef[];
       scope: EmbeddedEditScope;
       changes: EmbeddedStyleChange[];
       /** Set when the edit was made with a pseudo-class forced: it styles that state. */
@@ -1735,11 +1743,20 @@ export type EmbeddedQueueItem =
       kind: 'move';
       /** The element moved. */
       element: EmbeddedElementRef;
-      /** The sibling it now sits next to. */
+      /** The sibling it now sits next to, or with `inside`, its new parent. */
       target: EmbeddedElementRef;
-      position: 'before' | 'after';
+      position: 'before' | 'after' | 'inside';
       /** Both come from one JSX line in a `.map()`: the order is the data's. */
       fromList: boolean;
+    }
+  | {
+      id: string;
+      kind: 'structure';
+      action: EmbeddedStructureAction;
+      element: EmbeddedElementRef;
+      also?: EmbeddedElementRef[];
+      /** Every instance from the element's line, or this one. */
+      scope: EmbeddedEditScope;
     }
   | {
       id: string;
@@ -1837,6 +1854,19 @@ export type EmbeddedHistory = {
 };
 
 /** What the inspector in the page reports to the window. */
+/** A CSS rule that matches the selected element, with the panel's properties it sets. */
+export type EmbeddedMatchedRule = {
+  /** The parts of its selector list that match. */
+  selectors: string[];
+  /** The rule as the page has it, cut at 2,000 characters. */
+  text: string;
+  /** Where it's from: a stylesheet's path, a Vite module id, or `inline`. */
+  sheet: string;
+  /** Its `@layer`, by order of first appearance; null when unlayered. */
+  layer: number | null;
+  decls: Record<string, { value: string; important: boolean }>;
+};
+
 export type EmbeddedInspectorMessage =
   | {
       type: 'select';
@@ -1851,6 +1881,10 @@ export type EmbeddedInspectorMessage =
       element: EmbeddedElementRef;
       /** Computed styles of the properties the panel shows. */
       computed: Record<string, string>;
+      /** The CSS rules that match it now, in source order, then its inline style. */
+      rules: EmbeddedMatchedRule[];
+      /** Elements added to the selection with Shift- or Cmd-click. */
+      also?: Array<{ uid: string; element: EmbeddedElementRef }>;
       /** The display of its parent, so the panel knows a flex child. */
       parentDisplay: string;
       textOnly: boolean;
@@ -1863,6 +1897,8 @@ export type EmbeddedInspectorMessage =
   | { type: 'forced'; held: EmbeddedHeld[] }
   /** The page's DOM changed: the layers tree should ask again. */
   | { type: 'treeChanged' }
+  /** Delete or Cmd+D in the page, in edit mode, with a selection. */
+  | { type: 'structureKey'; action: EmbeddedStructureAction }
   /** A double-click on text: may it be edited here? */
   | { type: 'requestTextEdit'; uid: string }
   /** The in-page text editor closed with new text. */
@@ -1883,7 +1919,7 @@ export type EmbeddedInspectorMessage =
       raw: EmbeddedRawSource | null;
       target: EmbeddedElementRef;
       targetRaw: EmbeddedRawSource | null;
-      position: 'before' | 'after';
+      position: 'before' | 'after' | 'inside';
       fromList: boolean;
       /** True when the parent is flex or grid, so `order` shows the result exactly. */
       previewed: boolean;

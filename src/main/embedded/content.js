@@ -251,3 +251,66 @@ export const freeFileName = (name, taken) => {
         candidate = `${stem}-${n}${ext}`;
     return candidate;
 };
+/**
+ * The lines of the JSX element written at `source` (`file:line:col`), up to
+ * `max` of them; ten lines from `line` when the parse can't find it.
+ */
+export const jsxLines = (code, source, max = 40) => {
+    const at = splitSource(source);
+    if (at === null)
+        return null;
+    const all = code.split('\n');
+    if (at.line < 1 || at.line > all.length)
+        return null;
+    const program = parseFile(code, at.file);
+    const found = program === null ? null : elementAt(program, at.line, at.column);
+    const end = found?.element.loc?.end?.line ?? at.line + 9;
+    return { start: at.line, lines: all.slice(at.line - 1, Math.min(end, at.line + max - 1)) };
+};
+/**
+ * The CSS Module class the element at `source` is written with, when its
+ * `className` is exactly `{styles.name}` and `styles` is imported from a
+ * `*.module.css` file: that file, relative to the project, and the class.
+ */
+export const moduleClassAt = (code, source) => {
+    const at = splitSource(source);
+    if (at === null)
+        return null;
+    const program = parseFile(code, at.file);
+    const found = program === null ? null : elementAt(program, at.line, at.column);
+    if (program === null || found === null)
+        return null;
+    const opening = found.element['openingElement'];
+    const attr = opening['attributes'].find((a) => a.type === 'JSXAttribute' && a['name']['name'] === 'className');
+    const value = attr?.['value'];
+    const expr = value?.type === 'JSXExpressionContainer' ? value['expression'] : undefined;
+    if (expr?.type !== 'MemberExpression')
+        return null;
+    const object = expr['object'];
+    const property = expr['property'];
+    const className = expr['computed'] === true ? literalString(property) : property.type === 'Identifier' ? String(property['name']) : null;
+    if (object.type !== 'Identifier' || className === null)
+        return null;
+    for (const st of program['body']) {
+        if (st.type !== 'ImportDeclaration')
+            continue;
+        const from = String(st['source']['value']);
+        const binds = st['specifiers'].some((s) => s.type === 'ImportDefaultSpecifier' && s['local']['name'] === object['name']);
+        if (!binds || !/\.module\.css$/.test(from) || !from.startsWith('.'))
+            continue;
+        const dir = at.file.includes('/') ? at.file.slice(0, at.file.lastIndexOf('/')) : '';
+        const parts = [...(dir === '' ? [] : dir.split('/')), ...from.split('/')];
+        const out = [];
+        for (const p of parts) {
+            if (p === '..') {
+                if (out.length === 0)
+                    return null;
+                out.pop();
+            }
+            else if (p !== '.')
+                out.push(p);
+        }
+        return { file: out.join('/'), className };
+    }
+    return null;
+};

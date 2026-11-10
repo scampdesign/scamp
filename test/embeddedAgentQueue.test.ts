@@ -288,3 +288,51 @@ describe('runs, for undo and the commit message', () => {
     expect(agent.touched()).toEqual(['a.css', 'b.css']);
   });
 });
+
+describe('createEmbeddedAgent: edits Scamp writes itself', () => {
+  const direct = (provider: AgentProvider | null) => {
+    const events: EmbeddedAgentEvent[] = [];
+    const agent = createEmbeddedAgent({
+      folder: '/p/app',
+      idioms: ['css-modules'],
+      getProvider: async () => provider,
+      emit: (e) => events.push(e),
+      batchDelayMs: 10,
+      writeDirect: async (i) => (i.id.startsWith('direct') ? 'src/Card.module.css' : null),
+    });
+    return { agent, events };
+  };
+
+  it('writes a certain edit without the agent, even with none signed in', async () => {
+    const { agent, events } = direct(null);
+    agent.enqueue(item('direct-1', '24px'));
+    await until(() => agent.state().phase === 'done');
+    expect(agent.touched()).toEqual(['src/Card.module.css']);
+    expect(agent.state().lastRunItemIds).toEqual(['direct-1']);
+    expect(events.some((e) => e.kind === 'text' && e.text.startsWith('Scamp wrote this directly, in src/Card.module.css.'))).toBe(true);
+  });
+
+  it('sends only the rest to the agent', async () => {
+    const { provider, prompts } = recording();
+    const { agent } = direct(provider);
+    agent.setPaused(true);
+    agent.enqueue(item('direct-1', '24px'));
+    agent.enqueue(item('other', '8px'));
+    agent.setPaused(false);
+    await until(() => agent.state().phase === 'done');
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain('this change');
+    expect(prompts[0]).toContain('`8px`');
+    expect(prompts[0]).not.toContain('`24px`');
+  });
+
+  it('says the rest needs the agent when none is signed in', async () => {
+    const { agent } = direct(null);
+    agent.setPaused(true);
+    agent.enqueue(item('direct-1', '24px'));
+    agent.enqueue(item('other', '8px'));
+    agent.setPaused(false);
+    await until(() => agent.state().phase === 'error');
+    expect(agent.state().message).toContain('write the rest');
+  });
+});

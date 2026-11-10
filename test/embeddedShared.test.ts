@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  authoredStyles,
   breakpointFor,
   buildAgentPrompt,
   commitMessageFor,
@@ -13,8 +14,9 @@ import {
   routeHasParams,
   scopeWords,
   shortQueueItem,
+  specificity,
 } from '@shared/embedded';
-import type { EmbeddedElementRef } from '@shared/types';
+import type { EmbeddedElementRef, EmbeddedMatchedRule } from '@shared/types';
 
 const computed = (patch: Record<string, string>): Record<string, string> => ({
   display: 'block',
@@ -83,8 +85,102 @@ describe('computedToDeclarations', () => {
     expect(decl(c, 'overflow')).toBe('hidden');
   });
 
+  it('reads filters, transitions, grid placement, and text styles, but not their defaults', () => {
+    const quiet = computed({ filter: 'none', transition: 'all 0s ease 0s', order: '0', 'white-space': 'normal', cursor: 'auto', 'grid-column': 'auto / auto' });
+    const props = computedToDeclarations(quiet).map((d) => d.prop);
+    for (const p of ['filter', 'transition', 'order', 'white-space', 'cursor', 'grid-column']) expect(props).not.toContain(p);
+    const set = computed({ filter: 'blur(4px)', transition: 'opacity 0.2s ease 0s', order: '2', 'white-space': 'nowrap', 'text-decoration-line': 'underline', 'grid-column': '1 / 3' });
+    expect(decl(set, 'filter')).toBe('blur(4px)');
+    expect(decl(set, 'transition')).toBe('opacity 0.2s ease 0s');
+    expect(decl(set, 'order')).toBe('2');
+    expect(decl(set, 'white-space')).toBe('nowrap');
+    expect(decl(set, 'text-decoration-line')).toBe('underline');
+    expect(decl(set, 'grid-column')).toBe('1 / 3');
+  });
+
+  it('reads a background image’s size and position only when there is an image', () => {
+    expect(decl(computed({ 'background-size': 'cover' }), 'background-size')).toBeUndefined();
+    const img = computed({ 'background-image': 'url("/a.png")', 'background-size': 'cover', 'background-position': '0% 0%', 'background-repeat': 'no-repeat' });
+    expect(decl(img, 'background-image')).toBe('url("/a.png")');
+    expect(decl(img, 'background-size')).toBe('cover');
+    expect(decl(img, 'background-position')).toBeUndefined();
+    expect(decl(img, 'background-repeat')).toBe('no-repeat');
+  });
+
+  it('reads an outline, an animation, and a transform’s origin only when they apply', () => {
+    expect(decl(computed({ 'outline-style': 'none', 'transform-origin': '10px 10px', 'animation-name': 'none', animation: 'none' }), 'outline')).toBeUndefined();
+    const c = computed({ 'outline-style': 'solid', 'outline-width': '2px', 'outline-color': 'rgb(255, 0, 0)', transform: 'rotate(5deg)', 'transform-origin': '10px 10px', 'animation-name': 'spin', animation: '1s linear 0s infinite normal none running spin' });
+    expect(decl(c, 'outline')).toBe('2px solid rgb(255, 0, 0)');
+    expect(decl(c, 'transform-origin')).toBe('10px 10px');
+    expect(decl(c, 'animation')).toBe('1s linear 0s infinite normal none running spin');
+  });
+
   it('skips properties the page didn’t report', () => {
     expect(computedToDeclarations({})).toEqual([]);
+  });
+});
+
+describe('specificity', () => {
+  it('counts ids, classes, and types', () => {
+    expect(specificity('div')).toEqual([0, 0, 1]);
+    expect(specificity('.card')).toEqual([0, 1, 0]);
+    expect(specificity('#main .card > h2')).toEqual([1, 1, 1]);
+    expect(specificity('a[href]:hover::before')).toEqual([0, 2, 2]);
+  });
+
+  it('counts nothing for :where, and the contents of :is and :not', () => {
+    expect(specificity(':where(.a, .b) p')).toEqual([0, 0, 1]);
+    expect(specificity('p:not(.x)')).toEqual([0, 1, 1]);
+  });
+
+  it('reads an escaped Tailwind class as one class', () => {
+    expect(specificity('.md\\:p-4')).toEqual([0, 1, 0]);
+  });
+});
+
+describe('authoredStyles', () => {
+  const rule = (selectors: string[], decls: Record<string, string>, patch: Partial<EmbeddedMatchedRule> = {}): EmbeddedMatchedRule => ({
+    selectors,
+    text: '',
+    sheet: '/src/App.css',
+    layer: null,
+    decls: Object.fromEntries(Object.entries(decls).map(([p, v]) => [p, { value: v, important: false }])),
+    ...patch,
+  });
+
+  it('takes the more specific rule, then the later one', () => {
+    expect(authoredStyles([rule(['.card'], { width: '50%' }), rule(['div'], { width: 'auto' })], {})).toEqual({ width: '50%' });
+    expect(authoredStyles([rule(['.a'], { width: '50%' }), rule(['.b'], { width: 'auto' })], {})).toEqual({ width: 'auto' });
+  });
+
+  it('lets an inline style beat a rule, and important beat both', () => {
+    const inline = rule(['style'], { color: 'red' }, { sheet: 'inline' });
+    expect(authoredStyles([rule(['#x'], { color: 'blue' }), inline], {})).toEqual({ color: 'red' });
+    const important = rule(['p'], { color: 'green' });
+    important.decls['color'] = { value: 'green', important: true };
+    expect(authoredStyles([important, inline], {})).toEqual({ color: 'green' });
+  });
+
+  it('lets an unlayered rule beat a layered one, and a later layer an earlier one', () => {
+    expect(authoredStyles([rule(['p'], { color: 'blue' }), rule(['#x'], { color: 'red' }, { layer: 0 })], {})).toEqual({ color: 'blue' });
+    expect(authoredStyles([rule(['#x'], { color: 'red' }, { layer: 1 }), rule(['p'], { color: 'blue' }, { layer: 2 })], {})).toEqual({ color: 'blue' });
+  });
+
+  it('keeps tokens, but not Tailwind’s spacing math, keywords, or tokens on a layout keyword', () => {
+    const out = authoredStyles(
+      [rule(['.a'], { 'background-color': 'var(--accent)', 'padding-top': 'calc(var(--spacing) * 4)', color: 'inherit', display: 'var(--d)' })],
+      {}
+    );
+    expect(out).toEqual({ 'background-color': 'var(--accent)' });
+  });
+
+  it('drops a pixel value the page doesn’t have, since a rule Scamp couldn’t see won', () => {
+    expect(authoredStyles([rule(['.a'], { width: '100px' })], { width: '120px' })).toEqual({});
+    expect(authoredStyles([rule(['.a'], { width: '120px' })], { width: '120px' })).toEqual({ width: '120px' });
+  });
+
+  it('is empty when no rule matches', () => {
+    expect(authoredStyles([], { width: '10px' })).toEqual({});
   });
 });
 
@@ -193,6 +289,40 @@ describe('this instance only', () => {
 
   it('falls back to the general wording without a place it’s used', () => {
     expect(style({ usedAt: null })).toContain('Scope: this instance only. Leave the other instances as they are');
+  });
+});
+
+describe('structure edits, more than one element, and moving inside', () => {
+  it('asks to delete, duplicate, or wrap, with what to do for a list', () => {
+    const del = describeQueueItem({ id: 's', kind: 'structure', action: 'delete', element: element(), scope: 'all' }, 0);
+    expect(del).toContain('### Edit 1: delete');
+    expect(del).toContain('Delete the element’s JSX');
+    expect(del).toContain('Change the shared definition');
+    expect(describeQueueItem({ id: 's', kind: 'structure', action: 'duplicate', element: element(), scope: 'instance' }, 0)).toContain('Add a copy of the element’s JSX right after it');
+    expect(describeQueueItem({ id: 's', kind: 'structure', action: 'wrap', element: element(), scope: 'instance' }, 0)).toContain('move the `key` to the wrapper');
+  });
+
+  it('describes structure edits in plain words', () => {
+    expect(describeChange({ id: 's', kind: 'structure', action: 'delete', element: element({ tag: 'p' }), scope: 'instance' }).text).toBe('Deleted Text in Card');
+    expect(describeChange({ id: 's', kind: 'structure', action: 'wrap', element: element({ tag: 'p' }), scope: 'all' }).text).toBe('Wrapped every Text in Card in a container');
+    expect(shortQueueItem({ id: 's', kind: 'structure', action: 'duplicate', element: element(), scope: 'instance' })).toBe('Duplicate <div>');
+  });
+
+  it('lists the other selected elements for the agent, and counts them for people', () => {
+    const item = { id: 'a', kind: 'style' as const, element: element(), also: [element({ tag: 'h2', text: 'Grace' }), element({ tag: 'p', text: 'Bio' })], scope: 'instance' as const, changes: [{ property: 'color', from: '', to: 'red' }] };
+    const text = describeQueueItem(item, 0);
+    expect(text).toContain('Do the same to these 2 elements, selected with it:');
+    expect(text).toContain('    - Element: <h2>');
+    expect(describeChange(item).text).toBe('Changed color on Card and 2 more');
+  });
+
+  it('asks to move an element into another, as its last child', () => {
+    const item = { id: 'm', kind: 'move' as const, element: element({ tag: 'h2', text: 'Hours' }), target: element({ tag: 'aside', text: '' }), position: 'inside' as const, fromList: false };
+    const text = describeQueueItem(item, 0);
+    expect(text).toContain('### Edit 1: move into another element');
+    expect(text).toContain('Move it **inside** this element, as its last child:');
+    expect(describeChange(item).text).toBe('Moved Heading in Card into Card');
+    expect(shortQueueItem(item)).toBe('Move <h2> into <aside>');
   });
 });
 

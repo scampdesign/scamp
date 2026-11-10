@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { EmbeddedTreeNode } from '@shared/types';
-import { liftInTree, type TreeDrag as Drag } from '@lib/embeddedTree';
+import { dropPosition, liftInTree, type TreeDrag as Drag, type TreeDropPosition } from '@lib/embeddedTree';
 
 import { useEmbeddedStore } from './embeddedStore';
 import { hoverTreeNode, moveTreeNode, selectTreeNode } from './session';
@@ -20,14 +20,15 @@ const pathTo = (node: EmbeddedTreeNode, id: string): string[] | null => {
   return null;
 };
 
-type Over = { id: string; position: 'before' | 'after' };
+type Over = { id: string; position: TreeDropPosition };
 
 /** A row being dragged, and where it would land: shared down the tree. */
 type DragProps = {
+  tree: EmbeddedTreeNode;
   drag: Drag | null;
   over: Over | null;
   /** False when there's nothing to move. */
-  onDragStart: (id: string) => boolean;
+  onDragStart: (id: string, parent: string) => boolean;
   onDragOver: (over: Over | null) => void;
   onDrop: () => void;
   onDragEnd: () => void;
@@ -65,7 +66,7 @@ const Row = (props: RowProps): JSX.Element => {
         onClick={() => selectTreeNode(node.id)}
         draggable={parentId !== null}
         onDragStart={(e) => {
-          if (parentId === null || !props.onDragStart(node.id)) {
+          if (parentId === null || !props.onDragStart(node.id, parentId)) {
             e.preventDefault();
             return;
           }
@@ -73,11 +74,12 @@ const Row = (props: RowProps): JSX.Element => {
           e.dataTransfer.setData('text/plain', node.id);
         }}
         onDragOver={(e) => {
-          // Only among siblings: moving into another parent isn't supported yet.
-          if (drag === null || drag.parent !== parentId || drag.id === node.id) return;
-          e.preventDefault();
+          if (drag === null) return;
           const r = e.currentTarget.getBoundingClientRect();
-          props.onDragOver({ id: node.id, position: e.clientY < r.top + r.height / 2 ? 'before' : 'after' });
+          const position = dropPosition(props.tree, drag, node.id, (e.clientY - r.top) / Math.max(1, r.height));
+          if (position === null) return;
+          e.preventDefault();
+          props.onDragOver({ id: node.id, position });
         }}
         onDragLeave={() => {
           if (over?.id === node.id) props.onDragOver(null);
@@ -127,18 +129,13 @@ export const LayersPanel = (): JSX.Element => {
   const [over, setOver] = useState<Over | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
-  const handleDragStart = (id: string): boolean => {
+  const handleDragStart = (id: string, parent: string): boolean => {
     if (tree === null) return false;
-    const lifted = liftInTree(tree, id);
-    setNote(
-      lifted === null
-        ? 'This layer and the ones around it have no siblings to move between.'
-        : lifted.id !== id
-          ? 'Moving the layer around it: this one has no siblings.'
-          : null
-    );
+    // With no siblings around it, it can still go into another layer.
+    const lifted = liftInTree(tree, id) ?? { id, parent };
+    setNote(lifted.id !== id ? 'Moving the layer around it: this one has no siblings. Drop it on a layer to move it inside.' : null);
     setDrag(lifted);
-    return lifted !== null;
+    return true;
   };
   const path = useMemo(() => (tree === null || selected === null ? null : pathTo(tree, selected)), [tree, selected]);
 
@@ -181,6 +178,7 @@ export const LayersPanel = (): JSX.Element => {
             open={open}
             selected={selected}
             onToggle={handleToggle}
+            tree={tree}
             drag={drag}
             over={over}
             onDragStart={handleDragStart}

@@ -24,11 +24,10 @@ export const SetupScreen = () => {
     const set = useEmbeddedStore((s) => s.set);
     const [phase, setPhase] = useState(null);
     const [error, setError] = useState(null);
+    // The output itself is kept by the session, since the server keeps writing after start.
     useEffect(() => window.scampEmbedded.onStartProgress((p) => {
         if (p.kind === 'phase')
             setPhase(p.phase);
-        else
-            useEmbeddedStore.setState((s) => ({ startLog: (s.startLog + p.text).slice(-6000) }));
     }), []);
     const recheck = async () => {
         const report = await window.scampEmbedded.preflight();

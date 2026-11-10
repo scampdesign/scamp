@@ -20,3 +20,20 @@ export declare const classifyContent: (query: ContentQuery) => Promise<EmbeddedC
  * so the name works as a URL.
  */
 export declare const freeFileName: (name: string, taken: ReadonlyArray<string>) => string;
+/**
+ * The lines of the JSX element written at `source` (`file:line:col`), up to
+ * `max` of them; ten lines from `line` when the parse can't find it.
+ */
+export declare const jsxLines: (code: string, source: string, max?: number) => {
+    start: number;
+    lines: string[];
+} | null;
+/**
+ * The CSS Module class the element at `source` is written with, when its
+ * `className` is exactly `{styles.name}` and `styles` is imported from a
+ * `*.module.css` file: that file, relative to the project, and the class.
+ */
+export declare const moduleClassAt: (code: string, source: string) => {
+    file: string;
+    className: string;
+} | null;

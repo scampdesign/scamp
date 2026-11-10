@@ -194,6 +194,7 @@ export declare const IPC: {
     readonly EmbeddedRoutes: "embedded:routes";
     readonly EmbeddedContentOrigin: "embedded:content-origin";
     readonly EmbeddedChooseImage: "embedded:choose-image";
+    readonly EmbeddedReadSource: "embedded:read-source";
     readonly EmbeddedHistory: "embedded:history";
     readonly EmbeddedHistoryGoTo: "embedded:history-go-to";
     readonly EmbeddedUndoRun: "embedded:undo-run";

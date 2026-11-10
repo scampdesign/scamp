@@ -5,9 +5,11 @@ import type {
   EmbeddedHistoryEntry,
   EmbeddedElementRef,
   EmbeddedIdiom,
+  EmbeddedMatchedRule,
   EmbeddedPseudoState,
   EmbeddedQueueItem,
   EmbeddedRawSource,
+  EmbeddedStructureAction,
   EmbeddedTreeNode,
 } from './types';
 
@@ -31,7 +33,71 @@ export const EMBEDDED_COMPUTED_PROPERTIES = [
   'border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius',
   'color', 'font-family', 'font-size', 'font-weight', 'line-height', 'letter-spacing', 'text-align',
   'text-transform', 'font-style', 'opacity', 'box-shadow', 'overflow-x', 'overflow-y', 'transform', 'z-index',
+  'filter', 'backdrop-filter', 'transition', 'animation', 'animation-name',
+  'background-image', 'background-size', 'background-position', 'background-repeat',
+  'grid-column', 'grid-row', 'order', 'transform-origin', 'text-decoration-line', 'text-shadow', 'white-space',
+  'cursor', 'object-fit', 'outline-width', 'outline-style', 'outline-color', 'visibility',
 ] as const;
+
+/**
+ * A selector's specificity as [ids, classes, types]. Close enough for
+ * picking a winner among the rules that match one element: `:where()`
+ * counts nothing, and `:is()`, `:not()`, and `:has()` count their contents.
+ */
+export const specificity = (selector: string): [number, number, number] => {
+  let s = selector.replace(/\\./g, 'x').replace(/"[^"]*"|'[^']*'/g, '""');
+  s = s.replace(/:where\((?:[^()]|\([^()]*\))*\)/g, '');
+  let a = 0;
+  let b = 0;
+  let c = 0;
+  s = s.replace(/\[[^\]]*\]/g, () => ((b += 1), ' '));
+  s = s.replace(/::[\w-]+(?:\([^)]*\))?/g, () => ((c += 1), ' '));
+  s = s.replace(/:(?:is|not|has|matches)\(/g, ' ').replace(/\)/g, ' ');
+  s = s.replace(/:[\w-]+(?:\([^)]*\))?/g, () => ((b += 1), ' '));
+  s = s.replace(/#[\w-]+/g, () => ((a += 1), ' '));
+  s = s.replace(/\.[\w-]+/g, () => ((b += 1), ' '));
+  c += (s.match(/(?:^|[\s>+~,(])[a-zA-Z][\w-]*/g) ?? []).length;
+  return [a, b, c];
+};
+
+const NO_TOKEN = new Set(['display', 'position', 'border-top-style', 'overflow-x', 'overflow-y', 'animation-name', 'outline-style']);
+
+/**
+ * Each property's value as written, from the rules that match the element:
+ * the winner by importance, layer, specificity, then order; an inline
+ * style beats any rule. Left out where it can't be shown as written: a
+ * keyword like `inherit`, Tailwind's spacing `calc()`, or a pixel value the
+ * page doesn't actually have (a rule Scamp couldn't see won).
+ */
+export const authoredStyles = (rules: ReadonlyArray<EmbeddedMatchedRule>, computed: Record<string, string>): Record<string, string> => {
+  // Compares like CSS's cascade: the first differing entry decides.
+  const beats = (x: number[], y: number[]): boolean => {
+    const i = x.findIndex((v, j) => v !== y[j]);
+    return i === -1 || (x[i] ?? 0) > (y[i] ?? 0);
+  };
+  const best = new Map<string, { value: string; key: number[] }>();
+  rules.forEach((rule, order) => {
+    const inline = rule.sheet === 'inline';
+    const spec = rule.selectors.map(specificity).reduce((m, x) => (beats(x, m) ? x : m), [0, 0, 0]);
+    // Normal: unlayered beats layered, a later layer an earlier one. Important flips both.
+    const layer = rule.layer === null ? 100000 : rule.layer;
+    for (const [prop, { value, important }] of Object.entries(rule.decls)) {
+      const key = [important ? 1 : 0, important ? -layer : layer, inline ? 1 : 0, ...spec, order];
+      const cur = best.get(prop);
+      if (cur === undefined || beats(key, cur.key)) best.set(prop, { value, key });
+    }
+  });
+  const out: Record<string, string> = {};
+  for (const [prop, { value }] of best) {
+    if (/^(?:inherit|initial|unset|revert|revert-layer)$/.test(value)) continue;
+    if (value.includes('var(--spacing') || value.includes('var(--tw-')) continue;
+    if (NO_TOKEN.has(prop) && value.includes('var(')) continue;
+    const seen = computed[prop];
+    if (/^-?[\d.]+px$/.test(value) && seen !== undefined && /px$/.test(seen) && seen !== value) continue;
+    out[prop] = value;
+  }
+  return out;
+};
 
 const four = (c: Record<string, string>, side: (s: string) => string): string | null => {
   const values = ['top', 'right', 'bottom', 'left'].map((s) => c[side(s)]);
@@ -56,6 +122,19 @@ const DROP_WHEN: Record<string, ReadonlyArray<string>> = {
   'align-self': ['auto'],
   'text-transform': ['none'],
   'font-style': ['normal'],
+  filter: ['none'],
+  'backdrop-filter': ['none'],
+  transition: ['all', 'all 0s', 'all 0s ease', 'all 0s ease 0s', 'none'],
+  'background-image': ['none'],
+  'grid-column': ['auto', 'auto / auto'],
+  'grid-row': ['auto', 'auto / auto'],
+  order: ['0'],
+  'text-decoration-line': ['none'],
+  'text-shadow': ['none'],
+  'white-space': ['normal'],
+  cursor: ['auto'],
+  'object-fit': ['fill'],
+  visibility: ['visible'],
 };
 
 const SINGLE = [
@@ -64,6 +143,8 @@ const SINGLE = [
   'grid-template-columns', 'grid-template-rows', 'flex-grow', 'flex-shrink', 'flex-basis', 'align-self',
   'background-color', 'color', 'font-family', 'font-size', 'font-weight', 'line-height', 'letter-spacing',
   'text-align', 'text-transform', 'font-style', 'opacity', 'box-shadow', 'transform', 'z-index',
+  'filter', 'backdrop-filter', 'transition', 'background-image', 'grid-column', 'grid-row', 'order',
+  'text-decoration-line', 'text-shadow', 'white-space', 'cursor', 'object-fit', 'visibility',
 ];
 
 /**
@@ -98,6 +179,17 @@ export const computedToDeclarations = (computed: Record<string, string>): Array<
     push('position', position);
   }
   if (computed['overflow-x'] === computed['overflow-y'] && computed['overflow-x'] !== 'visible') push('overflow', computed['overflow-x']);
+  // Only with what they act on: the browser always reports a size, a position, and an origin.
+  if ((computed['background-image'] ?? 'none') !== 'none') {
+    if (computed['background-size'] !== 'auto') push('background-size', computed['background-size']);
+    if (computed['background-position'] !== '0% 0%') push('background-position', computed['background-position']);
+    if (computed['background-repeat'] !== 'repeat') push('background-repeat', computed['background-repeat']);
+  }
+  if ((computed['transform'] ?? 'none') !== 'none') push('transform-origin', computed['transform-origin']);
+  if ((computed['animation-name'] ?? 'none') !== 'none') push('animation', computed['animation']);
+  if ((computed['outline-style'] ?? 'none') !== 'none') {
+    push('outline', `${computed['outline-width'] ?? '0px'} ${computed['outline-style']} ${computed['outline-color'] ?? 'currentcolor'}`);
+  }
   return out;
 };
 
@@ -172,13 +264,27 @@ const breakpointLine = (bp: EmbeddedBreakpoint): string => {
 /** What each content field is called, in the prompt and the history. */
 const CONTENT_WORDS: Record<EmbeddedContentField, string> = { text: 'text', src: 'image', alt: 'alt text', href: 'link' };
 
+/** The other elements selected with the first, each described for the agent to find. */
+const alsoLines = (also: ReadonlyArray<EmbeddedElementRef> | undefined): string =>
+  also === undefined || also.length === 0
+    ? ''
+    : `\n- Do the same to ${also.length === 1 ? 'this element, selected with it' : `these ${also.length} elements, selected with it`}:\n${also.map((el, i) => `  ${i + 1}.\n${describeElement(el).replace(/^- /gm, '    - ')}`).join('\n')}`;
+
+const STRUCTURE_HOW: Record<EmbeddedStructureAction, string> = {
+  delete:
+    'Delete the element’s JSX, with everything inside it. If it’s the root of a component, delete where that component is used instead. If it’s one item of a list drawn from data, remove that item from the data when it’s written in the project; otherwise change nothing and say so. Remove imports and styles that nothing uses any more.',
+  duplicate:
+    'Add a copy of the element’s JSX right after it, in the same parent. If it’s the root of a component, copy where that component is used instead. If it’s one item of a list drawn from data, add an item to the data when it’s written in the project; otherwise change nothing and say so.',
+  wrap: 'Wrap the element’s JSX in a new `<div>` in the same place, with a class of its own so it can be styled later, in the project’s style idiom, with no styles yet. If it’s drawn inside a `.map()`, wrap the JSX inside the callback, and move the `key` to the wrapper.',
+};
+
 /** One queued edit, as the agent reads it. */
 export const describeQueueItem = (item: EmbeddedQueueItem, index: number): string => {
   if (item.kind === 'style') {
     const changes = item.changes.map((c) => `  - \`${c.property}\`: ${c.from === '' ? '(not set)' : `\`${c.from}\``} → \`${c.to}\``).join('\n');
     const bp = item.breakpoint === undefined ? '' : `\n- ${breakpointLine(item.breakpoint)}`;
     const state = item.state === undefined ? '' : `\n- State: \`:${item.state}\`. Style the element only while it's in that state (a \`:${item.state}\` rule, or Tailwind's \`${item.state}:\` prefix), leaving its normal styles as they are.`;
-    return `### Edit ${index + 1}: style${item.state === undefined ? '' : ` (:${item.state})`}\n${describeElement(item.element)}\n- ${scopeLine(item.scope, item.element)}${state}${bp}\n- Change:\n${changes}`;
+    return `### Edit ${index + 1}: style${item.state === undefined ? '' : ` (:${item.state})`}\n${describeElement(item.element)}\n- ${scopeLine(item.scope, item.element)}${alsoLines(item.also)}${state}${bp}\n- Change:\n${changes}`;
   }
   if (item.kind === 'content') {
     const what = CONTENT_WORDS[item.field];
@@ -191,11 +297,17 @@ export const describeQueueItem = (item: EmbeddedQueueItem, index: number): strin
           : `It's written in the code at ${origin.at}. Change it there.`;
     return `### Edit ${index + 1}: ${what}\n${describeElement(item.element)}\n- Change the ${what} from ${item.from === '' ? '(none)' : `“${item.from}”`} to “${item.to}”.\n- ${where}`;
   }
+  if (item.kind === 'move' && item.position === 'inside') {
+    return `### Edit ${index + 1}: move into another element\n${describeElement(item.element)}\n- Move it **inside** this element, as its last child:\n${describeElement(item.target).replace(/^- /gm, '  - ')}\n- Move the element's JSX into the other's. If the other element is drawn by a component, put it where that component renders its children, or pass it as children where the component is used. If it's the root of a component, move where that component is used. If it's drawn from data, or the move can't be made cleanly, change nothing and say so. Move imports and styles it needs with it.`;
+  }
   if (item.kind === 'move') {
     const how = item.fromList
       ? 'Both are drawn from one line of JSX, by a list (`.map()` or similar), so their order is the data\'s. If the list is written in the project, reorder its items. If it comes from an API, a database or elsewhere, change nothing and say so.'
       : 'Move the element\'s JSX so it renders just ' + item.position + ' the other. If the element is the root of a component, move where that component is used instead. Keep everything else as it is, keys included.';
     return `### Edit ${index + 1}: move\n${describeElement(item.element)}\n- Move it to just **${item.position}** this sibling (same parent):\n${describeElement(item.target).replace(/^- /gm, '  - ')}\n- ${how}`;
+  }
+  if (item.kind === 'structure') {
+    return `### Edit ${index + 1}: ${item.action}\n${describeElement(item.element)}\n- ${scopeLine(item.scope, item.element)}${alsoLines(item.also)}\n- ${STRUCTURE_HOW[item.action]}`;
   }
   const where = item.element !== null ? `${describeElement(item.element)}\n- ${scopeLine(item.scope, item.element)}\n` : '';
   return `### Edit ${index + 1}: instruction\n${where}- Do this: ${item.text}`;
@@ -239,9 +351,10 @@ export const mergeRoutes = (known: ReadonlyArray<string>, found: ReadonlyArray<s
 /** One queued edit in a few words: the queue list, the history, and commit messages. */
 export const shortQueueItem = (item: EmbeddedQueueItem): string => {
   if (item.kind === 'move') {
-    return `Move <${item.element.tag}> ${item.position} <${item.target.tag}>${item.target.text.length > 0 ? ` “${item.target.text.slice(0, 24)}”` : ''}`;
+    return `Move <${item.element.tag}> ${item.position === 'inside' ? 'into' : item.position} <${item.target.tag}>${item.target.text.length > 0 ? ` “${item.target.text.slice(0, 24)}”` : ''}`;
   }
   if (item.kind === 'instruction') return item.text;
+  if (item.kind === 'structure') return `${item.action[0]?.toUpperCase()}${item.action.slice(1)} <${item.element.tag}>${item.scope === 'all' ? ' (all)' : ''}`;
   if (item.kind === 'content') {
     const short = (v: string): string => (v.length > 40 ? `${v.slice(0, 37)}…` : v);
     return `<${item.element.tag}> ${CONTENT_WORDS[item.field]} “${short(item.from)}” → “${short(item.to)}”`;
@@ -300,17 +413,24 @@ const qualifiers = (item: Extract<EmbeddedQueueItem, { kind: 'style' }>): string
   return parts.length === 0 ? '' : ` ${parts.join(' ')}`;
 };
 
+const andMore = (also: ReadonlyArray<EmbeddedElementRef> | undefined): string =>
+  also === undefined || also.length === 0 ? '' : ` and ${also.length} more`;
+
 /** One queued edit for people ("Changed spacing on every Card"), with its technical form for the tooltip. */
 export const describeChange = (item: EmbeddedQueueItem): ChangeDescription => {
   const detail = shortQueueItem(item);
   if (item.kind === 'instruction') return { text: item.text.length > 80 ? `${item.text.slice(0, 77)}…` : item.text, detail: item.element === null ? '' : `<${item.element.tag}>` };
   if (item.kind === 'content') return { text: `Changed the ${CONTENT_WORDS[item.field]} on ${elementWords(item.element)}`, detail };
+  if (item.kind === 'structure') {
+    const name = `${item.scope === 'all' ? 'every ' : ''}${elementWords(item.element)}${andMore(item.also)}`;
+    return { text: item.action === 'delete' ? `Deleted ${name}` : item.action === 'duplicate' ? `Duplicated ${name}` : `Wrapped ${name} in a container`, detail };
+  }
   if (item.kind === 'move') {
     const target = item.target.text.length > 0 ? `“${item.target.text.slice(0, 24)}”` : elementWords(item.target);
-    return { text: `Moved ${elementWords(item.element)} ${item.position} ${target}`, detail };
+    return { text: `Moved ${elementWords(item.element)} ${item.position === 'inside' ? 'into' : item.position} ${target}`, detail };
   }
   const groups = [...new Set(item.changes.map((c) => propertyGroup(c.property)))];
-  const name = `${item.scope === 'all' ? 'every ' : ''}${elementWords(item.element)}`;
+  const name = `${item.scope === 'all' ? 'every ' : ''}${elementWords(item.element)}${andMore(item.also)}`;
   const only = groups.length === 1 ? groups[0] : undefined;
   const verb =
     only === undefined ? `Restyled ${name}` : only === 'size' ? `Resized ${name}` : only === 'corners' ? `Changed the corners on ${name}` : `Changed ${only} on ${name}`;
@@ -420,7 +540,9 @@ export type InspectorCommand =
   | { type: 'selectId'; id: string }
   | { type: 'hoverId'; id: string | null }
   /** Move a layer next to a sibling, from the layers tree. */
-  | { type: 'move'; id: string; targetId: string; position: 'before' | 'after'; tag: string };
+  | { type: 'move'; id: string; targetId: string; position: 'before' | 'after' | 'inside'; tag: string }
+  /** Preview a delete (hidden), a duplicate (a copy after it), or a wrap (outlined). */
+  | { type: 'structure'; uid: string; action: EmbeddedStructureAction; scope: EmbeddedEditScope; tag: string };
 
 /**
  * Runs IN the page, installed by `webview.executeJavaScript`. Must be
@@ -441,7 +563,7 @@ export type InspectorCommand =
  * - **Tree** returns the page as a tree of ids, for the layers panel.
  */
 export const installInspector = (config: InspectorConfig): void => {
-  type Api = { run: (cmd: unknown) => void; tree: () => EmbeddedTreeNode; breakpoints: () => { min: number[]; max: number[] }; config: InspectorConfig };
+  type Api = { run: (cmd: unknown) => void; tree: () => EmbeddedTreeNode; breakpoints: () => { min: number[]; max: number[] }; tokens: () => Array<{ name: string; value: string }>; config: InspectorConfig };
   type Win = Window & { __scampInspector?: Api };
   const w = window as Win;
   if (w.__scampInspector !== undefined) {
@@ -474,7 +596,7 @@ export const installInspector = (config: InspectorConfig): void => {
     /** Preview rules, keyed by media and selector: for states and breakpoints, which inline styles can't express. */
     rules: new Map<string, { media: string | null; selector: string; props: Record<string, string> }>(),
     /** What each tagged edit replaced, so `undoTag` can put exactly that back. */
-    tags: new Map<string, { inline: Array<{ el: HTMLElement; prop: string; value: string; priority: string }>; rules: Array<{ key: string; prop: string; prev: string | undefined }>; marks: HTMLDivElement[]; content: Array<{ el: Element; field: string; prev: string | null }> }>(),
+    tags: new Map<string, { inline: Array<{ el: HTMLElement; prop: string; value: string; priority: string }>; rules: Array<{ key: string; prop: string; prev: string | undefined }>; marks: Element[]; content: Array<{ el: Element; field: string; prev: string | null }> }>(),
     /** The in-page text editor, while one is open. */
     editing: null as { el: HTMLElement; box: HTMLDivElement; visibility: string; priority: string } | null,
     moveCount: 0,
@@ -482,6 +604,8 @@ export const installInspector = (config: InspectorConfig): void => {
     suppressClick: false,
     /** Moves the page can't preview (block flow), marked until the agent writes them. */
     marks: [] as Array<{ box: HTMLDivElement; target: Element; position: 'before' | 'after' }>,
+    /** Elements added to the selection with Shift- or Cmd-click: edits reach them too. */
+    also: [] as Array<{ el: Element; box: HTMLDivElement }>,
   };
   let api: Api;
   const send = (msg: unknown): void => {
@@ -507,7 +631,11 @@ export const installInspector = (config: InspectorConfig): void => {
   const insertLine = document.createElement('div');
   insertLine.setAttribute('data-scamp-overlay', '');
   insertLine.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483647;display:none;background:#4a8cff;border-radius:2px;';
-  document.documentElement.append(hoverBox, selectBox, label, preview, insertLine);
+  // Over the page while frozen: nothing under it can be hovered, clicked, or focused, so the page holds still.
+  const shield = document.createElement('div');
+  shield.setAttribute('data-scamp-overlay', '');
+  shield.style.cssText = 'position:fixed;inset:0;z-index:2147483645;display:none;background:transparent;';
+  document.documentElement.append(hoverBox, selectBox, label, preview, insertLine, shield);
 
   // Ids for the layers tree, kept off the DOM.
   let nextUid = 1;
@@ -681,6 +809,7 @@ export const installInspector = (config: InspectorConfig): void => {
         text: text.length > 60 ? `${text.slice(0, 57)}…` : text,
       },
       computed,
+      rules: matchedRules(el),
       parentDisplay: el.parentElement === null ? 'block' : getComputedStyle(el.parentElement).display,
       textOnly: el.children.length === 0 && text.length > 0,
     };
@@ -694,8 +823,29 @@ export const installInspector = (config: InspectorConfig): void => {
     state.selected = el;
     state.selectedKey = keyOf(el);
     state.selectedIndex = Math.max(0, sameSource(el).indexOf(el as HTMLElement));
-    send(describe(el));
+    state.also = state.also.filter((a) => (a.el === el || !a.el.isConnected ? (a.box.remove(), false) : true));
+    send({ ...(describe(el) as object), also: state.also.map((a) => ({ uid: uidOf(a.el), element: (describe(a.el) as { element: unknown }).element })) });
   };
+  const clearAlso = (): void => {
+    for (const a of state.also) a.box.remove();
+    state.also = [];
+  };
+  /** Shift- or Cmd-click: add an element to the selection, or take it out. */
+  const toggleAlso = (el: Element): void => {
+    if (state.selected === null) return select(el);
+    if (el === state.selected) return;
+    const at = state.also.findIndex((a) => a.el === el);
+    if (at >= 0) state.also.splice(at, 1)[0]?.box.remove();
+    else {
+      const b = box(false);
+      document.documentElement.append(b);
+      state.also.push({ el, box: b });
+    }
+    select(state.selected);
+  };
+  /** The other selected elements, for an edit about the selection. */
+  const alsoFor = (base: Element | null): HTMLElement[] =>
+    base !== null && base === state.selected ? state.also.map((a) => a.el).filter((e): e is HTMLElement => e instanceof HTMLElement) : [];
 
   const place = (target: HTMLElement, el: Element | null): void => {
     if (el === null || !el.isConnected) {
@@ -722,6 +872,7 @@ export const installInspector = (config: InspectorConfig): void => {
     place(hoverBox, hover);
     for (const m of state.marks) drawLine(m.box, m.target, m.position);
     place(selectBox, state.selected);
+    for (const a of state.also) place(a.box, a.el);
     if (state.selected !== null && state.selected.isConnected) {
       const r = state.selected.getBoundingClientRect();
       const src = state.selected.getAttribute(api.config.attr);
@@ -737,6 +888,10 @@ export const installInspector = (config: InspectorConfig): void => {
   requestAnimationFrame(tick);
 
   const isOverlay = (t: EventTarget | null): boolean => t instanceof Element && t.hasAttribute('data-scamp-overlay');
+  /** The page's element at a point, under Scamp's overlays and the freeze shield. */
+  const pageAt = (x: number, y: number): Element | null => document.elementsFromPoint(x, y).find((el) => !isOverlay(el)) ?? null;
+  /** What an event is about: through the freeze shield to the page under it. */
+  const targetOf = (e: Event): EventTarget | null => (e.target === shield && e instanceof MouseEvent ? pageAt(e.clientX, e.clientY) : e.target);
   const swallow = (e: Event): void => {
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -792,7 +947,7 @@ export const installInspector = (config: InspectorConfig): void => {
   const dropAt = (el: Element, x: number, y: number): { target: Element; position: 'before' | 'after' } | null => {
     const parent = el.parentElement;
     if (parent === null) return null;
-    let under = document.elementFromPoint(x, y);
+    let under = pageAt(x, y);
     while (under !== null && under.parentElement !== parent) under = under.parentElement;
     if (under === null || under === el || isOverlay(under)) return null;
     const r = under.getBoundingClientRect();
@@ -801,9 +956,20 @@ export const installInspector = (config: InspectorConfig): void => {
     return { target: under, position };
   };
   /** Preview a move where `order` can show it, mark it where it can't, and tell the window. */
-  const applyMove = (el: Element, target: Element, position: 'before' | 'after', given?: string): void => {
+  const applyMove = (el: Element, target: Element, position: 'before' | 'after' | 'inside', given?: string): void => {
     const tag = given ?? `m-${Date.now().toString(36)}-${(state.moveCount += 1)}`;
     const parent = el.parentElement;
+    if (position === 'inside') {
+      // Into another parent: React's DOM can't be moved, so the element is dimmed and its new parent outlined.
+      if (el === target || el.contains(target) || !(el instanceof HTMLElement) || !(target instanceof HTMLElement)) return;
+      setInline(el, 'opacity', '0.35', tag);
+      setInline(target, 'outline', '2px dashed #4a8cff', tag);
+      setInline(target, 'outline-offset', '2px', tag);
+      const a = describe(el) as { element: unknown; raw: unknown };
+      const b = describe(target) as { element: unknown; raw: unknown };
+      send({ type: 'moved', tag, uid: uidOf(el), targetUid: uidOf(target), element: a.element, raw: a.raw, target: b.element, targetRaw: b.raw, position, fromList: false, previewed: false });
+      return;
+    }
     if (parent === null || target.parentElement !== parent || el === target) return;
     const kids = kidsOf(parent);
     const without = kids.filter((k) => k !== el);
@@ -830,7 +996,7 @@ export const installInspector = (config: InspectorConfig): void => {
   };
   window.addEventListener('pointerdown', (e) => {
     if (!state.edit || e.button !== 0) return;
-    const t = e.target;
+    const t = targetOf(e);
     if (state.selected !== null && t instanceof Node && state.selected.contains(t)) {
       state.drag = { el: state.selected, x: e.clientX, y: e.clientY, active: false, target: null, position: 'before' };
     }
@@ -881,7 +1047,7 @@ export const installInspector = (config: InspectorConfig): void => {
       }
       swallow(e);
       // Double-click asks the window whether this text can be edited here.
-      const t = e.target;
+      const t = targetOf(e);
       if (type === 'dblclick' && t instanceof Element && !isOverlay(t) && onlyText(t) !== null) send({ type: 'requestTextEdit', uid: uidOf(t) });
     }, true);
   }
@@ -896,26 +1062,35 @@ export const installInspector = (config: InspectorConfig): void => {
       state.suppressClick = false;
       return;
     }
-    const target = e.target;
+    const target = targetOf(e);
     if (!(target instanceof Element) || isOverlay(target)) return;
+    if (e.shiftKey || e.metaKey || e.ctrlKey) return toggleAlso(target);
+    clearAlso();
     select(target);
   }, true);
   window.addEventListener('pointermove', (e) => {
-    const t = e.target;
-    state.pointer = t instanceof Element && !isOverlay(t) ? t : null;
-    if (state.edit) state.hovered = state.pointer;
+    const t = targetOf(e);
+    if (!state.frozen) state.pointer = t instanceof Element && !isOverlay(t) ? t : null;
+    if (state.edit) state.hovered = t instanceof Element && !isOverlay(t) ? t : null;
   }, true);
   for (const type of ['mouseleave', 'mouseout', 'pointerleave', 'pointerout', 'blur', 'focusout', 'visibilitychange']) {
     const handler = (e: Event): void => {
       if (state.frozen) e.stopImmediatePropagation();
+      // The pointer left the page: a freeze from the toolbar holds nothing hovered.
+      else if (type === 'mouseout' && (e as MouseEvent).relatedTarget === null) state.pointer = null;
     };
     window.addEventListener(type, handler, true);
     document.addEventListener(type, handler, true);
   }
 
-  /** Freeze: hold leave and blur, and force what's hovered and focused as it is now. */
+  /**
+   * Freeze the whole page as it is: force what's hovered and focused now
+   * (nothing, when the pointer is off the page), shield it so nothing else
+   * can be hovered, and hold every input until it's unfrozen.
+   */
   const setFrozen = (on: boolean): void => {
     state.frozen = on;
+    shield.style.display = on ? 'block' : 'none';
     state.frozenForce = new Map();
     if (on) {
       for (let el: Element | null = state.pointer; el !== null && el !== document.documentElement; el = el.parentElement) {
@@ -962,6 +1137,17 @@ export const installInspector = (config: InspectorConfig): void => {
     if (state.edit && (e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'z') {
       swallow(e);
       send({ type: e.shiftKey ? 'redo' : 'undo' });
+      return;
+    }
+    const t = e.target;
+    const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable);
+    if (!state.edit || state.selected === null || typing || e.altKey) return;
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !e.metaKey && !e.ctrlKey) {
+      swallow(e);
+      send({ type: 'structureKey', action: 'delete' });
+    } else if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'd') {
+      swallow(e);
+      send({ type: 'structureKey', action: 'duplicate' });
     }
   }, true);
 
@@ -993,7 +1179,7 @@ export const installInspector = (config: InspectorConfig): void => {
       })
       .join('\n');
   };
-  const tagRecord = (tag: string): { inline: Array<{ el: HTMLElement; prop: string; value: string; priority: string }>; rules: Array<{ key: string; prop: string; prev: string | undefined }>; marks: HTMLDivElement[]; content: Array<{ el: Element; field: string; prev: string | null }> } => {
+  const tagRecord = (tag: string): { inline: Array<{ el: HTMLElement; prop: string; value: string; priority: string }>; rules: Array<{ key: string; prop: string; prev: string | undefined }>; marks: Element[]; content: Array<{ el: Element; field: string; prev: string | null }> } => {
     let rec = state.tags.get(tag);
     if (rec === undefined) {
       rec = { inline: [], rules: [], marks: [], content: [] };
@@ -1136,6 +1322,96 @@ export const installInspector = (config: InspectorConfig): void => {
     box.addEventListener('blur', () => endTextEdit(true));
   };
   /** Widths the page's own stylesheets break at, from their media queries. */
+  /**
+   * The custom properties the page sets on `:root` (or `html`, `:host`),
+   * with the values the page resolves them to: its design tokens.
+   */
+  const tokens = (): Array<{ name: string; value: string }> => {
+    const names = new Set<string>();
+    const walk = (rules: CSSRuleList): void => {
+      for (const rule of Array.from(rules)) {
+        if (rule instanceof CSSStyleRule) {
+          if (!rule.selectorText.split(',').some((s) => /^(?::root|html|:host)$/.test(s.trim()))) continue;
+          for (let i = 0; i < rule.style.length; i += 1) {
+            const name = rule.style.item(i);
+            if (name.startsWith('--')) names.add(name);
+          }
+        } else if ('cssRules' in rule && !(rule instanceof CSSKeyframesRule)) walk((rule as CSSGroupingRule).cssRules);
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      if (sheet.ownerNode instanceof Element && isOverlay(sheet.ownerNode)) continue;
+      try {
+        walk(sheet.cssRules);
+      } catch {
+        // A cross-origin stylesheet can't be read.
+      }
+    }
+    const root = getComputedStyle(document.documentElement);
+    const out: Array<{ name: string; value: string }> = [];
+    for (const name of names) {
+      const value = root.getPropertyValue(name).trim();
+      // Tailwind's internal plumbing, not tokens anyone picks.
+      if (value !== '' && !name.startsWith('--tw-') && out.length < 2000) out.push({ name, value });
+    }
+    return out;
+  };
+
+  /** The page's CSS rules that match the element now, in source order, with the panel's properties they set. */
+  const matchedRules = (el: Element): EmbeddedMatchedRule[] => {
+    const out: EmbeddedMatchedRule[] = [];
+    const props = api.config.properties;
+    const declsOf = (style: CSSStyleDeclaration): EmbeddedMatchedRule['decls'] => {
+      const decls: EmbeddedMatchedRule['decls'] = {};
+      for (const p of props) {
+        const value = style.getPropertyValue(p).trim();
+        if (value !== '') decls[p] = { value, important: style.getPropertyPriority(p) === 'important' };
+      }
+      return decls;
+    };
+    const layers = new Map<string, number>();
+    const layerOf = (name: string): number => {
+      if (!layers.has(name)) layers.set(name, layers.size);
+      return layers.get(name) ?? 0;
+    };
+    const walk = (rules: CSSRuleList, sheet: string, layer: number | null, prefix: string): void => {
+      for (const rule of Array.from(rules)) {
+        if (out.length >= 40) return;
+        if (rule instanceof CSSLayerStatementRule) {
+          rule.nameList.forEach((n) => layerOf(prefix + n));
+        } else if (rule instanceof CSSLayerBlockRule) {
+          const name = prefix + (rule.name === '' ? `anon${layers.size}` : rule.name);
+          walk(rule.cssRules, sheet, layerOf(name), `${name}.`);
+        } else if (rule instanceof CSSStyleRule) {
+          const parts = rule.selectorText.split(/,(?![^(]*\))/).map((s) => s.trim());
+          const hit = parts.filter((s) => {
+            try {
+              return el.matches(s);
+            } catch {
+              return false;
+            }
+          });
+          if (hit.length > 0) out.push({ selectors: hit, text: rule.cssText.slice(0, 2000), sheet, layer, decls: declsOf(rule.style) });
+        } else if (rule instanceof CSSMediaRule) {
+          if (window.matchMedia(rule.media.mediaText).matches) walk(rule.cssRules, sheet, layer, prefix);
+        } else if ('cssRules' in rule && !(rule instanceof CSSKeyframesRule)) walk((rule as CSSGroupingRule).cssRules, sheet, layer, prefix);
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      // Scamp's own preview rules are part of the cascade the page shows; its other overlays aren't.
+      if (sheet.ownerNode instanceof Element && sheet.ownerNode !== preview && isOverlay(sheet.ownerNode)) continue;
+      const name = sheet.href !== null ? sheet.href.replace(location.origin, '') : (sheet.ownerNode instanceof Element ? sheet.ownerNode.getAttribute('data-vite-dev-id') ?? 'a <style> tag' : 'a <style> tag');
+      try {
+        walk(sheet.cssRules, sheet.ownerNode === preview ? 'Scamp’s preview' : name, null, '');
+      } catch {
+        // A cross-origin stylesheet can't be read; its rules go unseen.
+      }
+    }
+    const inline = (el as HTMLElement).style;
+    if (inline !== undefined && inline.length > 0) out.push({ selectors: ['style'], text: `style="${el.getAttribute('style') ?? ''}"`, sheet: 'inline', layer: null, decls: declsOf(inline) });
+    return out;
+  };
+
   const breakpoints = (): { min: number[]; max: number[] } => {
     const min = new Set<number>();
     const max = new Set<number>();
@@ -1203,8 +1479,9 @@ export const installInspector = (config: InspectorConfig): void => {
     config,
     tree,
     breakpoints,
+    tokens,
     run: (raw: unknown): void => {
-      const cmd = raw as { type: string; on?: boolean; scope?: string; styles?: Record<string, string>; properties?: string[]; state?: string; id?: string | null; targetId?: string; position?: string; uid?: string; media?: string | null; tag?: string; field?: string; value?: string };
+      const cmd = raw as { type: string; on?: boolean; scope?: string; styles?: Record<string, string>; properties?: string[]; state?: string; id?: string | null; targetId?: string; position?: string; uid?: string; media?: string | null; tag?: string; field?: string; value?: string; action?: string };
       const media = cmd.media ?? null;
       const pseudo = cmd.state ?? 'none';
       if (cmd.type === 'edit') {
@@ -1213,6 +1490,7 @@ export const installInspector = (config: InspectorConfig): void => {
       } else if (cmd.type === 'freeze') {
         setFrozen(cmd.on === true);
       } else if (cmd.type === 'deselect') {
+        clearAlso();
         state.selected = null;
         state.selectedKey = null;
         if (state.panelForce !== null) {
@@ -1234,12 +1512,32 @@ export const installInspector = (config: InspectorConfig): void => {
         const el = byUid.get(cmd.id ?? '')?.deref();
         if (el !== undefined && el.isConnected) {
           el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          clearAlso();
           select(el);
         }
       } else if (cmd.type === 'move') {
         const el = byUid.get(cmd.id ?? '')?.deref();
         const target = byUid.get(cmd.targetId ?? '')?.deref();
-        if (el !== undefined && target !== undefined) applyMove(el, target, cmd.position === 'after' ? 'after' : 'before', cmd.tag);
+        if (el !== undefined && target !== undefined) applyMove(el, target, cmd.position === 'after' || cmd.position === 'inside' ? cmd.position : 'before', cmd.tag);
+      } else if (cmd.type === 'structure') {
+        const base = baseOf(cmd.uid);
+        const tag = cmd.tag ?? '';
+        for (const el of [base, ...alsoFor(base)].flatMap((b) => targets(cmd.scope ?? 'instance', b))) {
+          if (cmd.action === 'delete') setInline(el, 'display', 'none', tag);
+          else if (cmd.action === 'wrap') {
+            setInline(el, 'outline', '2px dashed #4a8cff', tag);
+            setInline(el, 'outline-offset', '4px', tag);
+          } else {
+            // A copy for show, outside React's say: undo, or the agent's reload, takes it away.
+            const copy = el.cloneNode(true) as HTMLElement;
+            copy.setAttribute('data-scamp-overlay', '');
+            copy.removeAttribute('id');
+            copy.style.setProperty('pointer-events', 'none', 'important');
+            copy.style.setProperty('outline', '2px dashed #4a8cff', 'important');
+            el.after(copy);
+            tagRecord(tag).marks.push(copy);
+          }
+        }
       } else if (cmd.type === 'hoverId') {
         state.treeHover = cmd.id === null ? null : (byUid.get(cmd.id ?? '')?.deref() ?? null);
       } else if (cmd.type === 'apply') {
@@ -1247,11 +1545,13 @@ export const installInspector = (config: InspectorConfig): void => {
         const scope = cmd.scope ?? 'instance';
         // A state or a breakpoint previews as a rule; anything else inline.
         if (pseudo !== 'none' || media !== null) {
-          const selector = ruleSelector(scope, pseudo, base);
-          if (selector !== null) setRule(media, selector, cmd.styles ?? {}, cmd.tag);
+          for (const el of [base, ...alsoFor(base)]) {
+            const selector = ruleSelector(scope, pseudo, el);
+            if (selector !== null) setRule(media, selector, cmd.styles ?? {}, cmd.tag);
+          }
           return;
         }
-        for (const el of targets(scope, base)) {
+        for (const el of [...targets(scope, base), ...alsoFor(base).flatMap((a) => targets(scope, a))]) {
           for (const [prop, value] of Object.entries(cmd.styles ?? {})) setInline(el, prop, value, cmd.tag);
         }
       } else if (cmd.type === 'undoTag') {
@@ -1266,8 +1566,8 @@ export const installInspector = (config: InspectorConfig): void => {
         const props = cmd.properties ?? [];
         const base = baseOf(cmd.uid);
         if (pseudo !== 'none' || media !== null) {
-          for (const scope of ['all', 'instance']) {
-            const selector = ruleSelector(scope, pseudo, base);
+          for (const scope of ['all', 'instance']) for (const el of [base, ...alsoFor(base)]) {
+            const selector = ruleSelector(scope, pseudo, el);
             const rule = selector === null ? undefined : state.rules.get(ruleKey(media, selector));
             if (rule === undefined || selector === null) continue;
             for (const prop of props) delete rule.props[prop];
@@ -1277,7 +1577,7 @@ export const installInspector = (config: InspectorConfig): void => {
           return;
         }
         // Back to what the page had, for properties an edit returned to their start.
-        for (const el of targets('all', base).concat(targets('instance', base))) {
+        for (const el of [base, ...alsoFor(base)].flatMap((b) => targets('all', b).concat(targets('instance', b)))) {
           const saved = state.overrides.get(el);
           if (saved === undefined) continue;
           for (const prop of props) {
@@ -1297,6 +1597,7 @@ export const installInspector = (config: InspectorConfig): void => {
         }
         state.overrides.clear();
         state.rules.clear();
+        for (const rec of state.tags.values()) rec.marks.forEach((m) => m.remove());
         state.tags.clear();
         for (const m of state.marks) m.box.remove();
         state.marks = [];
@@ -1305,6 +1606,15 @@ export const installInspector = (config: InspectorConfig): void => {
     },
   };
   w.__scampInspector = api;
+
+  // Last of the inspector's listeners, so its own handlers run first: while frozen, the app hears no input.
+  for (const type of ['pointerdown', 'pointerup', 'pointermove', 'mousedown', 'mouseup', 'mousemove', 'mouseover', 'mouseenter', 'pointerover', 'pointerenter', 'click', 'dblclick', 'contextmenu', 'auxclick', 'touchstart', 'touchmove', 'touchend', 'keydown', 'keyup', 'keypress', 'focusin', 'focus', 'submit']) {
+    window.addEventListener(type, (e) => {
+      if (!state.frozen || inEditor(e.target)) return;
+      e.stopImmediatePropagation();
+      if (e.cancelable && type !== 'focusin' && type !== 'focus') e.preventDefault();
+    }, true);
+  }
 };
 
 /** The source text that installs the inspector, then runs `cmd` if given. */
@@ -1315,6 +1625,10 @@ export const inspectorScript = (config: InspectorConfig, cmd?: InspectorCommand)
 /** The source text that returns the widths the page's stylesheets break at. */
 export const inspectorBreakpointsScript = (config: InspectorConfig): string =>
   `(${installInspector.toString()})(${JSON.stringify(config)}); window.__scampInspector.breakpoints();`;
+
+/** The source text that returns the page's design tokens, installing the inspector first. */
+export const inspectorTokensScript = (config: InspectorConfig): string =>
+  `(${installInspector.toString()})(${JSON.stringify(config)}); window.__scampInspector.tokens();`;
 
 /** The source text that returns the page's tree, installing the inspector first. */
 export const inspectorTreeScript = (config: InspectorConfig): string =>

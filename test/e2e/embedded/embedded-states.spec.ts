@@ -41,7 +41,22 @@ test('freeze holds CSS hover, a forced :hover state takes its own edits, and the
     await embedded.getByTestId('embedded-release').click();
     await expect.poll(() => tipShown(embedded)).toBe('none');
     await expect(embedded.getByTestId('embedded-held')).toHaveCount(0);
+
+    // Frozen with the pointer off the page: the page holds its normal state, and the app hears nothing.
+    await embedded.getByTestId('embedded-freeze-toggle').click();
+    await hoverInPage(embedded, '.title');
+    expect(await titleStyle(embedded, 'color')).not.toBe('rgb(200, 0, 0)');
+    await clickInPage(embedded, '.about-link');
+    expect(await inPage<string>(embedded, 'location.pathname')).toBe('/');
+    // Edit still selects through the freeze, and the element stays in its normal state.
     await embedded.getByTestId('embedded-edit-toggle').click();
+    await clickInPage(embedded, '.title');
+    await expect(embedded.getByTestId('embedded-source')).toContainText('src/App.jsx');
+    expect(await titleStyle(embedded, 'color')).not.toBe('rgb(200, 0, 0)');
+    await embedded.getByTestId('embedded-freeze-toggle').click();
+    await hoverInPage(embedded, '.title');
+    await expect.poll(() => titleStyle(embedded, 'color')).toBe('rgb(200, 0, 0)');
+    await hoverInPage(embedded, '.cards', 'corner');
 
     // Pause the agent so the hover edit waits in the queue.
     await embedded.getByTestId('embedded-tab-agent').click();

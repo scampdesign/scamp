@@ -72,8 +72,9 @@ export const createEmbeddedAgent = (deps) => {
     const run = async () => {
         if (running || state.queued.length === 0)
             return;
+        // Edits Scamp writes itself need no agent; the rest need one signed in.
         const provider = await deps.getProvider();
-        if (provider === null) {
+        if (provider === null && deps.writeDirect === undefined) {
             publish({ phase: 'error', message: 'Sign in to Scamp and connect the agent to write your changes.' });
             return;
         }
@@ -84,31 +85,49 @@ export const createEmbeddedAgent = (deps) => {
         abort = new AbortController();
         publish({ phase: 'thinking', lastText: '', message: undefined });
         let said = '';
-        const result = await runTurn({
-            provider,
-            system: embeddedSystemPrompt(deps.folder, deps.idioms),
-            tools: EMBEDDED_TOOLS,
-            invoke: invokerFor(touched, false),
-            history,
-            userContent: buildAgentPrompt(items, deps.idioms),
-            effort: 'medium',
-            signal: abort.signal,
-            emit: (event) => {
-                if (event.kind === 'text') {
-                    said += event.text;
-                    deps.emit({ kind: 'text', text: event.text });
-                }
-                else if (event.kind === 'tool-start') {
-                    if (EMBEDDED_WRITE_TOOL_NAMES.has(event.name))
-                        publish({ phase: 'writing' });
-                }
-                else if (event.kind === 'tool-end') {
-                    deps.emit({ kind: 'tool', name: event.name, summary: event.summary ?? event.name, ok: event.ok });
-                    if (state.phase === 'writing')
-                        publish({ phase: 'thinking' });
-                }
-            },
-        });
+        const written = new Set();
+        const forAgent = [];
+        for (const item of items) {
+            const file = (await deps.writeDirect?.(item).catch(() => null)) ?? null;
+            if (file === null)
+                forAgent.push(item);
+            else
+                written.add(file);
+        }
+        written.forEach((f) => touched.add(f));
+        if (written.size > 0) {
+            said = `Scamp wrote ${items.length - forAgent.length === 1 ? 'this' : 'these'} directly, in ${[...written].join(', ')}.${forAgent.length > 0 ? ' The agent writes the rest.' : ''}\n\n`;
+            deps.emit({ kind: 'text', text: said });
+        }
+        const result = forAgent.length === 0
+            ? { outcome: 'done', history, message: undefined }
+            : provider === null
+                ? { outcome: 'error', history, message: 'Sign in to Scamp and connect the agent to write the rest of your changes.' }
+                : await runTurn({
+                    provider,
+                    system: embeddedSystemPrompt(deps.folder, deps.idioms),
+                    tools: EMBEDDED_TOOLS,
+                    invoke: invokerFor(touched, false),
+                    history,
+                    userContent: buildAgentPrompt(forAgent, deps.idioms),
+                    effort: 'medium',
+                    signal: abort.signal,
+                    emit: (event) => {
+                        if (event.kind === 'text') {
+                            said += event.text;
+                            deps.emit({ kind: 'text', text: event.text });
+                        }
+                        else if (event.kind === 'tool-start') {
+                            if (EMBEDDED_WRITE_TOOL_NAMES.has(event.name))
+                                publish({ phase: 'writing' });
+                        }
+                        else if (event.kind === 'tool-end') {
+                            deps.emit({ kind: 'tool', name: event.name, summary: event.summary ?? event.name, ok: event.ok });
+                            if (state.phase === 'writing')
+                                publish({ phase: 'thinking' });
+                        }
+                    },
+                });
         history = result.history;
         await deps.onRunEnd?.(runId);
         running = false;

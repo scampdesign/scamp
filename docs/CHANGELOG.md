@@ -57,6 +57,26 @@ release time.
   content comes from data instead. To use an image from your computer,
   click **Choose file…**. See
   [Edit text, images, and links](user_docs/edit-react-project.md#edit-text-images-and-links).
+- **In Edit React Project, you can delete, duplicate, and wrap elements,
+  and select more than one.** Use the buttons at the top of the **Style**
+  tab, or press Delete or Cmd+D. Shift-click or Cmd-click to add elements
+  to the selection, so one edit reaches all of them. See
+  [Style an element](user_docs/edit-react-project.md#style-an-element).
+- **In Edit React Project, you can move an element into another parent.**
+  In the **Layers** panel, drop a row on the middle of another row. See
+  [Reorder elements](user_docs/edit-react-project.md#reorder-elements).
+- **In Edit React Project, the panel shows values as your code writes
+  them, and offers your app's tokens.** You see `auto`, `50%`, or
+  `var(--accent)` rather than computed pixels, and a token you pick is
+  written as the token.
+- **In Edit React Project, Scamp writes some edits itself.** A change to
+  every instance of an element styled with a CSS Module class is written
+  into that class at once, without the agent.
+- **In Edit React Project, the Agent tab has a conversation.** You see what
+  the agent said for each batch, undo a turn, and reply. The dev server's
+  output is there too, and the **Style** tab shows the selection's JSX and
+  CSS under **Code**. See
+  [Talk with the agent](user_docs/edit-react-project.md#talk-with-the-agent).
 - **In Edit React Project, the scope buttons name the component.** Select
   a card, and the buttons read **This Card** and **Every Card · 3**, so
   you know whether an edit changes one card or the component. For a card

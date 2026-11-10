@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { liftInTree } from '@lib/embeddedTree';
+import { dropPosition, liftInTree } from '@lib/embeddedTree';
 const node = (id, kids = [], more = 0) => ({
     id,
     tag: 'div',
@@ -37,5 +37,26 @@ describe('liftInTree', () => {
     });
     it('returns null for an id that isn’t in the tree', () => {
         expect(liftInTree(tree, 'missing')).toBeNull();
+    });
+});
+describe('dropPosition', () => {
+    // body > app > (main > (a, b > b1), aside)
+    const tree = node('body', [node('app', [node('main', [node('a'), node('b', [node('b1')])]), node('aside')])]);
+    const drag = { id: 'a', parent: 'main' };
+    it('drops before or after a sibling at its edges, and inside it in the middle', () => {
+        expect(dropPosition(tree, drag, 'b', 0.1)).toBe('before');
+        expect(dropPosition(tree, drag, 'b', 0.9)).toBe('after');
+        expect(dropPosition(tree, drag, 'b', 0.5)).toBe('inside');
+    });
+    it('drops only inside a layer from another parent', () => {
+        expect(dropPosition(tree, drag, 'aside', 0.1)).toBe('inside');
+        expect(dropPosition(tree, drag, 'b1', 0.9)).toBe('inside');
+    });
+    it('won’t drop onto itself, into its own children, into its parent, or into body', () => {
+        expect(dropPosition(tree, drag, 'a', 0.5)).toBeNull();
+        expect(dropPosition(tree, { id: 'b', parent: 'main' }, 'b1', 0.5)).toBeNull();
+        expect(dropPosition(tree, drag, 'main', 0.5)).toBeNull();
+        expect(dropPosition(tree, drag, 'body', 0.5)).toBeNull();
+        expect(dropPosition(tree, drag, 'missing', 0.5)).toBeNull();
     });
 });

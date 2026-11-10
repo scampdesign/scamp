@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyContent, freeFileName } from '../src/main/embedded/content';
+import { classifyContent, freeFileName, jsxLines } from '../src/main/embedded/content';
 /**
  * Where an element's text, image, or link comes from: written in the
  * code (editable), a prop with a value written where the component is
@@ -101,5 +101,20 @@ describe('freeFileName', () => {
         expect(freeFileName('my photo.jpg', [])).toBe('my-photo.jpg');
         expect(freeFileName('  ', [])).toBe('image');
         expect(freeFileName('README', ['readme'])).toBe('README-2');
+    });
+});
+describe('jsxLines', () => {
+    const app = files['src/App.jsx'] ?? '';
+    it('reads the whole element written at the source', () => {
+        expect(jsxLines(app, 'src/App.jsx:9:5')).toEqual({ start: 9, lines: app.split('\n').slice(8, 21) });
+        expect(jsxLines(app, 'src/App.jsx:10:7')).toEqual({ start: 10, lines: ['      <h1>Team</h1>'] });
+    });
+    it('caps a long element', () => {
+        expect(jsxLines(app, 'src/App.jsx:9:5', 3)?.lines).toHaveLength(3);
+    });
+    it('falls back to ten lines when no element starts there, and is null past the end', () => {
+        expect(jsxLines(app, 'src/App.jsx:4:1')?.lines).toHaveLength(10);
+        expect(jsxLines(app, 'src/App.jsx:99:1')).toBeNull();
+        expect(jsxLines(app, 'nonsense')).toBeNull();
     });
 });

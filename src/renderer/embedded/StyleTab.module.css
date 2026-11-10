@@ -18,6 +18,18 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 2px;
+}
+
 .tag {
   font-family: var(--font-mono);
   font-size: 12px;

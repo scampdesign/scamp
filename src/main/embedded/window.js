@@ -16,7 +16,8 @@ import { commitFiles, discardFiles, ensureSessionBranch, excludeFromGit, git, gi
 import { viteCommand, writeInstrumentation } from './instrument';
 import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
-import { classifyContent, freeFileName } from './content';
+import { classifyContent, freeFileName, jsxLines } from './content';
+import { directStyleWrite } from './fastPath';
 import { goToCommit, headSha, historyBase, readHistory } from './history';
 import { OWN_AGENT_TOOLS, ownAgentInvoker } from './ownAgent';
 import { recordRun, redoRun, snapshotRun, undoRun } from './runs';
@@ -206,6 +207,16 @@ const send = (contents, channel, payload) => {
         contents.send(channel, payload);
 };
 const preflight = async (folder) => evaluatePreflight(await gatherPreflightFacts(folder, { signedIn: agentSignedIn(), agentConnected: await agentConnected(), ownAgent: (await readWorker()) === 'own' }));
+/** A project file by its project-relative path; null outside the project, in `node_modules`, or over 2MB. */
+const readProjectFile = async (root, file) => {
+    const abs = resolvePath(root, file);
+    if (!abs.startsWith(root + sep) || file.includes('node_modules/'))
+        return null;
+    const stat = await fs.stat(abs).catch(() => null);
+    if (stat === null || !stat.isFile() || stat.size > 2_000_000)
+        return null;
+    return fs.readFile(abs, 'utf8').catch(() => null);
+};
 export const registerEmbeddedIpc = () => {
     // The flag is checked here, not only by hiding the button.
     ipcMain.handle(IPC.EmbeddedOpenWindow, async () => {
@@ -301,6 +312,13 @@ export const registerEmbeddedIpc = () => {
                 if (before !== undefined)
                     session.runs.set(runId, await recordRun(session.folder, runId, before));
             },
+            writeDirect: async (item) => {
+                const out = await directStyleWrite(item, (file) => readProjectFile(session.folder, file));
+                if (out === null)
+                    return null;
+                await fs.writeFile(join(session.folder, out.file), out.content, 'utf8');
+                return out.file;
+            },
         });
         session.idioms = check.idioms;
         const worker = await readWorker();
@@ -350,18 +368,18 @@ export const registerEmbeddedIpc = () => {
         const calls = Array.isArray(args.calls)
             ? args.calls.filter((c) => typeof c?.name === 'string').map((c) => ({ name: c.name, call: typeof c.call === 'string' ? c.call : null }))
             : [];
-        const root = session.folder;
-        // Only the project's own files, by a path inside it.
-        const read = async (file) => {
-            const abs = resolvePath(root, file);
-            if (!abs.startsWith(root + sep) || file.includes('node_modules/'))
-                return null;
-            const stat = await fs.stat(abs).catch(() => null);
-            if (stat === null || !stat.isFile() || stat.size > 2_000_000)
-                return null;
-            return fs.readFile(abs, 'utf8').catch(() => null);
-        };
+        const read = (file) => readProjectFile(session.folder, file);
         return classifyContent({ source: args.source, field: args.field, calls, read }).catch(() => ({ kind: 'unknown', reason: 'Scamp couldn’t read the code' }));
+    });
+    /** The selected element's JSX, for the code view. */
+    ipcMain.handle(IPC.EmbeddedReadSource, async (e, args) => {
+        const session = sessionOf(e);
+        const file = typeof args?.source === 'string' ? args.source.replace(/:\d+:\d+$/, '') : '';
+        if (session === null || file === '')
+            return null;
+        const code = await readProjectFile(session.folder, file);
+        const found = code === null ? null : jsxLines(code, args.source);
+        return found === null ? null : { file, ...found };
     });
     /** Copy an image from disk into the project's `public/`, served at `/name`; the agent's change to accept or discard. */
     ipcMain.handle(IPC.EmbeddedChooseImage, async (e) => {

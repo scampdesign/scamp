@@ -50,6 +50,8 @@ const embeddedApi = {
     contentOrigin: (source, field, calls) => ipcRenderer.invoke(IPC.EmbeddedContentOrigin, { source, field, calls }),
     /** Pick an image and copy it into the project's `public/`. */
     chooseImage: () => ipcRenderer.invoke(IPC.EmbeddedChooseImage),
+    /** The JSX of the element written at `source`, for the code view. */
+    readSource: (source) => ipcRenderer.invoke(IPC.EmbeddedReadSource, { source }),
     /** Who writes changes: Scamp's agent or the user's own, over MCP. */
     setWorker: (worker) => ipcRenderer.invoke(IPC.EmbeddedSetWorker, { worker }),
     ownAgentStatus: () => ipcRenderer.invoke(IPC.EmbeddedOwnAgentStatus),

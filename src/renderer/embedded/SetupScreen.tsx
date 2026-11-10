@@ -30,11 +30,11 @@ export const SetupScreen = (): JSX.Element => {
   const [phase, setPhase] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // The output itself is kept by the session, since the server keeps writing after start.
   useEffect(
     () =>
       window.scampEmbedded.onStartProgress((p) => {
         if (p.kind === 'phase') setPhase(p.phase);
-        else useEmbeddedStore.setState((s) => ({ startLog: (s.startLog + p.text).slice(-6000) }));
       }),
     []
   );

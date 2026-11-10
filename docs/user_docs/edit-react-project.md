@@ -80,6 +80,37 @@ Card · 3**, with how many are on this page.
 For a list inside one component, the buttons read **This one** and
 **All**. Hold the pointer over a button to see what it changes.
 
+The panel shows each value as your code writes it where Scamp can read
+it: `auto`, `50%`, `1.5rem`, or a token such as `var(--accent)`, rather
+than the pixels the browser works out. The token pickers offer your app's
+own design tokens, the custom properties it sets on `:root`. When you pick
+one, the agent writes the token, not its value.
+
+To see the code behind the selection, open **Code** at the bottom of the
+**Style** tab. It shows the element's JSX and every CSS rule that styles
+it, read-only.
+
+### Select more than one element
+
+Hold Shift or Cmd and click more elements on the page. Each edit you make
+then reaches all of them, and the **Style** tab says how many are
+selected. The panel shows the values of the first one. Click without Shift
+or Cmd to go back to one.
+
+### Delete, duplicate, or wrap an element
+
+At the top of the **Style** tab, next to the element's tag:
+
+- **Duplicate** (or press Cmd+D) adds a copy right after it.
+- **Wrap in a container** puts it inside a new `<div>`, with a class of its
+  own, so you can style the container next.
+- **Delete** (or press Delete) removes it.
+
+The page previews each one at once: a duplicate shows its copy, a deleted
+element is hidden, and a wrapped element is outlined. The agent writes it
+into your code. If the element is one of a list drawn from data, the agent
+can't add or remove an item that way, and says so.
+
 If Scamp can't map an element to a line, or the element comes from a
 library, you can still style it. The **Style** tab says so in a short note.
 The agent gets what Scamp knows about the element (its classes, its text,
@@ -151,6 +182,11 @@ If the elements come from a list in your code, the agent reorders the list.
 If their order comes from data, such as an API, the agent can't change it
 and says so.
 
+To move an element into another parent, use the **Layers** panel: drop a
+row on the middle of another row. The element goes inside it, as its last
+child. The page dims the element and outlines its new parent until the
+agent has written the move.
+
 ## Style a hover, focus, or active state
 
 1. Select an element.
@@ -182,6 +218,16 @@ Freeze holds both UI that your app opens with JavaScript and UI that CSS
 `:hover` shows. While it holds a state, the toolbar shows **Holding
 :hover on …**. To let go, click **Release**, or press **F8** again.
 
+Freeze holds the whole page, not only the element under the pointer. While
+the page is frozen, nothing in it reacts: pointing at an element doesn't
+show its hover state, and clicks and keys don't reach your app. With
+**Edit** on, you can still select and style elements. You can scroll the
+page, but not areas inside it that scroll on their own.
+
+To style an element in its normal state when the pointer would show its
+hover state, click **Freeze** in the toolbar, or press **F8** with the
+pointer off the page. The page freezes with nothing hovered.
+
 ## Let the agent write your changes
 
 Each edit you make goes to the agent after a short pause. The toolbar shows
@@ -200,6 +246,21 @@ To collect several edits and send them together:
 
 While the agent works, the page keeps showing your edits. When it finishes,
 the page shows your real code, reloaded.
+
+Some edits don't need the agent at all. When you change every instance of
+an element styled with a CSS Module class, such as `className={styles.card}`,
+in its normal state at desktop width, Scamp writes the new values into that
+class's rule itself, in a moment. The conversation says when it did.
+
+### Talk with the agent
+
+The **Conversation** section of the **Agent** tab shows each batch the agent
+took, what it said and did in reply, and an **Undo** for what each turn
+wrote. To reply, type in the box under the conversation and press
+**Enter**. The agent remembers the earlier turns.
+
+The **Dev server output** under it shows what your app's dev server prints,
+such as a build error after a change.
 
 ## Use your own agent
 
@@ -250,7 +311,8 @@ The panel on the right has three tabs:
 - **History:** undo and redo, the agent's changes to review and accept,
   what you've accepted, and branches.
 - **Agent:** which agent writes your changes and how it connects, what's
-  waiting for it, and design checks.
+  waiting for it, the conversation with it, the dev server's output, and
+  design checks.
 
 ## Undo and redo
 

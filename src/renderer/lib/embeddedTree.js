@@ -27,3 +27,19 @@ export const liftInTree = (tree, id) => {
     }
     return null;
 };
+/**
+ * Where a drag over layer `id` would drop, from how far down its row the
+ * pointer is (0 to 1): before or after a sibling at its edges, inside it in
+ * the middle, and only inside a layer from another parent. Null where it
+ * can't go: onto itself, into its own children, into the parent it's
+ * already in, or into `body`.
+ */
+export const dropPosition = (tree, drag, id, fraction) => {
+    const path = nodesTo(tree, id);
+    if (path === null || path.some((n) => n.id === drag.id))
+        return null;
+    const parent = path[path.length - 2];
+    if (parent?.id === drag.parent)
+        return fraction < 0.3 ? 'before' : fraction > 0.7 ? 'after' : 'inside';
+    return id === drag.parent || path.length < 2 ? null : 'inside';
+};

@@ -1,5 +1,5 @@
 import { type InspectorCommand } from '@shared/embedded';
-import type { EmbeddedContentField, EmbeddedContentOrigin, EmbeddedGitResult, EmbeddedPseudoState } from '@shared/types';
+import type { EmbeddedContentField, EmbeddedContentOrigin, EmbeddedGitResult, EmbeddedPseudoState, EmbeddedStructureAction } from '@shared/types';
 import { type EmbeddedSelection } from './embeddedStore';
 /** How long editing pauses before an edit goes to the agent's queue. */
 export declare const ENQUEUE_DELAY_MS = 900;
@@ -16,12 +16,16 @@ export declare const refreshTree: () => Promise<void>;
 export declare const selectTreeNode: (id: string) => void;
 export declare const hoverTreeNode: (id: string | null) => void;
 /** Move a layer next to a sibling; the page answers with `moved`, which queues it. */
-export declare const moveTreeNode: (id: string, targetId: string, position: "before" | "after") => void;
+export declare const moveTreeNode: (id: string, targetId: string, position: "before" | "after" | "inside") => void;
+/** Delete, duplicate, or wrap the selection: previewed on the page, then queued for the agent. see docs/plans/embedded-canvas-gaps.md (gap 7) */
+export declare const structureEdit: (action: EmbeddedStructureAction) => Promise<void>;
 /** Take an item out of the queue with ✕: its preview goes, and so does its undo step. */
 export declare const removeQueued: (id: string) => Promise<void>;
 /** Accept or Discard ends what runs undo can reach: from there it's the history. */
 export declare const dropRunEntries: () => void;
 export declare const undo: () => Promise<void>;
+/** Undo one turn of the conversation: what its run wrote, if the files are still as it left them. */
+export declare const undoTurn: (runId: string) => Promise<void>;
 export declare const redo: () => Promise<void>;
 export declare const refreshHistory: () => Promise<void>;
 /** Move the project to a point in its history; the result says why when it can't. */

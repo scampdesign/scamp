@@ -1,5 +1,6 @@
 import type { InspectorCommand } from '@shared/embedded';
-import type { EmbeddedAgentState, EmbeddedEditScope, EmbeddedElementRef, EmbeddedGitStatus, EmbeddedHistory, EmbeddedHeld, EmbeddedContentField, EmbeddedContentOrigin, EmbeddedPreflight, EmbeddedQueueItem, EmbeddedPseudoState, EmbeddedRawSource, EmbeddedStyleChange, EmbeddedTreeNode } from '@shared/types';
+import type { ChatTurn } from '@lib/embeddedChat';
+import type { EmbeddedAgentState, EmbeddedEditScope, EmbeddedElementRef, EmbeddedGitStatus, EmbeddedHistory, EmbeddedHeld, EmbeddedContentField, EmbeddedContentOrigin, EmbeddedPreflight, EmbeddedQueueItem, EmbeddedPseudoState, EmbeddedMatchedRule, EmbeddedRawSource, EmbeddedStyleChange, EmbeddedTreeNode } from '@shared/types';
 import type { ScampElement } from '@lib/element';
 /**
  * The Embedded Scamp window's own state: which screen, the running app,
@@ -26,7 +27,12 @@ export type EmbeddedSelection = {
     content: Record<EmbeddedContentField, string | null>;
     /** Where each content field comes from, once main has looked; absent while it looks. */
     origins: Partial<Record<EmbeddedContentField, EmbeddedContentOrigin>>;
+    /** Computed styles, with each value as written where Scamp can read it. */
     computed: Record<string, string>;
+    /** The CSS rules that match it, for the code view. */
+    rules: EmbeddedMatchedRule[];
+    /** Other elements selected with it (Shift- or Cmd-click): edits reach them too. */
+    also: EmbeddedElementRef[];
     parentDisplay: string;
     textOnly: boolean;
 };
@@ -59,11 +65,6 @@ export type UndoEntry = {
     runId: string;
     label: string;
     detail: string;
-};
-export type AgentLogEntry = {
-    kind: 'text' | 'tool';
-    text: string;
-    ok?: boolean;
 };
 export type GitView = EmbeddedGitStatus & {
     agentFiles: string[];
@@ -111,7 +112,8 @@ type State = {
     tree: EmbeddedTreeNode | null;
     pending: PendingEdit | null;
     agent: EmbeddedAgentState;
-    agentLog: AgentLogEntry[];
+    /** The conversation with the agent, a turn per run. */
+    chat: ChatTurn[];
     report: string | null;
     checking: boolean;
     git: GitView | null;
@@ -119,7 +121,6 @@ type State = {
 };
 type Actions = {
     set: (patch: Partial<State>) => void;
-    appendLog: (entry: AgentLogEntry) => void;
 };
 export declare const IDLE_AGENT: EmbeddedAgentState;
 export declare const useEmbeddedStore: import("zustand").UseBoundStore<import("zustand").StoreApi<State & Actions>>;

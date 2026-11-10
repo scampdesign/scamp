@@ -127,8 +127,11 @@ close: [`embedded-canvas-gaps.md`](embedded-canvas-gaps.md).
 - **The inspector** is a self-contained script that runs in the page through
   `webview.executeJavaScript`, as `captureScript.ts` does. It draws the
   hover and selection outline, blocks the app's own clicks in edit mode,
-  freezes transient UI by blocking leave, blur and Escape events, and
-  applies layer 1 styles inline. **F8** toggles freeze from inside the
+  freezes the page (it forces the hover and focus chain as it is, blocks
+  leave, blur and Escape, puts a see-through shield over the page so
+  nothing new is hovered, and stops every other input before the app hears
+  it; edit mode finds the element under the shield with
+  `elementsFromPoint`), and applies layer 1 styles inline. **F8** toggles freeze from inside the
   page: a menu that closes on leave has closed by the time the pointer
   reaches the toolbar. It reports back through
   `console.debug('__scamp_inspector__…')`, which the host reads from the
