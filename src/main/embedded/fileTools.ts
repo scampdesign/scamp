@@ -31,7 +31,7 @@ export const guardPath = (folder: string, path: unknown, forWrite: boolean): { o
 };
 
 /** A symlink inside the project can point outside it: the real path must stay in. */
-const staysInside = async (folder: string, abs: string): Promise<boolean> => {
+export const staysInside = async (folder: string, abs: string): Promise<boolean> => {
   const root = await fs.realpath(folder);
   // A file that doesn't exist yet is checked through the nearest folder that does.
   let probe = abs;
@@ -41,6 +41,8 @@ const staysInside = async (folder: string, abs: string): Promise<boolean> => {
       const rel = relative(root, real);
       return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
     }
+    // A dangling symlink: writing through it would create its target, wherever that is.
+    if ((await fs.lstat(probe).catch(() => null)) !== null) return false;
     const up = dirname(probe);
     if (up === probe) return false;
     probe = up;

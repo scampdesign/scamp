@@ -25,6 +25,8 @@ type Term = {
   proc: pty.IPty;
   /** The window that asked for it; its output belongs there. */
   owner: BrowserWindow | null;
+  /** The asking webContents' id: closing or reloading that window ends only its shells. */
+  ownerId: number;
 };
 
 const terminals = new Map<string, Term>();
@@ -102,7 +104,7 @@ const createTerminal = (
     env: { ...process.env, TERM: 'xterm-256color' } as Record<string, string>,
   });
 
-  const term: Term = { id, proc, owner };
+  const term: Term = { id, proc, owner, ownerId: senderId };
 
   proc.onData((data) => {
     const win = windowFor(term);
@@ -201,6 +203,13 @@ export const disposeAllTerminals = async (): Promise<void> => {
   const all = Array.from(terminals.values());
   terminals.clear();
   await Promise.all(all.map(killAndWait));
+};
+
+/** Kill the shells one window opened, when it closes or reloads; other windows' shells keep running. */
+export const disposeTerminalsOf = async (ownerId: number): Promise<void> => {
+  const mine = Array.from(terminals.values()).filter((t) => t.ownerId === ownerId);
+  mine.forEach((t) => terminals.delete(t.id));
+  await Promise.all(mine.map(killAndWait));
 };
 
 export const registerTerminalIpc = (): void => {

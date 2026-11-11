@@ -99,6 +99,27 @@ describe('createEmbeddedAgent', () => {
     expect(agent.state().queued).toEqual([]);
   });
 
+  it('starts the next batch with no earlier turns after an accept or discard', async () => {
+    const lengths: number[] = [];
+    const scripted = createScriptedProvider([{ content: [{ type: 'text', text: 'One.' }] }, { content: [{ type: 'text', text: 'Two.' }] }, { content: [{ type: 'text', text: 'Three.' }] }]);
+    const provider: AgentProvider = {
+      streamTurn: async (request, callbacks): Promise<BetaMessage> => {
+        lengths.push(request.messages.length);
+        return scripted.streamTurn(request, callbacks);
+      },
+    };
+    const { agent } = setup(provider);
+    const runOnce = async (id: string): Promise<void> => {
+      agent.enqueue(item(id, '20px'));
+      await until(() => agent.state().phase === 'done' && agent.state().lastRunItemIds.includes(id));
+    };
+    await runOnce('a');
+    await runOnce('b');
+    agent.clearTouched();
+    await runOnce('c');
+    expect(lengths).toEqual([1, 3, 1]);
+  });
+
   it('replaces an edit still in the queue rather than adding it twice', () => {
     const { agent } = setup(null);
     agent.setPaused(true);

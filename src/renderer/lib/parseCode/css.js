@@ -94,7 +94,7 @@ const collectRuleNodes = (rule) => {
             // block is a contiguous run terminated by the next active
             // line.
             captureGroup = null;
-            decls.push({ prop: child.prop, value: child.value });
+            decls.push({ prop: child.prop, value: child.important ? `${child.value} !important` : child.value });
         }
     }
     return { decls, toggledOff };

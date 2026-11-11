@@ -9,6 +9,8 @@ export declare const guardPath: (folder: string, path: unknown, forWrite: boolea
     ok: false;
     error: string;
 };
+/** A symlink inside the project can point outside it: the real path must stay in. */
+export declare const staysInside: (folder: string, abs: string) => Promise<boolean>;
 export declare const EMBEDDED_READ_TOOLS: BetaTool[];
 export declare const EMBEDDED_TOOLS: BetaTool[];
 export declare const EMBEDDED_WRITE_TOOL_NAMES: Set<string>;

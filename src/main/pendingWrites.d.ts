@@ -8,11 +8,13 @@ import type { FileWriteAckPayload } from '@shared/types';
 export type PendingAck = {
     writeId: string;
     suppressChanged: boolean;
+    /** What Scamp wrote: an event for anything else is someone else's write. */
+    expected?: string;
     timer: ReturnType<typeof setTimeout>;
 };
 export type PendingWriteSender = (payload: FileWriteAckPayload) => void;
 export type PendingWriteTracker = {
-    register: (path: string, writeId: string, suppressChanged: boolean) => void;
+    register: (path: string, writeId: string, suppressChanged: boolean, expected?: string) => void;
     cancel: (path: string) => void;
     /**
      * Called from the chokidar event handler. If the path was pending,
@@ -22,6 +24,7 @@ export type PendingWriteTracker = {
     consume: (path: string) => {
         writeId: string;
         suppressChanged: boolean;
+        expected?: string;
     } | null;
     /** Size accessor for tests. */
     size: () => number;

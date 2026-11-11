@@ -70,7 +70,7 @@ const createTerminal = (args, owner, senderId) => {
         cwd,
         env: { ...process.env, TERM: 'xterm-256color' },
     });
-    const term = { id, proc, owner };
+    const term = { id, proc, owner, ownerId: senderId };
     proc.onData((data) => {
         const win = windowFor(term);
         if (!win)
@@ -166,6 +166,12 @@ export const disposeAllTerminals = async () => {
     const all = Array.from(terminals.values());
     terminals.clear();
     await Promise.all(all.map(killAndWait));
+};
+/** Kill the shells one window opened, when it closes or reloads; other windows' shells keep running. */
+export const disposeTerminalsOf = async (ownerId) => {
+    const mine = Array.from(terminals.values()).filter((t) => t.ownerId === ownerId);
+    mine.forEach((t) => terminals.delete(t.id));
+    await Promise.all(mine.map(killAndWait));
 };
 export const registerTerminalIpc = () => {
     ipcMain.handle(IPC.TerminalCreate, (e, args) => createTerminal(args, BrowserWindow.fromWebContents(e.sender), e.sender.id));

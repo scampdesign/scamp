@@ -257,7 +257,7 @@ commits a text edit on the canvas, not in the generator.
 
 ### 11. The agent's conversation grows until every run fails
 
-- [ ] `src/main/embedded/agentQueue.ts:96`, `:183` (`history = result.history`)
+- [x] `src/main/embedded/agentQueue.ts:96`, `:183` (`history = result.history`)
 
 **What happens:** each batch sends all earlier turns again, including whole
 files the agent read (up to 400 KB each). Nothing resets the history, not
@@ -271,7 +271,7 @@ the app. Cost also grows faster with each batch.
 
 ### 12. Undo during a run brings an undone change back
 
-- [ ] `src/main/embedded/window.ts:602-633` (`EmbeddedUndoRun`, `EmbeddedHistoryGoTo`)
+- [x] `src/main/embedded/window.ts:602-633` (`EmbeddedUndoRun`, `EmbeddedHistoryGoTo`)
 
 **What happens:** neither handler checks whether an agent run is in
 progress.
@@ -289,9 +289,9 @@ progress.
 
 ### 13. An agent edit right after a Scamp save is taken for Scamp's own write
 
-- [ ] `src/main/watcher.ts:154-155`
-- [ ] `src/main/pendingWrites.ts:70-77`
-- [ ] `src/main/ipc/file.ts:45-46`
+- [x] `src/main/watcher.ts:154-155`
+- [x] `src/main/pendingWrites.ts:70-77`
+- [x] `src/main/ipc/file.ts:45-46`
 
 **What happens:**
 - When Scamp writes a file, it skips the next change event for that file,
@@ -313,11 +313,15 @@ event is skipped too.
 **Fix:** store a hash of what Scamp wrote, and skip the event only when the
 file on disk still matches it.
 
+**Done:** the tracker keeps what Scamp wrote, and the watcher skips the
+event only when the file still holds it. The gap between the conflict
+check and the rename is still open.
+
 ### 14. Embedded Scamp's file paths follow symlinks out of the project
 
-- [ ] `src/main/embedded/window.ts:300-306` (`readProjectFile`), `:414` (the
+- [x] `src/main/embedded/window.ts:300-306` (`readProjectFile`), `:414` (the
   write)
-- [ ] `src/main/embedded/fileTools.ts:34-48` (`staysInside`)
+- [x] `src/main/embedded/fileTools.ts:34-48` (`staysInside`)
 
 **What happens:**
 - The fast path checks the path only as text.
@@ -336,11 +340,14 @@ file on disk still matches it.
 - Export `staysInside`, and use it in `readProjectFile` and before the write.
 - In `staysInside`, `lstat` first and refuse symlinks.
 
+**Done:** `staysInside` refuses a dangling symlink only; a symlink whose
+target is inside the project still works.
+
 ### 15. Closing the Embedded Scamp window leaves its shells running
 
-- [ ] `src/main/embedded/window.ts:277-282`
-- [ ] `src/main/ipc/terminal.ts:21`, `:85`
-- [ ] `src/main/index.ts:214-221`
+- [x] `src/main/embedded/window.ts:277-282`
+- [x] `src/main/ipc/terminal.ts:21`, `:85`
+- [x] `src/main/index.ts:214-221`
 
 **What happens:** `Term.owner` is recorded but never used. A window's
 cleanup code doesn't run when the window closes.
@@ -364,29 +371,32 @@ cleanup code doesn't run when the window closes.
 
 Each case was reproduced, and none has a test.
 
-- [ ] **Times with a leading dot become 0.**
+- [x] **Times with a leading dot become 0.**
   - **Where:** `src/renderer/lib/parsers/internal.ts:35`.
   - **Example:** `transition: opacity .3s ease` saves as
     `transition: opacity 0ms ease`.
   - **Fix:** `/^(-?(?:\d+(?:\.\d+)?|\.\d+))(ms|s)$/i`.
-- [ ] **`background` and `background-color` map to one field.**
+- [x] **`background` and `background-color` map to one field.**
   - **Where:** `src/renderer/lib/cssPropertyMap.ts:81-82`.
   - **Example:** `background: url(a.png) center / cover no-repeat;
     background-color: #eee;` saves as `background: #eee;`, and the image is
     lost.
   - **Fix:** the `background` mapper returns `null` for anything that isn't
     a single color.
-- [ ] **`!important` is dropped.**
+  - **Done differently:** an image in `background` alone already round-trips
+    through the color field, and the legacy canvas draws it from there. Only
+    the pair is kept as written (`keepAsWritten` in `parseCode/apply.ts`).
+- [x] **`!important` is dropped.**
   - **Where:** `src/renderer/lib/parseCode/css.ts:103`.
   - **Example:** `color: red !important;` saves as `color: red;`.
   - **Fix:** ``value: child.important ? `${child.value} !important` : child.value``.
-    The typed mappers then refuse the value, so it's kept as
-    written.
-- [ ] **Comments inside a rule, and between rules, are dropped.**
+    The typed mappers don't all refuse it, so `parseCode/apply.ts` keeps any
+    `!important` value as written.
+- [ ] **Comments inside a rule, and between rules, are dropped.** Not fixed: the element model has no place to keep a comment, so this needs a model field and generator support.
   - **Where:** `src/renderer/lib/parseCode/css.ts:83-98`.
   - **Example:** `/* keep me */` inside a rule disappears on the next save.
   - **Fix:** keep the comment nodes along with the declarations.
-- [ ] **The `border` mapper never refuses a value.**
+- [x] **The `border` mapper never refuses a value.**
   - **Where:** `src/renderer/lib/cssPropertyMap.ts:218-224` and
     `src/renderer/lib/parsers/border.ts:68-80`.
   - **Examples:**

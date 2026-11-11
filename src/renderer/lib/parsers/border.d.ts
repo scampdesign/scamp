@@ -15,3 +15,10 @@ export type ParsedBorder = {
  * as a single source of truth without needing to track absence separately.
  */
 export declare const parseBorderShorthand: (raw: string) => ParsedBorder;
+/**
+ * The same, or null when any part can't be held exactly: a width that
+ * isn't px (`thin`, `0.1rem`), a style outside the four supported
+ * (`double`), or more than one leftover token. The caller keeps the
+ * value as written.
+ */
+export declare const parseBorderShorthandOrNull: (raw: string) => ParsedBorder | null;

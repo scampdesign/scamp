@@ -83,6 +83,13 @@ describe('embeddedToolInvoker', () => {
     await expect(fs.access(path.join(outside, 'new.txt'))).rejects.toThrow();
   });
 
+  it('refuses to write through a symlink whose target is missing, outside the project', async () => {
+    await fs.symlink(path.join(outside, 'missing.ts'), path.join(dir, 'src', 'gen.ts'));
+    const invoke = embeddedToolInvoker(dir, new Set(), false);
+    expect((await invoke('write_file', { path: 'src/gen.ts', content: 'x' })).isError).toBe(true);
+    await expect(fs.access(path.join(outside, 'missing.ts'))).rejects.toThrow();
+  });
+
   it('creates a new file, and lists and searches the project’s own files', async () => {
     const touched = new Set<string>();
     const invoke = embeddedToolInvoker(dir, touched, false);

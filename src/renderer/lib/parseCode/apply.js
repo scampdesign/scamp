@@ -1,10 +1,21 @@
 // parseCode/apply.ts — split out of parseCode.ts (4.4).
+import { classifyBackgroundValue } from "../backgroundValue";
 import { cssToScampProperty, isMappedProperty } from "../cssPropertyMap";
 import { DEFAULT_COMPONENT_ROOT_STYLES, DEFAULT_RECT_STYLES, DEFAULT_ROOT_STYLES } from "../defaults";
 import { ROOT_ELEMENT_ID } from "../element";
 import { parseAnimationShorthand, parsePxOrNull, parseSpaceValueOrNull } from "../parsers";
 import { getTagDefaultPadding } from "../tagDefaults";
 import { cellSpanPlacement } from "../tableGrid";
+/**
+ * Declarations no typed field can hold without losing part of them: an
+ * `!important` value, and both `background` and `background-color` when
+ * the first is more than a color (they map to one field, and the image went).
+ */
+const keepAsWritten = (decls) => {
+    const background = decls.find((d) => d.prop === 'background');
+    const pair = background !== undefined && decls.some((d) => d.prop === 'background-color') && classifyBackgroundValue(background.value) !== 'color';
+    return (prop, value) => /!important\s*$/i.test(value) || (pair && (prop === 'background' || prop === 'background-color'));
+};
 /**
  * Apply a list of declarations as a breakpoint override. Unlike
  * `applyDeclarations` (which overlays onto a full element baseline
@@ -15,7 +26,12 @@ import { cellSpanPlacement } from "../tableGrid";
 export const applyDeclarationsAsOverride = (decls) => {
     let override = {};
     const customProperties = {};
+    const keptAsWritten = keepAsWritten(decls);
     for (const { prop, value } of decls) {
+        if (keptAsWritten(prop, value)) {
+            customProperties[prop] = value;
+            continue;
+        }
         // `position` is now a typed field — fall through to the
         // cssPropertyMap mapper below.
         // A pixel offset is the typed x / y; anything else (`50%`,
@@ -251,7 +267,12 @@ parentIsLayoutContainer = false) => {
     // span twice — and changing the attribute would then move only one of
     // them. see docs/archive/2026-10-05-tables-plan.md
     const derivedSpan = cellSpanPlacement(baseline);
+    const keptAsWritten = keepAsWritten(decls);
     for (const { prop, value } of decls) {
+        if (keptAsWritten(prop, value)) {
+            customProperties[prop] = value;
+            continue;
+        }
         if (prop === 'grid-column' && value.trim() === derivedSpan.gridColumn)
             continue;
         if (prop === 'grid-row' && value.trim() === derivedSpan.gridRow)

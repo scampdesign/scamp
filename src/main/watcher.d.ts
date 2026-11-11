@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron';
 export declare const initWatcher: (win: BrowserWindow) => void;
 export declare const disposeWatcher: () => void;
 export declare const watchProject: (folderPath: string) => Promise<void>;
-export declare const registerPendingWrite: (path: string, writeId: string, suppressChanged: boolean) => void;
+export declare const registerPendingWrite: (path: string, writeId: string, suppressChanged: boolean, expected?: string) => void;
 /**
  * Cancel a previously registered pending write — used when the write
  * itself failed, so no ack ever gets emitted (the renderer will

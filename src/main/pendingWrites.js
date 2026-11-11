@@ -6,7 +6,7 @@
  */
 export const createPendingWriteTracker = (send, expiryMs) => {
     const pending = new Map();
-    const register = (path, writeId, suppressChanged) => {
+    const register = (path, writeId, suppressChanged, expected) => {
         const existing = pending.get(path);
         if (existing) {
             // Ack the superseded write so the renderer doesn't watchdog it.
@@ -21,7 +21,7 @@ export const createPendingWriteTracker = (send, expiryMs) => {
                 return;
             send({ writeId: entry.writeId, path });
         }, expiryMs);
-        pending.set(path, { writeId, suppressChanged, timer });
+        pending.set(path, { writeId, suppressChanged, expected, timer });
     };
     const cancel = (path) => {
         const existing = pending.get(path);
@@ -37,7 +37,9 @@ export const createPendingWriteTracker = (send, expiryMs) => {
         clearTimeout(entry.timer);
         pending.delete(path);
         send({ writeId: entry.writeId, path });
-        return { writeId: entry.writeId, suppressChanged: entry.suppressChanged };
+        return entry.expected === undefined
+            ? { writeId: entry.writeId, suppressChanged: entry.suppressChanged }
+            : { writeId: entry.writeId, suppressChanged: entry.suppressChanged, expected: entry.expected };
     };
     return {
         register,

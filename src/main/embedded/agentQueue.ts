@@ -287,6 +287,8 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
       if (paths === undefined) {
         touched.clear();
         doneItems = [];
+        // Accepted or discarded: the next batch starts fresh, or the prompt grows until it no longer fits.
+        history = [];
       } else paths.forEach((p) => touched.delete(p));
     },
     addTouched: (paths) => paths.forEach((p) => touched.add(p)),

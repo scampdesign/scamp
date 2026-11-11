@@ -183,3 +183,34 @@ describe('style-loss regression — a repeated class block adds to the first', (
         expect(out.css).not.toContain('#111111');
     });
 });
+describe('style-loss regression — valid values survive a save as written', () => {
+    const withArrow = (decls) => CSS.replace('.arrow_a3 {\n  width: 16px;', `.arrow_a3 {\n${decls}\n  width: 16px;`);
+    const arrowBlock = (css) => /^\.arrow_a3 \{[^}]*\}/m.exec(css)?.[0] ?? '';
+    it('reads a time with a leading dot, instead of writing 0ms', () => {
+        const out = regen(TSX, withArrow('  transition: opacity .3s ease;'));
+        expect(arrowBlock(out.css)).not.toContain('0ms');
+        expect(arrowBlock(out.css)).toMatch(/transition: opacity (300ms|0?\.3s) ease/);
+    });
+    it('keeps a background image beside a background-color', () => {
+        const out = regen(TSX, withArrow('  background: url(a.png) center / cover no-repeat;\n  background-color: #eeeeee;'));
+        expect(arrowBlock(out.css)).toContain('background: url(a.png) center / cover no-repeat;');
+        expect(arrowBlock(out.css)).toContain('background-color: #eeeeee;');
+    });
+    it('keeps !important', () => {
+        const out = regen(TSX, withArrow('  color: red !important;'));
+        expect(arrowBlock(out.css)).toContain('color: red !important;');
+    });
+    it('keeps a border it can’t hold exactly as written', () => {
+        for (const border of ['thin solid red', '0.1rem solid red', '2px double red']) {
+            const out = regen(TSX, withArrow(`  border: ${border};`));
+            expect(arrowBlock(out.css)).toContain(`border: ${border};`);
+        }
+    });
+    it('still reads a plain px border into the typed fields', () => {
+        const parsed = parseCode(TSX, withArrow('  border: 2px dashed #ff0000;'), {});
+        const arrow = parsed.elements['arrow_a3'];
+        expect(arrow?.borderWidth).toEqual([2, 2, 2, 2]);
+        expect(arrow?.borderStyle).toBe('dashed');
+        expect(arrow?.borderColor).toBe('#ff0000');
+    });
+});

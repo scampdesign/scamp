@@ -30,7 +30,7 @@ import type {
 
 import { agentConnected, agentSignedIn, embeddedAgentProvider } from '../ipc/agent';
 import { appFeatures } from '../ipc/auth';
-import { allowTerminalRoot, forgetTerminalRoot } from '../ipc/terminal';
+import { allowTerminalRoot, disposeTerminalsOf, forgetTerminalRoot } from '../ipc/terminal';
 import { startReactApp, stopReactApp } from '../reactImport/appServer';
 import { AGENT_TARGETS, writeAgentConfigs } from '../mcp/agentConfig';
 import { ensureToken, markMcpStopped, writeMcpConfig } from '../mcp/mcpOps';
@@ -56,6 +56,7 @@ import { evaluatePreflight } from './preflight';
 import { gatherPreflightFacts } from './preflightFacts';
 import { classifyContent, freeFileName, jsxLines, type ComponentCall } from './content';
 import { directStyleWrite } from './fastPath';
+import { staysInside } from './fileTools';
 import { aliasesFrom, listOrigin } from './listOrigin';
 import { goToCommit, headSha, historyBase, readHistory } from './history';
 import { OWN_AGENT_TOOLS, ownAgentInvoker } from './ownAgent';
@@ -279,6 +280,7 @@ export const openEmbeddedWindow = async (): Promise<void> => {
     sessions.delete(id);
     guests.delete(id);
     forgetTerminalRoot(id);
+    void disposeTerminalsOf(id);
     if (session !== undefined) void endSession(session);
   });
   win.once('ready-to-show', () => win.show());
@@ -299,7 +301,7 @@ const preflight = async (folder: string): Promise<EmbeddedPreflight> =>
 /** A project file by its project-relative path; null outside the project, in `node_modules`, or over 2MB. */
 const readProjectFile = async (root: string, file: string): Promise<string | null> => {
   const abs = resolvePath(root, file);
-  if (!abs.startsWith(root + sep) || file.includes('node_modules/')) return null;
+  if (!abs.startsWith(root + sep) || file.includes('node_modules/') || !(await staysInside(root, abs))) return null;
   const stat = await fs.stat(abs).catch(() => null);
   if (stat === null || !stat.isFile() || stat.size > 2_000_000) return null;
   return fs.readFile(abs, 'utf8').catch(() => null);
@@ -410,7 +412,7 @@ export const registerEmbeddedIpc = (): void => {
       },
       writeDirect: async (item) => {
         const out = await directStyleWrite(item, (file) => readProjectFile(session.folder, file));
-        if (out === null) return null;
+        if (out === null || !(await staysInside(session.folder, join(session.folder, out.file)))) return null;
         await fs.writeFile(join(session.folder, out.file), out.content, 'utf8');
         return out.file;
       },
@@ -601,10 +603,14 @@ export const registerEmbeddedIpc = (): void => {
     const session = sessionOf(e);
     return session === null ? null : readHistory(session.folder, session.historyBase, session.historyTip);
   });
+  const AGENT_BUSY = 'The agent is writing changes. Stop it first, or try again once it’s done.';
+  const agentBusy = (agent: EmbeddedAgent | null): boolean =>
+    agent !== null && (agent.state().phase === 'thinking' || agent.state().phase === 'writing' || agent.heldBatch() !== null);
   /** Move the project to a point in its history, keeping the newer steps reachable. */
   ipcMain.handle(IPC.EmbeddedHistoryGoTo, async (e, args: { sha: string }): Promise<EmbeddedGitResult> => {
     const session = sessionOf(e);
     if (session === null) return { ok: false, error: 'Open a project first.' };
+    if (agentBusy(session.agent)) return { ok: false, error: AGENT_BUSY };
     const before = await headSha(session.folder);
     const result = await goToCommit(session.folder, String(args?.sha ?? ''), {
       base: session.historyBase,
@@ -622,6 +628,8 @@ export const registerEmbeddedIpc = (): void => {
     if (session === null || session.agent === null || run === undefined) {
       return { ok: false, error: 'That change was accepted or discarded, so it’s in the history now.' };
     }
+    // A run in progress would record the undo as its own change.
+    if (agentBusy(session.agent)) return { ok: false, error: AGENT_BUSY };
     const redo = args?.redo === true;
     const result = await (redo ? redoRun : undoRun)(session.folder, run);
     if (!result.ok) return result;

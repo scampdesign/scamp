@@ -19,6 +19,11 @@ describe('save status — pending writes tracker', () => {
         expect(sent).toEqual([{ writeId: 'write-1', path: TSX }]);
         expect(tracker.size()).toBe(0);
     });
+    it('hands back the content Scamp wrote, so the watcher can tell an agent write merged into the same event', () => {
+        const tracker = createPendingWriteTracker(() => { }, 400);
+        tracker.register(CSS, 'write-1', true, '.a { color: red; }');
+        expect(tracker.consume(CSS)).toEqual({ writeId: 'write-1', suppressChanged: true, expected: '.a { color: red; }' });
+    });
     it('returns null and does not emit when an unrelated path is consumed', () => {
         const sent = [];
         const tracker = createPendingWriteTracker((p) => sent.push(p), 400);

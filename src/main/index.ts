@@ -23,7 +23,7 @@ import {
   persistInstallId,
 } from './ipc/settings';
 import { registerProjectConfigIpc } from './ipc/projectConfig';
-import { registerTerminalIpc, disposeAllTerminals } from './ipc/terminal';
+import { registerTerminalIpc, disposeAllTerminals, disposeTerminalsOf } from './ipc/terminal';
 import { registerThemeIpc } from './ipc/theme';
 import { registerDesignMdIpc } from './ipc/designMd';
 import { registerImageIpc } from './ipc/image';
@@ -215,9 +215,9 @@ const createWindow = (): void => {
     if (!isMainFrame || isInPlace) return;
     // Fire-and-forget — we don't need to block navigation on the OS
     // actually reaping the old pty processes. The map is cleared
-    // synchronously inside disposeAllTerminals, so the new renderer
-    // sees an empty slot and can immediately spawn fresh ptys.
-    void disposeAllTerminals();
+    // synchronously, so the new renderer can spawn fresh ptys at once.
+    // Only this window's: an Embedded Scamp window's shells keep running.
+    void disposeTerminalsOf(win.webContents.id);
   });
 
   win.webContents.setWindowOpenHandler((details) => {

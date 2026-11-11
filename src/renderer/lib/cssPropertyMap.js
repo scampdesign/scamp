@@ -1,4 +1,4 @@
-import { parseBorderRadiusShorthandOrNull, parseBorderShorthand, parseBoxShadowShorthand, parseFilterList, parsePaddingShorthandOrNull, parsePxOrNull, parseSizeValue, parseSpaceValueOrNull, parseTransitionShorthand, parseFlexShorthand, parseTransformList, parseVarTokenOrNull, } from './parsers';
+import { parseBorderRadiusShorthandOrNull, parseBorderShorthandOrNull, parseBoxShadowShorthand, parseFilterList, parsePaddingShorthandOrNull, parsePxOrNull, parseSizeValue, parseSpaceValueOrNull, parseTransitionShorthand, parseFlexShorthand, parseTransformList, parseVarTokenOrNull, } from './parsers';
 import { isBlendMode } from './blendModes';
 import { parseDisplayKeyword } from './displayKeyword';
 const POSITIONS = new Set([
@@ -183,7 +183,9 @@ export const cssToScampProperty = {
         return { minHeight: trimmed };
     },
     border: (v) => {
-        const parsed = parseBorderShorthand(v);
+        const parsed = parseBorderShorthandOrNull(v);
+        if (parsed === null)
+            return null;
         // Convert the single borderWidth from the shorthand parser into a
         // uniform tuple so it matches the new per-side model.
         const w = parsed.borderWidth;

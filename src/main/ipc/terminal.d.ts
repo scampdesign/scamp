@@ -7,4 +7,6 @@ export declare const forgetTerminalRoot: (webContentsId: number) => void;
  * Calling twice is safe: the map is cleared synchronously up front.
  */
 export declare const disposeAllTerminals: () => Promise<void>;
+/** Kill the shells one window opened, when it closes or reloads; other windows' shells keep running. */
+export declare const disposeTerminalsOf: (ownerId: number) => Promise<void>;
 export declare const registerTerminalIpc: () => void;

@@ -31,8 +31,8 @@ const handleWrite = async (args) => {
     // Page writes suppress `file:changed` — the renderer generated the
     // content itself and re-parsing it would just cause flicker. The
     // ack still fires so the save-status indicator can transition.
-    registerPendingWrite(args.tsxPath, writeId, true);
-    registerPendingWrite(args.cssPath, writeId, true);
+    registerPendingWrite(args.tsxPath, writeId, true, args.tsxContent);
+    registerPendingWrite(args.cssPath, writeId, true, args.cssContent);
     try {
         // On a failure the TSX is put back, so neither file changed.
         await writePagePair(args.tsxPath, args.tsxContent, args.cssPath, args.cssContent);

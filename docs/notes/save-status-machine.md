@@ -71,8 +71,8 @@ Two subtleties:
    paths, content, and `expected*` content.
 4. **Main writes.** `handleWrite` (`file.ts`) runs `checkWriteConflict`
    first (see below). If clear, it mints a `writeId` (uuid), calls
-   `registerPendingWrite(path, writeId, suppressChanged=true)` for *both*
-   paths, atomically writes both, and returns `{ ok: true, writeId }`.
+   `registerPendingWrite(path, writeId, suppressChanged=true, content)` for
+   *both* paths, atomically writes both, and returns `{ ok: true, writeId }`.
    On write failure it `cancelPendingWrite`s both paths.
 5. **Renderer registers.** The IPC promise resolves; `registerPendingSave`
    records the write keyed by `writeId` with an `expected` set of the two
@@ -82,7 +82,9 @@ Two subtleties:
    `pending.consume(path)` in the watcher, which emits an
    `IPC.FileWriteAck` (`'file:writeAck'`, payload `{writeId, path}`) and
    — because the write was registered with `suppressChanged` — suppresses
-   the normal `file:changed` broadcast. If chokidar never fires the
+   the normal `file:changed` broadcast, but only while the file still holds
+   what Scamp wrote. chokidar merges writes within 200 ms into one event,
+   so an agent's write right after the save still reloads the canvas. If chokidar never fires the
    stability event, the tracker still acks on its own
    `ACK_EXPIRY_MS = 400` expiry, so the renderer gets exactly one ack per
    path.

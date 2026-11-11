@@ -30,7 +30,7 @@ export const NAMED_EASINGS = new Set([
     'step-start',
     'step-end',
 ]);
-export const TIME_RE = /^(-?\d+(?:\.\d+)?)(ms|s)$/i;
+export const TIME_RE = /^(-?(?:\d+(?:\.\d+)?|\.\d+))(ms|s)$/i;
 export const parseTimeMs = (token) => {
     const m = token.match(TIME_RE);
     if (!m || m[1] === undefined || m[2] === undefined)
