@@ -216,6 +216,17 @@ export const migrateLegacyToNextjs = async (
     throw err;
   }
 
+  const isLegacyArtefact = (entry: string): boolean =>
+    entry.endsWith('.tsx') || entry.endsWith('.module.css') || entry === 'assets' || RECOGNISED_ROOT_FILES.has(entry);
+  const legacyClashes = await rootClashes(projectPath, stageDir, isLegacyArtefact).catch(async (err: unknown) => {
+    await safeRm(stageDir);
+    throw err;
+  });
+  if (legacyClashes.length > 0) {
+    await safeRm(stageDir);
+    throw clashError(legacyClashes);
+  }
+
   // 3. Move the legacy artefacts into a backup directory.
   const timestamp = new Date()
     .toISOString()
@@ -242,12 +253,7 @@ export const migrateLegacyToNextjs = async (
       if (entry.startsWith('.scamp-backup-')) continue;
 
       const fullPath = join(projectPath, entry);
-      const isLegacyPage =
-        entry.endsWith('.tsx') || entry.endsWith('.module.css');
-      const isLegacyAssets = entry === 'assets';
-      const isRecognised = RECOGNISED_ROOT_FILES.has(entry);
-
-      if (isLegacyPage || isLegacyAssets || isRecognised) {
+      if (isLegacyArtefact(entry)) {
         await fs.rename(fullPath, join(backupDir, entry));
       } else {
         // Unknown file at the project root — leave it. Surface it so
@@ -325,6 +331,28 @@ const exists = async (file: string): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Staged names already at the project root that the backup step leaves in
+ * place: the user's own. The swap would overwrite them (a file) or fail
+ * halfway (a folder), so the migration refuses before moving anything.
+ */
+const rootClashes = async (
+  projectPath: string,
+  stageDir: string,
+  backedUp: (entry: string) => boolean
+): Promise<string[]> => {
+  const clashes: string[] = [];
+  for (const entry of await fs.readdir(stageDir)) {
+    if (!backedUp(entry) && (await exists(join(projectPath, entry)))) clashes.push(entry);
+  }
+  return clashes;
+};
+
+const clashError = (clashes: ReadonlyArray<string>): Error =>
+  new Error(
+    `Move or rename ${clashes.join(', ')} at the top of the project first: the migration would replace ${clashes.length === 1 ? 'it' : 'them'}.`
+  );
 
 type Wrapper = { slug: string; viewName: string; dir: string };
 
@@ -441,6 +469,18 @@ export const migrateNextjsToScamp = async (
   } catch (err) {
     await safeRm(stageDir);
     throw err;
+  }
+
+  // package.json goes to the backup and a customised tsconfig.json is kept, so neither clashes.
+  const scampClashes = await rootClashes(projectPath, stageDir, (e) => e === 'package.json' || e === 'tsconfig.json').catch(
+    async (err: unknown) => {
+      await safeRm(stageDir);
+      throw err;
+    }
+  );
+  if (scampClashes.length > 0) {
+    await safeRm(stageDir);
+    throw clashError(scampClashes);
   }
 
   // 3. Move the Next.js files into the backup, keeping their paths.

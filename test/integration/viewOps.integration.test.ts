@@ -145,6 +145,20 @@ describe('view operations', () => {
     expect(parseViewWrapper(await fs.readFile(path.join(dir, 'app', 'page.tsx'), 'utf-8'))).toBe('Home');
   });
 
+  it('deleting a view keeps a nested route and layout an agent added beside its wrapper', async () => {
+    await createComponent(
+      { projectPath: dir, componentName: 'Lobby', kind: 'view', wrapperSlug: 'lobby' },
+      'nextjs'
+    );
+    await fs.mkdir(path.join(dir, 'app', 'lobby', 'team'));
+    await fs.writeFile(path.join(dir, 'app', 'lobby', 'team', 'page.tsx'), 'team', 'utf-8');
+    await fs.writeFile(path.join(dir, 'app', 'lobby', 'layout.tsx'), 'layout', 'utf-8');
+    await deleteComponent({ projectPath: dir, componentName: 'Lobby', kind: 'view' }, 'nextjs');
+    await expect(fs.access(path.join(dir, 'app', 'lobby', 'page.tsx'))).rejects.toThrow();
+    expect(await fs.readFile(path.join(dir, 'app', 'lobby', 'team', 'page.tsx'), 'utf-8')).toBe('team');
+    expect(await fs.readFile(path.join(dir, 'app', 'lobby', 'layout.tsx'), 'utf-8')).toBe('layout');
+  });
+
   it('does not delete a real page that happens to sit at the slug', async () => {
     await createComponent({ projectPath: dir, componentName: 'About', kind: 'view' }, 'nextjs');
     await fs.mkdir(path.join(dir, 'app', 'about'));

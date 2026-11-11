@@ -52,3 +52,18 @@ const swap = async (folder, run, direction) => {
 };
 export const undoRun = (folder, run) => swap(folder, run, 'undo');
 export const redoRun = (folder, run) => swap(folder, run, 'redo');
+/**
+ * Discard: each file back to how it was before the first run that changed it,
+ * so edits the user made before the session survive. Returns the paths it put back.
+ */
+export const discardRuns = async (folder, runs, paths) => {
+    const wanted = new Set(paths);
+    const first = new Map();
+    for (const run of runs)
+        for (const f of run.files)
+            if (wanted.has(f.path) && !first.has(f.path))
+                first.set(f.path, f.before);
+    for (const [path, content] of first)
+        await put(join(folder, path), content);
+    return new Set(first.keys());
+};

@@ -499,7 +499,8 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }: Props):
 
   return (
     <div ref={hostRef} className={styles.host} style={{ height: viewportHeight }} data-testid="iframe-canvas">
-      <iframe ref={iframeRef} className={styles.iframe} srcDoc={SHELL} onLoad={handleLoad} title="Canvas" />
+      {/* No allow-scripts: the page comes from project files, and a same-origin script could reach window.scamp. */}
+      <iframe ref={iframeRef} className={styles.iframe} sandbox="allow-same-origin" srcDoc={SHELL} onLoad={handleLoad} title="Canvas" />
     </div>
   );
 };

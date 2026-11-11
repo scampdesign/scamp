@@ -209,7 +209,8 @@ export const initSyncBridge = (): (() => void) => {
   // keeps the main process alive long enough to drain its queue.
   const handleBeforeUnload = (): void => {
     ctx.cancelWriteTimer();
-    ctx.flushDebouncedWrite();
+    // Even when paused: after unload the edit exists nowhere; the conflict check still guards an agent's write.
+    ctx.flushDebouncedWrite(true);
     flushContextWrite();
   };
   window.addEventListener('beforeunload', handleBeforeUnload);

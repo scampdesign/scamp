@@ -469,5 +469,5 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }) => {
             node.removeAttribute('spellcheck');
         };
     }, [doc, editingInstanceProp, live]);
-    return (_jsx("div", { ref: hostRef, className: styles.host, style: { height: viewportHeight }, "data-testid": "iframe-canvas", children: _jsx("iframe", { ref: iframeRef, className: styles.iframe, srcDoc: SHELL, onLoad: handleLoad, title: "Canvas" }) }));
+    return (_jsx("div", { ref: hostRef, className: styles.host, style: { height: viewportHeight }, "data-testid": "iframe-canvas", children: _jsx("iframe", { ref: iframeRef, className: styles.iframe, sandbox: "allow-same-origin", srcDoc: SHELL, onLoad: handleLoad, title: "Canvas" }) }));
 };

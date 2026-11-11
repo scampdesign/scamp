@@ -59,7 +59,7 @@ import { directStyleWrite } from './fastPath';
 import { aliasesFrom, listOrigin } from './listOrigin';
 import { goToCommit, headSha, historyBase, readHistory } from './history';
 import { OWN_AGENT_TOOLS, ownAgentInvoker } from './ownAgent';
-import { recordRun, redoRun, snapshotRun, undoRun, type RunRecord, type RunSnapshot } from './runs';
+import { discardRuns, recordRun, redoRun, snapshotRun, undoRun, type RunRecord, type RunSnapshot } from './runs';
 import { listProjectFiles } from './projectFiles';
 import { syncPseudo } from './pseudo';
 import { parseRecent, removeRecent, upsertRecent } from './recent';
@@ -580,7 +580,10 @@ export const registerEmbeddedIpc = (): void => {
   ipcMain.handle(IPC.EmbeddedDiscard, async (e): Promise<EmbeddedGitResult> => {
     const session = sessionOf(e);
     if (session?.agent == null) return { ok: false, error: 'Nothing to discard.' };
-    const result = await discardFiles(session.folder, session.agent.touched());
+    // Runs know each file's content before Scamp touched it; git's HEAD would wipe the user's own uncommitted edits.
+    const touched = session.agent.touched();
+    const putBack = await discardRuns(session.folder, session.runs.values(), touched);
+    const result = await discardFiles(session.folder, touched.filter((p) => !putBack.has(p)));
     if (result.ok) {
       session.agent.clearTouched();
       session.runs.clear();

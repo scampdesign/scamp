@@ -227,6 +227,18 @@ describe('migrateLegacyToNextjs', () => {
     expect(readme).toBe('# Notes\n');
   });
 
+  it('refuses, before moving anything, when the user has a file the migration would replace', async () => {
+    await fs.writeFile(path.join(projectDir, 'package.json'), '{"name":"mine"}', 'utf-8');
+    await fs.mkdir(path.join(projectDir, 'app'));
+    await fs.writeFile(path.join(projectDir, 'app', 'notes.txt'), 'mine', 'utf-8');
+    await expect(migrateLegacyToNextjs(projectDir)).rejects.toThrow(/Move or rename .*package\.json/);
+    expect(await fs.readFile(path.join(projectDir, 'package.json'), 'utf-8')).toBe('{"name":"mine"}');
+    expect(await fs.readFile(path.join(projectDir, 'app', 'notes.txt'), 'utf-8')).toBe('mine');
+    const left = await fs.readdir(projectDir);
+    expect(left).toContain('home.tsx');
+    expect(left.filter((e) => e.startsWith('.scamp-stage-') || e.startsWith('.scamp-backup-'))).toEqual([]);
+  });
+
   it('moves scamp.config.json into the backup (it is recreated by openProject)', async () => {
     await fs.writeFile(
       path.join(projectDir, 'scamp.config.json'),
@@ -309,6 +321,15 @@ describe('migrateNextjsToScamp', () => {
     await write('app/api/ping/route.ts', 'export const GET = () => new Response("pong");\n');
     await write('features/HomeScreen.tsx', 'export default function HomeScreen() { return null; }\n');
   };
+
+  it('refuses, before moving anything, when a routes/ folder is already there', async () => {
+    await makeViews();
+    await write('routes/mine.ts', 'mine');
+    await expect(migrateNextjsToScamp(projectDir, '^0.2.1')).rejects.toThrow(/Move or rename routes/);
+    expect(await read('routes/mine.ts')).toBe('mine');
+    expect(await exists('app/page.tsx')).toBe(true);
+    expect((await fs.readdir(projectDir)).filter((e) => e.startsWith('.scamp-'))).toEqual([]);
+  });
 
   it('refuses while a plain page remains, naming it', async () => {
     await expect(migrateNextjsToScamp(projectDir, '^0.2.1')).rejects.toThrow('Convert these pages to views first: home');

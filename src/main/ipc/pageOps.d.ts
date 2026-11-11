@@ -1,4 +1,5 @@
 import type { PageCreateArgs, PageDeleteArgs, PageDuplicateArgs, PageFile, ProjectFormat } from '@shared/types';
+export declare const PAGE_NAME_RE: RegExp;
 /**
  * Resolve the on-disk paths for a page given the project format.
  * Legacy: `<root>/<page>.tsx` + `<root>/<page>.module.css`.

@@ -50,10 +50,12 @@ export const registerComponentIpc = () => {
         return readComponent(args, format);
     });
     ipcMain.handle(IPC.ComponentWriteThumbnail, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
         const format = await getProjectFormat(args.projectPath);
         return writeComponentThumbnail(args, format);
     });
     ipcMain.handle(IPC.ComponentReadThumbnail, async (_e, args) => {
+        assertInsideActiveProject(args.projectPath);
         const format = await getProjectFormat(args.projectPath);
         return readComponentThumbnail(args, format);
     });

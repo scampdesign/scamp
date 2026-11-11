@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { DEFAULT_PAGE_CSS, defaultPageTsx } from '@shared/agentMd';
-const PAGE_NAME_RE = /^[a-zA-Z0-9-]+$/;
+export const PAGE_NAME_RE = /^[a-zA-Z0-9-]+$/;
 const componentNameFromPage = (pageName) => {
     return pageName
         .split(/[-_]/)

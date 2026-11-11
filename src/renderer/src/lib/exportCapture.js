@@ -163,6 +163,8 @@ export const capturePng = async (inputs) => {
 const captureDocumentPng = async (html, width, height, backgroundColor) => {
     const shot = document.createElement('iframe');
     shot.setAttribute('aria-hidden', 'true');
+    // Project markup must not run script with the app's origin.
+    shot.setAttribute('sandbox', 'allow-same-origin');
     shot.style.cssText = `position:fixed;top:0;left:-100000px;width:${width}px;height:${height}px;border:0;pointer-events:none;`;
     const loaded = new Promise((resolve) => shot.addEventListener('load', () => resolve(), { once: true }));
     shot.srcdoc = html;

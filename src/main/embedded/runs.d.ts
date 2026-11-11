@@ -26,3 +26,8 @@ export declare const snapshotRun: (folder: string) => Promise<RunSnapshot>;
 export declare const recordRun: (folder: string, id: string, before: RunSnapshot) => Promise<RunRecord>;
 export declare const undoRun: (folder: string, run: RunRecord) => Promise<EmbeddedGitResult>;
 export declare const redoRun: (folder: string, run: RunRecord) => Promise<EmbeddedGitResult>;
+/**
+ * Discard: each file back to how it was before the first run that changed it,
+ * so edits the user made before the session survive. Returns the paths it put back.
+ */
+export declare const discardRuns: (folder: string, runs: Iterable<RunRecord>, paths: ReadonlyArray<string>) => Promise<Set<string>>;

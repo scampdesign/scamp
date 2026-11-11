@@ -475,12 +475,13 @@ export const parseCssDeclarations = (
     mergeToggledOff(classification.className, toggledOff);
 
     if (classification.kind === 'base') {
-      byClass.set(classification.className, decls);
+      // A repeated block for the same class adds to the first; the cascade is last-wins.
+      byClass.set(classification.className, [...(byClass.get(classification.className) ?? []), ...decls]);
     } else {
       // state
       const bucket =
         byState.get(classification.state) ?? new Map<string, RawDeclaration[]>();
-      bucket.set(classification.className, decls);
+      bucket.set(classification.className, [...(bucket.get(classification.className) ?? []), ...decls]);
       byState.set(classification.state, bucket);
     }
   }
@@ -561,7 +562,7 @@ export const parseCssDeclarations = (
       if (c === null || c.kind !== 'base') return;
       const { decls, toggledOff } = collectRuleNodes(rule);
       mergeToggledOff(c.className, toggledOff);
-      bucket.set(c.className, decls);
+      bucket.set(c.className, [...(bucket.get(c.className) ?? []), ...decls]);
     });
     byBreakpoint.set(bpId, bucket);
   }

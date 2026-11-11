@@ -169,3 +169,38 @@ export default function Page() {
     expect(out.css).toMatch(/\.card_grid_a1b2 \{[^}]*display: flex/);
   });
 });
+
+describe('style-loss regression — a repeated class block adds to the first', () => {
+  const REPEAT_CSS = `${CSS}
+.card_a2 {
+  border-radius: 12px;
+}
+
+.card_a2:hover {
+  opacity: 0.8;
+}
+
+.card_a2:hover {
+  cursor: pointer;
+}
+`;
+
+  it('keeps the first block when an agent appends a second one for the same class', () => {
+    const out = regen(TSX, REPEAT_CSS);
+    expect(out.css).toMatch(/\.card_a2 \{[^}]*display: flex/);
+    expect(out.css).toMatch(/\.card_a2 \{[^}]*background: #111111/);
+    expect(out.css).toMatch(/\.card_a2 \{[^}]*border-radius: 12px/);
+  });
+
+  it('keeps both repeated state blocks', () => {
+    const out = regen(TSX, REPEAT_CSS);
+    expect(out.css).toMatch(/\.card_a2:hover \{[^}]*opacity: 0\.8/);
+    expect(out.css).toMatch(/\.card_a2:hover \{[^}]*cursor: pointer/);
+  });
+
+  it('lets the later block win when both set the same property', () => {
+    const out = regen(TSX, `${CSS}\n.card_a2 {\n  background: #222222;\n}\n`);
+    expect(out.css).toMatch(/\.card_a2 \{[^}]*background: #222222/);
+    expect(out.css).not.toContain('#111111');
+  });
+});

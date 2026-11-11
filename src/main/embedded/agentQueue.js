@@ -72,13 +72,15 @@ export const createEmbeddedAgent = (deps) => {
     const run = async () => {
         if (running || state.queued.length === 0)
             return;
+        // Claimed before the await, so a second call (the timer and Run now) can't start a run alongside this one.
+        running = true;
         // Edits Scamp writes itself need no agent; the rest need one signed in.
         const provider = await deps.getProvider();
         if (provider === null && deps.writeDirect === undefined) {
+            running = false;
             publish({ phase: 'error', message: 'Sign in to Scamp and connect the agent to write your changes.' });
             return;
         }
-        running = true;
         const items = state.queued.splice(0);
         const runId = nextRunId();
         await deps.onRunStart?.(runId);

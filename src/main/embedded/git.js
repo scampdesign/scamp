@@ -55,6 +55,13 @@ export const parseStatus = (porcelain) => {
     }
     return { branch, ahead, behind, changed };
 };
+/** Porcelain paths start at the repository root; Scamp's start at the project folder, which can sit below it. */
+const inProject = async (folder, changed) => {
+    const prefix = (await git(folder, ['rev-parse', '--show-prefix'])).stdout.trim();
+    if (prefix === '')
+        return changed;
+    return changed.filter((c) => c.path.startsWith(prefix)).map((c) => ({ ...c, path: c.path.slice(prefix.length) }));
+};
 /** `scamp/2026-11-03-1430`, unique among `existing`. */
 export const sessionBranchName = (now, existing) => {
     const pad = (n) => String(n).padStart(2, '0');
@@ -129,7 +136,7 @@ export const gitStatus = async (folder) => {
         .map((l) => l.split('\t'))
         .filter((p) => p.length === 2 && (p[1] ?? '').startsWith(SCAMP_COMMIT_PREFIX))
         .map(([sha, subject]) => ({ sha, subject }));
-    return { ...parsed, branches, hasRemote: remote, scampCommits };
+    return { ...parsed, changed: await inProject(folder, parsed.changed), branches, hasRemote: remote, scampCommits };
 };
 /** Start the session on a fresh `scamp/` branch, or keep working on the one checked out. */
 export const ensureSessionBranch = async (folder, now) => {
@@ -145,7 +152,7 @@ export const gitDiff = async (folder, paths) => {
     const status = parseStatus((await git(folder, ['status', '--porcelain=v1', '--untracked-files=all', '--', ...paths])).stdout);
     const tracked = await git(folder, ['diff', 'HEAD', '--', ...paths]);
     let out = tracked.stdout;
-    for (const file of status.changed.filter((c) => c.status === '?')) {
+    for (const file of (await inProject(folder, status.changed)).filter((c) => c.status === '?')) {
         // Exits 1 when the files differ, which for a new file they always do.
         const added = await git(folder, ['diff', '--no-index', '--', process.platform === 'win32' ? 'NUL' : '/dev/null', file.path]);
         out += added.stdout;
@@ -169,8 +176,9 @@ export const discardFiles = async (folder, paths) => {
     if (paths.length === 0)
         return { ok: true };
     const status = parseStatus((await git(folder, ['status', '--porcelain=v1', '--untracked-files=all', '--', ...paths])).stdout);
-    const created = status.changed.filter((c) => c.status === '?').map((c) => c.path);
-    const tracked = status.changed.filter((c) => c.status !== '?').map((c) => c.path);
+    const changed = await inProject(folder, status.changed);
+    const created = changed.filter((c) => c.status === '?').map((c) => c.path);
+    const tracked = changed.filter((c) => c.status !== '?').map((c) => c.path);
     if (tracked.length > 0) {
         const restore = await git(folder, ['restore', '--source=HEAD', '--staged', '--worktree', '--', ...tracked]);
         if (!restore.ok)

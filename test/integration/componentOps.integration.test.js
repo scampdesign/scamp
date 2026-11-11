@@ -99,4 +99,22 @@ describe('componentOps — create / read / delete', () => {
         // user's intent ("be gone") is already satisfied.
         await expect(deleteComponent({ projectPath: projectDir, componentName: 'Button' }, 'nextjs')).resolves.toBeUndefined();
     });
+    it('deleteComponent keeps other files in the folder, such as a test an agent added', async () => {
+        await createComponent({ projectPath: projectDir, componentName: 'Button' }, 'nextjs');
+        const { componentDir, tsxPath, cssPath } = componentPathsFor(projectDir, 'Button');
+        const extra = path.join(componentDir, 'Button.test.tsx');
+        await fs.writeFile(extra, 'test', 'utf-8');
+        await deleteComponent({ projectPath: projectDir, componentName: 'Button' }, 'nextjs');
+        expect(await fs.readFile(extra, 'utf-8')).toBe('test');
+        await expect(fs.access(tsxPath)).rejects.toThrow();
+        await expect(fs.access(cssPath)).rejects.toThrow();
+    });
+    it('createComponent works again in a folder left holding other files', async () => {
+        await createComponent({ projectPath: projectDir, componentName: 'Button' }, 'nextjs');
+        const { componentDir } = componentPathsFor(projectDir, 'Button');
+        await fs.writeFile(path.join(componentDir, 'Button.stories.tsx'), 'stories', 'utf-8');
+        await deleteComponent({ projectPath: projectDir, componentName: 'Button' }, 'nextjs');
+        const again = await createComponent({ projectPath: projectDir, componentName: 'Button' }, 'nextjs');
+        expect(again.name).toBe('Button');
+    });
 });

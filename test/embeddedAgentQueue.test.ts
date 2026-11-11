@@ -240,6 +240,31 @@ describe('runs, for undo and the commit message', () => {
     expect(calls).toEqual([`start ${runId}`, `end ${runId}`]);
   });
 
+  it('starts one run when Run now arrives while a run is still looking up the agent', async () => {
+    const starts: string[] = [];
+    const agent = createEmbeddedAgent({
+      folder: '/p/app',
+      idioms: ['css-modules'],
+      getProvider: async () => {
+        // The key lookup takes a moment, which is the window a second call fell through.
+        await new Promise((r) => setTimeout(r, 20));
+        return createScriptedProvider([{ content: [{ type: 'text', text: 'Done.' }] }, { content: [{ type: 'text', text: 'Again.' }] }]);
+      },
+      emit: () => undefined,
+      batchDelayMs: 10_000,
+      invoker: () => async () => ({ content: [{ type: 'text', text: 'ok' }] }),
+      onRunStart: async (id) => {
+        starts.push(id);
+      },
+    });
+    agent.enqueue(item('a', '20px'));
+    agent.runNow();
+    agent.runNow();
+    await until(() => agent.state().phase === 'done');
+    await new Promise((r) => setTimeout(r, 50));
+    expect(starts).toHaveLength(1);
+  });
+
   it('calls the run hooks around the user’s agent’s batch too', async () => {
     const calls: string[] = [];
     const agent = createEmbeddedAgent({

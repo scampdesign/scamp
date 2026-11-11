@@ -74,3 +74,15 @@ const swap = async (folder: string, run: RunRecord, direction: 'undo' | 'redo'):
 
 export const undoRun = (folder: string, run: RunRecord): Promise<EmbeddedGitResult> => swap(folder, run, 'undo');
 export const redoRun = (folder: string, run: RunRecord): Promise<EmbeddedGitResult> => swap(folder, run, 'redo');
+
+/**
+ * Discard: each file back to how it was before the first run that changed it,
+ * so edits the user made before the session survive. Returns the paths it put back.
+ */
+export const discardRuns = async (folder: string, runs: Iterable<RunRecord>, paths: ReadonlyArray<string>): Promise<Set<string>> => {
+  const wanted = new Set(paths);
+  const first = new Map<string, Buffer | null>();
+  for (const run of runs) for (const f of run.files) if (wanted.has(f.path) && !first.has(f.path)) first.set(f.path, f.before);
+  for (const [path, content] of first) await put(join(folder, path), content);
+  return new Set(first.keys());
+};

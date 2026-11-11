@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 import { parseViewWrapper, viewSlugFor, viewWrapperTsx } from '@shared/templates';
 import { COMPONENT_NAME_RE, DEFAULT_COMPONENT_CSS, defaultComponentTsx, } from './componentScaffold';
+import { PAGE_NAME_RE } from './pageOps';
 /**
  * Path layout for one component. Mirrors `pagePathsFor` in
  * shape — folder + TSX + CSS module, where the folder is the
@@ -14,6 +15,18 @@ export const componentPathsFor = (projectPath, componentName, kind = 'component'
         cssPath: join(componentDir, `${componentName}.module.css`),
         componentDir,
     };
+};
+/** Remove Scamp's own files, then the folder only if nothing else is in it — agents add tests and stories there. */
+const removeFilesAndEmptyDir = async (files, dir) => {
+    for (const file of files)
+        await fs.rm(file, { force: true });
+    try {
+        if ((await fs.readdir(dir)).length === 0)
+            await fs.rmdir(dir);
+    }
+    catch {
+        // Folder already gone.
+    }
 };
 const pathExists = async (p) => {
     try {
@@ -105,7 +118,7 @@ const writeViewWrapper = async (projectPath, viewName, slug, replacePage) => {
 };
 /** Remove a view's wrapper page if `app/<slug>/page.tsx` is one for it. */
 const removeViewWrapper = async (projectPath, viewName, slug) => {
-    const { tsxPath, pageDir } = wrapperPagePathsFor(projectPath, slug);
+    const { tsxPath, cssPath, pageDir } = wrapperPagePathsFor(projectPath, slug);
     let tsx;
     try {
         tsx = await fs.readFile(tsxPath, 'utf-8');
@@ -119,7 +132,7 @@ const removeViewWrapper = async (projectPath, viewName, slug) => {
     // left in place and the renderer says so.
     if (pageDir === null)
         return;
-    await fs.rm(pageDir, { recursive: true, force: true });
+    await removeFilesAndEmptyDir([tsxPath, cssPath], pageDir);
 };
 export const createComponent = async (args, format) => {
     assertNextjs(format);
@@ -127,21 +140,26 @@ export const createComponent = async (args, format) => {
     if (!COMPONENT_NAME_RE.test(args.componentName)) {
         throw new Error(`Invalid ${kind} name "${args.componentName}". Use PascalCase letters and digits only (e.g. \`Button\`, \`HeroCard\`).`);
     }
+    // The slug becomes a folder under app/ or routes/; anything else could point outside the project.
+    if (typeof args.wrapperSlug === 'string' && !PAGE_NAME_RE.test(args.wrapperSlug)) {
+        throw new Error(`Invalid page name "${args.wrapperSlug}".`);
+    }
     const { tsxPath, cssPath, componentDir } = componentPathsFor(args.projectPath, args.componentName, kind);
     // One namespace for both kinds: the store, thumbnails, and the props
     // type are all keyed by name, so a view and a component can't share one.
     const otherKind = kind === 'view' ? 'component' : 'view';
     const other = componentPathsFor(args.projectPath, args.componentName, otherKind);
-    if (await pathExists(componentDir)) {
+    // The files, not the folder: a deleted component's folder can stay behind holding the user's own files.
+    if (await pathExists(tsxPath)) {
         throw new Error(`A ${kind} named "${args.componentName}" already exists.`);
     }
-    if (await pathExists(other.componentDir)) {
+    if (await pathExists(other.tsxPath)) {
         throw new Error(`A ${otherKind} named "${args.componentName}" already exists; views and components share one set of names.`);
     }
     await fs.mkdir(join(args.projectPath, kind === 'view' ? 'views' : 'components'), {
         recursive: true,
     });
-    await fs.mkdir(componentDir, { recursive: false });
+    await fs.mkdir(componentDir, { recursive: true });
     const tsxContent = args.tsxContent ?? defaultComponentTsx(args.componentName);
     const cssContent = args.cssContent ?? DEFAULT_COMPONENT_CSS;
     await fs.writeFile(tsxPath, tsxContent, 'utf-8');
@@ -164,8 +182,8 @@ export const deleteComponent = async (args, format) => {
     if (!COMPONENT_NAME_RE.test(args.componentName)) {
         throw new Error(`Invalid ${kind} name "${args.componentName}".`);
     }
-    const { componentDir } = componentPathsFor(args.projectPath, args.componentName, kind);
-    await fs.rm(componentDir, { recursive: true, force: true });
+    const { tsxPath, cssPath, componentDir } = componentPathsFor(args.projectPath, args.componentName, kind);
+    await removeFilesAndEmptyDir([tsxPath, cssPath], componentDir);
     if (kind === 'view') {
         // Wrapper only. The route that renders a view in a Scamp-framework
         // project is the user's file, and a rename depends on it surviving

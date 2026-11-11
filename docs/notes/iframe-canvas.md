@@ -7,6 +7,14 @@ real document means real `@media`, `:hover`, `vh` and `vw`, and no app
 styles leaking in. Decided and planned in
 `docs/plans/canvas-rendering-options.md`.
 
+The iframe is `sandbox="allow-same-origin"`, with no `allow-scripts`. The
+markup comes from project files, which anyone (or any agent) may have
+written, and an `onerror` attribute in a same-origin frame could reach
+`parent.scamp`, terminals included. The app still reads and changes the
+frame's DOM, and its listeners are attached from the app's side, so the
+interaction layer doesn't need script inside the frame. The off-screen
+capture frame in `exportCapture.ts` is sandboxed the same way.
+
 For one release the legacy canvas (`ElementRenderer` drawing into the app's
 own document) stays as a fallback: `__scampIframeCanvas.set(false)` in the
 developer tools, remembered under `scamp.legacyCanvas`. `SCAMP_E2E_LEGACY_CANVAS=1`
