@@ -4,7 +4,7 @@ import { test, expect } from '../fixtures/app';
 import { dragComponentToCanvas } from '../fixtures/components';
 import { frameToClient, measureFrame, selectTool } from '../fixtures/canvas';
 import { waitForSaved } from '../fixtures/assertions';
-import { IFRAME_CANVAS, canvasLocator, pageRoot } from '../fixtures/selectors';
+import { canvasLocator, pageRoot } from '../fixtures/selectors';
 
 /**
  * A click anywhere a component instance draws selects the instance, even
@@ -94,12 +94,6 @@ const placeCard = async (window: Page): Promise<Box> => {
   await dragComponentToCanvas(window, 'Card', drop.x, drop.y);
   await waitForSaved(window);
   const card = await boxOf(overlay(window));
-  // The wrapper has no size of its own; that's the case this covers.
-  // Today's canvas draws an instance in a 0 × 0 wrapper; the iframe canvas draws no wrapper.
-  if (!IFRAME_CANVAS) {
-    const wrapper = await boxOf(window.locator('[data-scamp-instance-id]').first());
-    expect(wrapper.width * wrapper.height).toBe(0);
-  }
   const empty = frameToClient(metrics, { x: 40, y: 420 });
   await window.mouse.click(empty.x, empty.y);
   await expect.poll(async () => (await boxOf(overlay(window))).width).toBeGreaterThan(card.width * 2);

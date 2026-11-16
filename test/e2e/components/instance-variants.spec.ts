@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/app';
 import { panelSection } from '../fixtures/panel';
-import { IFRAME_CANVAS, canvasLocator, pageRoot } from '../fixtures/selectors';
+import { canvasLocator, pageRoot } from '../fixtures/selectors';
 import { waitForSaved } from '../fixtures/assertions';
 
 /**
@@ -68,9 +68,8 @@ test.describe('components: an instance’s variant', () => {
   test('the panel picks a value, the file names it, and the canvas draws it', async ({ window, project }) => {
     await expect(pageRoot(window)).toBeVisible();
     const instance = canvasLocator(window, '[data-scamp-instance-id="inst_a1b2"]');
-    // The iframe canvas draws no wrapper: the instance is the component's root.
-    const inner = IFRAME_CANVAS ? instance : instance.locator('[data-scamp-id="root"]');
-    await expect(inner).toHaveCSS('background-color', 'rgb(255, 0, 0)');
+    // The canvas draws no wrapper: the instance is the component's root.
+    await expect(instance).toHaveCSS('background-color', 'rgb(255, 0, 0)');
 
     // The interaction layer takes the click, so click where the instance is.
     const box = await instance.boundingBox();
@@ -81,12 +80,12 @@ test.describe('components: an instance’s variant', () => {
     await waitForSaved(window);
 
     expect((await project.readPage('home')).tsx).toContain('variant="outline"');
-    await expect(inner).toHaveCSS('background-color', 'rgb(0, 0, 255)');
+    await expect(instance).toHaveCSS('background-color', 'rgb(0, 0, 255)');
 
     // The default clears the prop rather than writing it.
     await select.selectOption('default');
     await waitForSaved(window);
     expect((await project.readPage('home')).tsx).not.toContain('variant=');
-    await expect(inner).toHaveCSS('background-color', 'rgb(255, 0, 0)');
+    await expect(instance).toHaveCSS('background-color', 'rgb(255, 0, 0)');
   });
 });

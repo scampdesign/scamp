@@ -29,7 +29,7 @@ you can do here, and a wrong guess costs more context than this table.
 | TSX / CSS output | `src/renderer/lib/generateCode/` — `declarations.ts` is where a property becomes CSS |
 | Read files back into the model | `src/renderer/lib/parseCode/` |
 | A CSS property's typed mapping | `src/renderer/lib/cssPropertyMap.ts`, `parsers/` for each shorthand |
-| Draw the page on the canvas | `src/renderer/src/canvas/IframeCanvas.tsx` (the page as HTML in an iframe); read `docs/notes/iframe-canvas.md` first. `ElementRenderer.tsx` is the legacy canvas, kept one release as a fallback |
+| Draw the page on the canvas | `src/renderer/src/canvas/IframeCanvas.tsx` (the page as HTML in an iframe); read `docs/notes/iframe-canvas.md` first. |
 | Reach the drawn page from canvas code | `src/renderer/src/canvas/canvasDom.ts` — never `document` directly |
 | Canvas frame, zoom, theme variables | `src/renderer/src/canvas/Viewport.tsx` |
 | Theme tokens reaching the canvas | `src/renderer/store/canvas/slices/designSystem.ts` (`setThemeData`), consumed in `Viewport.tsx` |
@@ -386,38 +386,14 @@ the same way.
 
 ---
 
-## `.js` shim regen — never with the dev server running
+## No generated `.js` beside the sources
 
-`src/renderer/**`, `src/main/**`, `src/preload/**`, and `src/shared/**`
-each have committed `.js` + `.d.ts` shims paired with every `.ts` /
-`.tsx` source file. Vite's default resolution order prefers `.js`
-over `.ts`, so the dev server (renderer + main + preload) and
-Vitest all read the shim, not the source — which means **edits
-to a `.ts` file don't take effect until the shim is regenerated.**
+Vite, Vitest, electron-vite and Playwright all read the `.ts` / `.tsx`
+sources. `tsc` only typechecks (`npm run typecheck`); with `--build` it
+writes into `node_modules/.tsbuild/`, never next to a source file. A `.js`
+or `.d.ts` beside a `.ts` would be loaded first and hide later edits, so
+don't commit one. The hand-written `global.d.ts` and `css-modules.d.ts`
+files are the exception.
 
-There are two projects, one per side:
-- Renderer + shared: `npx tsc --build tsconfig.web.json --force`
-- Main + preload + shared: `npx tsc --build tsconfig.node.json --force`
-
-Run BOTH after editing files that span sides (e.g. an IPC channel
-constant in `src/shared/` plus a new handler in `src/main/` plus a
-listener in `src/renderer/`). Forgetting the main-side regen
-silently leaves the main process running the old watcher / IPC
-handlers even though the renderer has the new code.
-
-**Never run that regen while `npm run dev` is running.** The shim
-files get rewritten while HMR is watching them, which reloads
-`parseCode` / `generateCode` / store modules mid-session. The
-canvas in-memory state for any currently-open project gets dropped
-to empty. The on-disk project files are NOT touched — recovery is
-just force-quit and reopen — but it's still alarming and a real
-risk if the user happens to save during the reload window.
-
-Rules:
-- Stop the dev server before `tsc --build`.
-- If you edit a `.ts` in `src/renderer/lib/` or `src/renderer/store/`
-  and intend to test in the running app (not just via Vitest),
-  warn the user and ask them to stop the dev server first.
-- Vitest CAN read the stale shim too — if a test passes against
-  the old behaviour after a `.ts` edit, regen the shim before
-  trusting the result.
+e2e runs against the built app in `out/`: `npm run build` before running a
+spec after a source change.

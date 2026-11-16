@@ -1,7 +1,7 @@
 import type { Frame, Page } from '@playwright/test';
 
 import { test, expect } from '../fixtures/app';
-import { IFRAME_CANVAS, pageRoot } from '../fixtures/selectors';
+import { pageRoot } from '../fixtures/selectors';
 import { PARITY_FIXTURES, type ParityFixture } from './fixtures';
 import {
   compareComputed,
@@ -102,9 +102,6 @@ const COMPUTED_IFRAME = (props: ReadonlyArray<string>): string => `(() => {${KEY
 })()`;
 
 const iframeCanvas = async (window: Page): Promise<Frame> => {
-  await window.evaluate(() =>
-    (globalThis as unknown as { __scampIframeCanvas: { set: (on: boolean) => void } }).__scampIframeCanvas.set(true)
-  );
   const handle = await window.locator('[data-testid="iframe-canvas"] iframe').elementHandle();
   const frame = await handle?.contentFrame();
   if (!frame) throw new Error('no iframe canvas');
@@ -180,11 +177,6 @@ for (const fixture of FIXTURES) {
         const computed = (await frame.evaluate(COMPUTED_IFRAME(fixture.computed))) as ComputedStyles;
         const cdiffs = compareComputed(computed, truth.computed);
         expect(cdiffs, describeComputed(cdiffs)).toEqual([]);
-      }
-      // Only on the legacy canvas is the "today" side something other than the iframe.
-      if (fixture === VIEWPORT_UNITS && !IFRAME_CANVAS) {
-        // The point of the fixture: today's canvas gets this wrong.
-        expect(todayDiffs.length, 'today’s canvas diverges on vh').toBeGreaterThan(0);
       }
     });
   });

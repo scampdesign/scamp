@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/app';
-import { IFRAME_CANVAS, canvasElement, pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 
 /**
  * The iframe canvas draws no scrollbars of its own, even when the
@@ -41,7 +41,6 @@ const CSS = [
 test.use({ projectOptions: { format: 'nextjs', pageContent: { home: { tsx: TSX, css: CSS } } } });
 
 test.describe('canvas: iframe scrollbars', () => {
-  test.skip(!IFRAME_CANVAS, 'only the iframe canvas has a document of its own');
 
   test('content past the canvas edge adds no scrollbar to the iframe', async ({ window }) => {
     await expect(pageRoot(window)).toBeVisible();

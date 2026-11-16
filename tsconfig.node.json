@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "composite": true,
+    "outDir": "node_modules/.tsbuild/node",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "target": "ES2022",

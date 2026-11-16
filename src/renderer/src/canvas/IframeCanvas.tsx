@@ -12,7 +12,6 @@ import { animatedSubtreePredicate, layoutEdges } from './animatedExtent';
 import { CANVAS_SCROLL_EVENT, isHtmlNode, releaseCanvasIframe, setCanvasIframe } from './canvasDom';
 import { selectionOffsetsWithin } from './textSelectionOffsets';
 import { useCanvasTheme } from './useCanvasTheme';
-import { iframeCanvasStats } from './iframeCanvasFlag';
 import { morphDom } from './morphDom';
 import styles from './IframeCanvas.module.css';
 
@@ -181,13 +180,11 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }: Props):
   const hostRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [doc, setDoc] = useState<Document | null>(null);
-  const mountedAt = useRef(performance.now());
   const lastBody = useRef<string | null>(null);
 
   const toAsset = useMemo(() => assetUrlFor(projectPath, legacy), [projectPath, legacy]);
 
   const built = useMemo(() => {
-    const start = performance.now();
     const { css } = generateCode({
       elements,
       rootId,
@@ -215,7 +212,7 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }: Props):
     const sized = mediaWidth === undefined ? assembled : mediaForViewport(assembled, mediaWidth);
     const pageCss = pinViewportUnits(rewriteCssUrls(sized, toAsset));
     const body = generateHtml(elements, rootId, { componentTrees, rewriteAssetUrl: toAsset, editorIds: true });
-    return { pageCss, body, buildMs: performance.now() - start };
+    return { pageCss, body };
   }, [elements, rootId, breakpoints, customMediaBlocks, pageKeyframesBlocks, componentTrees, toAsset, mediaWidth]);
 
   const themeCss = useMemo(() => pinViewportUnits(rewriteCssUrls(themeCssRaw ?? '', toAsset)), [themeCssRaw, toAsset]);
@@ -260,7 +257,6 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }: Props):
 
   useLayoutEffect(() => {
     if (doc === null) return;
-    const start = performance.now();
     const viewport = doc.querySelector('style[data-sheet="viewport"]');
     const vw = wide && overflowWidth !== undefined ? `${overflowWidth / 100}px` : '1vw';
     const vh =
@@ -287,9 +283,6 @@ export const IframeCanvas = ({ viewportHeight, variant, overflowWidth }: Props):
     // Inline, as today's canvas sets it, so it wins over the page's own min-height.
     const rootNode = doc.querySelector(`[data-element-id="${CSS.escape(rootId)}"]`);
     if (isHtmlNode(rootNode)) rootNode.style.minHeight = rootFloor === null ? '' : `${rootFloor}px`;
-    const patchMs = performance.now() - start;
-    if (iframeCanvasStats.firstDrawMs === null) iframeCanvasStats.firstDrawMs = performance.now() - mountedAt.current;
-    else iframeCanvasStats.updates.push({ buildMs: built.buildMs, patchMs });
     fitHeight(doc);
   }, [doc, built, themeCss, viewportHeight, bodyStyle, rootId, variant?.key, wide, overflowWidth, rootFloor]);
 

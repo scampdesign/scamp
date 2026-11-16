@@ -228,8 +228,7 @@ than a bug.
 fixture showed the fragment missing and the `<em>` computing `inline`,
 and both looked like bugs in the new code. They were not: Playwright
 launches the built bundle in `out/`, and the build predated the edit.
-`npm run build` before an e2e run, the same way `tsc --build` comes
-before a Vitest run.
+`npm run build` before an e2e run.
 
 ## A page header, and four separate faults in it
 

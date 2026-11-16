@@ -9,10 +9,7 @@ import {
   type VariantCell,
 } from '@lib/variantAxes';
 
-import { ElementRenderer } from './ElementRenderer';
 import { IframeCanvas } from './IframeCanvas';
-import { useIframeCanvasFlag } from './iframeCanvasFlag';
-import { VariantFrameContext } from './variantFrame';
 import styles from './VariantSet.module.css';
 
 type Props = {
@@ -40,7 +37,6 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
   const fillsWidth = useCanvasStore((s) => s.elements[ROOT_ELEMENT_ID]?.widthMode === 'stretch');
   const fillsHeight = useCanvasStore((s) => s.elements[ROOT_ELEMENT_ID]?.heightMode === 'stretch');
   const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
-  const iframeFlag = useIframeCanvasFlag((s) => s.on);
   const count = variantCombinationCount(axes);
   const overCap = count > MAX_VARIANT_COMBINATIONS;
   // Only past the cap does the layout read the overrides, so only then
@@ -139,16 +135,10 @@ export const VariantSet = ({ componentName, artboardWidth, artboardHeight, onWid
             minHeight: reach[id] !== undefined && !fillsHeight ? `${reach[id].h}px` : undefined,
           }}
         >
-          {iframeFlag ? (
-            <IframeCanvas
-              viewportHeight={artboardHeight}
-              variant={{ key: cell.key, live, hugWidth: !fillsWidth, hugHeight: !fillsHeight }}
-            />
-          ) : (
-            <VariantFrameContext.Provider value={{ variantKey: cell.key, displayOnly: !live }}>
-              <ElementRenderer elementId={ROOT_ELEMENT_ID} />
-            </VariantFrameContext.Provider>
-          )}
+          <IframeCanvas
+            viewportHeight={artboardHeight}
+            variant={{ key: cell.key, live, hugWidth: !fillsWidth, hugHeight: !fillsHeight }}
+          />
         </div>
       </div>
     );

@@ -51,7 +51,7 @@ jobs:
           node-version: 24
           cache: npm
 
-      # `postinstall` is `patch-package && electron-rebuild -f -w
+      # `postinstall` is `electron-rebuild -f -w
       # node-pty`, so Electron's download is NOT skippable here even
       # though nothing below launches it.
       - name: Install dependencies

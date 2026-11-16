@@ -413,7 +413,7 @@ Each case was reproduced, and none has a test.
 
 ### 17. About 1,178 committed generated `.js` files ship instead of the source
 
-- [ ] `tsconfig.web.json`, `tsconfig.node.json`
+- [x] `tsconfig.web.json`, `tsconfig.node.json`
 
 **What happens:**
 - Both tsconfigs are `composite` with no `outDir`. `tsc --build` therefore
@@ -433,6 +433,11 @@ dev server runs" rule exists only because of these files.
   `css-modules.d.ts`.
 - Remove the `shims*` npm scripts and the shim section of CLAUDE.md.
 
+**Done:** 2,369 files removed. One test relied on a generated file: the
+image tests forked `imageOptimizeChild.js` from the source folder. Under
+Vitest the parent now forks the `.ts`, which Node 24 runs by stripping
+types.
+
 Orphaned generated files that have no source, which you can delete today
 (57 lines):
 - `src/renderer/src/components/ImageImportIndicator.{js,d.ts}`
@@ -441,7 +446,7 @@ Orphaned generated files that have no source, which you can delete today
 
 ### 18. The legacy canvas has outlived its one release
 
-- [ ] `src/renderer/src/canvas/ElementRenderer.tsx` (1,347 lines)
+- [x] `src/renderer/src/canvas/ElementRenderer.tsx` (1,347 lines)
 
 **What happens:** the iframe canvas became the default in commit
 `309aba08` and shipped in 0.13.0 and 0.14.0. The legacy canvas is reachable
@@ -463,9 +468,16 @@ only through devtools (`__scampIframeCanvas.set(false)`) or
 - `ElementRenderer.module.css`, which `exportCapture.ts:4` imports.
 - `variantFrame.ts`, which `VariantSet` also uses.
 
+**Done:** also deleted, because nothing used them after the fallback went:
+`variantFrame.ts` (only the legacy branch read its context),
+`iframeCanvasFlag.ts`, `bench.ts`, the `iframe-c1-speed` spec that compared
+the two canvases, the iframe canvas's timing stats (a list that grew with
+every edit), and `CanvasKeyframes` in `Viewport.tsx`. Older notes that
+explain `elementToStyle` are left as history.
+
 ### 19. `patch-package` runs on every install and does nothing
 
-- [ ] `package.json:16`
+- [x] `package.json:16`
 
 **What happens:** there's no `patches/` folder, so the tool has nothing to
 apply.

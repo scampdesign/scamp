@@ -21,3 +21,4 @@ test/e2e/parity/.tmp/
 .agent-eval
 .react-eval
 .pixels-tmp
+*.tsbuildinfo

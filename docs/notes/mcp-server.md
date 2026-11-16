@@ -158,7 +158,7 @@ components and caused the word collision — is now "Page conventions".
 - Every config path is a **dotfile** path, so `watcher.ts:56` ignores it. A
   non-dotfile target would make Scamp see its own write as an external edit
   and auto-snapshot on every launch.
-- The `.js` shims emit **extensionless imports**. electron-vite resolves them;
+- The sources use **extensionless imports**. electron-vite resolves them;
   bare Node does not — bundle with esbuild first if you want to run one
   directly (useful for testing against a real client).
 - A request body is decoded **once, after the last chunk**: a chunk can end
