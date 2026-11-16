@@ -81,11 +81,13 @@ const hoistAttributeExpressions = (
     idRe.lastIndex = tagClose;
     const openTag = tsx.slice(tagOpen, tagClose + 1);
     // `>` is allowed inside the braces (`() => …`); `<` would be JSX.
-    const attrRe = /(\s)([A-Za-z_][\w-]*)=\{([^{}<"'`]*)\}/g;
+    // Quotes are escaped, not refused: `{on === "true"}` left raw is split at its spaces.
+    const attrRe = /(\s)([A-Za-z_][\w-]*)=\{([^{}<]*)\}/g;
     const rewritten = openTag.replace(attrRe, (whole, ws: string, name: string, expr: string) => {
       const trimmed = expr.trim();
       if (trimmed.startsWith('styles.') || trimmed.length === 0) return whole;
-      return `${ws}${name}="${BIND_MARK}${trimmed}"`;
+      const quoted = trimmed.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      return `${ws}${name}="${BIND_MARK}${quoted}"`;
     });
     if (rewritten !== openTag) edits.push({ start: tagOpen, end: tagClose + 1, text: rewritten });
   }

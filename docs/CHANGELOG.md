@@ -82,6 +82,55 @@ release time.
   you know whether an edit changes one card or the component. For a card
   in a list, the agent picks out the one you selected, or says it can't.
 
+**Fixed**
+
+- **A page can't run code inside Scamp.** Script in a page's markup, such
+  as an `onerror` attribute in a project you downloaded or an agent
+  edited, ran when the canvas drew the page and could reach Scamp's
+  terminal. The canvas no longer runs scripts.
+- **A page's folder must be inside the project.** A page folder name
+  that pointed outside the project was accepted and written to.
+- **Deleting or renaming a component removes only its own files.** It
+  removed the component's whole folder, including anything else you kept
+  there.
+- **Quitting while sync is paused keeps your canvas edits.** Edits made
+  while sync was paused were lost when you quit.
+- **A second CSS rule for the same class keeps the first.** When a class
+  had two rules in the CSS file, Scamp kept the second and deleted the
+  first on the next save.
+- **Migrating an older project leaves your existing files in place.** The
+  migration could overwrite files it said it was leaving alone.
+- **The CSS you write keeps its meaning.** `!important` is kept, a time
+  such as `.3s` no longer becomes `0ms`, a `background` image set beside a
+  `background-color` is kept, and a `border` value that Scamp can't read,
+  such as `thin solid red`, stays as written instead of being split
+  wrongly.
+- **An expression with quotes in an attribute is kept whole.** An
+  attribute such as `defaultChecked={tool.on === "true"}` was split at its
+  spaces on save, and the canvas then showed the error `'=' is not a valid
+  attribute name`.
+- **An agent's edit right after a save is no longer missed.** If an agent
+  changed a file just after Scamp saved it, the canvas could treat the
+  agent's edit as Scamp's own and not reload it.
+- **In Edit React Project, Discard keeps your own uncommitted work.** It
+  discarded every uncommitted change in the project, not only Scamp's.
+- **In Edit React Project, a project inside a larger repository works with
+  git.** The change list, Discard, and the branch link work when the
+  project is a subfolder of the repository.
+- **In Edit React Project, only one agent run starts at a time.** Clicking
+  **Run now** while a run was starting began a second one, and **Stop**
+  then stopped neither.
+- **In Edit React Project, a long session no longer fails.** The agent's
+  conversation grew with every run until each run failed. It now starts
+  over when you accept or discard your changes.
+- **In Edit React Project, undo waits for the agent.** Undoing while the
+  agent was working could bring an undone change back later.
+- **In Edit React Project, the agent's files stay inside the project.** A
+  symbolic link in the project could lead the agent's reads and writes to
+  files outside it.
+- **In Edit React Project, closing or reloading the window ends its
+  terminals.** The shells it opened kept running after the window closed.
+
 ### 0.14.0 (2026-11-05)
 
 **Added**
