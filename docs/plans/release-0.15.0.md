@@ -47,7 +47,7 @@ clicking (`d6693376`), and the 15 spec files around it pass (45 tests).
   - [x] `embedded-states`
   - [x] `embedded-structure`
   - [x] `embedded-undo-history`
-- [ ] Push the branch and open a PR. CI hasn't run on any of these commits.
+- [x] Push the branch and open a PR (#11). CI first failed: `embeddedHistory`'s test repo had no git identity on the runner; fixed in `d7cc8fa5`, then CI passed. CI hasn't run on any of these commits.
   It's the first run without the generated `.js` files and without
   `patch-package`, on Linux, macOS, and Windows.
 
@@ -93,11 +93,11 @@ Edit React Project, on a real Vite project and a real Next.js project:
 
 ## Release
 
-- [ ] Merge the PR into `main`.
-- [ ] `npm version 0.15.0 --no-git-tag-version`.
-- [ ] In `docs/CHANGELOG.md`, rename `### Unreleased` to
-  `### 0.15.0 (<date>)`.
-- [ ] Commit as `release: 0.15.0`.
+- [x] Merge the PR into `main` (`17734665`).
+- [x] `npm version 0.15.0 --no-git-tag-version`.
+- [x] In `docs/CHANGELOG.md`, rename `### Unreleased` to
+  `### 0.15.0 (2026-11-18)`.
+- [x] Commit as `release: 0.15.0`.
 - [ ] Push `main`, then tag `v0.15.0` and push the tag. The tag starts
   `.github/workflows/release.yml`.
 - [ ] Watch the workflow through the `verify-feed` job. The GitHub release
