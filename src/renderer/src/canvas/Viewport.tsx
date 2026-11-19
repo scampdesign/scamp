@@ -2,7 +2,6 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -15,19 +14,14 @@ import {
   MIN_COMPONENT_CANVAS_DIM,
 } from '@shared/types';
 import { overflowExtent, settleExtent } from '@lib/canvasOverflow';
-import { ElementRenderer } from './ElementRenderer';
-import { buildCanvasStylesheet, CANVAS_SCOPE_ATTR } from '@lib/canvasStylesheet';
+import { CANVAS_SCOPE_ATTR } from '@lib/canvasStylesheet';
 import { animatedSubtreePredicate, layoutEdges } from './animatedExtent';
-import { generateCode } from '@lib/generateCode';
-import { collectExpandedInstances } from '@lib/generateHtml';
-import { assemblePageCss } from '@lib/htmlExportCss';
 import { CanvasInteractionLayer } from './CanvasInteractionLayer';
 import { CanvasBoundaryOverlay } from './CanvasBoundaryOverlay';
 import { useCanvasTheme } from './useCanvasTheme';
 import styles from './Viewport.module.css';
 import { canvasQuery, canvasQueryAll, canvasScrollTargetAt, clientRectOf, isHtmlNode, offsetIn } from './canvasDom';
 import { IframeCanvas } from './IframeCanvas';
-import { useIframeCanvasFlag } from './iframeCanvasFlag';
 
 // Padding subtracted from the scroll container's inner width when
 // computing fit-to-width zoom. Mirrors the artboard's horizontal
@@ -144,9 +138,8 @@ export const Viewport = ({
   // own box, so a ResizeObserver on the frame alone wouldn't fire.
   const elements = useCanvasStore((s) => s.elements);
   const activeTool = useCanvasStore((s) => s.activeTool);
-  // The page, the component's artboard, and (in `VariantSet`) each variant frame draw in an iframe;
-  // off is the legacy fallback for this release. see docs/notes/iframe-canvas.md
-  const iframeFlag = useIframeCanvasFlag((s) => s.on);
+  // The page, the component's artboard, and (in `VariantSet`) each variant frame draw in an iframe.
+  // see docs/notes/iframe-canvas.md
   // The page's viewport height: what `100vh` means, as the preview's window would give it.
   const viewportHeight = useCanvasStore((s) => s.canvasMinHeight);
   const userZoom = useCanvasStore((s) => s.userZoom);
@@ -413,7 +406,7 @@ export const Viewport = ({
     const iframeHost = frame.querySelector('[data-testid="iframe-canvas"]');
     if (iframeHost !== null) ro.observe(iframeHost);
     return () => ro.disconnect();
-  }, [measureFrame, iframeFlag]);
+  }, [measureFrame]);
   // Horizontal overflow doesn't change the frame's own box, so the
   // ResizeObserver above won't fire on it — re-measure on tree / size
   // changes too.
@@ -577,17 +570,9 @@ export const Viewport = ({
           ...(frameContent !== undefined ? { background: 'transparent' } : {}),
         }}
       >
-        <CanvasKeyframes />
-        {!iframeFlag && <CanvasPageStylesheet />}
-        {frameContent ??
-          (iframeFlag ? (
-            <IframeCanvas
-              viewportHeight={canvasHeight ?? viewportHeight}
-              overflowWidth={clipContent ? undefined : frameW}
-            />
-          ) : (
-            <ElementRenderer elementId={rootElementId} />
-          ))}
+        {frameContent ?? (
+          <IframeCanvas viewportHeight={canvasHeight ?? viewportHeight} overflowWidth={clipContent ? undefined : frameW} />
+        )}
         <CanvasInteractionLayer frameRef={frameRef} scale={scale} />
         {/* Component-editor artboard handles: `onResize` is only supplied in
             component mode, so these are always present there (the artboard IS
@@ -638,99 +623,4 @@ export const Viewport = ({
       />
     </div>
   );
-};
-
-/**
- * Mounts a `<style>` element inside the canvas frame containing the
- * page's `@keyframes` blocks. Without this, the inline `animation`
- * declarations the renderer applies during preview can't resolve
- * their keyframe names — Scamp renders into the Electron renderer's
- * own document, not via the user's CSS module file.
- *
- * Re-renders only when `pageKeyframesBlocks` changes; otherwise the
- * `<style>` tag's textContent stays stable and doesn't churn.
- */
-/**
- * Mounts the page's own generated CSS inside the canvas frame.
- *
- * The canvas translates the element model into inline styles, which cannot
- * express `::before` / `::after` or any hand-written selector — those
- * rendered in the preview and not here. Loading the same stylesheet the
- * generator writes to disk supplies exactly what the translation can't.
- * Inline styles still win on the properties they set, so this only adds.
- *
- * see docs/plans/canvas-preview-parity-plan.md
- */
-export const CanvasPageStylesheet = (): JSX.Element | null => {
-  const elements = useCanvasStore((s) => s.elements);
-  const rootElementId = useCanvasStore((s) => s.rootElementId);
-  const breakpoints = useCanvasStore((s) => s.breakpoints);
-  const customMediaBlocks = useCanvasStore((s) => s.pageCustomMediaBlocks);
-  const pageKeyframesBlocks = useCanvasStore((s) => s.pageKeyframesBlocks);
-  const componentTrees = useCanvasStore((s) => s.componentTrees);
-  // A component's frame is its own size, not a viewport; its `@media`
-  // follow the breakpoint picked instead, as its inline styles do.
-  const viewportWidth = useCanvasStore((s) =>
-    s.activeComponent?.kind === 'component'
-      ? s.breakpoints.find((b) => b.id === s.activeBreakpointId)?.width
-      : undefined
-  );
-
-  const sheet = useMemo(() => {
-    // `pageName` only names the generated function and the CSS-module
-    // import; neither reaches the CSS half, so a placeholder is fine.
-    const { css } = generateCode({
-      elements,
-      rootId: rootElementId,
-      pageName: 'canvas',
-      breakpoints,
-      customMediaBlocks,
-      pageKeyframesBlocks,
-    });
-    // Each instance gets its own prefixed copy of its component's rules,
-    // which is what keeps a component's `.root` off the page's and off
-    // every other instance's — the job CSS Modules do on disk. Same
-    // transform the HTML exporter uses, so the two can't disagree about
-    // what a prefix looks like.
-    const instances = collectExpandedInstances(
-      elements,
-      rootElementId,
-      componentTrees
-    ).map((instance) => {
-      const tree = componentTrees[instance.componentName];
-      if (!tree) return { prefix: instance.prefix, css: '' };
-      return {
-        prefix: instance.prefix,
-        css: generateCode({
-          elements: tree.elements,
-          rootId: tree.rootId,
-          pageName: instance.componentName,
-          breakpoints,
-          isComponent: true,
-        }).css,
-      };
-    });
-    return buildCanvasStylesheet(assemblePageCss(css, instances), undefined, viewportWidth);
-  }, [
-    viewportWidth,
-    elements,
-    rootElementId,
-    breakpoints,
-    customMediaBlocks,
-    pageKeyframesBlocks,
-    componentTrees,
-  ]);
-
-  if (sheet.length === 0) return null;
-  return <style>{sheet}</style>;
-};
-
-
-const CanvasKeyframes = (): JSX.Element | null => {
-  const keyframes = useCanvasStore((s) => s.pageKeyframesBlocks);
-  if (keyframes.length === 0) return null;
-  const css = keyframes
-    .map((block) => `@keyframes ${block.name} {\n${block.body}\n}`)
-    .join('\n\n');
-  return <style>{css}</style>;
 };

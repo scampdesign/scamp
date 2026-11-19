@@ -129,9 +129,9 @@ export const Section = ({
         aria-pressed={!groupToggle.isOn}
       >
         {groupToggle.isOn ? (
-          <IconEye size={14} stroke={2} />
+          <IconEye size={14} />
         ) : (
-          <IconEyeOff size={14} stroke={2} />
+          <IconEyeOff size={14} />
         )}
       </button>
     </Tooltip>
@@ -267,7 +267,6 @@ export const Section = ({
           {groupToggleButton}
           <IconChevronDown
             size={14}
-            stroke={2}
             className={`${styles.caret} ${open ? '' : styles.caretCollapsed}`}
             aria-hidden="true"
           />

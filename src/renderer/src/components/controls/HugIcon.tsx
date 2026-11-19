@@ -35,7 +35,7 @@ export const HugIcon = ({ orientation, size = 16 }: Props): JSX.Element => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{ display: 'block' }}

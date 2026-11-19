@@ -11,9 +11,8 @@
 //   node scripts/capture-import-fixtures.mjs
 //
 // The capture script is bundled with esbuild rather than imported: the
-// committed `.js` shims use extensionless imports, which Vite and Vitest
-// resolve and plain Node does not. Bundling also means this reads the
-// `.ts` source directly, so it can never test a stale shim.
+// sources use extensionless imports and path aliases, which Vite and
+// Vitest resolve and plain Node does not.
 // see docs/archive/2026-09-23-website-import-plan.md
 
 import { chromium } from '@playwright/test';

@@ -9,6 +9,7 @@ type WebviewNode = HTMLElement & { executeJavaScript: (code: string) => Promise<
 /** The project's running app, in a webview of its own session. */
 export const AppView = (): JSX.Element => {
   const url = useEmbeddedStore((s) => s.url);
+  const viewport = useEmbeddedStore((s) => s.viewport);
   const set = useEmbeddedStore((s) => s.set);
   const ref = useRef<HTMLWebViewElement | null>(null);
 
@@ -42,8 +43,17 @@ export const AppView = (): JSX.Element => {
 
   if (url === null) return <div className={styles.view} />;
   return (
-    <div className={styles.view}>
-      <webview ref={ref} src={url} className={styles.webview} partition="persist:scamp-embedded" data-testid="embedded-webview" />
+    <div className={styles.view} data-sized={viewport !== null}>
+      <webview
+        ref={ref}
+        src={url}
+        className={styles.webview}
+        // A set width sizes the app like a device; desktop fills the window.
+        style={viewport === null ? undefined : { flex: 'none', width: `${viewport}px` }}
+        data-sized={viewport !== null}
+        partition="persist:scamp-embedded"
+        data-testid="embedded-webview"
+      />
     </div>
   );
 };

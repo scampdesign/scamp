@@ -10,7 +10,7 @@ import type {
   TerminalResizeArgs,
   TerminalWriteArgs,
 } from '@shared/types';
-import { assertInsideActiveProject } from './pathContainment';
+import { assertInsideActiveProject, resolveInsideProject } from './pathContainment';
 
 // In dev we allow more concurrent ptys than the user can actually open
 // from the UI (MAX_TABS = 3). HMR re-mounts TerminalView without always
@@ -25,10 +25,27 @@ type Term = {
   proc: pty.IPty;
   /** The window that asked for it; its output belongs there. */
   owner: BrowserWindow | null;
+  /** The asking webContents' id: closing or reloading that window ends only its shells. */
+  ownerId: number;
 };
 
 const terminals = new Map<string, Term>();
 let nextId = 1;
+
+/**
+ * Windows whose terminals open in a folder of their own rather than the
+ * canvas's project: an Edit React Project window, in the project it edits.
+ * Keyed by the asking window's webContents id, so no other window gains it.
+ */
+const windowRoots = new Map<number, string>();
+
+export const allowTerminalRoot = (webContentsId: number, folder: string): void => {
+  windowRoots.set(webContentsId, folder);
+};
+
+export const forgetTerminalRoot = (webContentsId: number): void => {
+  windowRoots.delete(webContentsId);
+};
 
 const defaultShell = (): string => {
   if (process.platform === 'win32') {
@@ -59,11 +76,14 @@ const windowFor = (term: Term): BrowserWindow | null => {
 
 const createTerminal = (
   args: TerminalCreateArgs,
-  owner: BrowserWindow | null
+  owner: BrowserWindow | null,
+  senderId: number
 ): TerminalCreateResult => {
-  // Pin the shell's working directory to the active project. Without this
-  // a compromised renderer could spawn a shell anywhere on disk.
-  const cwd = assertInsideActiveProject(args.cwd);
+  // Pin the shell's working directory to the active project (or the
+  // window's own folder). Without this a compromised renderer could spawn
+  // a shell anywhere on disk.
+  const root = windowRoots.get(senderId);
+  const cwd = root === undefined ? assertInsideActiveProject(args.cwd) : resolveInsideProject(args.cwd, root);
   if (terminals.size >= MAX_TERMINALS) {
     // Log loudly so the dev knows orphans piled up — not just a quiet
     // IPC rejection in the renderer console.
@@ -84,7 +104,7 @@ const createTerminal = (
     env: { ...process.env, TERM: 'xterm-256color' } as Record<string, string>,
   });
 
-  const term: Term = { id, proc, owner };
+  const term: Term = { id, proc, owner, ownerId: senderId };
 
   proc.onData((data) => {
     const win = windowFor(term);
@@ -185,9 +205,16 @@ export const disposeAllTerminals = async (): Promise<void> => {
   await Promise.all(all.map(killAndWait));
 };
 
+/** Kill the shells one window opened, when it closes or reloads; other windows' shells keep running. */
+export const disposeTerminalsOf = async (ownerId: number): Promise<void> => {
+  const mine = Array.from(terminals.values()).filter((t) => t.ownerId === ownerId);
+  mine.forEach((t) => terminals.delete(t.id));
+  await Promise.all(mine.map(killAndWait));
+};
+
 export const registerTerminalIpc = (): void => {
   ipcMain.handle(IPC.TerminalCreate, (e, args: TerminalCreateArgs) =>
-    createTerminal(args, BrowserWindow.fromWebContents(e.sender))
+    createTerminal(args, BrowserWindow.fromWebContents(e.sender), e.sender.id)
   );
   ipcMain.handle(IPC.TerminalWrite, (_e, args: TerminalWriteArgs) => writeTerminal(args));
   ipcMain.handle(IPC.TerminalResize, (_e, args: TerminalResizeArgs) => resizeTerminal(args));

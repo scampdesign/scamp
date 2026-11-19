@@ -53,7 +53,7 @@ test('restyles a card live, the agent writes it into the CSS Module, and accept 
 
     await clickInPage(embedded, 'article', 'corner');
     await expect(embedded.getByTestId('embedded-source')).toContainText('src/Card.jsx:4');
-    await expect(embedded.getByTestId('embedded-scope-all')).toHaveText('All 3');
+    await expect(embedded.getByTestId('embedded-scope-all')).toHaveText('Every Card · 3');
 
     // Layer 1: the panel edit shows on the page at once, on this card only.
     await commitInput(panelInputByPrefix(embedded, 'Spacing', 'Padding'), '24');
@@ -69,14 +69,21 @@ test('restyles a card live, the agent writes it into the CSS Module, and accept 
     await expect.poll(() => inPage(embedded, paddingOf(0)), { timeout: 15_000 }).toBe('24px');
 
     // Review and accept: one commit, only the agent's file.
-    await embedded.getByTestId('embedded-tab-changes').click();
+    // The branch name beside the project opens History, with the branch controls first.
+    await expect(embedded.getByTestId('embedded-branch')).toHaveText(/^scamp\//);
+    await embedded.getByTestId('embedded-branch').click();
+    await expect(embedded.getByTestId('embedded-tab-history')).toHaveAttribute('aria-selected', 'true');
+    await expect(embedded.getByTestId('embedded-branch-section').getByLabel('Switch branch')).toHaveValue(/^scamp\//);
     await expect(embedded.getByTestId('embedded-review')).toContainText('src/Card.module.css');
     await expect(embedded.getByTestId('embedded-diff')).toContainText('+  padding: 24px;');
     await embedded.getByTestId('embedded-accept').click();
     await expect(embedded.getByTestId('embedded-notice')).toHaveText('Committed.');
     expect(gitIn(dir, 'log', '-1', '--format=%s')).toMatch(/^Scamp: /);
+    // The commit names the change in plain words, which the history shows.
+    // The commit names the change in plain words, with the technical form under it.
+    expect(gitIn(dir, 'log', '-1', '--format=%b')).toContain('- Changed spacing on Card\n  <article> padding → 24px');
     expect(gitIn(dir, 'status', '--porcelain')).toBe('');
-    await expect(embedded.getByTestId('embedded-commits')).toContainText('Scamp:');
+    await expect(embedded.getByTestId('embedded-history')).toContainText('Changed spacing on Card');
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }

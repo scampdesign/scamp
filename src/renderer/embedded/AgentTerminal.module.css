@@ -1,0 +1,41 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.action {
+  flex: 1;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.action:hover {
+  color: var(--text-primary);
+}
+
+/* Tall enough for an agent's interface; the side panel scrolls past it. */
+.terminal {
+  height: 300px;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}

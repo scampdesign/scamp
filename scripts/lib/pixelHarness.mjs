@@ -3,8 +3,7 @@
 //
 // Shared by `import-pixels.mjs` (any URL) and `react-import-eval.mjs`
 // (every route of a React app), so both measure exactly the same thing.
-// Bundles the TypeScript sources with esbuild on import, so it can never
-// measure a stale shim.
+// Bundles the TypeScript sources with esbuild on import.
 //
 // see docs/notes/parity-harness.md — why the oracle must be set up like
 // the real thing.

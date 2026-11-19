@@ -169,3 +169,74 @@ export default function Page() {
     expect(out.css).toMatch(/\.card_grid_a1b2 \{[^}]*display: flex/);
   });
 });
+
+describe('style-loss regression — a repeated class block adds to the first', () => {
+  const REPEAT_CSS = `${CSS}
+.card_a2 {
+  border-radius: 12px;
+}
+
+.card_a2:hover {
+  opacity: 0.8;
+}
+
+.card_a2:hover {
+  cursor: pointer;
+}
+`;
+
+  it('keeps the first block when an agent appends a second one for the same class', () => {
+    const out = regen(TSX, REPEAT_CSS);
+    expect(out.css).toMatch(/\.card_a2 \{[^}]*display: flex/);
+    expect(out.css).toMatch(/\.card_a2 \{[^}]*background: #111111/);
+    expect(out.css).toMatch(/\.card_a2 \{[^}]*border-radius: 12px/);
+  });
+
+  it('keeps both repeated state blocks', () => {
+    const out = regen(TSX, REPEAT_CSS);
+    expect(out.css).toMatch(/\.card_a2:hover \{[^}]*opacity: 0\.8/);
+    expect(out.css).toMatch(/\.card_a2:hover \{[^}]*cursor: pointer/);
+  });
+
+  it('lets the later block win when both set the same property', () => {
+    const out = regen(TSX, `${CSS}\n.card_a2 {\n  background: #222222;\n}\n`);
+    expect(out.css).toMatch(/\.card_a2 \{[^}]*background: #222222/);
+    expect(out.css).not.toContain('#111111');
+  });
+});
+
+describe('style-loss regression — valid values survive a save as written', () => {
+  const withArrow = (decls: string): string => CSS.replace('.arrow_a3 {\n  width: 16px;', `.arrow_a3 {\n${decls}\n  width: 16px;`);
+  const arrowBlock = (css: string): string => /^\.arrow_a3 \{[^}]*\}/m.exec(css)?.[0] ?? '';
+
+  it('reads a time with a leading dot, instead of writing 0ms', () => {
+    const out = regen(TSX, withArrow('  transition: opacity .3s ease;'));
+    expect(arrowBlock(out.css)).toMatch(/transition: opacity (300ms|0?\.3s) ease/);
+  });
+
+  it('keeps a background image beside a background-color', () => {
+    const out = regen(TSX, withArrow('  background: url(a.png) center / cover no-repeat;\n  background-color: #eeeeee;'));
+    expect(arrowBlock(out.css)).toContain('background: url(a.png) center / cover no-repeat;');
+    expect(arrowBlock(out.css)).toContain('background-color: #eeeeee;');
+  });
+
+  it('keeps !important', () => {
+    const out = regen(TSX, withArrow('  color: red !important;'));
+    expect(arrowBlock(out.css)).toContain('color: red !important;');
+  });
+
+  it('keeps a border it can’t hold exactly as written', () => {
+    for (const border of ['thin solid red', '0.1rem solid red', '2px double red']) {
+      const out = regen(TSX, withArrow(`  border: ${border};`));
+      expect(arrowBlock(out.css)).toContain(`border: ${border};`);
+    }
+  });
+
+  it('still reads a plain px border into the typed fields', () => {
+    const parsed = parseCode(TSX, withArrow('  border: 2px dashed #ff0000;'), {});
+    const arrow = parsed.elements['a3'];
+    expect(arrow?.borderWidth).toEqual([2, 2, 2, 2]);
+    expect(arrow?.borderStyle).toBe('dashed');
+    expect(arrow?.borderColor).toBe('#ff0000');
+  });
+});

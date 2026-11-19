@@ -22,6 +22,115 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Added**
+
+- **In Edit React Project, you can reorder elements by dragging them.**
+  Drag the selection on the page, or a row in the **Layers** panel, before
+  or after a sibling. A row, column, or grid shows the new order at once,
+  and the agent writes the move into your code. See
+  [Reorder elements](user_docs/edit-react-project.md#reorder-elements).
+- **In Edit React Project, your own agent can write your changes.** Choose
+  **My agent**, and Claude Code, Cursor, Gemini CLI, or Kiro writes each
+  edit through Scamp's MCP server, signed in the way it already is, so you
+  don't need an API key. See
+  [Use your own agent](user_docs/edit-react-project.md#use-your-own-agent).
+
+- **In Edit React Project, Cmd+Z undoes your edits and the agent's.**
+  Undo takes back an edit still in the queue, with its preview, or what
+  the agent wrote, file by file; Cmd+Shift+Z redoes it. See
+  [Undo and redo](user_docs/edit-react-project.md#undo-and-redo).
+- **In Edit React Project, the History lists what you accepted, and
+  goes back to any point.** Each entry says what changed in plain words.
+  Click one to put the project back there, and click a later one to go
+  forward again. See
+  [Go back in the history](user_docs/edit-react-project.md#go-back-in-the-history).
+- **In Edit React Project, you can edit at a tablet or phone width.** Size
+  the app as a tablet, a phone, a width you type, or one of your app's own
+  breakpoints. An edit made there applies at that width and narrower. See
+  [Edit at a tablet or phone width](user_docs/edit-react-project.md#edit-at-a-tablet-or-phone-width).
+
+- **In Edit React Project, you can edit text, images, and links.** Change
+  them in the Content section of the Style tab, or double-click text on
+  the page. Scamp only edits content written in your code, and says when
+  content comes from data instead. To use an image from your computer,
+  click **Choose file…**. See
+  [Edit text, images, and links](user_docs/edit-react-project.md#edit-text-images-and-links).
+- **In Edit React Project, you can delete, duplicate, and wrap elements,
+  and select more than one.** Use the buttons at the top of the **Style**
+  tab, or press Delete or Cmd+D. Shift-click or Cmd-click to add elements
+  to the selection, so one edit reaches all of them. See
+  [Style an element](user_docs/edit-react-project.md#style-an-element).
+- **In Edit React Project, you can move an element into another parent.**
+  In the **Layers** panel, drop a row on the middle of another row. See
+  [Reorder elements](user_docs/edit-react-project.md#reorder-elements).
+- **In Edit React Project, the panel shows values as your code writes
+  them, and offers your app's tokens.** You see `auto`, `50%`, or
+  `var(--accent)` rather than computed pixels, and a token you pick is
+  written as the token.
+- **In Edit React Project, Scamp writes some edits itself.** A change to
+  every instance of an element styled with a CSS Module class is written
+  into that class at once, without the agent.
+- **In Edit React Project, the Agent tab has a conversation.** You see what
+  the agent said for each batch, undo a turn, and reply. The dev server's
+  output is there too, and the **Style** tab shows the selection's JSX and
+  CSS under **Code**. See
+  [Talk with the agent](user_docs/edit-react-project.md#talk-with-the-agent).
+- **In Edit React Project, the scope buttons name the component.** Select
+  a card, and the buttons read **This Card** and **Every Card · 3**, so
+  you know whether an edit changes one card or the component. For a card
+  in a list, the agent picks out the one you selected, or says it can't.
+
+**Fixed**
+
+- **A page can't run code inside Scamp.** Script in a page's markup, such
+  as an `onerror` attribute in a project you downloaded or an agent
+  edited, ran when the canvas drew the page and could reach Scamp's
+  terminal. The canvas no longer runs scripts.
+- **A page's folder must be inside the project.** A page folder name
+  that pointed outside the project was accepted and written to.
+- **Deleting or renaming a component removes only its own files.** It
+  removed the component's whole folder, including anything else you kept
+  there.
+- **Quitting while sync is paused keeps your canvas edits.** Edits made
+  while sync was paused were lost when you quit.
+- **A second CSS rule for the same class keeps the first.** When a class
+  had two rules in the CSS file, Scamp kept the second and deleted the
+  first on the next save.
+- **Migrating an older project leaves your existing files in place.** The
+  migration could overwrite files it said it was leaving alone.
+- **The CSS you write keeps its meaning.** `!important` is kept, a time
+  such as `.3s` no longer becomes `0ms`, a `background` image set beside a
+  `background-color` is kept, and a `border` value that Scamp can't read,
+  such as `thin solid red`, stays as written instead of being split
+  wrongly.
+- **An expression with quotes in an attribute is kept whole.** An
+  attribute such as `defaultChecked={tool.on === "true"}` was split at its
+  spaces on save, and the canvas then showed the error `'=' is not a valid
+  attribute name`.
+- **An agent's edit right after a save is no longer missed.** If an agent
+  changed a file just after Scamp saved it, the canvas could treat the
+  agent's edit as Scamp's own and not reload it.
+- **In Edit React Project, Discard keeps your own uncommitted work.** It
+  discarded every uncommitted change in the project, not only Scamp's.
+- **In Edit React Project, a project inside a larger repository works with
+  git.** The change list, Discard, and the branch link work when the
+  project is a subfolder of the repository.
+- **In Edit React Project, only one agent run starts at a time.** Clicking
+  **Run now** while a run was starting began a second one, and **Stop**
+  then stopped neither.
+- **In Edit React Project, a long session no longer fails.** The agent's
+  conversation grew with every run until each run failed. It now starts
+  over when you accept or discard your changes.
+- **In Edit React Project, undo waits for the agent.** Undoing while the
+  agent was working could bring an undone change back later.
+- **In Edit React Project, the agent's files stay inside the project.** A
+  symbolic link in the project could lead the agent's reads and writes to
+  files outside it.
+- **In Edit React Project, closing or reloading the window ends its
+  terminals.** The shells it opened kept running after the window closed.
+
 ### 0.14.0 (2026-11-05)
 
 **Added**

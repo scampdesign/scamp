@@ -29,9 +29,11 @@ this release. PR #9's CI check passed.
 - [x] In `docs/CHANGELOG.md`, rename `### Unreleased` to
   `### 0.14.0 (2026-11-05)`.
 - [x] Commit as `release: 0.14.0`.
-- [ ] Push `main`, then tag `v0.14.0` and push the tag. The tag starts
+- [x] Push `main`, then tag `v0.14.0` and push the tag. The tag starts
   `.github/workflows/release.yml`.
-- [ ] Watch the workflow through the `verify-feed` job.
+- [x] Watch the workflow through the `verify-feed` job. Run 42089399662:
+  every job passed. The GitHub release is a draft with 12 assets, as
+  0.13.0's is.
 - [ ] On an installed 0.13.0, confirm the app offers the update and
   installs it.
 - [ ] Signed in as an admin on 0.14.0, **Edit React Project** shows on

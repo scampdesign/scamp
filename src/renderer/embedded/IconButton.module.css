@@ -1,0 +1,56 @@
+.button {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.button[aria-pressed='true'] {
+  background: var(--accent-muted);
+  color: var(--accent-text);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.glyph {
+  width: 18px;
+  height: 18px;
+}
+
+/* The design's artboard-header icons: 22px, tertiary, accent when on. */
+.button[data-variant='bare'] {
+  width: 26px;
+  height: 26px;
+  color: var(--text-tertiary);
+}
+
+.button[data-variant='bare']:hover:not(:disabled) {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.button[data-variant='bare'][aria-pressed='true'] {
+  background: transparent;
+  color: var(--accent);
+}
+
+.button[data-variant='bare'] .glyph {
+  width: 22px;
+  height: 22px;
+}

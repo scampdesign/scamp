@@ -7,10 +7,20 @@ import { errorMessage } from '@shared/errorMessage';
 
 import styles from './TerminalView.module.css';
 
+/** The bridge to main's ptys: the main window's, or a window's own with the same calls. */
+export type TerminalApi = Pick<
+  Window['scamp'],
+  'createTerminal' | 'writeTerminal' | 'resizeTerminal' | 'killTerminal' | 'onTerminalData' | 'onTerminalExit'
+>;
+
 type Props = {
   cwd: string;
   /** Notifies parent when the spawned terminal exits so the tab can be removed. */
   onExit?: (id: string) => void;
+  /** Defaults to the main window's preload. */
+  api?: TerminalApi;
+  /** Called once the pty is up, with a way to type into it. */
+  onReady?: (write: (data: string) => void) => void;
 };
 
 /**
@@ -23,7 +33,7 @@ type Props = {
  *  - Container resize → fit addon → ipc resize → pty resize.
  *  - On unmount: kill the pty and dispose xterm.
  */
-export const TerminalView = ({ cwd, onExit }: Props): JSX.Element => {
+export const TerminalView = ({ cwd, onExit, api = window.scamp, onReady }: Props): JSX.Element => {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
@@ -56,33 +66,34 @@ export const TerminalView = ({ cwd, onExit }: Props): JSX.Element => {
     let offExit: (() => void) | null = null;
 
     const setup = async (): Promise<void> => {
-      const { id } = await window.scamp.createTerminal({
+      const { id } = await api.createTerminal({
         cwd,
         cols: term.cols,
         rows: term.rows,
       });
       if (disposed) {
-        void window.scamp.killTerminal({ id });
+        void api.killTerminal({ id });
         return;
       }
       ptyIdRef.current = id;
 
-      offData = window.scamp.onTerminalData((payload) => {
+      offData = api.onTerminalData((payload) => {
         if (payload.id !== id) return;
         term.write(payload.data);
       });
-      offExit = window.scamp.onTerminalExit((payload) => {
+      offExit = api.onTerminalExit((payload) => {
         if (payload.id !== id) return;
         term.write('\r\n[process exited]\r\n');
         onExit?.(id);
       });
 
       term.onData((data) => {
-        void window.scamp.writeTerminal({ id, data });
+        void api.writeTerminal({ id, data });
       });
       term.onResize(({ cols, rows }) => {
-        void window.scamp.resizeTerminal({ id, cols, rows });
+        void api.resizeTerminal({ id, cols, rows });
       });
+      onReady?.((data) => void api.writeTerminal({ id, data }));
     };
 
     // Surface setup failures inside the terminal itself instead of letting
@@ -114,7 +125,7 @@ export const TerminalView = ({ cwd, onExit }: Props): JSX.Element => {
       offExit?.();
       const id = ptyIdRef.current;
       if (id) {
-        void window.scamp.killTerminal({ id });
+        void api.killTerminal({ id });
       }
       term.dispose();
       termRef.current = null;
@@ -122,7 +133,7 @@ export const TerminalView = ({ cwd, onExit }: Props): JSX.Element => {
     };
     // We deliberately re-create the terminal when cwd changes — the project
     // root is the entire reason this component exists.
-  }, [cwd, onExit]);
+  }, [cwd, onExit, api, onReady]);
 
   // Refit when the container becomes visible (e.g. panel toggled).
   useEffect(() => {

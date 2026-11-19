@@ -1,0 +1,10 @@
+/* The design's device group: a subtly bordered box around the three icons. */
+.control {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}

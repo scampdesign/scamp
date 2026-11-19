@@ -1,8 +1,22 @@
 .view {
   flex: 1;
   display: flex;
+  justify-content: center;
   min-width: 0;
+  min-height: 0;
+  overflow-x: auto;
   background: var(--bg-canvas);
+}
+
+/* At a device width the app sits on the canvas, inset like the design's artboard; at desktop it fills it. */
+.view[data-sized='true'] {
+  padding: 14px 20px 20px;
+}
+
+.webview[data-sized='true'] {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  outline: 1px solid var(--border);
 }
 
 .webview {

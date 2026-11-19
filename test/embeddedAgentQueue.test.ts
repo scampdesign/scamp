@@ -99,6 +99,27 @@ describe('createEmbeddedAgent', () => {
     expect(agent.state().queued).toEqual([]);
   });
 
+  it('starts the next batch with no earlier turns after an accept or discard', async () => {
+    const lengths: number[] = [];
+    const scripted = createScriptedProvider([{ content: [{ type: 'text', text: 'One.' }] }, { content: [{ type: 'text', text: 'Two.' }] }, { content: [{ type: 'text', text: 'Three.' }] }]);
+    const provider: AgentProvider = {
+      streamTurn: async (request, callbacks): Promise<BetaMessage> => {
+        lengths.push(request.messages.length);
+        return scripted.streamTurn(request, callbacks);
+      },
+    };
+    const { agent } = setup(provider);
+    const runOnce = async (id: string): Promise<void> => {
+      agent.enqueue(item(id, '20px'));
+      await until(() => agent.state().phase === 'done' && agent.state().lastRunItemIds.includes(id));
+    };
+    await runOnce('a');
+    await runOnce('b');
+    agent.clearTouched();
+    await runOnce('c');
+    expect(lengths).toEqual([1, 3, 1]);
+  });
+
   it('replaces an edit still in the queue rather than adding it twice', () => {
     const { agent } = setup(null);
     agent.setPaused(true);
@@ -138,5 +159,226 @@ describe('createEmbeddedAgent', () => {
     await agent.designCheck();
     expect(readOnly).toEqual([true]);
     expect(events.find((e) => e.kind === 'report')).toEqual({ kind: 'report', markdown: '## Tokens and consistency\n- src/App.css:3 uses #333.' });
+  });
+});
+
+describe('the user’s own agent working the queue', () => {
+  it('runs nothing itself, and hands a batch over once the batching pause has passed', async () => {
+    const { agent, calls, phases } = setup(null);
+    agent.setWorker('own');
+    agent.enqueue(item('a', '20px'));
+    agent.enqueue(item('b', '24px'));
+    const batch = await agent.takeBatch(1000);
+    expect(batch?.map((i) => i.id)).toEqual(['a', 'b']);
+    expect(calls).toEqual([]);
+    expect(agent.state().queued).toEqual([]);
+    expect(agent.heldBatch()?.map((i) => i.id)).toEqual(['a', 'b']);
+    expect(phases().at(-1)).toBe('writing');
+  });
+
+  it('finishes the batch with what changed, as a run of its own would', async () => {
+    const { agent, events } = setup(null);
+    agent.setWorker('own');
+    agent.enqueue(item('a', '20px'));
+    await agent.takeBatch(1000);
+    expect(await agent.finishBatch('Set the padding in Card.module.css.', ['src/Card.module.css'])).toBe(true);
+    expect(agent.touched()).toEqual(['src/Card.module.css']);
+    expect(agent.heldBatch()).toBeNull();
+    const last = events.filter((e) => e.kind === 'state').at(-1);
+    expect(last?.kind === 'state' ? [last.state.phase, last.state.lastText, last.state.lastRunItemIds] : null).toEqual(['done', 'Set the padding in Card.module.css.', ['a']]);
+  });
+
+  it('says no batch is held when finishing twice, and takes one batch at a time', async () => {
+    const { agent } = setup(null);
+    agent.setWorker('own');
+    agent.enqueue(item('a', '20px'));
+    await agent.takeBatch(1000);
+    agent.enqueue(item('b', '24px'));
+    expect(await agent.takeBatch(50)).toBeNull();
+    await agent.finishBatch('', []);
+    expect(await agent.finishBatch('', [])).toBe(false);
+    expect((await agent.takeBatch(1000))?.map((i) => i.id)).toEqual(['b']);
+  });
+
+  it('waits out the timeout with an empty queue', async () => {
+    const { agent } = setup(null);
+    agent.setWorker('own');
+    const started = Date.now();
+    expect(await agent.takeBatch(120)).toBeNull();
+    expect(Date.now() - started).toBeGreaterThanOrEqual(100);
+  });
+
+  it('holds the queue while paused, until Run now lets one batch through', async () => {
+    const { agent } = setup(null);
+    agent.setWorker('own');
+    agent.setPaused(true);
+    agent.enqueue(item('a', '20px'));
+    expect(await agent.takeBatch(80)).toBeNull();
+    agent.runNow();
+    expect((await agent.takeBatch(1000))?.map((i) => i.id)).toEqual(['a']);
+  });
+
+  it('puts a taken batch back at the front when stopped', async () => {
+    const { agent } = setup(null);
+    agent.setWorker('own');
+    agent.enqueue(item('a', '20px'));
+    await agent.takeBatch(1000);
+    agent.enqueue(item('b', '24px'));
+    agent.cancel();
+    expect(agent.heldBatch()).toBeNull();
+    expect(agent.state().queued.map((i) => i.id)).toEqual(['a', 'b']);
+  });
+
+  it('gives the user’s agent nothing while Scamp’s own agent works the queue', async () => {
+    const { agent } = setup(null);
+    agent.enqueue(item('a', '20px'));
+    expect(await agent.takeBatch(60)).toBeNull();
+  });
+});
+
+describe('runs, for undo and the commit message', () => {
+  it('calls the run hooks around a run of the Scamp Agent, and names the run in its state', async () => {
+    const calls: string[] = [];
+    const events: EmbeddedAgentEvent[] = [];
+    const agent = createEmbeddedAgent({
+      folder: '/p/app',
+      idioms: ['css-modules'],
+      getProvider: async () => createScriptedProvider([{ content: [{ type: 'text', text: 'Done.' }] }]),
+      emit: (e) => events.push(e),
+      batchDelayMs: 10,
+      invoker: () => async () => ({ content: [{ type: 'text', text: 'ok' }] }),
+      onRunStart: async (id) => {
+        calls.push(`start ${id}`);
+      },
+      onRunEnd: async (id) => {
+        calls.push(`end ${id}`);
+      },
+    });
+    agent.enqueue(item('a', '20px'));
+    await until(() => agent.state().phase === 'done');
+    const runId = agent.state().lastRunId;
+    expect(runId).toMatch(/^run-/);
+    expect(calls).toEqual([`start ${runId}`, `end ${runId}`]);
+  });
+
+  it('starts one run when Run now arrives while a run is still looking up the agent', async () => {
+    const starts: string[] = [];
+    const agent = createEmbeddedAgent({
+      folder: '/p/app',
+      idioms: ['css-modules'],
+      getProvider: async () => {
+        // The key lookup takes a moment, which is the window a second call fell through.
+        await new Promise((r) => setTimeout(r, 20));
+        return createScriptedProvider([{ content: [{ type: 'text', text: 'Done.' }] }, { content: [{ type: 'text', text: 'Again.' }] }]);
+      },
+      emit: () => undefined,
+      batchDelayMs: 10_000,
+      invoker: () => async () => ({ content: [{ type: 'text', text: 'ok' }] }),
+      onRunStart: async (id) => {
+        starts.push(id);
+      },
+    });
+    agent.enqueue(item('a', '20px'));
+    agent.runNow();
+    agent.runNow();
+    await until(() => agent.state().phase === 'done');
+    await new Promise((r) => setTimeout(r, 50));
+    expect(starts).toHaveLength(1);
+  });
+
+  it('calls the run hooks around the user’s agent’s batch too', async () => {
+    const calls: string[] = [];
+    const agent = createEmbeddedAgent({
+      folder: '/p/app',
+      idioms: [],
+      getProvider: async () => null,
+      emit: () => undefined,
+      batchDelayMs: 10,
+      onRunStart: async (id) => {
+        calls.push(`start ${id}`);
+      },
+      onRunEnd: async (id) => {
+        calls.push(`end ${id}`);
+      },
+    });
+    agent.setWorker('own');
+    agent.enqueue(item('a', '20px'));
+    await agent.takeBatch(1000);
+    await agent.finishBatch('Done.', []);
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toBe(`end ${agent.state().lastRunId}`);
+  });
+
+  it('keeps a summary of what was written until an accept or discard clears it', async () => {
+    const { agent } = setup(null);
+    agent.setWorker('own');
+    agent.enqueue(item('a', '20px'));
+    await agent.takeBatch(1000);
+    await agent.finishBatch('', ['src/Card.module.css']);
+    agent.enqueue(item('b', '24px'));
+    await agent.takeBatch(1000);
+    await agent.finishBatch('', ['src/Card.module.css']);
+    expect(agent.doneSummary()).toEqual([
+      { text: 'Changed spacing on Box', detail: '<div> padding → 20px' },
+      { text: 'Changed spacing on Box', detail: '<div> padding → 24px' },
+    ]);
+    agent.clearTouched(['src/Card.module.css']);
+    expect(agent.doneSummary()).toHaveLength(2);
+    agent.clearTouched();
+    expect(agent.doneSummary()).toEqual([]);
+  });
+
+  it('adds files back to the touched list, for a redo', () => {
+    const { agent } = setup(null);
+    agent.addTouched(['b.css', 'a.css']);
+    expect(agent.touched()).toEqual(['a.css', 'b.css']);
+  });
+});
+
+describe('createEmbeddedAgent: edits Scamp writes itself', () => {
+  const direct = (provider: AgentProvider | null) => {
+    const events: EmbeddedAgentEvent[] = [];
+    const agent = createEmbeddedAgent({
+      folder: '/p/app',
+      idioms: ['css-modules'],
+      getProvider: async () => provider,
+      emit: (e) => events.push(e),
+      batchDelayMs: 10,
+      writeDirect: async (i) => (i.id.startsWith('direct') ? 'src/Card.module.css' : null),
+    });
+    return { agent, events };
+  };
+
+  it('writes a certain edit without the agent, even with none signed in', async () => {
+    const { agent, events } = direct(null);
+    agent.enqueue(item('direct-1', '24px'));
+    await until(() => agent.state().phase === 'done');
+    expect(agent.touched()).toEqual(['src/Card.module.css']);
+    expect(agent.state().lastRunItemIds).toEqual(['direct-1']);
+    expect(events.some((e) => e.kind === 'text' && e.text.startsWith('Scamp wrote this directly, in src/Card.module.css.'))).toBe(true);
+  });
+
+  it('sends only the rest to the agent', async () => {
+    const { provider, prompts } = recording();
+    const { agent } = direct(provider);
+    agent.setPaused(true);
+    agent.enqueue(item('direct-1', '24px'));
+    agent.enqueue(item('other', '8px'));
+    agent.setPaused(false);
+    await until(() => agent.state().phase === 'done');
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain('this change');
+    expect(prompts[0]).toContain('`8px`');
+    expect(prompts[0]).not.toContain('`24px`');
+  });
+
+  it('says the rest needs the agent when none is signed in', async () => {
+    const { agent } = direct(null);
+    agent.setPaused(true);
+    agent.enqueue(item('direct-1', '24px'));
+    agent.enqueue(item('other', '8px'));
+    agent.setPaused(false);
+    await until(() => agent.state().phase === 'error');
+    expect(agent.state().message).toContain('write the rest');
   });
 });

@@ -1,18 +1,21 @@
 import { useEffect } from 'react';
+import { IconGitBranch } from '@tabler/icons-react';
 
+import { Tooltip } from '../src/components/controls/Tooltip';
 import { AgentStatus } from './AgentStatus';
 import { useEmbeddedStore } from './embeddedStore';
-import { PathField } from './PathField';
-import { navigatePage, refreshTree, releaseHeld, setModes } from './session';
+import { releaseHeld, setModes } from './session';
 import styles from './AppToolbar.module.css';
 
-/** Navigation, the edit and freeze modes, the branch, and the agent's state. */
+// macOS draws its window buttons over the bar's left end.
+const MAC = navigator.userAgent.includes('Macintosh');
+
+/** The title bar, as the scamp-ui Layout design: the project and its branch, then the agent. */
 export const AppToolbar = (): JSX.Element => {
-  const edit = useEmbeddedStore((s) => s.edit);
-  const frozen = useEmbeddedStore((s) => s.frozen);
-  const branch = useEmbeddedStore((s) => s.branch);
   const held = useEmbeddedStore((s) => s.held);
-  const layersOpen = useEmbeddedStore((s) => s.layersOpen);
+  const toast = useEmbeddedStore((s) => s.toast);
+  const name = useEmbeddedStore((s) => s.preflight?.name ?? s.folder?.split(/[\\/]/).pop() ?? 'Project');
+  const branch = useEmbeddedStore((s) => s.branch);
   // F8 freezes from here too; inside the page, the inspector answers it.
   useEffect(() => {
     const handleKey = (e: KeyboardEvent): void => {
@@ -25,59 +28,41 @@ export const AppToolbar = (): JSX.Element => {
   }, []);
 
   return (
-    <header className={styles.bar}>
-      <div className={styles.nav}>
-        <button type="button" className={styles.icon} onClick={() => navigatePage('back')} aria-label="Back">‹</button>
-        <button type="button" className={styles.icon} onClick={() => navigatePage('forward')} aria-label="Forward">›</button>
-        <button type="button" className={styles.icon} onClick={() => navigatePage('reload')} aria-label="Reload">↻</button>
-        <PathField />
+    <header className={styles.bar} data-mac={MAC}>
+      <div className={styles.project}>
+        <p className={styles.name}>{name}</p>
+        {branch !== null && (
+          // The branch, muted; a click opens History, where branches are switched, pushed, and pulled.
+          <Tooltip label="Branch — Your work happens on this branch. Click to switch branches, push, or pull.">
+            <button
+              type="button"
+              className={styles.branch}
+              onClick={() => useEmbeddedStore.getState().set({ panelTab: 'history' })}
+              data-testid="embedded-branch"
+            >
+              <IconGitBranch className={styles.branchIcon} aria-hidden="true" />
+              {branch}
+            </button>
+          </Tooltip>
+        )}
       </div>
-      <div className={styles.modes}>
-        <button
-          type="button"
-          className={styles.toggle}
-          aria-pressed={layersOpen}
-          onClick={() => {
-            useEmbeddedStore.getState().set({ layersOpen: !layersOpen });
-            if (!layersOpen) void refreshTree();
-          }}
-          title="Show the page's elements as a tree"
-          data-testid="embedded-layers-toggle"
-        >
-          Layers
-        </button>
-        <button
-          type="button"
-          className={styles.toggle}
-          aria-pressed={edit}
-          onClick={() => setModes({ edit: !edit })}
-          title="Click elements to select and style them. Turn off to use the app."
-          data-testid="embedded-edit-toggle"
-        >
-          Edit
-        </button>
-        <button
-          type="button"
-          className={styles.toggle}
-          aria-pressed={frozen}
-          onClick={() => setModes({ frozen: !frozen })}
-          title="Keep menus, popovers and tooltips open while you select and style them (F8, with the pointer still on the page)."
-          data-testid="embedded-freeze-toggle"
-        >
-          Freeze
-        </button>
+      <div className={styles.group}>
+        {toast !== null && (
+          <span className={styles.toast} role="status" data-testid="embedded-toast">
+            {toast}
+          </span>
+        )}
         {held.length > 0 && (
-          <span className={styles.held} data-testid="embedded-held" title={held.map((h) => `${h.label} :${h.states.join(' :')}`).join('\n')}>
+          <Tooltip label={`Holding — ${held.map((h) => `${h.label} :${h.states.join(' :')}`).join('\n')}`}>
+          <span className={styles.held} data-testid="embedded-held">
             Holding :{held[0]?.states[0]} on {held[0]?.label}
             {held.length > 1 ? ` +${held.length - 1}` : ''}
             <button type="button" className={styles.release} onClick={releaseHeld} data-testid="embedded-release">
               Release
             </button>
           </span>
+          </Tooltip>
         )}
-      </div>
-      <div className={styles.status}>
-        {branch !== null && <span className={styles.branch} title="Your work happens on this branch">{branch}</span>}
         <AgentStatus />
       </div>
     </header>

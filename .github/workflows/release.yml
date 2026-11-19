@@ -90,7 +90,7 @@ jobs:
         with:
           node-version: 24
 
-      # Runs the postinstall hook (patch-package + electron-rebuild of
+      # Runs the postinstall hook (electron-rebuild of
       # node-pty for the runner's platform).
       - name: Install dependencies
         run: npm ci

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { IconChevronDown } from '@tabler/icons-react';
 
 import { routeHasParams } from '@shared/embedded';
 
@@ -22,6 +23,7 @@ export const PathField = (): JSX.Element => {
   const routes = useEmbeddedStore((s) => s.routes);
   const [draft, setDraft] = useState(pathOf(pageUrl));
   const [open, setOpen] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
   const [active, setActive] = useState(0);
   /** Enter picks the highlighted route only after the arrow keys moved to it. */
   const [arrowed, setArrowed] = useState(false);
@@ -69,6 +71,7 @@ export const PathField = (): JSX.Element => {
       }}
     >
       <input
+        ref={input}
         className={styles.url}
         value={draft}
         onChange={(e) => {
@@ -87,6 +90,20 @@ export const PathField = (): JSX.Element => {
         aria-label="Page path"
         data-testid="embedded-path"
       />
+      <button
+        type="button"
+        className={styles.chevron}
+        aria-label="Show the app's routes"
+        tabIndex={-1}
+        // Keep focus in the field: the list closes when it loses focus.
+        onMouseDown={(e) => {
+          e.preventDefault();
+          if (document.activeElement !== input.current) input.current?.focus();
+          else setOpen((was) => !was);
+        }}
+      >
+        <IconChevronDown className={styles.chevronGlyph} aria-hidden="true" />
+      </button>
       {open && shown.length > 0 && (
         <ul className={styles.menu} id="embedded-routes" role="listbox" data-testid="embedded-routes">
           {shown.map((route, i) => (

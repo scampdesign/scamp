@@ -32,7 +32,7 @@ export const NAMED_EASINGS: ReadonlySet<string> = new Set([
 ]);
 
 
-export const TIME_RE = /^(-?\d+(?:\.\d+)?)(ms|s)$/i;
+export const TIME_RE = /^(-?(?:\d+(?:\.\d+)?|\.\d+))(ms|s)$/i;
 
 
 export const parseTimeMs = (token: string): number | null => {

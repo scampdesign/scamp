@@ -288,6 +288,19 @@ describe('generateCode — binding forms', () => {
 });
 
 describe('round trip — one case per binding kind', () => {
+  it('keeps a verbatim expression with quotes and spaces whole, not split into attributes', () => {
+    const elements = {
+      [ROOT_ELEMENT_ID]: root(['c']),
+      c: text('c', ROOT_ELEMENT_ID, '', {
+        tag: 'input',
+        attributes: { type: 'checkbox', defaultChecked: '{tool.on === "true" && ok}' },
+      }),
+    };
+    const { tsx } = gen(elements);
+    expect(tsx).toContain('defaultChecked={tool.on === "true" && ok}');
+    expect(gen(roundTrip(elements)).tsx).toBe(tsx);
+  });
+
   it('text prop', () => {
     const elements = { [ROOT_ELEMENT_ID]: root(['t']), t: text('t', ROOT_ELEMENT_ID, 'KZQ4', { prop: 'code' }) };
     expect(roundTrip(elements)).toEqual(elements);

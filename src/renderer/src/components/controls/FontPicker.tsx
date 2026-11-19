@@ -330,7 +330,7 @@ export const FontPicker = ({
     >
       {!mixed && triggerIsToken && (
         <span className={styles.triggerIcon} aria-hidden="true">
-          <IconColorSwatch size={14} stroke={1.75} />
+          <IconColorSwatch size={14} />
         </span>
       )}
       <span
@@ -417,7 +417,7 @@ export const FontPicker = ({
                     >
                       {option.isToken && (
                         <span className={styles.rowIcon} aria-hidden="true">
-                          <IconColorSwatch size={14} stroke={1.75} />
+                          <IconColorSwatch size={14} />
                         </span>
                       )}
                       <span className={styles.rowLabel}>

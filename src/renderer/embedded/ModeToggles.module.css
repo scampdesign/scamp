@@ -1,0 +1,50 @@
+.toggles {
+  flex: none;
+  display: flex;
+  gap: 8px;
+}
+
+/* The design's Freeze and Editing: 32px, accent-dark with an accent border when on. */
+.toggle {
+  height: 32px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  color: var(--text-primary);
+}
+
+.toggle[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-dark);
+  color: var(--text-primary);
+}
+
+.icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.key {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.toggle[aria-pressed='true'] .key {
+  color: var(--accent-text);
+}

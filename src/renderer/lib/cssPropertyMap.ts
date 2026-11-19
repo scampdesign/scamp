@@ -1,6 +1,6 @@
 import {
   parseBorderRadiusShorthandOrNull,
-  parseBorderShorthand,
+  parseBorderShorthandOrNull,
   parseBoxShadowShorthand,
   parseFilterList,
   parsePaddingShorthandOrNull,
@@ -216,7 +216,8 @@ export const cssToScampProperty: Record<string, Mapper> = {
     return { minHeight: trimmed };
   },
   border: (v) => {
-    const parsed = parseBorderShorthand(v);
+    const parsed = parseBorderShorthandOrNull(v);
+    if (parsed === null) return null;
     // Convert the single borderWidth from the shorthand parser into a
     // uniform tuple so it matches the new per-side model.
     const w = parsed.borderWidth;

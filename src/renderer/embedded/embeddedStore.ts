@@ -1,13 +1,20 @@
 import { create } from 'zustand';
 
+import type { InspectorCommand } from '@shared/embedded';
+import type { ChatTurn } from '@lib/embeddedChat';
 import type {
   EmbeddedAgentState,
   EmbeddedEditScope,
   EmbeddedElementRef,
   EmbeddedGitStatus,
+  EmbeddedHistory,
   EmbeddedHeld,
+  EmbeddedContentField,
+  EmbeddedContentOrigin,
   EmbeddedPreflight,
+  EmbeddedQueueItem,
   EmbeddedPseudoState,
+  EmbeddedMatchedRule,
   EmbeddedRawSource,
   EmbeddedStyleChange,
   EmbeddedTreeNode,
@@ -23,13 +30,27 @@ import type { ScampElement } from '@lib/element';
 
 export type EmbeddedScreen = 'choose' | 'setup' | 'editor';
 
+/** The panel's tabs: the selection, what's been done, and the agent. */
+export type PanelTab = 'style' | 'history' | 'agent';
+
 export type EmbeddedSelection = {
   /** Its id in the layers tree. */
   uid: string;
   /** React's location, when main is still resolving the source (Next.js). */
   raw: EmbeddedRawSource | null;
   element: EmbeddedElementRef;
+  /** Its components, innermost first, with where each is used. */
+  calls: Array<{ name: string; call: string | null; raw?: EmbeddedRawSource | null }>;
+  /** Its content as the page has it now. */
+  content: Record<EmbeddedContentField, string | null>;
+  /** Where each content field comes from, once main has looked; absent while it looks. */
+  origins: Partial<Record<EmbeddedContentField, EmbeddedContentOrigin>>;
+  /** Computed styles, with each value as written where Scamp can read it. */
   computed: Record<string, string>;
+  /** The CSS rules that match it, for the code view. */
+  rules: EmbeddedMatchedRule[];
+  /** Other elements selected with it (Shift- or Cmd-click): edits reach them too. */
+  also: EmbeddedElementRef[];
   parentDisplay: string;
   textOnly: boolean;
 };
@@ -47,7 +68,15 @@ export type PendingEdit = {
   sent: boolean;
 };
 
-export type AgentLogEntry = { kind: 'text' | 'tool'; text: string; ok?: boolean };
+/**
+ * One step Cmd+Z takes back: an edit or move still in the queue (its
+ * preview goes, and it leaves the queue), or what one agent run wrote (its
+ * files go back). Past the last Accept, undo steps through the history.
+ */
+export type UndoEntry =
+  | { kind: 'item'; id: string; item: EmbeddedQueueItem; redo: InspectorCommand[]; label: string; detail: string }
+  | { kind: 'run'; runId: string; label: string; detail: string };
+
 
 export type GitView = EmbeddedGitStatus & { agentFiles: string[] };
 
@@ -73,12 +102,26 @@ type State = {
   /** Elements with a state held in the page, frozen or forced. */
   held: EmbeddedHeld[];
   layersOpen: boolean;
+  /** The panel's open tab; the title bar's branch name opens History. */
+  panelTab: PanelTab;
+  undo: UndoEntry[];
+  redo: UndoEntry[];
+  /** A short note about the last undo or redo, shown in the toolbar for a moment. */
+  toast: string | null;
+  history: EmbeddedHistory | null;
+  /** The app's width, or null at desktop (the window's width). */
+  viewport: number | null;
+  /** Widths the app's own stylesheets break at. */
+  pageBreakpoints: { min: number[]; max: number[] };
+  /** Why the last drag moved something else, or nothing; cleared by the next selection. */
+  dragNote: string | null;
   /** Paths of the app found so far: its router, its files (Next.js), and links on pages visited. */
   routes: string[];
   tree: EmbeddedTreeNode | null;
   pending: PendingEdit | null;
   agent: EmbeddedAgentState;
-  agentLog: AgentLogEntry[];
+  /** The conversation with the agent, a turn per run. */
+  chat: ChatTurn[];
   report: string | null;
   checking: boolean;
   git: GitView | null;
@@ -87,7 +130,6 @@ type State = {
 
 type Actions = {
   set: (patch: Partial<State>) => void;
-  appendLog: (entry: AgentLogEntry) => void;
 };
 
 export const IDLE_AGENT: EmbeddedAgentState = { phase: 'idle', paused: false, queued: [], lastText: '', lastRunItemIds: [] };
@@ -110,23 +152,22 @@ export const useEmbeddedStore = create<State & Actions>((set) => ({
   pseudo: 'none',
   held: [],
   layersOpen: true,
+  panelTab: 'style',
+  dragNote: null,
+  undo: [],
+  redo: [],
+  toast: null,
+  history: null,
+  viewport: null,
+  pageBreakpoints: { min: [], max: [] },
   routes: [],
   tree: null,
   pending: null,
   agent: IDLE_AGENT,
-  agentLog: [],
+  chat: [],
   report: null,
   checking: false,
   git: null,
   notice: null,
   set: (patch) => set(patch),
-  appendLog: (entry) =>
-    set((s) => {
-      // Streamed text arrives in pieces: grow the last entry rather than adding one per piece.
-      const last = s.agentLog[s.agentLog.length - 1];
-      if (entry.kind === 'text' && last?.kind === 'text') {
-        return { agentLog: [...s.agentLog.slice(0, -1), { kind: 'text', text: last.text + entry.text }] };
-      }
-      return { agentLog: [...s.agentLog, entry].slice(-200) };
-    }),
 }));

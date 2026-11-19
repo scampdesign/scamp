@@ -40,7 +40,6 @@ export const SpacingSection = ({ elementId, hideMargin = false }: Props): JSX.El
           prefix={
             <IconBoxPadding
               size={16}
-              stroke={1.75}
               color="var(--text-secondary)"
               style={{ display: 'block' }}
             />
@@ -61,7 +60,6 @@ export const SpacingSection = ({ elementId, hideMargin = false }: Props): JSX.El
             prefix={
               <IconBoxMargin
                 size={16}
-                stroke={1.75}
                 color="var(--text-secondary)"
                 style={{ display: 'block' }}
               />

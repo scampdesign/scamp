@@ -122,9 +122,10 @@ const maybeNotifyPagesChanged = (changedPath: string): void => {
 export const registerPendingWrite = (
   path: string,
   writeId: string,
-  suppressChanged: boolean
+  suppressChanged: boolean,
+  expected?: string
 ): void => {
-  pending.register(path, writeId, suppressChanged);
+  pending.register(path, writeId, suppressChanged, expected);
 };
 
 /**
@@ -152,7 +153,8 @@ const emitChange = async (changedPath: string): Promise<void> => {
   // regardless; we only need to decide whether to forward the
   // `file:changed` broadcast too.
   const consumed = pending.consume(changedPath);
-  if (consumed?.suppressChanged) return;
+  // chokidar merges writes within 200ms into one event: an agent's write right after ours must still reload.
+  if (consumed?.suppressChanged && (consumed.expected === undefined || (await readIfExists(changedPath)) === consumed.expected)) return;
 
   // theme.css changes get their own event so the renderer can reload
   // design tokens without a full page re-parse.

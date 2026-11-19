@@ -1,5 +1,0 @@
-import type { StateCreator } from 'zustand';
-import { type CanvasState } from '../../canvasSlice';
-export declare const createElementsCreateSlice: StateCreator<CanvasState, [
-], [
-], Pick<CanvasState, 'elements' | 'rootElementId' | 'clipboard' | 'createRectangle' | 'createText' | 'createImage' | 'createSvgElement' | 'createInput' | 'insertComponentInstance' | 'replaceSubtreeWithInstance' | 'detachInstance' | 'renameComponentReferences' | 'deleteElement' | 'deleteElementContents' | 'duplicateElement' | 'copyElements' | 'cutElements' | 'pasteElement' | 'groupElements' | 'ungroupElement' | 'wrapInLinkParent' | 'reorderElement' | 'reparentElement'>>;

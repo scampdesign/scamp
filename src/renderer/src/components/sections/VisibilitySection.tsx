@@ -54,7 +54,7 @@ export const VisibilitySection = ({ elementId }: Props): JSX.Element | null => {
           min={0}
           max={100}
           title="Opacity (%)"
-          suffix={<IconPercentage size={14} stroke={1.75} />}
+          suffix={<IconPercentage size={14} />}
         />
       </Row>
       <Row label="Display">

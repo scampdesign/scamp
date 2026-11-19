@@ -294,6 +294,17 @@ export const IPC = {
   EmbeddedSyncPseudo: 'embedded:sync-pseudo',
   EmbeddedResolveSource: 'embedded:resolve-source',
   EmbeddedRoutes: 'embedded:routes',
+  EmbeddedContentOrigin: 'embedded:content-origin',
+  EmbeddedChooseImage: 'embedded:choose-image',
+  EmbeddedReadSource: 'embedded:read-source',
+  EmbeddedListOrigin: 'embedded:list-origin',
+  EmbeddedHistory: 'embedded:history',
+  EmbeddedHistoryGoTo: 'embedded:history-go-to',
+  EmbeddedUndoRun: 'embedded:undo-run',
+  EmbeddedSetWorker: 'embedded:set-worker',
+  EmbeddedOwnAgentStatus: 'embedded:own-agent-status',
+  /** renderer → main, fire and forget: the selection changed. */
+  EmbeddedSelectionChanged: 'embedded:selection-changed',
 
   // E2E test bootstrap (only live when SCAMP_E2E=1)
   TestGetBootstrap: 'test:getBootstrap',

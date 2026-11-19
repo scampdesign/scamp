@@ -341,7 +341,7 @@ export const StartScreen = ({
                   type="button"
                   aria-label={`Projects folder: ${defaultFolder}. Choose a different one.`}
                 >
-                  <IconFolder size={16} stroke={1.75} />
+                  <IconFolder size={16} />
                 </button>
               </Tooltip>
             )}
@@ -353,13 +353,13 @@ export const StartScreen = ({
                 options={[
                   {
                     value: "card",
-                    label: <IconLayoutGrid size={16} stroke={1.75} />,
+                    label: <IconLayoutGrid size={16} />,
                     ariaLabel: "Card view",
                     tooltip: "Card view",
                   },
                   {
                     value: "list",
-                    label: <IconList size={16} stroke={1.75} />,
+                    label: <IconList size={16} />,
                     ariaLabel: "List view",
                     tooltip: "List view",
                   },

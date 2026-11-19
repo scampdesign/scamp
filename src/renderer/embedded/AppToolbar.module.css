@@ -1,88 +1,55 @@
+/* The scamp-ui Layout design's title bar. */
 .bar {
+  flex: none;
+  height: 50px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  height: 44px;
-  padding: 0 12px 0 80px;
-  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-strong);
   background: var(--bg-header);
   -webkit-app-region: drag;
 }
 
-.bar button,
-.bar input {
+.bar[data-mac='true'] {
+  padding-left: 80px;
+}
+
+.bar button {
   -webkit-app-region: no-drag;
 }
 
-.nav {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-.icon {
-  width: 26px;
-  height: 26px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.icon:hover {
-  background: var(--bg-hover);
+.name {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
-
-
-.modes {
-  display: flex;
-  gap: 4px;
-}
-
-.toggle {
-  height: 26px;
-  padding: 0 12px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--bg-raised);
-  color: var(--text-secondary);
-  font: inherit;
-  cursor: pointer;
-}
-
-.toggle[aria-pressed='true'] {
-  border-color: var(--accent);
-  background: var(--accent-muted);
-  color: var(--accent-text);
-}
-
-.status {
+.group {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
-.branch {
-  max-width: 220px;
+.toast {
+  max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  font-size: 11px;
   white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .held {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 26px;
+  height: 24px;
   padding: 0 4px 0 10px;
   border-radius: var(--radius-sm);
   background: var(--accent-muted);
@@ -96,7 +63,7 @@
 }
 
 .release {
-  height: 20px;
+  height: 18px;
   padding: 0 8px;
   border: 0;
   border-radius: var(--radius-sm);
@@ -104,4 +71,40 @@
   color: var(--text-inverse);
   font: inherit;
   cursor: pointer;
+}
+
+.project {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.branch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.branch:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.branchIcon {
+  flex: none;
+  width: 13px;
+  height: 13px;
 }

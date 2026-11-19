@@ -9,20 +9,22 @@ import type { FileWriteAckPayload } from '@shared/types';
 export type PendingAck = {
   writeId: string;
   suppressChanged: boolean;
+  /** What Scamp wrote: an event for anything else is someone else's write. */
+  expected?: string;
   timer: ReturnType<typeof setTimeout>;
 };
 
 export type PendingWriteSender = (payload: FileWriteAckPayload) => void;
 
 export type PendingWriteTracker = {
-  register: (path: string, writeId: string, suppressChanged: boolean) => void;
+  register: (path: string, writeId: string, suppressChanged: boolean, expected?: string) => void;
   cancel: (path: string) => void;
   /**
    * Called from the chokidar event handler. If the path was pending,
    * emits the ack via the sender and returns whether the
    * `file:changed` broadcast should be suppressed.
    */
-  consume: (path: string) => { writeId: string; suppressChanged: boolean } | null;
+  consume: (path: string) => { writeId: string; suppressChanged: boolean; expected?: string } | null;
   /** Size accessor for tests. */
   size: () => number;
 };
@@ -42,7 +44,8 @@ export const createPendingWriteTracker = (
   const register: PendingWriteTracker['register'] = (
     path,
     writeId,
-    suppressChanged
+    suppressChanged,
+    expected
   ) => {
     const existing = pending.get(path);
     if (existing) {
@@ -57,7 +60,7 @@ export const createPendingWriteTracker = (
       if (!entry) return;
       send({ writeId: entry.writeId, path });
     }, expiryMs);
-    pending.set(path, { writeId, suppressChanged, timer });
+    pending.set(path, { writeId, suppressChanged, expected, timer });
   };
 
   const cancel: PendingWriteTracker['cancel'] = (path) => {
@@ -73,7 +76,9 @@ export const createPendingWriteTracker = (
     clearTimeout(entry.timer);
     pending.delete(path);
     send({ writeId: entry.writeId, path });
-    return { writeId: entry.writeId, suppressChanged: entry.suppressChanged };
+    return entry.expected === undefined
+      ? { writeId: entry.writeId, suppressChanged: entry.suppressChanged }
+      : { writeId: entry.writeId, suppressChanged: entry.suppressChanged, expected: entry.expected };
   };
 
   return {

@@ -31,19 +31,19 @@ const typeIcon = (
 ): ReactNode => {
   switch (type) {
     case 'px':
-      return <IconRulerMeasure size={ICON} stroke={1.75} />;
+      return <IconRulerMeasure size={ICON} />;
     case 'percent':
-      return <IconPercentage size={ICON} stroke={1.75} />;
+      return <IconPercentage size={ICON} />;
     case 'fill':
       return orientation === 'horizontal' ? (
-        <IconArrowsHorizontal size={ICON} stroke={1.75} />
+        <IconArrowsHorizontal size={ICON} />
       ) : (
-        <IconArrowsVertical size={ICON} stroke={1.75} />
+        <IconArrowsVertical size={ICON} />
       );
     case 'hug':
       return <HugIcon orientation={orientation} size={ICON} />;
     case 'auto':
-      return <IconArrowAutofitContent size={ICON} stroke={1.75} />;
+      return <IconArrowAutofitContent size={ICON} />;
     default:
       return sizeTypeLabel(type);
   }

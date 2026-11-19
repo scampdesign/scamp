@@ -98,7 +98,7 @@ export const ShadowsSection = ({ elementId }: Props): JSX.Element | null => {
   // expand chevron (PresetMenu renders nothing when there are no tokens).
   const shadowPreset = (
     <PresetMenu
-      icon={<IconShadow size={14} stroke={1.75} />}
+      icon={<IconShadow size={14} />}
       ariaLabel="Apply shadow preset"
       testId="shadow-preset-select"
       // Name only — a full box-shadow value is too long/noisy for this

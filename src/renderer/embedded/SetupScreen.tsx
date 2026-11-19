@@ -30,11 +30,11 @@ export const SetupScreen = (): JSX.Element => {
   const [phase, setPhase] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // The output itself is kept by the session, since the server keeps writing after start.
   useEffect(
     () =>
       window.scampEmbedded.onStartProgress((p) => {
         if (p.kind === 'phase') setPhase(p.phase);
-        else useEmbeddedStore.setState((s) => ({ startLog: (s.startLog + p.text).slice(-6000) }));
       }),
     []
   );
@@ -52,6 +52,8 @@ export const SetupScreen = (): JSX.Element => {
       if (!result.ok) setError(result.error);
     } else if (fix === 'sign-in') {
       await window.scampEmbedded.signIn();
+    } else if (fix === 'use-own-agent') {
+      await window.scampEmbedded.setWorker('own');
     } else if (fix === 'connect-agent' && value !== undefined) {
       const result = await window.scampEmbedded.setAgentKey(value.trim());
       if (!result.ok) setError(result.message);

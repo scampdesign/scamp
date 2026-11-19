@@ -7,10 +7,17 @@ real document means real `@media`, `:hover`, `vh` and `vw`, and no app
 styles leaking in. Decided and planned in
 `docs/plans/canvas-rendering-options.md`.
 
-For one release the legacy canvas (`ElementRenderer` drawing into the app's
-own document) stays as a fallback: `__scampIframeCanvas.set(false)` in the
-developer tools, remembered under `scamp.legacyCanvas`. `SCAMP_E2E_LEGACY_CANVAS=1`
-runs the e2e suite on it. Both go when the legacy path is deleted.
+The iframe is `sandbox="allow-same-origin"`, with no `allow-scripts`. The
+markup comes from project files, which anyone (or any agent) may have
+written, and an `onerror` attribute in a same-origin frame could reach
+`parent.scamp`, terminals included. The app still reads and changes the
+frame's DOM, and its listeners are attached from the app's side, so the
+interaction layer doesn't need script inside the frame. The off-screen
+capture frame in `exportCapture.ts` is sandboxed the same way.
+
+The legacy canvas (`ElementRenderer`, drawing the model as inline styles
+in the app's own document) was deleted after 0.14.0. Older notes that
+mention `elementToStyle` describe it.
 
 ## One seam: `canvasDom.ts`
 
@@ -108,5 +115,3 @@ export captures the iframe's body.
   the page reads `iframe.contentDocument`, never `document`.
 - The parity harness measures inside the iframe (see `parity-harness.md`);
   `iframe-c1.spec.ts` checks it against the browser drawing the saved file.
-- `SCAMP_E2E_SPEED=1` runs `iframe-c1-speed.spec.ts`, which prints edit-to-
-  paint timings for both canvases.

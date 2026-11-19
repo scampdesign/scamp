@@ -7,8 +7,8 @@
  *
  * The rules here mirror `resolveOzonePlatform` in src/main/ozone.ts,
  * which is the source of truth for the packaged app. They're repeated
- * rather than imported because the compiled shim is ESM while this
- * package is CJS by default.
+ * rather than imported because ozone.ts is TypeScript, which this plain
+ * Node script can't import without a bundler.
  * see docs/notes/linux-wayland-ozone.md
  */
 import { spawn } from 'node:child_process';

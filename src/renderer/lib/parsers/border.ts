@@ -39,30 +39,44 @@ export type ParsedBorder = {
  * Empty input returns the documented defaults so the parser can use this
  * as a single source of truth without needing to track absence separately.
  */
-export const parseBorderShorthand = (raw: string): ParsedBorder => {
+export const parseBorderShorthand = (raw: string): ParsedBorder => readBorder(raw).border;
+
+/**
+ * The same, or null when any part can't be held exactly: a width that
+ * isn't px (`thin`, `0.1rem`), a style outside the four supported
+ * (`double`), or more than one leftover token. The caller keeps the
+ * value as written.
+ */
+export const parseBorderShorthandOrNull = (raw: string): ParsedBorder | null => {
+  const { border, clean } = readBorder(raw);
+  return clean ? border : null;
+};
+
+const readBorder = (raw: string): { border: ParsedBorder; clean: boolean } => {
   const fallback: ParsedBorder = {
     borderWidth: 0,
     borderStyle: DEFAULT_RECT_STYLES.borderStyle,
     borderColor: DEFAULT_RECT_STYLES.borderColor,
   };
-  if (typeof raw !== 'string') return fallback;
+  if (typeof raw !== 'string') return { border: fallback, clean: false };
   const trimmed = raw.trim();
-  if (trimmed.length === 0) return fallback;
+  if (trimmed.length === 0) return { border: fallback, clean: true };
 
   const tokens = tokenizeBorder(trimmed);
-  if (tokens.length === 0) return fallback;
+  if (tokens.length === 0) return { border: fallback, clean: true };
 
   // `border: none` (or `0`) — no border at all.
   if (tokens.length === 1) {
     const only = requireAt(tokens, 0);
     if (only === 'none' || only === '0' || only === '0px') {
-      return { borderWidth: 0, borderStyle: 'none', borderColor: fallback.borderColor };
+      return { border: { borderWidth: 0, borderStyle: 'none', borderColor: fallback.borderColor }, clean: true };
     }
   }
 
   let width: number | null = null;
   let style: BorderStyle | null = null;
   let color: string | null = null;
+  let clean = true;
 
   for (const token of tokens) {
     if (width === null && /^-?\d+(?:\.\d+)?(?:px)?$/.test(token)) {
@@ -74,17 +88,25 @@ export const parseBorderShorthand = (raw: string): ParsedBorder => {
       // canvas still draws something visible. Round-trip preserves the
       // original via customProperties when used at the top level.
       style = isBorderStyle(token) ? token : 'solid';
+      if (!isBorderStyle(token)) clean = false;
       continue;
     }
     if (color === null) {
       color = token;
+      continue;
     }
+    clean = false;
   }
+  // A width keyword or unit (`thin`, `0.1rem`) was taken for the color.
+  if (color !== null && /^(?:thin|medium|thick|-?[\d.]+[a-z%]+)$/i.test(color)) clean = false;
 
   return {
-    borderWidth: width ?? fallback.borderWidth,
-    borderStyle: style ?? fallback.borderStyle,
-    borderColor: color ?? fallback.borderColor,
+    border: {
+      borderWidth: width ?? fallback.borderWidth,
+      borderStyle: style ?? fallback.borderStyle,
+      borderColor: color ?? fallback.borderColor,
+    },
+    clean,
   };
 };
 

@@ -1,0 +1,446 @@
+# Embedded Scamp — gaps with the Scamp canvas
+
+Status: **mostly built** (2026-11-10); see [Priorities](#priorities).
+P2 to P6 and the remaining gaps (P7) are built on
+`feat/embedded-undo-history-breakpoints`, ready for manual testing. Still
+open: adding new elements, a component editor, and PNG export. A list of what the Scamp canvas
+does that Embedded Scamp doesn't, or does differently, to choose which
+gaps to close. Each has a possible approach and a rough size: **S** (a
+day or so), **M** (a few days), **L** (a week or more, or a design
+question first).
+
+Embedded Scamp works differently on purpose. The canvas owns its files and
+writes them itself, instantly. Embedded Scamp edits a project it doesn't
+own: it previews on the running app and the agent writes the source. So
+some gaps are the price of that, and some are just not built yet. The
+**Why** line says which.
+
+Related: [the plan](embedded-scamp-plan.md),
+[agent connection](embedded-agent-connection-plan.md).
+
+## How edits get written
+
+### 1. Edits take seconds and cost tokens
+
+- **Canvas:** an edit is written to the file at once, by code.
+- **Embedded:** every edit goes through the agent: it reads the file,
+  edits it, and the dev server reloads. Seconds per batch, and tokens.
+- **Why:** the project's styles can be written any way (Tailwind, CSS
+  Modules, styled-components), so a person or agent has to decide where.
+- **Approach:** a fast path that writes without the agent where the
+  answer is certain. For example, a CSS Module rule for a class the
+  element has, in a file Scamp can parse, for properties that map one to
+  one; or a move of two sibling JSX elements in one file. Everything else
+  still goes to the agent. Start with CSS Modules and plain CSS. **M**
+
+### 2. The panel shows only some of the element's real values
+
+- **Canvas:** the panel shows exactly what the file says.
+- **Embedded:** the page reports 50 computed properties
+  (`EMBEDDED_COMPUTED_PROPERTIES`). Sections it doesn't read show their
+  defaults whatever the element has: **Filters**, **Transitions**,
+  **Animations**, background images and gradients, grid placement,
+  `order`, `transform-origin`, text decoration and shadow, `white-space`,
+  `cursor`, `object-fit`, `outline`, and visibility. Editing them still
+  works, but the starting value shown is wrong.
+- **Approach:** read the rest of the properties those sections use. Where
+  computed values can't round-trip (animations), say "set in your code"
+  rather than showing a default. **S**
+
+### 3. Values read as computed pixels, not as written
+
+- **Canvas:** `width: auto`, `50%`, `1.5rem`, `var(--space-md)` show as
+  written.
+- **Embedded:** everything is the computed value: an `auto` width shows
+  as `312px`, a token as its color or size. Only what you change is sent,
+  so this doesn't reach the source unless you edit that field, but the
+  panel misleads, and a pixel can replace a token.
+- **Approach:** read the authored value from the matching CSS rules in
+  the page (CSSOM: rules that match the element, by specificity), and
+  fall back to computed. Tailwind classes map back to their scale. **M**
+
+### 4. No design tokens
+
+- **Canvas:** token pickers for colors, spacing, type, radius, and
+  shadows, from the project's `theme.css`.
+- **Embedded:** the pickers are empty: the embedded window loads no
+  design system. The agent is told to use the project's scale, but you
+  can't pick a token.
+- **Approach:** read the project's tokens from the running page (custom
+  properties on `:root`) and Tailwind's theme (`tailwind.config` or
+  `@theme` in v4), and load them as the panel's design system. A choice
+  goes to the agent as the token name, not its value. The plan's phase 8
+  (editing tokens themselves) builds on this. **M**
+
+### 5. No undo
+
+- **Canvas:** **Cmd+Z** and the History panel, per page.
+- **Embedded:** nothing undoes a panel edit. Before the agent runs you can
+  remove a queued item, which drops its preview; after, it's **Discard**
+  (all of the agent's changes) or **Revert** (a whole commit).
+- **Approach:** **Cmd+Z** in the window undoes the last edit: before it's
+  sent, it reverts the preview and the queue item; after the agent wrote
+  it, it restores that file's previous content (the agent's queue knows
+  each run's files). **M**
+
+## Layout and structure
+
+### 6. No breakpoints
+
+- **Canvas:** a breakpoint switcher, with edits scoped to it as
+  `@media` rules.
+- **Embedded:** the app fills the window at whatever width it is. There's
+  no width control, and every edit applies at all widths.
+- **Approach:** a width control above the app (phone, tablet, desktop,
+  custom) that sizes the webview, and an edit made at a narrow width
+  queued with that breakpoint, so the agent writes a media query or
+  Tailwind's `sm:`/`md:` prefix. The project's breakpoints come from its
+  CSS or Tailwind config. **M**
+
+### 7. Can't add, delete, duplicate, or wrap elements
+
+- **Canvas:** draw rectangles, text, images, and inputs; delete;
+  duplicate; group into a flex container.
+- **Embedded:** none. An instruction can ask the agent ("add a subtitle
+  under this"), but there's no direct action.
+- **Approach:** start with **Delete** and **Duplicate** on the selection,
+  and **Wrap in a container**, each as a queued structural edit like a
+  move, previewed by hiding or cloning on the page. Adding new elements
+  is bigger: what to add (a tag, a component from the project?) is a
+  design question. **M** for delete, duplicate, and wrap; **L** for adding.
+
+### 8. Moves only within the same parent
+
+- **Canvas:** the Layers panel moves an element into another parent.
+- **Embedded:** reorder among siblings only.
+- **Approach:** allow dropping into another element, in the tree first.
+  The source edit is harder (the JSX may cross components), so the agent
+  writes it, with a marker until it does. **M**
+
+### 9. One element at a time
+
+- **Canvas:** multi-select with Cmd-click and Shift-click, and edits to
+  all of them.
+- **Embedded:** one selection. **All N** covers instances of one JSX line,
+  not a hand-picked set.
+- **Approach:** multi-select in the page and tree, with the panel showing
+  shared values; the queue item lists every element. **M**
+
+## Content
+
+### 10. Text isn't editable in place
+
+- **Canvas:** double-click text to edit it.
+- **Embedded:** an instruction only.
+- **Approach:** double-click text in the page to edit it there (a
+  `contenteditable` overlay on a copy, so React's DOM isn't touched), and
+  queue the change. Text from data (props, an API) is detected the way
+  lists are, and the agent says when it can't. **M**
+
+### 11. Images, links, and attributes
+
+- **Canvas:** the **Element** section changes the tag, a link's target,
+  an image's source and alt text, and input attributes.
+- **Embedded:** none of these.
+- **Approach:** show the element's attributes and queue changes to them;
+  an image replaced from disk is copied into the project's assets by the
+  agent. **M**
+
+### 12. No component editing
+
+- **Canvas:** a component editor, variants, props, and per-instance
+  overrides.
+- **Embedded:** **This one** and **All** stand in for "this instance" or
+  "the component". There's no view of a component on its own, its props,
+  or its variants.
+- **Why:** a project's components can take any shape: props, variants
+  through `cva` or class maps, children.
+- **Approach:** start small: show the component an element belongs to,
+  its props as the page's React tree has them, and "edit the component"
+  as a scope beside This one and All. A real component editor is **L**.
+
+## Around the editing
+
+### 13. A chat with the agent
+
+- **Canvas:** the Agent panel: a conversation, with each turn's changes
+  reviewable and undoable.
+- **Embedded:** one instruction box and a log; no back-and-forth, no
+  per-turn undo.
+- **Approach:** reuse the Agent panel's conversation UI against the
+  embedded agent, with each turn's files shown, and per-turn undo once
+  item 5 exists. **M**
+
+### 14. No code view of the selection
+
+- **Canvas:** the code panel shows the element's TSX and CSS live.
+- **Embedded:** the source location only, and diffs after the agent
+  writes.
+- **Approach:** a read-only code view of the selection's source lines and
+  the matching CSS rule, opened from its file and line. **S**
+
+### 15. Export, preview, history, terminal
+
+- **Export (PNG, SVG, HTML):** not in Embedded. Low value: the app is
+  already real. A PNG of the selection would be **S** if wanted.
+- **Preview:** not needed: the running app is the preview.
+- **History and snapshots:** git does this job (Accept, Revert, branches).
+  The History tab lists them as a timeline (P3).
+- **Terminal:** the dev server's output shows only on the setup screen.
+  Showing it after start (for build errors after an agent edit) would be
+  **S**.
+
+### 16. No MCP for outside agents
+
+- **Canvas:** the MCP server, so Claude Code and others can read and
+  change the canvas.
+- **Embedded:** none yet. This is plan A1 in
+  [agent connection](embedded-agent-connection-plan.md).
+
+## Where Embedded is ahead
+
+Worth keeping in mind when closing gaps the other way:
+
+- **The real app:** live data, real routes, and real behavior, not a
+  static page.
+- **Hover, focus, and active, forced on the page,** and freeze for menus
+  and CSS hover. The canvas has a state switcher, but not the live app.
+- **Git built in:** a branch per session, diffs, accept, revert, push.
+- **Any React project, written in its own idiom**, Tailwind and Next.js
+  included.
+- **Design checks** across the whole project.
+
+## Priorities
+
+Decided 2026-11-09. Everything else above waits.
+
+### P1: Reorder improvements (in progress)
+
+Built on `feat/embedded-reorder`: drag on the page and in the tree,
+lifting an only child to its parent with siblings, and the notes. The
+`order` preview and the block-flow marker are replaced (2026-11-10) by a
+stand-in copy that shows the move as it'll look, live while dragging; see
+`docs/notes/embedded-move-preview.md`. Next, from manual testing:
+
+- Try it on real projects with the real agent: a plain move, a component
+  root, a `.map()` list, and a Next.js page.
+- Then decide whether moving into another parent (gap 8) joins it.
+
+### P2: Cmd+Z undo (gap 5)
+
+**Built.** One stack in the window (`undo` and `redo` in `embeddedStore`,
+`undo()`/`redo()` in `session.ts`): a queued item's entry carries the
+inspector commands that redo its preview; every preview is tagged with the
+item's id, so `undoTag` takes back exactly that. A finished run becomes one
+entry; main keeps each run's files before and after (`runs.ts`, from a git
+snapshot at the run's start, for either agent) and refuses a file changed
+since. Accept and Discard drop run entries; an empty stack steps the
+history. Main decides whether an item was still queued (`remove` returns
+it), since the window's copy of the queue can lag an edit sent a moment
+before.
+
+- **Before the agent writes:** **Cmd+Z** undoes the last panel edit or
+  move: it restores the page's preview, as the panel's own reset does
+  (`restore`, the move's saved `order` or its marker), and takes the item
+  out of the queue. **Cmd+Shift+Z** redoes it.
+- **After the agent writes:** the queue records each run's files and
+  their content before the run (it already tracks which files it
+  touched). Undo puts that run's files back, as **Discard** does for all of
+  them, and the page reloads. Only the last run, and only while its files
+  haven't changed since, so undo never throws away a change made outside
+  Scamp.
+- **After Accept:** that's **Revert**, which exists. Undo doesn't reach
+  past a commit.
+- The **History** tab lists the undo stack, so it's clear what the next
+  undo does.
+
+### P3: A history of Scamp's changes, like the canvas's History panel
+
+**Built.** `history.ts` (the timeline, `goToCommit` with `reset --keep`,
+and the refusals: `pending`, `pushed`, `changed`), `HistoryList.tsx`, and
+commit bodies from `commitMessageFor` over the queue's `doneSummary`. The
+history starts at the fork from `main` (or `master`, `develop`), so earlier
+sessions on the branch show too.
+
+Before this, the old **Changes** tab ended with **Scamp's commits**: each commit's
+subject and a **Revert** button. The subject is the commit message
+(`Scamp: update src/Card.module.css` unless the user typed one), which
+says which file, not what changed. **Revert** adds a commit that undoes
+one commit (`git revert`): it leaves a second entry behind, and it fails
+outright when a later change touched the same lines.
+
+Make it work like the canvas's History panel (`docs/user_docs/undo-redo.md`):
+
+- **A timeline.** Newest first, every entry with a relative time ("3 min
+  ago", the exact time on hover). An entry is one **Accept**, and it lists
+  what changed in plain words from the queue items it carried: "Card:
+  padding 16px → 24px (every card)", "Moved the hint above the title",
+  "Header: hover background", not file names. The files and the diff open
+  from the entry.
+- **Clearer text.** Each queue item's description (`describeQueueItem`'s
+  short form, the one the queue list shows) is saved with the commit: in
+  the commit message body, so it survives in git, and Scamp reads it
+  back for the timeline. A commit Scamp didn't make on the branch shows
+  its own subject.
+- **Click to go back.** Clicking an entry returns the project to how it
+  was right after that change, the way the History panel jumps the
+  canvas. Entries after it dim, below an "undone" divider, and clicking
+  one goes forward again. A new edit or Accept drops the dimmed ones, as
+  the History panel does: history is linear.
+- **How, in git.** On the session's `scamp/` branch, going back moves the
+  branch to that commit with `git reset --keep`, which keeps the user's
+  own uncommitted changes and refuses rather than overwrite them. Going
+  forward moves it to a later commit the same way: Scamp keeps the
+  timeline's commit ids, so a "dimmed" entry is still reachable. No revert
+  commits pile up, and nothing conflicts, because it's a whole state, not
+  a patch. The app reloads after each jump.
+- **When it can't move the branch.** If the branch was pushed past the
+  point (moving it would need a force push), or the user has uncommitted
+  changes in the files the jump would touch, Scamp says so and offers
+  **Revert** as today, which adds a commit instead.
+- **With undo (P2).** **Cmd+Z** past the last Accept steps back through
+  this timeline, one entry at a time, so undo and history are one model,
+  as on the canvas.
+- **Agent changes not yet accepted** stay in the review above the
+  timeline: the timeline is only what's committed.
+
+### P4: Breakpoint switcher (gap 6)
+
+**Built.** `ViewportControl.tsx` sizes the webview; the inspector reads the
+page's breakpoints from its stylesheets (`min-width`/`max-width` and the
+range syntax Tailwind 4 writes, in px, em, or rem); `breakpointFor` gives
+the range an edit applies to (up to just under the next breakpoint up);
+the preview is a rule inside that media query, and the queue item carries
+the breakpoint for the prompt. Not yet: a project's breakpoints from its
+Tailwind config before any stylesheet using them has loaded.
+
+- A width control above the app: **Desktop**, **Tablet** (768), **Mobile**
+  (390), and a custom width. It resizes the webview, so the app's own
+  media queries apply, as in a real browser.
+- The project's own breakpoints, when Scamp can read them (Tailwind's
+  screens, or the `min-width`/`max-width` values in its CSS), replace the
+  defaults, so a width lines up with a breakpoint the code uses.
+- An edit made below **Desktop** is queued with that breakpoint. The agent
+  writes it as a media query, or Tailwind's `md:`/`sm:` prefix, in the
+  project's mobile-first or desktop-first direction, and leaves other
+  widths alone. The preview applies it inside the same media query, so
+  resizing back shows the desktop styles unchanged.
+
+### P5: Edit text, images, and links, and show what comes from data (gaps 10, 11)
+
+**Built** (2026-11-09), ready for manual testing.
+
+- `content.ts` (main) classifies a field with `@babel/parser`, now a
+  direct dependency: a literal in the element's JSX (or a `const` with a
+  string, or an import for an image), a prop followed to where its
+  component is used, up to three components, or data. A missing
+  attribute is one to add, so it's editable.
+- Where a component is used comes from the build: the Vite transform now
+  tags every component's JSX with `data-scamp-call="file:line:col"` (a
+  prop, read from React's fiber in the page; fragments are left alone).
+  Next.js has no transform: there, the inspector sends React's own record
+  of where each component was created (`_debugStack`), and the window
+  resolves it through the source maps, the same way as an element's line.
+- The inspector previews text in the element's existing text node (React
+  keeps the node, so its DOM isn't disturbed) and attributes with
+  `setAttribute`, tagged for undo. The in-page editor is a
+  `contenteditable` copy over the element, styled like it, whose keys
+  the app never hears.
+- A `content` queue item tells the agent the old and new value and where
+  it's written; the Style tab's Content section shows each field with its
+  origin. **Choose file…** copies an image into `public/` under a free
+  name (compared without case) and points `src` at `/name`; the copy is
+  one of the agent's touched files, so Accept commits it and Discard
+  deletes it.
+
+- **Text:** double-click to edit in place on the page (on an overlay, not
+  React's own DOM). **Images:** replace the source and edit the alt text.
+  **Links:** edit the target. Each is queued for the agent like a style
+  edit.
+- **Hard-coded or data.** Only content written in the code is editable.
+  Content that comes from data (props filled from an API, state, a CMS,
+  a `.map()` over fetched items) isn't. Scamp shows which, before you try:
+  - **Written in the JSX:** the text, `src`, or `href` is a literal at the
+    element's source line. Editable.
+  - **Passed in as a literal prop:** a component's `<Card name="Ada" />`.
+    Editable, at the place the component is used, which the edit names.
+  - **From data:** an expression with no literal behind it, or one of
+    several items drawn by one JSX line. Not editable, with a short note
+    ("This text comes from data"); styling stays editable.
+- **How Scamp tells.** Main reads the element's source line (it already
+  reads files for Next.js) and parses the JSX around it with a JSX parser
+  (`@babel/parser` is in the tree today only as a transitive dependency,
+  and TypeScript only as a dev dependency, so one becomes a real
+  dependency; `@babel/parser` is the smaller). It checks whether the content is a literal there, and
+  follows a prop to the call site through React's props in the page. When
+  the parse can't decide, the element is treated as data. The agent still
+  checks before writing, and says so if a "literal" turns out not to be.
+
+### P6: Component edits from the page, without a component editor (gap 12)
+
+**Built** (2026-11-10), ready for manual testing.
+
+- **The buttons name the component.** The inspector reports
+  `instanceOf` when each element of the same source line sits in its own
+  instance of the nearest component (compared by fiber, or its
+  alternate); a `.map()` inside one component isn't. The buttons then read
+  **This Card** and **Every Card · 3**, with Scamp tooltips that say
+  **Every** reaches other pages too. Otherwise **This one** and **All 3**.
+- **The exact call site.** `usedAt` comes from the nearest component's
+  `data-scamp-call` (Next.js: from `_debugStack`, resolved in the window),
+  so "this one" names the line where that instance is used.
+- **This one, in a list.** When every instance comes from one call site
+  (`usedInList`), the prompt says it's number N of M from one line in a
+  list, and asks for a condition on its key, index, or data, or for no
+  change and a note saying so.
+- **Instances on other pages.** The count is per page; the label says
+  "on this page".
+- A component editor (props, variants, the component on its own) waits.
+
+### P7: The remaining gaps (1–4, 7–9, 13–15)
+
+**Built** (2026-11-10), ready for manual testing.
+
+- **1, a fast path.** `fastPath.ts` writes a style edit itself when it's
+  certain: every instance (or the only one), no state, no breakpoint, one
+  element, and the element's `className` is exactly `{styles.x}` from a
+  `*.module.css` file with one plain `.x` rule. postcss changes only those
+  declarations (`initial` removes one). The queue tries it per item before
+  the agent, inside the run, so undo, Accept, and the history treat it as
+  a run; the rest goes to the agent. Shortcuts: a more specific rule can
+  still win over `.x`, and the user's own agent doesn't use the fast path.
+- **2, more properties.** The inspector reads filters, transitions,
+  animations, background images, grid placement, `order`,
+  `transform-origin`, text decoration and shadow, `white-space`, `cursor`,
+  `object-fit`, `outline`, and visibility, leaving out their defaults.
+- **3, values as written.** The inspector sends the CSS rules that match
+  the selection (with their `@layer`), and `authoredStyles` picks each
+  property's winner by importance, layer, specificity, and order. It skips
+  keywords, Tailwind's spacing `calc()`, and a pixel value the page doesn't
+  have (a rule Scamp couldn't see won). Off in a forced state, whose rules
+  `matches()` can't see.
+- **4, tokens.** `:root`, `html`, and `:host` custom properties (not
+  `--tw-*`) load as the panel's design system on each page load. A pick is
+  sent as `var(--name)`. Shortcut: a Tailwind v3 `tailwind.config` theme
+  isn't read.
+- **7, delete, duplicate, wrap.** A `structure` queue item. Previews:
+  hidden, a copy after it (outside React, removed on undo or `clear`), or
+  outlined. Delete and Cmd+D in the page. Adding new elements waits: what
+  to add is a design question.
+- **8, move into another parent.** In the tree only: the middle of a row
+  drops inside (`dropPosition`), and another parent's row only takes
+  `inside`. A `move` item with `position: 'inside'`. Every move now
+  previews with a stand-in copy (see `docs/notes/embedded-move-preview.md`).
+- **9, multi-select.** Shift- or Cmd-click on the page adds elements;
+  style and structure edits reach them, and the item lists them as
+  `also`. The panel shows the first element's values, not shared ones. Not
+  in the tree yet.
+- **13, a conversation.** `embeddedChat.ts` builds turns from the run
+  events: the batch, the agent's text and tools, and an **Undo** per turn
+  (`undoRun`). A reply is an instruction. The agent already kept its
+  history across runs.
+- **14, a code view.** **Code** in the Style tab: the element's JSX
+  (`jsxLines`, the whole element up to 40 lines) and the matching rules.
+- **15, the dev server's output** stays in the store after start and shows
+  in the Agent tab. PNG export isn't built.
+

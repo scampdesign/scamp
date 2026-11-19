@@ -80,9 +80,9 @@ truth (unit tested in `test/ozone.test.ts`). Highest first:
 Non-Linux platforms always get `null`; the switch is meaningless on
 macOS and Windows.
 
-`scripts/dev.mjs` repeats these rules rather than importing them: the
-compiled shim is ESM and the package is CJS by default, so a `.mjs`
-script can't require it. If the rules change, change both.
+`scripts/dev.mjs` repeats these rules rather than importing them:
+`ozone.ts` is TypeScript, which a plain `.mjs` script can't import
+without a bundler. If the rules change, change both.
 
 ## Why an opt-out exists
 

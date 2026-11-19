@@ -103,3 +103,10 @@ button {
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* Every Tabler icon draws at 1.5px, the app's icon stroke. CSS beats the
+   SVG's own stroke-width attribute, so icons need no per-use prop. Only
+   Tabler's own class: a user's SVG on the legacy canvas has none. */
+.tabler-icon {
+  stroke-width: 1.5;
+}

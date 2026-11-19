@@ -1573,7 +1573,7 @@ export type EmbeddedCheck = {
   status: EmbeddedCheckStatus;
   detail: string;
   /** A fix the setup screen offers as a button, when there is one. */
-  fix?: 'git-init' | 'sign-in' | 'connect-agent';
+  fix?: 'git-init' | 'sign-in' | 'connect-agent' | 'use-own-agent';
 };
 
 /** How the project writes its styles: what the agent edits in. */
@@ -1599,6 +1599,20 @@ export type EmbeddedRecentProject = {
 export type EmbeddedChooseResult =
   | { kind: 'cancelled' }
   | { kind: 'ok'; folder: string };
+
+/** Where a list's order comes from: an array written in the project, or data Scamp can't reorder. */
+export type EmbeddedListOrigin =
+  | { kind: 'written'; at: string; name: string }
+  | { kind: 'data'; reason: string; at: null };
+
+/** An element's JSX as written: `lines` start at line `start` of `file`. */
+export type EmbeddedSourceLines = { file: string; start: number; lines: string[] };
+
+/** An image chosen from disk and copied into the project's `public/`: `url` is its path on the site. */
+export type EmbeddedChooseImageResult =
+  | { kind: 'cancelled' }
+  | { kind: 'ok'; url: string }
+  | { kind: 'error'; error: string };
 
 export type EmbeddedStartProgress =
   | { kind: 'log'; text: string }
@@ -1632,9 +1646,48 @@ export type EmbeddedElementRef = {
   usedAt: string | null;
   /** A short piece of its text, to help find it. */
   text: string;
+  /** Which of the instances this is, from 0, in page order. */
+  instanceIndex?: number;
+  /** Every instance comes from one place a component is used, a list: none has a line of its own. */
+  usedInList?: boolean;
+  /** The component these are separate instances of, such as `Card`; null for a list inside one component. */
+  instanceOf?: string | null;
 };
 
 export type EmbeddedEditScope = 'instance' | 'all';
+
+/** A change to the page's structure, made from the selection. */
+export type EmbeddedStructureAction = 'delete' | 'duplicate' | 'wrap';
+
+/**
+ * An edit made with the app narrower than desktop: it applies up to `upTo`
+ * pixels wide, and wider widths keep their styles.
+ */
+export type EmbeddedBreakpoint = {
+  /** The app's width when the edit was made. */
+  width: number;
+  /** The widest the edit applies at: just under the project's next breakpoint up, or `width`. */
+  upTo: number;
+  /** The project's breakpoints, as its stylesheets use them. */
+  project: number[];
+  /** `min` for mobile-first (`min-width` queries), `max` for desktop-first, null when unknown. */
+  direction: 'min' | 'max' | null;
+};
+
+/** Content Scamp can edit on an element: its text, an image's source or alt text, a link's target. */
+export type EmbeddedContentField = 'text' | 'src' | 'alt' | 'href';
+
+/**
+ * Where content comes from, read from the JSX. `literal`, `import`, and
+ * `prop` (a value written where the component is used) are editable, at
+ * `at`; `data` and `unknown` aren't, and say why. see docs/plans/embedded-canvas-gaps.md (P5)
+ */
+export type EmbeddedContentOrigin =
+  | { kind: 'literal'; value: string; at: string }
+  | { kind: 'import'; value: string; at: string }
+  | { kind: 'prop'; value: string; at: string; prop: string; component: string }
+  | { kind: 'data'; reason: string }
+  | { kind: 'unknown'; reason: string };
 
 /** A pseudo-class forced on the selection; an edit made in one targets that state. */
 export type EmbeddedPseudoState = 'none' | 'hover' | 'focus' | 'active';
@@ -1671,10 +1724,46 @@ export type EmbeddedQueueItem =
       id: string;
       kind: 'style';
       element: EmbeddedElementRef;
+      /** Other elements selected with it, which get the same change. */
+      also?: EmbeddedElementRef[];
       scope: EmbeddedEditScope;
       changes: EmbeddedStyleChange[];
       /** Set when the edit was made with a pseudo-class forced: it styles that state. */
       state?: Exclude<EmbeddedPseudoState, 'none'>;
+      /** Set when the edit was made below desktop width. */
+      breakpoint?: EmbeddedBreakpoint;
+    }
+  | {
+      id: string;
+      kind: 'content';
+      element: EmbeddedElementRef;
+      field: EmbeddedContentField;
+      from: string;
+      to: string;
+      /** Where it's written: in the element's JSX, an import, or a prop where its component is used. */
+      origin: Extract<EmbeddedContentOrigin, { kind: 'literal' | 'import' | 'prop' }>;
+    }
+  | {
+      id: string;
+      kind: 'move';
+      /** The element moved. */
+      element: EmbeddedElementRef;
+      /** The sibling it now sits next to, or with `inside`, its new parent. */
+      target: EmbeddedElementRef;
+      position: 'before' | 'after' | 'inside';
+      /** Both come from one JSX line in a `.map()`: the order is the data's. */
+      fromList: boolean;
+      /** For a list, where its items are written in the project, which is where the order changes. */
+      listAt?: string;
+    }
+  | {
+      id: string;
+      kind: 'structure';
+      action: EmbeddedStructureAction;
+      element: EmbeddedElementRef;
+      also?: EmbeddedElementRef[];
+      /** Every instance from the element's line, or this one. */
+      scope: EmbeddedEditScope;
     }
   | {
       id: string;
@@ -1683,6 +1772,25 @@ export type EmbeddedQueueItem =
       scope: EmbeddedEditScope;
       text: string;
     };
+
+/** Who works the queue: Scamp's own agent (an API key), or the user's own (Claude Code and others, over MCP). */
+export type EmbeddedWorker = 'scamp' | 'own';
+
+/** The user's own agent's connection, for the Changes tab. */
+export type EmbeddedOwnAgentStatus = {
+  worker: EmbeddedWorker;
+  /** The MCP server's URL, while My agent is chosen. */
+  url: string | null;
+  /** Agent config files Scamp registered itself in. */
+  written: string[];
+  skipped: Array<{ path: string; reason: string }>;
+  /** Registers Scamp with Claude Code by hand, for when its config couldn't be written. */
+  command: string | null;
+  /** The user's agent has reached Scamp this session. */
+  seen: boolean;
+  /** It holds a batch now. */
+  working: boolean;
+};
 
 export type EmbeddedAgentPhase = 'idle' | 'paused' | 'thinking' | 'writing' | 'done' | 'error';
 
@@ -1694,6 +1802,8 @@ export type EmbeddedAgentState = {
   lastText: string;
   /** The items the last run wrote, so their layer-1 styles can be cleared. */
   lastRunItemIds: string[];
+  /** The last run's id, for undoing what it wrote. */
+  lastRunId?: string;
   message?: string;
 };
 
@@ -1720,9 +1830,50 @@ export type EmbeddedGitStatus = {
   scampCommits: Array<{ sha: string; subject: string }>;
 };
 
-export type EmbeddedGitResult = { ok: true; message?: string } | { ok: false; error: string };
+export type EmbeddedGitResult =
+  | { ok: true; message?: string }
+  | {
+      ok: false;
+      error: string;
+      /** `pushed`: moving the branch would drop commits already pushed. `changed`: files changed since. `pending`: unaccepted agent changes in the way. */
+      code?: 'pushed' | 'changed' | 'pending';
+    };
+
+/** One entry of the session's history: a commit on the `scamp/` branch. */
+export type EmbeddedHistoryEntry = {
+  sha: string;
+  /** Unix seconds. */
+  time: number;
+  subject: string;
+  /** What changed, in plain words, from the commit's body, with the technical form for a tooltip. */
+  changes: Array<{ text: string; detail: string }>;
+  files: string[];
+  /** Ahead of where the project is now: a step that was gone back past, still reachable. */
+  undone: boolean;
+  current: boolean;
+};
+
+export type EmbeddedHistory = {
+  entries: EmbeddedHistoryEntry[];
+  /** The commit the session started from: going back to it undoes every entry. */
+  base: string | null;
+  atBase: boolean;
+};
 
 /** What the inspector in the page reports to the window. */
+/** A CSS rule that matches the selected element, with the panel's properties it sets. */
+export type EmbeddedMatchedRule = {
+  /** The parts of its selector list that match. */
+  selectors: string[];
+  /** The rule as the page has it, cut at 2,000 characters. */
+  text: string;
+  /** Where it's from: a stylesheet's path, a Vite module id, or `inline`. */
+  sheet: string;
+  /** Its `@layer`, by order of first appearance; null when unlayered. */
+  layer: number | null;
+  decls: Record<string, { value: string; important: boolean }>;
+};
+
 export type EmbeddedInspectorMessage =
   | {
       type: 'select';
@@ -1730,9 +1881,17 @@ export type EmbeddedInspectorMessage =
       uid: string;
       /** React's debug location, for an element with no build-time tag, for main to resolve. */
       raw: EmbeddedRawSource | null;
+      /** Its components, innermost first, with where each is used (`data-scamp-call`) when the build tagged it. */
+      calls: Array<{ name: string; call: string | null; raw?: EmbeddedRawSource | null }>;
+      /** Its text (when it's only text), an image's source and alt text, a link's target; null where it has none. */
+      content: { text: string | null; src: string | null; alt: string | null; href: string | null };
       element: EmbeddedElementRef;
       /** Computed styles of the properties the panel shows. */
       computed: Record<string, string>;
+      /** The CSS rules that match it now, in source order, then its inline style. */
+      rules: EmbeddedMatchedRule[];
+      /** Elements added to the selection with Shift- or Cmd-click. */
+      also?: Array<{ uid: string; element: EmbeddedElementRef }>;
       /** The display of its parent, so the panel knows a flex child. */
       parentDisplay: string;
       textOnly: boolean;
@@ -1744,4 +1903,31 @@ export type EmbeddedInspectorMessage =
   /** Which elements have a pseudo-class forced now. */
   | { type: 'forced'; held: EmbeddedHeld[] }
   /** The page's DOM changed: the layers tree should ask again. */
-  | { type: 'treeChanged' };
+  | { type: 'treeChanged' }
+  /** Delete or Cmd+D in the page, in edit mode, with a selection. */
+  | { type: 'structureKey'; action: EmbeddedStructureAction }
+  /** A double-click on text: may it be edited here? */
+  | { type: 'requestTextEdit'; uid: string }
+  /** The in-page text editor closed with new text. */
+  | { type: 'textEdited'; uid: string; text: string }
+  /** Cmd+Z or Cmd+Shift+Z in the page, in edit mode. */
+  | { type: 'undo' }
+  | { type: 'redo' }
+  /** Why a drag moved something other than the selection, or nothing. */
+  | { type: 'dragNote'; text: string }
+  /** The user dropped an element next to a sibling; the page previews it where it can. */
+  | {
+      type: 'moved';
+      /** The queue item's id, and the tag its preview carries, so undo can take back just this. */
+      tag: string;
+      uid: string;
+      targetUid: string;
+      element: EmbeddedElementRef;
+      raw: EmbeddedRawSource | null;
+      target: EmbeddedElementRef;
+      targetRaw: EmbeddedRawSource | null;
+      position: 'before' | 'after' | 'inside';
+      fromList: boolean;
+      /** True when the parent is flex or grid, so `order` shows the result exactly. */
+      previewed: boolean;
+    };

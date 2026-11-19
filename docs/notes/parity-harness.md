@@ -57,9 +57,8 @@ closed when the canvas started loading the page's own stylesheet
 ## The iframe canvas
 
 The canvas side is measured inside the canvas iframe (`MEASURE_SCRIPT`
-falls back to `document` on the oracle's page, which has none, and on the
-legacy canvas, `SCAMP_E2E_LEGACY_CANVAS=1`). Every field is compared: the
-iframe draws the legacy canvas's canvas-only root floor, so a view root
+falls back to `document` on the oracle's page, which has none). Every
+field is compared: the iframe draws a canvas-only root floor, so a view root
 whose saved CSS has no `min-height` still measures as the oracle's `100vh`
 one does. see docs/notes/iframe-canvas.md
 
@@ -73,15 +72,6 @@ that was pure font resolution.
 
 Give text elements an explicit size. Testing text metrics across two
 browser instances isn't meaningful; testing the box they sit in is.
-
-## Regenerate the shims before running it
-
-**Regenerate the shims before running the harness.** `tsconfig.web.json`
-includes `test/**`, so these specs get committed `.js` siblings like
-everything else, and Playwright imports the `.js`. Editing a fixture
-without `npx tsc --build tsconfig.web.json --force` runs the previous
-version — which shows up as stale test titles and results that don't
-match the source.
 
 ## Paint comparison
 

@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { test, expect } from '../fixtures/app';
-import { IFRAME_CANVAS, canvasElement, pageRoot } from '../fixtures/selectors';
+import { canvasElement, pageRoot } from '../fixtures/selectors';
 
 /**
  * A scroll container in the page (`overflow: auto`) scrolls under the wheel
@@ -101,7 +101,6 @@ test.describe('canvas: scroll containers', () => {
   });
 
   test('the selection outline follows an element the container scrolls', async ({ window }) => {
-    test.skip(!IFRAME_CANVAS, 'the legacy canvas never let a container scroll');
     const item = canvasElement(window, 'item_a002');
     const start = await item.boundingBox();
     if (start === null) throw new Error('item not on screen');

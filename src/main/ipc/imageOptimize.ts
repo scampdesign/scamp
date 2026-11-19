@@ -144,9 +144,11 @@ const getChild = (): ChildProcess | null => {
   try {
     // Both paths are resolved here rather than in the child: it runs from
     // the app bundle, where a bare `require('sharp')` wouldn't resolve.
+    // Under Vitest this module runs from source, and Node strips the child's types itself.
+    const fromSource = typeof __filename === 'string' && __filename.endsWith('.ts');
     const script = join(
       typeof __dirname === 'string' ? __dirname : process.cwd(),
-      'imageOptimizeChild.js'
+      fromSource ? 'imageOptimizeChild.ts' : 'imageOptimizeChild.js'
     );
     const spawned = fork(script, [], {
       env: {

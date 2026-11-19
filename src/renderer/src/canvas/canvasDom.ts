@@ -1,7 +1,6 @@
 /**
  * The one way canvas code reaches the drawn page. The canvas draws into an
- * iframe's document, which registers here; the legacy fallback draws into
- * the app's own. The canvas's chrome (handles, outlines, drop lines)
+ * iframe's document, which registers here. The canvas's chrome (handles, outlines, drop lines)
  * always stays in the app's document.
  * see docs/notes/iframe-canvas.md
  *
@@ -107,7 +106,7 @@ const hasScrollRoom = (el: HTMLElement, overflow: string, delta: number, at: num
 export const canvasScrollTargetAt = (clientX: number, clientY: number, dx: number, dy: number): HTMLElement | null => {
   const hit = canvasElementsFromPoint(clientX, clientY).find((node) => node.closest('[data-element-id]') !== null);
   for (let el: Element | null = hit ?? null; isHtmlNode(el); el = el.parentElement) {
-    // The page ends at the iframe's body, or (legacy canvas) at the frame.
+    // The page ends at the iframe's body.
     if (el.tagName === 'BODY' || el.dataset['testid'] === 'canvas-frame') return null;
     const style = el.ownerDocument.defaultView?.getComputedStyle(el);
     if (style === undefined) return null;

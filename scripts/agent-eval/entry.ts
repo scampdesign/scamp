@@ -1,5 +1,5 @@
 // Everything the import-cleanup eval needs from the app, bundled together
-// by esbuild so the eval reads the TypeScript sources — never a stale shim.
+// by esbuild so the eval reads the TypeScript sources.
 export { captureFn, capturePolicy, prepareFn } from '../../src/shared/captureScript';
 export { reduceCapture } from '../../src/renderer/lib/importReduce';
 export { generateCode } from '../../src/renderer/lib/generateCode';

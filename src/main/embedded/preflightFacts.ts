@@ -69,7 +69,7 @@ export const viteEnvReads = (text: string): string[] =>
 
 export const gatherPreflightFacts = async (
   folder: string,
-  accounts: { signedIn: boolean; agentConnected: boolean }
+  accounts: { signedIn: boolean; agentConnected: boolean; ownAgent: boolean }
 ): Promise<PreflightFacts> => {
   const pkg = await readJson(join(folder, 'package.json'));
   const deps = depNames(pkg);
@@ -113,6 +113,7 @@ export const gatherPreflightFacts = async (
     name: typeof pkg?.['name'] === 'string' ? (pkg['name'] as string) : basename(folder),
     signedIn: accounts.signedIn,
     agentConnected: accounts.agentConnected,
+    ownAgent: accounts.ownAgent,
     gitInstalled,
     isRepo: repo,
     gitUser: repo ? await gitIdentity(folder) : null,
