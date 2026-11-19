@@ -79,9 +79,15 @@ export const selectTool = async (
   page: Page,
   shortcut: 'v' | 'r' | 't' | 'i' | 'f'
 ): Promise<void> => {
-  // The toolbar listens on `window` but only when the focused node is
-  // not an input/textarea/contentEditable. Click the frame first to
-  // make sure focus is somewhere neutral.
-  await canvasFrame(page).click({ position: { x: 1, y: 1 } });
+  // The toolbar listens on the app's `window`, and skips inputs and
+  // contentEditable, so focus must be on the app's body. A click on the
+  // frame's corner did this but timed out when the canvas covered that spot.
+  await page.evaluate(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLIFrameElement) {
+      (active.contentDocument?.activeElement as HTMLElement | null)?.blur();
+    }
+    (active as HTMLElement | null)?.blur();
+  });
   await page.keyboard.press(shortcut);
 };
