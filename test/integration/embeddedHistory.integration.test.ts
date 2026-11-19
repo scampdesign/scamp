@@ -30,6 +30,9 @@ describe('history', () => {
     await fs.mkdir(path.join(dir, 'src'));
     await fs.writeFile(css(dir), '.card { padding: 16px; }\n');
     gitIn(dir, 'init', '-q', '-b', 'main');
+    // `commitFiles` runs plain git; CI has no global identity.
+    gitIn(dir, 'config', 'user.name', 'T');
+    gitIn(dir, 'config', 'user.email', 't@t');
     gitIn(dir, 'add', '.');
     gitIn(dir, 'commit', '-q', '-m', 'init');
     gitIn(dir, 'switch', '-q', '-c', 'scamp/session');
