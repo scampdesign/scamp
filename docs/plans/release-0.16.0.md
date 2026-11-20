@@ -27,7 +27,7 @@ spec files, 12 tests, pass.
 
 ### Automated
 
-- [ ] CI passes on PR #12 at `1ff05270`.
+- [x] CI passes on PR #12 at `1ff05270` (run 44835785729). The checklist commit after it is docs only, which CI skips.
 
 ### Manual (Angie)
 
