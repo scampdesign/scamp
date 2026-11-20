@@ -22,6 +22,18 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Added**
+
+- **In Edit React Project, you can edit an app that's already running,
+  such as a Rails app.** Enter its address and choose the folder its code
+  is in. Scamp loads the app without starting it, and reloads it after the
+  agent writes. In a Rails app, Scamp finds each element's template,
+  partial, or ViewComponent from the comments Rails writes in development,
+  lists the app's pages from its routes, and follows Turbo visits. See
+  [Edit an app that's already running](user_docs/edit-react-project.md#edit-an-app-thats-already-running).
+
 ### 0.15.0 (2026-11-18)
 
 **Added**

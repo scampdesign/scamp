@@ -72,6 +72,7 @@ describe('the user’s own agent over MCP', () => {
         invoke: ownAgentInvoker({
           folder,
           idioms: () => ['css-modules'],
+          stack: () => 'react',
           agent: () => agent,
           selection: () => null,
           onSeen: () => {

@@ -11,9 +11,9 @@ import { copyFixtureApp } from './reactApp';
  * see docs/plans/embedded-scamp-plan.md
  */
 
-/** `test/fixtures/embedded-app`, copied, with one commit on `main`. The caller removes it. */
-export const copyEmbeddedApp = async (): Promise<string> => {
-  const dir = await copyFixtureApp('embedded-app');
+/** `test/fixtures/embedded-app` (or another fixture), copied, with one commit on `main`. The caller removes it. */
+export const copyEmbeddedApp = async (fixture = 'embedded-app'): Promise<string> => {
+  const dir = await copyFixtureApp(fixture);
   const git = (...args: string[]): void => {
     execFileSync('git', args, { cwd: dir, stdio: 'ignore' });
   };
@@ -35,6 +35,18 @@ export const openEmbedded = async (app: ElectronApplication, window: Page, dir: 
   await embedded.waitForLoadState('domcontentloaded');
   await stubOpenDialog(app, dir);
   await embedded.getByTestId('embedded-choose').click();
+  return embedded;
+};
+
+/** Open the Embedded Scamp window attached to an app running at `url`, with its code in `dir`. */
+export const attachEmbedded = async (app: ElectronApplication, window: Page, dir: string, url: string): Promise<Page> => {
+  const opened = app.waitForEvent('window');
+  await window.evaluate(() => (globalThis as unknown as { scamp: { openEmbedded: () => Promise<boolean> } }).scamp.openEmbedded());
+  const embedded = await opened;
+  await embedded.waitForLoadState('domcontentloaded');
+  await stubOpenDialog(app, dir);
+  await embedded.getByTestId('embedded-attach-url').fill(url);
+  await embedded.getByTestId('embedded-attach').click();
   return embedded;
 };
 

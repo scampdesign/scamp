@@ -6,7 +6,8 @@ import { join, relative } from 'path';
  * installs, build output, git internals or Scamp's own folder.
  */
 
-export const SKIPPED_DIRS = new Set(['node_modules', '.git', '.scamp', 'dist', 'build', '.next', 'out', 'coverage', '.turbo', '.vite']);
+// `tmp`, `log`, `storage`, `vendor` and `builds` (`app/assets/builds`) are a Rails app's caches, gems and generated CSS.
+export const SKIPPED_DIRS = new Set(['node_modules', '.git', '.scamp', 'dist', 'build', '.next', 'out', 'coverage', '.turbo', '.vite', 'tmp', 'log', 'storage', 'vendor', 'builds']);
 
 /** Project-relative paths with `/` separators, up to `limit` files. */
 export const listProjectFiles = async (folder: string, limit = 4000): Promise<string[]> => {

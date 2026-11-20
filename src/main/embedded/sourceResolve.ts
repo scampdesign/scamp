@@ -79,6 +79,11 @@ const mapForFile = async (file: string): Promise<SourceMap | null> => {
 
 /** The project file and line React's location names, before refinement. */
 const locate = async (folder: string, origin: string, raw: EmbeddedRawSource): Promise<{ file: string; line: number } | null> => {
+  // Rails names the template, not the line: 0 says to look through the whole file.
+  if (raw.kind === 'template') {
+    const rel = projectPath(raw.path, folder);
+    return rel === null ? null : { file: rel, line: 0 };
+  }
   if (raw.kind === 'file') {
     const rel = projectPath(raw.path, folder);
     return rel === null ? null : { file: rel, line: raw.line };
@@ -111,6 +116,7 @@ export const resolveSource = async (folder: string, origin: string, raw: Embedde
   if (found.file.includes('node_modules/')) return `${found.file}:${found.line}:1`;
   const code = await readText(abs);
   if (code === null) return null;
-  const exact = refineLine(code, found.line, hints);
-  return exact === null ? `${found.file}:${found.line}:1` : `${found.file}:${exact.line}:${exact.column + 1}`;
+  const whole = found.line === 0;
+  const exact = whole ? refineLine(code, 1, hints, code.split('\n').length) : refineLine(code, found.line, hints);
+  return exact === null ? `${found.file}:${Math.max(1, found.line)}:1` : `${found.file}:${exact.line}:${exact.column + 1}`;
 };

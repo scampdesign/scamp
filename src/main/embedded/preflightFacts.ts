@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import { basename, join } from 'path';
 
 import { inspectReactFolder } from '../reactImport/appServer';
+import { probeUrl, readRailsFacts } from './attach';
 import { gitIdentity, hasOrigin, isRepo, parseStatus, git } from './git';
 import { detectIdioms } from './idiom';
 import type { PreflightFacts } from './preflight';
@@ -69,7 +70,8 @@ export const viteEnvReads = (text: string): string[] =>
 
 export const gatherPreflightFacts = async (
   folder: string,
-  accounts: { signedIn: boolean; agentConnected: boolean; ownAgent: boolean }
+  accounts: { signedIn: boolean; agentConnected: boolean; ownAgent: boolean },
+  attachUrl: string | null = null
 ): Promise<PreflightFacts> => {
   const pkg = await readJson(join(folder, 'package.json'));
   const deps = depNames(pkg);
@@ -101,6 +103,13 @@ export const gatherPreflightFacts = async (
     if (/['"`]https?:\/\/localhost:\d{2,5}/.test(text)) hints.add('It calls a server on localhost');
   }
 
+  const idioms = detectIdioms(deps, files);
+  const probe = attachUrl === null ? null : await probeUrl(attachUrl);
+  const attach =
+    attachUrl === null || probe === null
+      ? null
+      : { url: attachUrl, reachable: probe.ok, error: probe.ok ? null : probe.error, rails: await readRailsFacts(folder) };
+
   const engines = pkg?.['engines'];
   const enginesNode =
     engines !== null && typeof engines === 'object' && typeof (engines as Record<string, unknown>)['node'] === 'string'
@@ -130,6 +139,7 @@ export const gatherPreflightFacts = async (
     envExampleWithoutEnv: example !== null && envFiles.length === 0 ? example : null,
     missingEnvVars: [...reads].filter((n) => !defined.has(n)).sort(),
     backendHints: [...hints],
-    idioms: detectIdioms(deps, files),
+    idioms: attach !== null && attach.rails.tailwind && !idioms.includes('tailwind') ? ['tailwind', ...idioms] : idioms,
+    attach,
   };
 };

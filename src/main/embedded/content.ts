@@ -104,7 +104,7 @@ const componentName = (fn: Node, parent: Node | undefined): string | null => {
 
 const FUNCTIONS = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression']);
 
-type Resolved =
+export type Resolved =
   | { kind: 'literal'; value: string; at: string }
   | { kind: 'import'; value: string; at: string }
   | { kind: 'prop'; prop: string; component: string }
@@ -205,11 +205,46 @@ const attributeOf = (element: Node, name: string): Node | 'missing' | 'spread' =
   return attrs.some((a) => a.type === 'JSXSpreadAttribute') ? 'spread' : 'missing';
 };
 
+/**
+ * The content of `field` on the element an ERB template opens at `line:column`:
+ * written in the template, or made by Ruby (`<%= %>`), which Scamp leaves to
+ * the agent. see docs/plans/embedded-rails-plan.md
+ */
+export const erbContentAt = (code: string, file: string, line: number, column: number, field: EmbeddedContentField): Resolved => {
+  const lines = code.split('\n');
+  const start = lines.slice(0, line - 1).reduce((n, l) => n + l.length + 1, 0) + column - 1;
+  const tag = /^<([a-zA-Z][\w-]*)/.exec(code.slice(start))?.[1];
+  if (tag === undefined) return { kind: 'data', reason: 'Scamp couldn’t find the element in its template' };
+  // The opening tag's end, past any `<% %>` and quoted values inside it.
+  let end = start + 1;
+  while (end < code.length && code[end] !== '>') {
+    if (code.startsWith('<%', end)) end = code.indexOf('%>', end) + 1;
+    else if (code[end] === '"' || code[end] === "'") end = code.indexOf(code[end] ?? '', end + 1);
+    if (end <= 0) return { kind: 'data', reason: 'Scamp couldn’t read the template there' };
+    end += 1;
+  }
+  const at = `${file}:${line}`;
+  const RUBY = 'it comes from Ruby code in the template';
+  if (field === 'text') {
+    const close = code.indexOf(`</${tag}`, end);
+    const inner = close === -1 ? '' : code.slice(end + 1, close);
+    if (inner.includes('<%')) return { kind: 'data', reason: RUBY };
+    if (/<[a-zA-Z]/.test(inner)) return { kind: 'data', reason: 'it mixes text with other elements' };
+    return { kind: 'literal', value: inner.replace(/\s+/g, ' ').trim(), at };
+  }
+  const opening = code.slice(start, end + 1);
+  const attr = new RegExp(`\\s${field}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`).exec(opening);
+  if (attr === null) return opening.includes('<%') ? { kind: 'data', reason: 'its attributes are written with Ruby code' } : { kind: 'literal', value: '', at };
+  const value = attr[1] ?? attr[2] ?? '';
+  return value.includes('<%') ? { kind: 'data', reason: RUBY } : { kind: 'literal', value, at };
+};
+
 /** One step: the content of `field` on the element at `source`. */
 const contentAt = async (query: ContentQuery, source: string, field: EmbeddedContentField, attrName: string | null): Promise<Resolved> => {
   const at = splitSource(source);
   if (at === null) return { kind: 'data', reason: 'Scamp couldn’t find where it’s written' };
   const code = await query.read(at.file);
+  if (code !== null && at.file.endsWith('.erb')) return erbContentAt(code, at.file, at.line, at.column, field);
   const program = code === null ? null : parseFile(code, at.file);
   const hit = program === null ? null : elementAt(program, at.line, at.column);
   if (program === null || hit === null) return { kind: 'data', reason: 'Scamp couldn’t read the code there' };

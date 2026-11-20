@@ -1,0 +1,4 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    rails (8.1.4.1)

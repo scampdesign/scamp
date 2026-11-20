@@ -57,6 +57,49 @@ and Scamp writes nothing to it: it finds each element's file from React's
 debug information and the dev server's source maps. While it looks, the
 **Style** tab shows **Finding source…**.
 
+## Edit an app that's already running
+
+You can also edit an app you start yourself, such as a Rails app. Scamp
+loads it as it runs, and never starts or stops it.
+
+1. Start your app the way you usually do, for example with `bin/dev`.
+1. On the start screen, click **Edit React Project**. A new window opens.
+1. Under **Or edit an app that's already running**, enter the app's
+   address, such as `localhost:3000`, and click **Choose its folder**.
+1. Select the folder that holds your app's code. For a Rails app, choose
+   the folder with its `Gemfile`.
+1. Read the setup screen, and click **Start**.
+
+Scamp creates a `scamp/` branch as it does for a React project. After the
+agent writes your changes, Scamp reloads the page. If your app builds its
+CSS with a watcher, such as `tailwindcss-rails`, Scamp waits for the new
+CSS first.
+
+The app opens with its own sign-in storage, so you sign in to it once
+inside Scamp.
+
+### Find each element's template in a Rails app
+
+In development, Rails can mark where each template, partial, and
+ViewComponent starts and ends in the page. Scamp reads those marks, so the
+**Style** tab shows the template an element comes from, and the scope
+buttons name the partial or component, such as **This _card** and
+**Every _card · 3**.
+
+If the setup screen shows **Turn on template comments**, add this line to
+`config/environments/development.rb`, and restart your app:
+
+```ruby
+config.action_view.annotate_rendered_view_with_filenames = true
+```
+
+Without it, you can still edit every element: the agent searches your
+project for it by its classes and text.
+
+**Note:** Rails marks the template but not the line in it. Scamp picks
+the line from the element's tag, classes, and text, and the agent checks
+it before it writes.
+
 ## Style an element
 
 1. In the toolbar, make sure **Edit** is on.

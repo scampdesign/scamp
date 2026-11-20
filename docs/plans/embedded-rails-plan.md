@@ -8,6 +8,33 @@ but nothing in the attach path is Rails-only.
 
 see docs/plans/embedded-scamp-plan.md for the architecture this builds on.
 
+## Status (2026-11-18)
+
+All three phases are built on `feat/embedded-attach-rails`, and waiting for
+testing by hand on the test app. What differs from the plan:
+
+- **The entry is in the Edit React Project window**, under **Or edit an app
+  that's already running** on its first screen, not a new start-screen
+  button. Recent projects remember the address.
+- **Content edits read ERB** (`erbContentAt` in `content.ts`): text and
+  attributes written in the template are editable; anything `<%= %>` writes
+  goes to the agent as data.
+- **The agent's file tools skip `tmp`, `log`, `storage`, `vendor` and
+  `builds`**, and its search reads `.erb`, `.rb`, `.haml`, `.slim` and
+  `.yml`. Before this, a Rails app's `tmp/` filled the 4,000-file walk
+  before `app/` was reached.
+- **Each attached project has its own sign-in storage** (a webview
+  partition per folder). Cookies aren't kept apart by port, so two apps on
+  localhost would sign each other out.
+- **Tailwind tokens needed nothing new**: the panel already reads `:root`
+  custom properties from the page's CSS, which is where Tailwind v4 puts
+  its theme.
+- **The Code section** shows the template's lines around the picked one
+  through the existing reader, which falls back to ten lines when it can't
+  parse the file as JSX.
+- **After a reload, nothing is selected.** The page is new; select the
+  element again.
+
 ## The first test app
 
 A real Rails 8.1 app, which is a good match for this plan:
@@ -68,10 +95,10 @@ A real Rails 8.1 app, which is a good match for this plan:
 
 The smallest version that's useful on the test app.
 
-- [ ] A setup screen for **Edit a running app**: the app's URL (or a port,
+- [x] A setup screen for **Edit a running app**: the app's URL (or a port,
   read as `http://localhost:<port>`), and the folder. Remember both in the
   recent projects list.
-- [ ] Checks, in place of the React preflight (`preflight.ts`,
+- [x] Checks, in place of the React preflight (`preflight.ts`,
   `preflightFacts.ts`):
   - The URL responds. Follow redirects, so `/` → `/login` passes.
   - The folder is inside a git repository. A subfolder is fine.
@@ -79,27 +106,27 @@ The smallest version that's useful on the test app.
     (`tailwindcss-rails`, `dartsass-rails`, `cssbundling-rails`, plain
     `app/assets/stylesheets`). This only feeds the prompt; nothing fails
     on it.
-- [ ] `EmbeddedStart` (`window.ts`) gets a branch for an attached session:
+- [x] `EmbeddedStart` (`window.ts`) gets a branch for an attached session:
   make the session branch, skip `writeInstrumentation` and
   `startReactApp`, and use the given URL. Don't stop the server on close,
   since Scamp didn't start it.
-- [ ] Reload after a run. With no Vite hot reload, Scamp reloads the webview
+- [x] Reload after a run. With no Vite hot reload, Scamp reloads the webview
   when a run ends (the **My agent** path already does on
   `scamp_embedded_finish`).
   - Tailwind's watcher rebuilds the CSS a moment after the agent writes. A
     reload before it finishes shows the old styles. Wait until the
     stylesheet's fingerprinted URL changes (Propshaft's digest), or for a
     short settle time if the CSS didn't change.
-- [ ] The agent prompt for an attached Rails app (`agentQueue.ts`,
+- [x] The agent prompt for an attached Rails app (`agentQueue.ts`,
   `ownAgent.ts`): it's a Rails app with ERB, partials and ViewComponents;
   styles go where the project keeps them (Tailwind utility classes in the
   template, or the project's CSS files, and tokens rather than raw values);
   read the repository's agent instructions first.
-- [ ] Turn off what doesn't apply: React component scopes, list origins
+- [x] Turn off what doesn't apply: React component scopes, list origins
   (`listOrigin.ts`), Next.js routes, and the CSS Modules fast path
   (`fastPath.ts`). Each should already fall back when it finds nothing.
   Confirm it does, and hide any control that only makes sense for React.
-- [ ] Sign-in: the webview keeps its own session, so the user signs in once
+- [x] Sign-in: the webview keeps its own session, so the user signs in once
   inside Scamp. Use a persistent partition per project, so it survives a
   restart.
 
@@ -109,22 +136,22 @@ right ERB or CSS file, and the page reloads showing it.
 
 ### 2. Templates from Rails' comments
 
-- [ ] In the inspector, find the template an element came from: walk back in
+- [x] In the inspector, find the template an element came from: walk back in
   document order from the element, counting `END`/`BEGIN` comments, and
   stop at the first `BEGIN` that isn't closed. That's the innermost
   template, partial or component. Also collect the chain outwards (layout →
   view → partial → component), as React's component chain is collected now.
-- [ ] Send the template path with each edit, as the source location. There's
+- [x] Send the template path with each edit, as the source location. There's
   no line, so pick one in main the way `refineLine` does for Next.js:
   score the template's lines by the element's classes, tag and text.
-- [ ] Scope buttons, as for React components: a partial or component
+- [x] Scope buttons, as for React components: a partial or component
   rendered more than once on the page reads **This _card** and **Every
   _card · 3** (count the `BEGIN` comments for that file). An element from
   a `.each` inside one template stays "this one", and the agent says when
   it can't be done for only one.
-- [ ] Show the template in the **Code** section of the Style tab: the file,
+- [x] Show the template in the **Code** section of the Style tab: the file,
   and the lines around the picked one.
-- [ ] If the comments are missing, say once that turning on
+- [x] If the comments are missing, say once that turning on
   `annotate_rendered_view_with_filenames` makes selection precise, with the
   line to add. Scamp doesn't add it.
 
@@ -134,7 +161,7 @@ rendered.
 
 ### 3. Turbo, routes and Tailwind
 
-- [ ] **Turbo Drive** swaps the `<body>` on navigation without a page load,
+- [x] **Turbo Drive** swaps the `<body>` on navigation without a page load,
   so `did-finish-load` doesn't fire. Listen for `turbo:load` in the
   inspector (or the webview's `did-navigate-in-page`), re-attach the outline
   and the layers tree, and update the path field.
@@ -142,13 +169,13 @@ rendered.
     Turbo visit, rather than left pointing at removed nodes.
   - Turbo Frames and Streams change part of the page. Treat them like a
     React re-render: refresh the tree after a quiet DOM change, as now.
-- [ ] **Routes**: same-origin links on each page work already. Add
+- [x] **Routes**: same-origin links on each page work already. Add
   `bin/rails routes` output, run once per session in the folder, with only
   `GET` routes that have no required parameters.
-- [ ] **Tailwind**: detect `tailwindcss-rails` and the Tailwind v4
+- [x] **Tailwind**: detect `tailwindcss-rails` and the Tailwind v4
   `@theme` tokens in `app/assets/tailwind/application.css`, so the panel
   offers the project's tokens and the agent writes their utilities.
-- [ ] **ViewComponent**: name the component in the scope buttons by its
+- [x] **ViewComponent**: name the component in the scope buttons by its
   class (`ConfirmDialogComponent`), from the template path.
 
 ## Known limits

@@ -27,10 +27,52 @@ const ready: PreflightFacts = {
   missingEnvVars: [],
   backendHints: [],
   idioms: ['css-modules'],
+  attach: null,
 };
 
 const statusOf = (facts: PreflightFacts, id: string): string | undefined =>
   evaluatePreflight(facts).checks.find((c) => c.id === id)?.status;
+
+const rails = { rails: true, version: '8.1.4', tailwind: true, turbo: true, viewComponent: true, annotated: true, appIn: null };
+const attached = (over: Partial<NonNullable<PreflightFacts['attach']>> = {}): PreflightFacts => ({
+  ...ready,
+  // A Rails folder: no package.json, so the React facts say nothing.
+  framework: null,
+  frameworkError: 'No package.json.',
+  packageManager: null,
+  nodeVersion: null,
+  attach: { url: 'http://localhost:3010/', reachable: true, error: null, rails, ...over },
+});
+
+describe('evaluatePreflight for an app Scamp attaches to', () => {
+  it('starts a running Rails app without the React checks, mapping elements by its template comments', () => {
+    const report = evaluatePreflight(attached());
+    expect(report).toMatchObject({ canStart: true, framework: 'rails', attachUrl: 'http://localhost:3010/' });
+    expect(report.checks.map((c) => c.id)).toEqual(['scamp', 'agent', 'git', 'app', 'bundler', 'instrument', 'branch']);
+    expect(report.checks.find((c) => c.id === 'bundler')).toMatchObject({ status: 'pass', label: 'Rails 8.1.4', detail: 'With ViewComponent, Turbo, Tailwind.' });
+    expect(statusOf(attached(), 'instrument')).toBe('pass');
+  });
+
+  it('can’t start until the app answers', () => {
+    const report = evaluatePreflight(attached({ reachable: false, error: 'Nothing answered there.' }));
+    expect(report.canStart).toBe(false);
+    expect(report.checks.find((c) => c.id === 'app')).toMatchObject({ status: 'fail', label: 'Start your app' });
+  });
+
+  it('warns, and still starts, when template comments are off or the Rails app is in a subfolder', () => {
+    const off = evaluatePreflight(attached({ rails: { ...rails, annotated: null } }));
+    expect(off.canStart).toBe(true);
+    expect(off.checks.find((c) => c.id === 'instrument')?.detail).toContain('annotate_rendered_view_with_filenames = true');
+    const parent = evaluatePreflight(attached({ rails: { ...rails, rails: false, appIn: 'riq' } }));
+    expect(parent.checks.find((c) => c.id === 'bundler')).toMatchObject({ status: 'warn', label: 'Choose the Rails app’s folder' });
+  });
+
+  it('attaches to an app that isn’t Rails as a plain server', () => {
+    const report = evaluatePreflight(attached({ rails: { ...rails, rails: false } }));
+    expect(report).toMatchObject({ canStart: true, framework: 'server' });
+    expect(report.checks.some((c) => c.id === 'instrument')).toBe(false);
+  });
+});
 
 describe('evaluatePreflight', () => {
   it('can start a ready Vite project, and lists what Start will do', () => {
