@@ -193,8 +193,19 @@ export const computedToDeclarations = (computed: Record<string, string>): Array<
   return out;
 };
 
+/** What kind of project the agent writes in: one Scamp runs (React), or an app it attached to. */
+export type EmbeddedStack = 'react' | 'rails' | 'server';
+
+/** The agent's description of the project, by stack. see docs/plans/embedded-rails-plan.md */
+export const stackLine = (stack: EmbeddedStack): string =>
+  stack === 'rails'
+    ? 'It’s a Rails app. Views and partials are ERB under app/views; ViewComponents are under app/components, a Ruby class with its template beside it. An element’s “Written at” names the template Rails rendered it from; the line in it is Scamp’s best guess, so check it. Styles go in the template’s `class` attributes, or in the app’s stylesheets. If the project has a CLAUDE.md or AGENTS.md, read it first and follow it.'
+    : stack === 'server'
+      ? 'It’s a server-rendered app that Scamp loads while it runs. Find each element’s template by searching for its classes and text. If the project has a CLAUDE.md or AGENTS.md, read it first and follow it.'
+      : 'It’s a React project.';
+
 const IDIOM_RULES: Record<EmbeddedIdiom, string> = {
-  tailwind: 'This project styles with Tailwind: change utility classes in `className`, using its theme scale (for example `p-6`, not `p-[24px]`, when 24px is on the scale).',
+  tailwind: 'This project styles with Tailwind: change utility classes in `className` (or `class` in a template), using its theme scale (for example `p-6`, not `p-[24px]`, when 24px is on the scale).',
   'css-modules': 'This project uses CSS Modules: change the rule for the element’s class in its `*.module.css` file, not inline styles.',
   'styled-components': 'This project uses styled-components or Emotion: change the styled definition, not inline styles.',
   'plain-css': 'This project uses plain CSS: change the rule for the element’s class in its stylesheet.',
@@ -230,24 +241,28 @@ const scopeLine = (scope: EmbeddedEditScope, el: EmbeddedElementRef | null): str
   return 'Scope: this instance only. Leave the other instances as they are: override it where this one is used (a prop, a modifier class, or the call site), not in the shared definition.';
 };
 
-/** The scope buttons' words: named after the component when the instances are its own. */
-export const scopeWords = (el: EmbeddedElementRef): { one: string; every: string; oneTip: string; everyTip: string } => {
+/**
+ * The scope buttons' labels, short so they never crowd the panel, and the
+ * line under them saying what the chosen one changes, named after the
+ * component when the instances are its own.
+ */
+export const scopeWords = (el: EmbeddedElementRef): { one: string; every: string; oneNote: string; everyNote: string } => {
   const n = el.instanceCount;
   const name = el.instanceOf ?? null;
   const noun = name ?? 'one';
   return {
-    one: `This ${noun}`,
-    every: name === null ? `All ${n}` : `Every ${name} · ${n}`,
-    oneTip:
+    one: 'This one',
+    every: `All ${n}`,
+    oneNote:
       el.usedInList === true
-        ? `Changes only this ${noun}, number ${(el.instanceIndex ?? 0) + 1} of ${n} in a list`
+        ? `Changes only this ${noun}, number ${(el.instanceIndex ?? 0) + 1} of ${n} in a list.`
         : el.usedAt !== null && name !== null
-          ? `Changes only this ${noun}, where it’s used at ${el.usedAt}`
-          : `Changes only this ${noun}`,
-    everyTip:
+          ? `Changes only this ${noun}, where it’s used at ${el.usedAt}.`
+          : `Changes only this ${noun}.`,
+    everyNote:
       name === null
-        ? `Changes the shared code: all ${n} on this page`
-        : `Changes the ${name} component: all ${n} on this page, and anywhere else it’s used`,
+        ? `Changes the shared code: all ${n} on this page.`
+        : `Changes the ${name} component: all ${n} on this page, and anywhere else it’s used.`,
   };
 };
 
@@ -504,6 +519,57 @@ export const breakpointFor = (width: number | null, project: ReadonlyArray<numbe
 /** Messages from the inspector arrive as console lines starting with this. */
 export const INSPECTOR_PREFIX = '__scamp_inspector__';
 
+/** One rendering of a server template, from Rails' `<!-- BEGIN path -->` … `<!-- END path -->` comments. */
+export type TemplateFrame = {
+  path: string;
+  /** `ConfirmDialogComponent`, `_card`, `patients/index`, `layouts/application`. */
+  name: string;
+  kind: 'layout' | 'view' | 'partial' | 'component';
+  begin: Comment;
+  parent: TemplateFrame | null;
+};
+
+/**
+ * The template each element was rendered from: one pass over the document,
+ * keeping a stack of the `BEGIN`/`END` comments Rails writes in development
+ * (`annotate_rendered_view_with_filenames`; ViewComponent writes them too).
+ * Runs IN the page, passed to `installInspector`, so it must be
+ * self-contained. see docs/plans/embedded-rails-plan.md
+ */
+export const templateFrames = (doc: Document): Map<Element, TemplateFrame> => {
+  const out = new Map<Element, TemplateFrame>();
+  const describeTemplate = (path: string): Pick<TemplateFrame, 'name' | 'kind'> => {
+    const base = (path.split('/').pop() ?? path).replace(/\..*$/, '');
+    if (/(^|\/)app\/components\//.test(path) || /_component$/.test(base)) {
+      return { kind: 'component', name: base.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join('') };
+    }
+    if (base.startsWith('_')) return { kind: 'partial', name: base };
+    const folder = path.split('/').slice(-2, -1)[0] ?? '';
+    return { kind: /(^|\/)layouts\//.test(path) ? 'layout' : 'view', name: folder === '' ? base : `${folder}/${base}` };
+  };
+  // Typed through a box: TS narrows a `let` that's only reassigned in the loop to `null`.
+  const stack: { top: TemplateFrame | null } = { top: null };
+  const walker = doc.createTreeWalker(doc, 0x1 | 0x80);
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    if (node.nodeType === 8) {
+      const m = /^\s*(BEGIN|END)\s+(\S+)\s*$/.exec(node.nodeValue ?? '');
+      if (m === null) continue;
+      const path = m[2] ?? '';
+      if (m[1] === 'BEGIN') {
+        stack.top = { path, ...describeTemplate(path), begin: node as Comment, parent: stack.top };
+      } else {
+        // Close back to the matching BEGIN; one left open by bad markup is closed with it.
+        let at = stack.top;
+        while (at !== null && at.path !== path) at = at.parent;
+        if (at !== null) stack.top = at.parent;
+      }
+    } else if (stack.top !== null) {
+      out.set(node as Element, stack.top);
+    }
+  }
+  return out;
+};
+
 export type InspectorConfig = {
   prefix: string;
   attr: string;
@@ -566,7 +632,7 @@ export type InspectorCommand =
  *   was there so `clear` puts it back.
  * - **Tree** returns the page as a tree of ids, for the layers panel.
  */
-export const installInspector = (config: InspectorConfig): void => {
+export const installInspector = (config: InspectorConfig, framesOf: (doc: Document) => Map<Element, TemplateFrame> = () => new Map()): void => {
   type Api = { run: (cmd: unknown) => void; tree: () => EmbeddedTreeNode; breakpoints: () => { min: number[]; max: number[] }; tokens: () => Array<{ name: string; value: string }>; config: InspectorConfig };
   type Win = Window & { __scampInspector?: Api };
   const w = window as Win;
@@ -675,7 +741,26 @@ export const installInspector = (config: InspectorConfig): void => {
   };
   const INTERNAL = /\/node_modules\/(react|react-dom|scheduler|next)\/|node_modules_(react|next)[_.]|\/next\/dist\/|react-dom|react-server-dom|jsx-dev-runtime|jsx-runtime|\[turbopack\]|<anonymous>/;
   /** Where React says the element's JSX is, for an element Scamp couldn't tag at build time. */
-  const rawSourceOf = (el: Element): EmbeddedRawSource | null => rawSourceOfFiber(fiberOf(el));
+  const rawSourceOf = (el: Element): EmbeddedRawSource | null => {
+    const fromReact = rawSourceOfFiber(fiberOf(el));
+    if (fromReact !== null) return fromReact;
+    const frame = frameOf(el);
+    return frame === null ? null : { kind: 'template', path: frame.path };
+  };
+  /** Server templates by element, from the page's comments; rebuilt after the page changes. */
+  let frames: Map<Element, TemplateFrame> | null = null;
+  const frameOf = (el: Element): TemplateFrame | null => {
+    frames ??= framesOf(document);
+    return frames.get(el) ?? null;
+  };
+  /** The element's tags and classes up to where its template starts: one line of a template, in any rendering of it. */
+  const chainInFrame = (el: Element, frame: TemplateFrame): string => {
+    const parts: string[] = [];
+    for (let a: Element | null = el; a !== null && frameOf(a) === frame && parts.length < 12; a = a.parentElement) {
+      parts.push([a.tagName.toLowerCase(), ...Array.from(a.classList)].join('.'));
+    }
+    return parts.join('<');
+  };
   /** Where React says a fiber's JSX was written: an element's own tag, or where a component is used. */
   const rawSourceOfFiber = (fiber: Fiber | null | undefined): EmbeddedRawSource | null => {
     const ds = fiber?._debugSource;
@@ -693,7 +778,12 @@ export const installInspector = (config: InspectorConfig): void => {
     const attr = el.getAttribute(api.config.attr);
     if (attr !== null) return attr;
     const raw = rawSourceOf(el);
-    return raw === null ? null : raw.kind === 'frame' ? `${raw.url}:${raw.line}:${raw.column}` : `${raw.path}:${raw.line}:${raw.column}`;
+    if (raw === null) return null;
+    if (raw.kind === 'template') {
+      const frame = frameOf(el);
+      return frame === null ? null : `${raw.path}|${chainInFrame(el, frame)}`;
+    }
+    return raw.kind === 'frame' ? `${raw.url}:${raw.line}:${raw.column}` : `${raw.path}:${raw.line}:${raw.column}`;
   };
   const sameSource = (el: Element): HTMLElement[] => {
     const attr = el.getAttribute(api.config.attr);
@@ -702,9 +792,18 @@ export const installInspector = (config: InspectorConfig): void => {
     if (key === null) return el instanceof HTMLElement ? [el] : [];
     return Array.from(document.getElementsByTagName(el.tagName)).filter((o): o is HTMLElement => o instanceof HTMLElement && keyOf(o) === key);
   };
+  /** A rendered partial or component: what scope buttons and layers name, as React components are named. */
+  const pieceOf = (el: Element): TemplateFrame | null => {
+    for (let f = frameOf(el); f !== null; f = f.parent) if (f.kind === 'partial' || f.kind === 'component') return f;
+    return null;
+  };
   const componentsOf = (el: Element): string[] => {
     const names: string[] = [];
     let fiber: Fiber | null | undefined = fiberOf(el);
+    if (fiber === undefined) {
+      for (let f = frameOf(el); f !== null && names.length < 6; f = f.parent) if (f.kind !== 'layout') names.push(f.name);
+      return names;
+    }
     for (let i = 0; fiber && i < 200 && names.length < 6; i += 1, fiber = fiber.return) {
       const t = fiber.type as { displayName?: string; name?: string; render?: { name?: string } } | string | undefined;
       if (t === undefined || t === null || typeof t === 'string') continue;
@@ -715,6 +814,13 @@ export const installInspector = (config: InspectorConfig): void => {
   };
   /** The component this element is the outermost DOM node of, if any. */
   const rootComponentOf = (el: Element): string | null => {
+    const frame = fiberOf(el) === undefined ? frameOf(el) : null;
+    if (frame !== null) {
+      // The first element a partial or component renders stands for it, as a component's root does.
+      let first: Node | null = frame.begin.nextSibling;
+      while (first !== null && first.nodeType !== 1) first = first.nextSibling;
+      return first === el && (frame.kind === 'partial' || frame.kind === 'component') ? frame.name : null;
+    }
     let found: string | null = null;
     let fiber: Fiber | null | undefined = fiberOf(el)?.return;
     for (let i = 0; fiber && i < 50; i += 1, fiber = fiber.return) {
@@ -758,6 +864,19 @@ export const installInspector = (config: InspectorConfig): void => {
    */
   const instanceFacts = (el: Element): { instanceIndex: number; usedInList: boolean; instanceOf: string | null } => {
     const all = sameSource(el);
+    if (fiberOf(el) === undefined && frameOf(el) !== null) {
+      const instanceIndex = Math.max(0, all.indexOf(el as HTMLElement));
+      const piece = pieceOf(el);
+      const pieces = all.map(pieceOf);
+      // Each in a rendering of its own: instances of that partial or component.
+      if (all.length > 1 && piece !== null && new Set(pieces).size === all.length && pieces.every((p) => p?.path === piece.path)) {
+        // Rendered side by side from one template, as `render collection:` or a loop does: no line of their own.
+        const together = pieces.every((p) => p?.parent === piece.parent && p?.begin.parentNode === piece.begin.parentNode);
+        return { instanceIndex, usedInList: together, instanceOf: piece.name };
+      }
+      // All inside one rendering: a loop in the template.
+      return { instanceIndex, usedInList: all.length > 1 && new Set(all.map(frameOf)).size === 1, instanceOf: null };
+    }
     const firstCall = (e: Element): string | null => callsOf(e).find((c) => c.call !== null)?.call ?? null;
     const call = firstCall(el);
     const owner = ownerOf(el);
@@ -794,6 +913,9 @@ export const installInspector = (config: InspectorConfig): void => {
       const s = a.getAttribute(api.config.attr);
       if (s !== null && s.replace(/:\d+:\d+$/, '') !== file) usedAt = s;
     }
+    // A partial or component is used where the template around it renders it.
+    const piece = usedAt === null && fiberOf(el) === undefined ? pieceOf(el) : null;
+    if (piece?.parent != null) usedAt = piece.parent.path;
     const computed: Record<string, string> = {};
     const cs = getComputedStyle(el);
     for (const p of api.config.properties) computed[p] = cs.getPropertyValue(p);
@@ -892,7 +1014,7 @@ export const installInspector = (config: InspectorConfig): void => {
     for (const a of state.also) place(a.box, shownOf(a.el));
     if (state.selected !== null && state.selected.isConnected) {
       const r = shownOf(state.selected).getBoundingClientRect();
-      const src = state.selected.getAttribute(api.config.attr);
+      const src = state.selected.getAttribute(api.config.attr) ?? frameOf(state.selected)?.path ?? null;
       label.textContent = `${state.selected.tagName.toLowerCase()}${src !== null ? `  ${src.replace(/:\d+$/, '')}` : ''}`;
       label.style.display = 'block';
       label.style.left = `${Math.max(0, r.left)}px`;
@@ -1555,12 +1677,16 @@ export const installInspector = (config: InspectorConfig): void => {
   };
   // The tree goes stale as the page renders: say so, and the window asks again.
   let treeTimer: ReturnType<typeof setTimeout> | null = null;
+  // The whole document, not the body: Turbo swaps in a new <body> on every visit.
   new MutationObserver((records) => {
     retireGhosts(records);
     if (records.every((r) => isOverlay(r.target) || Array.from(r.addedNodes).every(isOverlay))) return;
+    frames = null;
     if (treeTimer !== null) clearTimeout(treeTimer);
     treeTimer = setTimeout(() => send({ type: 'treeChanged' }), 400);
-  }).observe(document.body, { childList: true, subtree: true });
+  }).observe(document.documentElement, { childList: true, subtree: true });
+  // A Turbo visit changes the page without a load, so the window hears of it here.
+  document.addEventListener('turbo:load', () => send({ type: 'pageChanged' }));
 
   api = {
     config,
@@ -1712,17 +1838,17 @@ export const installInspector = (config: InspectorConfig): void => {
 
 /** The source text that installs the inspector, then runs `cmd` if given. */
 export const inspectorScript = (config: InspectorConfig, cmd?: InspectorCommand): string =>
-  `(${installInspector.toString()})(${JSON.stringify(config)});` +
+  `(${installInspector.toString()})(${JSON.stringify(config)}, ${templateFrames.toString()});` +
   (cmd === undefined ? '' : `window.__scampInspector.run(${JSON.stringify(cmd)});`);
 
 /** The source text that returns the widths the page's stylesheets break at. */
 export const inspectorBreakpointsScript = (config: InspectorConfig): string =>
-  `(${installInspector.toString()})(${JSON.stringify(config)}); window.__scampInspector.breakpoints();`;
+  `(${installInspector.toString()})(${JSON.stringify(config)}, ${templateFrames.toString()}); window.__scampInspector.breakpoints();`;
 
 /** The source text that returns the page's design tokens, installing the inspector first. */
 export const inspectorTokensScript = (config: InspectorConfig): string =>
-  `(${installInspector.toString()})(${JSON.stringify(config)}); window.__scampInspector.tokens();`;
+  `(${installInspector.toString()})(${JSON.stringify(config)}, ${templateFrames.toString()}); window.__scampInspector.tokens();`;
 
 /** The source text that returns the page's tree, installing the inspector first. */
 export const inspectorTreeScript = (config: InspectorConfig): string =>
-  `(${installInspector.toString()})(${JSON.stringify(config)}); window.__scampInspector.tree();`;
+  `(${installInspector.toString()})(${JSON.stringify(config)}, ${templateFrames.toString()}); window.__scampInspector.tree();`;

@@ -57,6 +57,49 @@ and Scamp writes nothing to it: it finds each element's file from React's
 debug information and the dev server's source maps. While it looks, the
 **Style** tab shows **Finding source…**.
 
+## Edit an app that's already running
+
+You can also edit an app you start yourself, such as a Rails app. Scamp
+loads it as it runs, and never starts or stops it.
+
+1. Start your app the way you usually do, for example with `bin/dev`.
+1. On the start screen, click **Edit React Project**. A new window opens.
+1. Under **Or edit an app that's already running**, enter the app's
+   address, such as `localhost:3000`, and click **Choose its folder**.
+1. Select the folder that holds your app's code. For a Rails app, choose
+   the folder with its `Gemfile`.
+1. Read the setup screen, and click **Start**.
+
+Scamp creates a `scamp/` branch as it does for a React project. After the
+agent writes your changes, Scamp reloads the page. If your app builds its
+CSS with a watcher, such as `tailwindcss-rails`, Scamp waits for the new
+CSS first.
+
+The app opens with its own sign-in storage, so you sign in to it once
+inside Scamp.
+
+### Find each element's template in a Rails app
+
+In development, Rails can mark where each template, partial, and
+ViewComponent starts and ends in the page. Scamp reads those marks, so the
+**Style** tab shows the template an element comes from, and the line
+under **Apply to** names the partial or component, such as "Changes only
+this _card."
+
+If the setup screen shows **Turn on template comments**, add this line to
+`config/environments/development.rb`, and restart your app:
+
+```ruby
+config.action_view.annotate_rendered_view_with_filenames = true
+```
+
+Without it, you can still edit every element: the agent searches your
+project for it by its classes and text.
+
+**Note:** Rails marks the template but not the line in it. Scamp picks
+the line from the element's tag, classes, and text, and the agent checks
+it before it writes.
+
 ## Style an element
 
 1. In the toolbar, make sure **Edit** is on.
@@ -66,19 +109,19 @@ debug information and the dev server's source maps. While it looks, the
 1. Change its styles in the panel. The page updates at once.
 
 When the same line of JSX draws more than one element, such as a card in
-a list, the **Style** tab shows two buttons. When the elements are
-instances of a component, the buttons name it: **This Card** and **Every
-Card · 3**, with how many are on this page.
+a list, the **Style** tab shows **Apply to**, with two choices, and a line
+under them that says what the chosen one changes:
 
-- **This Card** changes only the instance you selected. The agent changes
-  it where that card is used. If every card comes from one list, the
-  agent picks this one out by its place or its data in the list, or says
-  it can't.
-- **Every Card** changes the component itself, so every card changes,
-  on this page and on any other page that uses it.
+- **This one** changes only the element you selected. For a component's
+  instance, the agent changes it where that instance is used. If every
+  instance comes from one list, the agent picks this one out by its place
+  or its data in the list, or says it can't.
+- **All 3**, with how many are on this page, changes the shared code. For
+  a component, that's the component itself, so every instance changes, on
+  this page and on any other page that uses it.
 
-For a list inside one component, the buttons read **This one** and
-**All**. Hold the pointer over a button to see what it changes.
+The **State** row below it shows and styles a hover, focus, or active
+state. See [Style a hover, focus, or active state](#style-a-hover-focus-or-active-state).
 
 The panel shows each value as your code writes it where Scamp can read
 it: `auto`, `50%`, `1.5rem`, or a token such as `var(--accent)`, rather
@@ -284,22 +327,28 @@ don't need an API key.
 1. Click **Start**. Scamp connects to your agent through its MCP server
    and adds the connection to your agent's settings in the project, such
    as `.mcp.json` for Claude Code. Scamp keeps that file out of git.
-1. In the **Agent** tab, under **My agent**, there's a terminal open in
-   your project's folder. Click **Start Claude Code**, or start another
-   agent there. If it asks whether to use the `scamp` server, allow it.
+1. The **Connect your agent** window opens, with a terminal in your
+   project's folder. Click **Start Claude Code**, or start another agent
+   in the terminal. If it asks whether to use the `scamp` server, allow
+   it.
 1. Click **Paste the prompt**, and press **Enter**.
+
+When your agent connects, the window minimizes into the **Agent** tab,
+which shows whether your agent is connected and when it's writing. To see
+the terminal again, in the **Agent** tab, click **Open terminal**. The
+terminal keeps running while the window is minimized. To minimize it
+yourself, click the minimize button in its top-right corner.
 
 You can also use your agent in a terminal of your own: open it in the
 project's folder, and paste the line from **Copy**.
 
 Your agent then waits for your edits, writes each batch, and waits for
-more until you tell it to stop. The **Agent** tab shows whether it's
-connected and when it's writing. You review, accept, and discard its
+more until you tell it to stop. You review, accept, and discard its
 changes the same way.
 
 **Note:** If your project already tracks the agent's settings file in
-git, Scamp doesn't change it. The **Agent** tab shows a command to
-connect Claude Code yourself instead.
+git, Scamp doesn't change it. The **Connect your agent** window shows a
+command to connect Claude Code yourself instead.
 
 ## Review and keep changes
 

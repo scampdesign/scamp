@@ -29,16 +29,33 @@
 
 .own {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
   font-size: 12px;
-  line-height: 1.45;
+}
+
+/* A dot that turns the accent colour once the agent connects. */
+.state {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
   color: var(--text-secondary);
 }
 
-.state {
-  margin: 0;
-  color: var(--text-primary);
+.state::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
 }
 
 .state[data-state='working'],
@@ -46,45 +63,24 @@
   color: var(--accent-text);
 }
 
-.steps {
-  margin: 0;
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.state[data-state='working']::before,
+.state[data-state='connected']::before {
+  background: var(--accent);
 }
 
-.copyRow {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.line {
-  flex: 1;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-input);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  overflow-wrap: anywhere;
-}
-
-.copy {
+.open {
   flex: none;
   height: 24px;
   padding: 0 8px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  background: var(--bg-raised);
-  color: var(--text-secondary);
+  background: var(--bg-input);
+  color: var(--text-primary);
   font: inherit;
   font-size: 11px;
   cursor: pointer;
 }
 
-.manual p {
-  margin: 0;
+.open:hover {
+  background: var(--bg-hover);
 }

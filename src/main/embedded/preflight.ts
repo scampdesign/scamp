@@ -10,6 +10,19 @@ import type { EmbeddedCheck, EmbeddedIdiom, EmbeddedPreflight } from '@shared/ty
  * see docs/plans/embedded-scamp-plan.md
  */
 
+/** What an attached folder says about itself, when it's a Rails app. see attach.ts */
+export type RailsFacts = {
+  rails: boolean;
+  version: string | null;
+  tailwind: boolean;
+  turbo: boolean;
+  viewComponent: boolean;
+  /** Whether development wraps each template in `<!-- BEGIN path -->` comments; null when Scamp couldn't tell. */
+  annotated: boolean | null;
+  /** A subfolder holding the Rails app, when the chosen folder has no Gemfile. */
+  appIn: string | null;
+};
+
 export type PreflightFacts = {
   folder: string;
   name: string;
@@ -37,6 +50,8 @@ export type PreflightFacts = {
   missingEnvVars: string[];
   backendHints: string[];
   idioms: EmbeddedIdiom[];
+  /** Set when Scamp attaches to an app already running, instead of starting it. */
+  attach: { url: string; reachable: boolean; error: string | null; rails: RailsFacts } | null;
 };
 
 /** The lowest major version a range allows, for the ranges package.json uses. */
@@ -86,6 +101,19 @@ export const evaluatePreflight = (f: PreflightFacts): EmbeddedPreflight => {
   }
   if (f.isRepo && !f.hasRemote) {
     add({ id: 'remote', group: 'accounts', label: 'No GitHub remote', status: 'warn', detail: 'You can work and commit locally. Pushing needs a remote named origin.' });
+  }
+
+  if (f.attach !== null) {
+    attachChecks(f, f.attach, add);
+    return {
+      folder: f.folder,
+      name: f.name,
+      checks,
+      canStart: !checks.some((c) => c.status === 'fail'),
+      idioms: f.idioms,
+      framework: f.attach.rails.rails ? 'rails' : 'server',
+      attachUrl: f.attach.url,
+    };
   }
 
   // Environment
@@ -143,17 +171,7 @@ export const evaluatePreflight = (f: PreflightFacts): EmbeddedPreflight => {
           ? 'No @vitejs/plugin-react in the Vite config, so elements may map to components but not to lines. Scamp will still run the app.'
           : 'Scamp runs Vite with its own config in .scamp/, which tags each element with its file and line. Your files and git history are untouched.',
     });
-    if (f.isRepo) {
-      add({
-        id: 'branch',
-        group: 'project',
-        label: 'Work on a new branch',
-        status: 'action',
-        detail: f.dirty
-          ? 'Scamp will create a scamp/ branch. Your uncommitted changes come with you; Scamp commits only the files its agent changes.'
-          : 'Scamp will create a scamp/ branch, so your main branch is never touched.',
-      });
-    }
+    if (f.isRepo) add(branchCheck(f.dirty));
   }
 
   return {
@@ -163,5 +181,40 @@ export const evaluatePreflight = (f: PreflightFacts): EmbeddedPreflight => {
     canStart: !checks.some((c) => c.status === 'fail'),
     idioms: f.idioms,
     framework: f.framework,
+    attachUrl: null,
   };
 };
+
+/** The project's checks for an app Scamp attaches to: it answers, what it is, and its template comments. */
+const attachChecks = (f: PreflightFacts, attach: NonNullable<PreflightFacts['attach']>, add: (check: EmbeddedCheck) => void): void => {
+  const { rails } = attach;
+  add(
+    attach.reachable
+      ? { id: 'app', group: 'environment', label: 'Your app is running', status: 'pass', detail: `It answers at ${attach.url}. Scamp loads it and never starts or stops it.` }
+      : { id: 'app', group: 'environment', label: 'Start your app', status: 'fail', detail: `${attach.error ?? 'Nothing answered.'} Start it at ${attach.url}, then check again.` }
+  );
+  if (rails.appIn !== null) {
+    add({ id: 'bundler', group: 'environment', label: 'Choose the Rails app’s folder', status: 'warn', detail: `This folder has no Gemfile, and ${rails.appIn}/ has one. Choose ${rails.appIn}/ so the template paths Rails gives match the files.` });
+  } else if (rails.rails) {
+    const parts = [rails.viewComponent ? 'ViewComponent' : null, rails.turbo ? 'Turbo' : null, rails.tailwind ? 'Tailwind' : null].filter((p): p is string => p !== null);
+    add({ id: 'bundler', group: 'environment', label: `Rails${rails.version === null ? '' : ` ${rails.version}`}`, status: 'pass', detail: parts.length > 0 ? `With ${parts.join(', ')}.` : 'Server-rendered templates.' });
+    add(
+      rails.annotated === true
+        ? { id: 'instrument', group: 'project', label: 'Map elements to templates', status: 'pass', detail: 'Rails marks where each template starts and ends, so Scamp finds the template, partial or component an element comes from. Nothing is written to your project.' }
+        : { id: 'instrument', group: 'project', label: 'Turn on template comments', status: 'warn', detail: 'Add config.action_view.annotate_rendered_view_with_filenames = true to config/environments/development.rb and restart the app, so Scamp finds each element’s template. Without it, the agent searches for each element.' }
+    );
+  } else {
+    add({ id: 'bundler', group: 'environment', label: 'A running app', status: 'pass', detail: 'Scamp edits the page it serves, and the agent searches the project for each element’s code.' });
+  }
+  if (f.isRepo) add(branchCheck(f.dirty));
+};
+
+const branchCheck = (dirty: boolean): EmbeddedCheck => ({
+  id: 'branch',
+  group: 'project',
+  label: 'Work on a new branch',
+  status: 'action',
+  detail: dirty
+    ? 'Scamp will create a scamp/ branch. Your uncommitted changes come with you; Scamp commits only the files its agent changes.'
+    : 'Scamp will create a scamp/ branch, so your main branch is never touched.',
+});

@@ -22,7 +22,7 @@ export const parseRecent = (text: string): EmbeddedRecentProject[] => {
   return list.flatMap((p: unknown): EmbeddedRecentProject[] => {
     const e = p as Partial<EmbeddedRecentProject> | null;
     return e !== null && typeof e.folder === 'string' && e.folder.length > 0 && typeof e.name === 'string' && typeof e.lastOpened === 'string'
-      ? [{ folder: e.folder, name: e.name, lastOpened: e.lastOpened }]
+      ? [{ folder: e.folder, name: e.name, lastOpened: e.lastOpened, ...(typeof e.url === 'string' ? { url: e.url } : {}) }]
       : [];
   });
 };

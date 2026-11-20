@@ -76,12 +76,15 @@ itself in each agent's config (`agentConfig.ts`).
 - The setup screen's agent check passes with My agent; the Agent tab's
   `AgentChoice` shows the connection, the line to paste, and the manual
   `claude mcp add` command when a config was skipped.
-- A terminal under My agent (`AgentTerminal`, the app's `TerminalView`
-  with the embedded preload), opened in the project's folder: main allows
-  that window's folder as its terminal root (`allowTerminalRoot`), and
-  only that window's. **Start Claude Code** types `claude`; **Paste the
-  prompt** types the line. The Agent tab stays mounted (hidden) when
-  another tab is open, so the agent's session survives a switch.
+- A terminal in the **Connect your agent** window (`AgentConnect`, the
+  app's `TerminalView` with the embedded preload), opened in the project's
+  folder: main allows that window's folder as its terminal root
+  (`allowTerminalRoot`), and only that window's. **Start Claude Code**
+  types `claude`; **Paste the prompt** types the line. The window opens
+  when My agent is chosen (or the editor starts with it and nothing
+  connected), minimizes into the Agent tab once the agent connects, and
+  stays mounted while minimized, so the agent's session survives. It also
+  polls the agent's status into the store, which the Agent tab reads.
 - Not in A1: design checks still need the Scamp Agent, and Accept still
   commits whole files (a user edit in a file the agent also changed goes
   with it), as with the Scamp Agent.

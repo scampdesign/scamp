@@ -332,25 +332,25 @@ describe('structure edits, more than one element, and moving inside', () => {
 });
 
 describe('scopeWords', () => {
-  it('names the buttons after the component its instances are', () => {
+  it('keeps the buttons short, and names the component in the line under them', () => {
     expect(scopeWords(element({ instanceOf: 'Card' }))).toEqual({
-      one: 'This Card',
-      every: 'Every Card · 3',
-      oneTip: 'Changes only this Card, where it’s used at src/CardList.tsx:8:7',
-      everyTip: 'Changes the Card component: all 3 on this page, and anywhere else it’s used',
+      one: 'This one',
+      every: 'All 3',
+      oneNote: 'Changes only this Card, where it’s used at src/CardList.tsx:8:7.',
+      everyNote: 'Changes the Card component: all 3 on this page, and anywhere else it’s used.',
     });
   });
 
   it('says which of a list this one is', () => {
-    expect(scopeWords(element({ instanceOf: 'Card', usedInList: true, instanceIndex: 0 })).oneTip).toBe('Changes only this Card, number 1 of 3 in a list');
+    expect(scopeWords(element({ instanceOf: 'Card', usedInList: true, instanceIndex: 0 })).oneNote).toBe('Changes only this Card, number 1 of 3 in a list.');
   });
 
   it('falls back to plain words for a list inside one component', () => {
     expect(scopeWords(element({ instanceOf: null }))).toEqual({
       one: 'This one',
       every: 'All 3',
-      oneTip: 'Changes only this one',
-      everyTip: 'Changes the shared code: all 3 on this page',
+      oneNote: 'Changes only this one.',
+      everyNote: 'Changes the shared code: all 3 on this page.',
     });
   });
 });

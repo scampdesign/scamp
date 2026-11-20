@@ -50,7 +50,8 @@ const embeddedApi = {
   /** Recent projects, with whether each folder is still there. */
   recent: (): Promise<Array<EmbeddedRecentProject & { exists: boolean }>> => ipcRenderer.invoke(IPC.EmbeddedRecent),
   forgetRecent: (folder: string): Promise<void> => ipcRenderer.invoke(IPC.EmbeddedForgetRecent, { folder }),
-  open: (folder: string): Promise<EmbeddedPreflight | { error: string }> => ipcRenderer.invoke(IPC.EmbeddedOpen, { folder }),
+  /** `url`: attach to an app already running there, instead of starting it. */
+  open: (folder: string, url?: string): Promise<EmbeddedPreflight | { error: string }> => ipcRenderer.invoke(IPC.EmbeddedOpen, { folder, url }),
   preflight: (): Promise<EmbeddedPreflight | { error: string }> => ipcRenderer.invoke(IPC.EmbeddedPreflight),
   gitInit: (): Promise<EmbeddedGitResult> => ipcRenderer.invoke(IPC.EmbeddedGitInit),
   signIn: (): Promise<AuthSignInResult> => ipcRenderer.invoke(IPC.AuthStart),

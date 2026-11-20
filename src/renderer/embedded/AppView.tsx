@@ -6,9 +6,20 @@ import styles from './AppView.module.css';
 
 type WebviewNode = HTMLElement & { executeJavaScript: (code: string) => Promise<unknown> };
 
+/** A short stable id for a folder, for its own sign-in storage. */
+const folderKey = (folder: string): string => {
+  let h = 5381;
+  for (let i = 0; i < folder.length; i += 1) h = (h * 33) ^ folder.charCodeAt(i);
+  return (h >>> 0).toString(36);
+};
+
 /** The project's running app, in a webview of its own session. */
 export const AppView = (): JSX.Element => {
   const url = useEmbeddedStore((s) => s.url);
+  // Cookies aren't kept apart by port, so two attached apps on localhost would sign each other out.
+  const partition = useEmbeddedStore((s) =>
+    s.preflight?.attachUrl == null ? 'persist:scamp-embedded' : `persist:scamp-attach-${folderKey(s.preflight.folder)}`
+  );
   const viewport = useEmbeddedStore((s) => s.viewport);
   const set = useEmbeddedStore((s) => s.set);
   const ref = useRef<HTMLWebViewElement | null>(null);
@@ -51,7 +62,7 @@ export const AppView = (): JSX.Element => {
         // A set width sizes the app like a device; desktop fills the window.
         style={viewport === null ? undefined : { flex: 'none', width: `${viewport}px` }}
         data-sized={viewport !== null}
-        partition="persist:scamp-embedded"
+        partition={partition}
         data-testid="embedded-webview"
       />
     </div>

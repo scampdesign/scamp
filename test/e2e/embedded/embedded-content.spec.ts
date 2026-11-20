@@ -47,10 +47,14 @@ test('text, props, links, and alt text written in the code are editable; text fr
     await embedded.getByTestId('embedded-tab-style').click();
 
     // From data: a card's name comes from a list. Not editable, and it says why.
-    // The scope buttons are named after the component the cards are.
+    // The line under the scope buttons names the component the cards are.
     await clickInPage(embedded, 'article h2');
-    await expect(embedded.getByTestId('embedded-scope-one')).toHaveText('This Card');
-    await expect(embedded.getByTestId('embedded-scope-all')).toHaveText('Every Card · 3');
+    await expect(embedded.getByTestId('embedded-scope-one')).toHaveText('This one');
+    await expect(embedded.getByTestId('embedded-scope-all')).toHaveText('All 3');
+    await expect(embedded.getByTestId('embedded-scope-note')).toContainText('only this Card');
+    await embedded.getByTestId('embedded-scope-all').click();
+    await expect(embedded.getByTestId('embedded-scope-note')).toContainText('the Card component: all 3');
+    await embedded.getByTestId('embedded-scope-one').click();
     await expect(embedded.getByTestId('embedded-content-text-note')).toContainText('can’t be edited here');
     await expect(embedded.getByTestId('embedded-content-text')).toBeDisabled();
     const card = await pointInPage(embedded, 'article h2', 'center');

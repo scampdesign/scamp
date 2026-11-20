@@ -47,11 +47,12 @@ test('with My agent chosen, the user’s agent takes the edits over MCP and Scam
     expect(claude.mcpServers.scamp.url).toBe(mcp.url);
     expect(execFileSync('git', ['status', '--porcelain', '--untracked-files=all'], { cwd: dir, encoding: 'utf8' })).not.toContain('.mcp.json');
 
-    await embedded.getByTestId('embedded-tab-agent').click();
-    await expect(embedded.getByTestId('embedded-worker-own')).toHaveAttribute('aria-pressed', 'true');
-    await expect(embedded.getByTestId('embedded-own-agent')).toContainText('Waiting for your agent to connect');
+    // Starting with My agent and nothing connected, the steps and a terminal open over the editor.
+    const connect = embedded.getByTestId('embedded-agent-connect');
+    await expect(connect).toBeVisible();
+    await expect(connect).toContainText('Waiting to connect');
 
-    // A terminal in the project's folder, beside the choice, that survives a switch of tabs.
+    // A terminal in the project's folder, whose session lives on while the window is minimized.
     const rows = embedded.locator('[data-testid="embedded-terminal"] .xterm-rows');
     await embedded.getByTestId('embedded-terminal').click();
     await embedded.keyboard.type('pwd');
@@ -59,9 +60,20 @@ test('with My agent chosen, the user’s agent takes the edits over MCP and Scam
     await expect(rows).toContainText(path.basename(dir));
     await embedded.getByTestId('embedded-terminal-paste').click();
     await expect(rows).toContainText('Work my Scamp edit queue');
-    await embedded.getByTestId('embedded-tab-style').click();
+    await embedded.getByTestId('embedded-agent-connect-minimize').click();
+    await expect(connect).toBeHidden();
     await embedded.getByTestId('embedded-tab-agent').click();
-    await expect(rows).toContainText(path.basename(dir));
+    await expect(embedded.getByTestId('embedded-worker-own')).toHaveAttribute('aria-pressed', 'true');
+    await expect(embedded.getByTestId('embedded-own-agent')).toContainText('Waiting to connect');
+    await embedded.getByTestId('embedded-agent-connect-open').click();
+    await expect(connect).toBeVisible();
+    await expect(rows).toContainText('Work my Scamp edit queue');
+
+    // The agent reaching Scamp's server minimizes the window into the Agent tab.
+    await callTool(mcp, 'scamp_embedded_get_selection', {});
+    await expect(connect).toBeHidden();
+    await expect(embedded.getByTestId('embedded-own-agent')).toContainText('Connected');
+    await expect(embedded.getByTestId('embedded-agent-connect-open')).toHaveText('Open terminal');
 
     // An edit to every card waits for the user's agent.
     await embedded.getByTestId('embedded-tab-style').click();
@@ -82,7 +94,7 @@ test('with My agent chosen, the user’s agent takes the edits over MCP and Scam
     await embedded.getByTestId('embedded-tab-history').click();
     await expect(embedded.getByTestId('embedded-agent-status')).toHaveText(/Done/);
     await expect(embedded.getByTestId('embedded-review')).toContainText('src/Card.module.css');
-    await expect(embedded.getByTestId('embedded-own-agent')).toContainText('Your agent is connected');
+    await expect(embedded.getByTestId('embedded-own-agent')).toContainText('Connected');
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }

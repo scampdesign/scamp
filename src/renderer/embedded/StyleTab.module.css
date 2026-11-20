@@ -21,22 +21,38 @@
 .titleRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
 }
 
 .actions {
+  flex: none;
   display: flex;
   gap: 2px;
 }
 
 .tag {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-mono);
   font-size: 12px;
 }
 
+/* The component on a line of its own, so a long name has the panel's width; past that, an ellipsis. */
+.owner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
 .component {
   color: var(--component);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .source {
@@ -46,27 +62,26 @@
   overflow-wrap: anywhere;
 }
 
-.scope {
-  display: flex;
-  gap: 4px;
+/* Label and control side by side, as the panel's own rows are. */
+.controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 4px;
 }
 
-.scope button {
-  flex: 1;
-  height: 24px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--bg-raised);
+.label {
   color: var(--text-secondary);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
+  font-size: 11px;
 }
 
-.scope button[aria-pressed='true'] {
-  border-color: var(--accent);
-  background: var(--accent-muted);
-  color: var(--accent-text);
+.scopeNote {
+  grid-column: 2;
+  margin: -2px 0 2px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .pending {

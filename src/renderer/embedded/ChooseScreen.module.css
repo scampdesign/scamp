@@ -46,6 +46,54 @@
   cursor: default;
 }
 
+.attach {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.attachTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.attachRow {
+  display: flex;
+  gap: 8px;
+}
+
+.address {
+  flex: 1;
+  min-width: 0;
+  height: var(--control-h);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.secondary {
+  height: var(--control-h);
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.secondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .error {
   margin: 0;
   color: var(--error-text);

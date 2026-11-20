@@ -133,7 +133,7 @@ export const embeddedToolInvoker = (folder: string, touched: Set<string>, readOn
       for (const file of await listProjectFiles(folder)) {
         if (hits.length >= 100) break;
         if (under !== null && !file.startsWith(`${under.rel}/`)) continue;
-        if (!/\.(tsx?|jsx?|mjs|cjs|css|scss|sass|less|html|vue|svelte|json)$/.test(file) || guardPath(folder, file, false).ok === false) continue;
+        if (!/\.(tsx?|jsx?|mjs|cjs|css|scss|sass|less|html|vue|svelte|json|erb|rb|haml|slim|yml)$/.test(file) || guardPath(folder, file, false).ok === false) continue;
         const lines = (await fs.readFile(join(folder, file), 'utf-8').catch(() => '')).split('\n');
         lines.forEach((line, i) => {
           if (hits.length < 100 && line.toLowerCase().includes(query)) hits.push(`${file}:${i + 1}: ${line.trim().slice(0, 200)}`);

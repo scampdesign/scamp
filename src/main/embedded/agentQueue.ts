@@ -1,6 +1,6 @@
 import type { BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 
-import { buildAgentPrompt, describeChange, type ChangeDescription } from '@shared/embedded';
+import { buildAgentPrompt, describeChange, stackLine, type ChangeDescription, type EmbeddedStack } from '@shared/embedded';
 import type { EmbeddedAgentEvent, EmbeddedAgentState, EmbeddedIdiom, EmbeddedQueueItem, EmbeddedWorker } from '@shared/types';
 
 import { runTurn, type AgentToolInvoker } from '../agent/harness';
@@ -21,6 +21,8 @@ export const BATCH_DELAY_MS = 1500;
 export type EmbeddedAgentDeps = {
   folder: string;
   idioms: ReadonlyArray<EmbeddedIdiom>;
+  /** React when omitted. */
+  stack?: EmbeddedStack;
   getProvider: () => Promise<AgentProvider | null>;
   emit: (event: EmbeddedAgentEvent) => void;
   /** For tests; real runs use the project's file tools. */
@@ -33,11 +35,11 @@ export type EmbeddedAgentDeps = {
   writeDirect?: (item: EmbeddedQueueItem) => Promise<string | null>;
 };
 
-export const embeddedSystemPrompt = (folder: string, idioms: ReadonlyArray<EmbeddedIdiom>): string =>
+export const embeddedSystemPrompt = (folder: string, idioms: ReadonlyArray<EmbeddedIdiom>, stack: EmbeddedStack = 'react'): string =>
   [
-    'You are the Scamp Agent, working inside the user’s own React project. The user styles their running app visually in Scamp, and you write each change into the real source, so it holds after a reload and reads as if a careful developer on the team wrote it.',
+    'You are the Scamp Agent, working inside the user’s own project. The user styles their running app visually in Scamp, and you write each change into the real source, so it holds after a reload and reads as if a careful developer on the team wrote it.',
     '',
-    `The project is at ${folder}. Paths in your tools are relative to it.`,
+    `The project is at ${folder}. Paths in your tools are relative to it. ${stackLine(stack)}`,
     `It writes styles with: ${describeIdioms(idioms)}. Follow the conventions you find in the files you read: their naming, their tokens and theme values, their formatting.`,
     '',
     'Rules:',
@@ -163,7 +165,7 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
           ? { outcome: 'error' as const, history, message: 'Sign in to Scamp and connect the agent to write the rest of your changes.' }
           : await runTurn({
       provider,
-      system: embeddedSystemPrompt(deps.folder, deps.idioms),
+      system: embeddedSystemPrompt(deps.folder, deps.idioms, deps.stack),
       tools: EMBEDDED_TOOLS,
       invoke: invokerFor(touched, false),
       history,
@@ -264,7 +266,7 @@ export const createEmbeddedAgent = (deps: EmbeddedAgentDeps): EmbeddedAgent => {
       // A check stands alone: it starts from no history and can only read.
       const result = await runTurn({
         provider,
-        system: embeddedSystemPrompt(deps.folder, deps.idioms),
+        system: embeddedSystemPrompt(deps.folder, deps.idioms, deps.stack),
         tools: EMBEDDED_READ_TOOLS,
         invoke: invokerFor(new Set(), true),
         history: [],

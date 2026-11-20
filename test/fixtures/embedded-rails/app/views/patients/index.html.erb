@@ -1,0 +1,7 @@
+<main class="patients">
+  <h1 class="patients__title">Patients</h1>
+  <ul class="cards">
+    <%= render partial: "card", collection: @patients, as: :patient %>
+  </ul>
+  <%= render ConfirmDialogComponent.new %>
+</main>

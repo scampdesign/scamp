@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 import { join, relative, sep } from 'path';
 
-import { buildAgentPrompt } from '@shared/embedded';
+import { buildAgentPrompt, stackLine, type EmbeddedStack } from '@shared/embedded';
 import type { EmbeddedElementRef, EmbeddedIdiom, EmbeddedQueueItem } from '@shared/types';
 
 import { errorResult, textResult, type ToolDescriptor, type ToolInvoker } from '../mcp/protocol';
@@ -57,16 +57,16 @@ export const OWN_AGENT_TOOLS: ToolDescriptor[] = [
 ];
 
 /** The rules Scamp's own agent gets as its system prompt, for an agent that has its own. */
-export const ownAgentBrief = (folder: string, idioms: ReadonlyArray<EmbeddedIdiom>, items: ReadonlyArray<EmbeddedQueueItem>): string =>
+export const ownAgentBrief = (folder: string, idioms: ReadonlyArray<EmbeddedIdiom>, items: ReadonlyArray<EmbeddedQueueItem>, stack: EmbeddedStack = 'react'): string =>
   [
     'The user made these changes visually on their running app in Scamp. Write each into the project’s source, so it holds after a reload and reads as if a careful developer on the team wrote it.',
     '',
-    `The project is at ${folder}. It writes styles with: ${describeIdioms(idioms)}.`,
+    `The project is at ${folder}. ${stackLine(stack)} It writes styles with: ${describeIdioms(idioms)}.`,
     '',
     'Rules:',
     '- Read a file before you edit it. Make the smallest edit that produces each change. No refactors, renames or reformatting.',
     '- Use the project’s own tokens, variables or scale when one matches a value; otherwise write the value as given.',
-    '- Don’t edit node_modules, lockfiles, env files or build config, don’t run git commands (Scamp manages the branch and commits), and don’t start or restart the dev server (Scamp runs it).',
+    '- Don’t edit node_modules, lockfiles, env files or build config, don’t run git commands (Scamp manages the branch and commits), and don’t start, stop or restart the app’s server.',
     '- If a change can’t be made safely (the element comes from a library or from data), don’t guess: leave it and say why.',
     '- When you finish, call scamp_embedded_done with a one- or two-sentence summary.',
     '',
@@ -104,6 +104,7 @@ export type OwnAgentDeps = {
   folder: string;
   /** Known once the session starts, so read when a batch is taken. */
   idioms: () => ReadonlyArray<EmbeddedIdiom>;
+  stack: () => EmbeddedStack;
   agent: () => EmbeddedAgent | null;
   selection: () => EmbeddedElementRef | null;
   /** Called when the user's agent reaches the server, for the window's status. */
@@ -129,7 +130,7 @@ export const ownAgentInvoker = (deps: OwnAgentDeps): ToolInvoker => {
       const items = await agent.takeBatch(seconds * 1000);
       if (items === null) return textResult('No edits yet. Call scamp_embedded_wait_for_edits again to keep waiting.');
       before = await changedFiles(deps.folder);
-      return textResult(ownAgentBrief(deps.folder, deps.idioms(), items));
+      return textResult(ownAgentBrief(deps.folder, deps.idioms(), items, deps.stack()));
     }
     if (name === 'scamp_embedded_done') {
       if (agent.heldBatch() === null) return errorResult('You have no batch to finish. Call scamp_embedded_wait_for_edits to take one.');

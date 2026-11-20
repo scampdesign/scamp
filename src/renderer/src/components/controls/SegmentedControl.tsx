@@ -7,6 +7,7 @@ import styles from './Controls.module.css';
 type OptionBase<V extends string> = {
   value: V;
   tooltip?: string;
+  testId?: string;
 };
 
 /**
@@ -31,6 +32,9 @@ type Props<V extends string> = {
   title?: string;
   /** Several selected elements disagree: show **Mixed**, and commit whatever is typed. */
   mixed?: boolean;
+  /** The group's accessible name, when no visible label is tied to it. */
+  ariaLabel?: string;
+  testId?: string;
 };
 
 export const SegmentedControl = <V extends string>({
@@ -39,9 +43,11 @@ export const SegmentedControl = <V extends string>({
   onChange,
   title,
   mixed = false,
+  ariaLabel,
+  testId,
 }: Props<V>): JSX.Element => {
   const group = (
-    <div className={styles.segmented} role="radiogroup">
+    <div className={styles.segmented} role="radiogroup" aria-label={ariaLabel} data-testid={testId}>
       {options.map((opt) => {
         const active = !mixed && opt.value === value;
         const accessibleName =
@@ -57,6 +63,7 @@ export const SegmentedControl = <V extends string>({
             aria-label={accessibleName}
             className={`${styles.segmentedButton} ${active ? styles.segmentedButtonActive : ''}`}
             onClick={() => onChange(opt.value)}
+            data-testid={opt.testId}
           >
             {opt.label}
           </button>

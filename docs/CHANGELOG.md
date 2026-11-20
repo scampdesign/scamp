@@ -22,6 +22,33 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Added**
+
+- **In Edit React Project, you can edit an app that's already running,
+  such as a Rails app.** Enter its address and choose the folder its code
+  is in. Scamp loads the app without starting it, and reloads it after the
+  agent writes. In a Rails app, Scamp finds each element's template,
+  partial, or ViewComponent from the comments Rails writes in development,
+  lists the app's pages from its routes, and follows Turbo visits. See
+  [Edit an app that's already running](user_docs/edit-react-project.md#edit-an-app-thats-already-running).
+
+**Changed**
+
+- **In Edit React Project, your own agent connects in a window of its
+  own.** When you choose **My agent**, the steps and a full-size terminal
+  open over the editor, instead of a small terminal in the **Agent** tab.
+  Once your agent connects, the window minimizes into the **Agent** tab,
+  where **Open terminal** brings it back. The terminal keeps running while
+  it's minimized.
+- **In Edit React Project, the Style tab's header fits a long component
+  name.** The component's name has a line of its own, so the element's
+  buttons stay in view. Two labeled rows, **Apply to** and **State**,
+  replace the unlabeled buttons, and a line under **Apply to** says what
+  the choice changes, such as "Changes the Card component: all 3 on this
+  page, and anywhere else it's used."
+
 ### 0.15.0 (2026-11-18)
 
 **Added**

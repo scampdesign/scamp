@@ -98,9 +98,9 @@ Edit React Project, on a real Vite project and a real Next.js project:
 - [x] In `docs/CHANGELOG.md`, rename `### Unreleased` to
   `### 0.15.0 (2026-11-18)`.
 - [x] Commit as `release: 0.15.0`.
-- [ ] Push `main`, then tag `v0.15.0` and push the tag. The tag starts
+- [x] Push `main`, then tag `v0.15.0` and push the tag. The tag starts
   `.github/workflows/release.yml`.
-- [ ] Watch the workflow through the `verify-feed` job. The GitHub release
+- [x] Watch the workflow through the `verify-feed` job. Run 44428232895: macOS first failed at notarization (an Apple agreement had expired); after Angie accepted it, the rerun passed every job. Published with 12 assets, as 0.14.0. The GitHub release
   is a draft with the same assets as 0.14.0's.
 - [ ] On an installed 0.14.0, confirm the app offers the update and
   installs it. This step was never checked for 0.14.0 itself, so do it on

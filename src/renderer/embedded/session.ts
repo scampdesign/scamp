@@ -519,6 +519,11 @@ export const handleConsoleLine = (line: string): boolean => {
   } else if (msg.type === 'deselect') {
     flushPending();
     useEmbeddedStore.getState().set({ selection: null, pending: null });
+  } else if (msg.type === 'pageChanged') {
+    // A Turbo visit: a new page in the same document, so start over as a load would.
+    flushPending();
+    useEmbeddedStore.getState().set({ selection: null, pending: null });
+    void runInspector({ type: 'deselect' }).then(installInPage);
   }
   return true;
 };
@@ -733,6 +738,13 @@ const handledRuns = new Set<string>();
 
 const handleAgentEvent = (event: EmbeddedAgentEvent): void => {
   const store = useEmbeddedStore.getState();
+  if (event.kind === 'reload') {
+    // The page that loads is new: what was selected on the old one is gone.
+    flushPending();
+    store.set({ selection: null, pending: null });
+    navigatePage('reload');
+    return;
+  }
   if (event.kind === 'state') {
     const wasRunning = store.agent.phase === 'thinking' || store.agent.phase === 'writing';
     const nowRunning = event.state.phase === 'thinking' || event.state.phase === 'writing';

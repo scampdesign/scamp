@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 
 import type { EmbeddedRecentProject } from '@shared/types';
 
@@ -10,12 +10,13 @@ type Recent = EmbeddedRecentProject & { exists: boolean };
 
 const shortDate = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' });
 
-/** The first screen: a recent project, or a new folder. */
+/** The first screen: a recent project, a React project for Scamp to run, or an app already running. */
 export const ChooseScreen = (): JSX.Element => {
   const set = useEmbeddedStore((s) => s.set);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [recent, setRecent] = useState<Recent[]>([]);
+  const [address, setAddress] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -27,10 +28,10 @@ export const ChooseScreen = (): JSX.Element => {
     };
   }, []);
 
-  const openFolder = async (folder: string): Promise<void> => {
+  const openFolder = async (folder: string, url?: string): Promise<void> => {
     setError(null);
     setBusy(true);
-    const report = await window.scampEmbedded.open(folder);
+    const report = await window.scampEmbedded.open(folder, url);
     setBusy(false);
     if ('error' in report) {
       setError(report.error);
@@ -42,6 +43,12 @@ export const ChooseScreen = (): JSX.Element => {
   const handleChoose = async (): Promise<void> => {
     const chosen = await window.scampEmbedded.chooseFolder();
     if (chosen.kind === 'ok') await openFolder(chosen.folder);
+  };
+
+  const handleAttach = async (e: FormEvent): Promise<void> => {
+    e.preventDefault();
+    const chosen = await window.scampEmbedded.chooseFolder();
+    if (chosen.kind === 'ok') await openFolder(chosen.folder, address.trim());
   };
 
   const handleForget = async (folder: string): Promise<void> => {
@@ -60,6 +67,26 @@ export const ChooseScreen = (): JSX.Element => {
         <button type="button" className={styles.primary} onClick={handleChoose} disabled={busy} data-testid="embedded-choose">
           {busy ? 'Checking the project…' : 'Choose project folder'}
         </button>
+        <form className={styles.attach} onSubmit={(e) => void handleAttach(e)}>
+          <h2 className={styles.attachTitle}>Or edit an app that’s already running</h2>
+          <p className={styles.lede}>
+            For a Rails app, or any app you start yourself. Enter its address, then choose the folder its code is in. Scamp
+            loads the app as it runs and never starts or stops it.
+          </p>
+          <div className={styles.attachRow}>
+            <input
+              className={styles.address}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="localhost:3000"
+              aria-label="The running app’s address"
+              data-testid="embedded-attach-url"
+            />
+            <button type="submit" className={styles.secondary} disabled={busy || address.trim().length === 0} data-testid="embedded-attach">
+              Choose its folder
+            </button>
+          </div>
+        </form>
         {error !== null && <p className={styles.error}>{error}</p>}
         {recent.length > 0 && (
           <section className={styles.recent} aria-labelledby="embedded-recent-title">
@@ -73,11 +100,13 @@ export const ChooseScreen = (): JSX.Element => {
                     <button
                       type="button"
                       className={styles.recentOpen}
-                      onClick={() => void openFolder(p.folder)}
+                      onClick={() => void openFolder(p.folder, p.url)}
                       disabled={busy || !p.exists}
                     >
                       <span className={styles.recentName}>{p.name}</span>
-                      <span className={styles.recentPath}>{p.exists ? p.folder : 'Folder not found'}</span>
+                      <span className={styles.recentPath}>
+                        {p.exists ? (p.url === undefined ? p.folder : `${p.url} · ${p.folder}`) : 'Folder not found'}
+                      </span>
                     </button>
                   </Tooltip>
                   <span className={styles.recentDate}>{shortDate.format(new Date(p.lastOpened))}</span>

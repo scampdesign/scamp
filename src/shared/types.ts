@@ -1586,7 +1586,10 @@ export type EmbeddedPreflight = {
   /** False while any check fails: Start stays disabled. */
   canStart: boolean;
   idioms: EmbeddedIdiom[];
-  framework: 'vite' | 'next' | 'cra' | null;
+  /** `rails` and `server` only for an app Scamp attaches to, which it doesn't run. */
+  framework: 'vite' | 'next' | 'cra' | 'rails' | 'server' | null;
+  /** The running app's address, when Scamp attaches to it instead of starting it. */
+  attachUrl: string | null;
 };
 
 export type EmbeddedRecentProject = {
@@ -1594,6 +1597,8 @@ export type EmbeddedRecentProject = {
   name: string;
   /** ISO time it was last opened. */
   lastOpened: string;
+  /** The running app's address, for a project Scamp attaches to. */
+  url?: string;
 };
 
 export type EmbeddedChooseResult =
@@ -1710,7 +1715,9 @@ export type EmbeddedTreeNode = {
 /** Where an untagged element's JSX may be, as React's debug info gives it (Next.js). */
 export type EmbeddedRawSource =
   | { kind: 'frame'; url: string; line: number; column: number }
-  | { kind: 'file'; path: string; line: number; column: number };
+  | { kind: 'file'; path: string; line: number; column: number }
+  /** A server-rendered template (Rails' `<!-- BEGIN path -->` comments): a file, but no line. */
+  | { kind: 'template'; path: string };
 
 /** What main found for a raw source: a project file and line, or nothing. */
 export type EmbeddedResolvedSource = { source: string } | { source: null };
@@ -1811,7 +1818,9 @@ export type EmbeddedAgentEvent =
   | { kind: 'state'; state: EmbeddedAgentState }
   | { kind: 'text'; text: string }
   | { kind: 'tool'; name: string; summary: string; ok: boolean }
-  | { kind: 'report'; markdown: string };
+  | { kind: 'report'; markdown: string }
+  /** An attached app has no hot reload: the window reloads it after a run writes files. */
+  | { kind: 'reload' };
 
 export type EmbeddedChangedFile = {
   path: string;
@@ -1897,6 +1906,8 @@ export type EmbeddedInspectorMessage =
       textOnly: boolean;
     }
   | { type: 'deselect' }
+  /** Turbo replaced the page without a load. */
+  | { type: 'pageChanged' }
   | { type: 'navigated'; url: string }
   /** F8 in the page toggled freeze. */
   | { type: 'freeze'; on: boolean }

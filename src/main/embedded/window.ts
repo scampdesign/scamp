@@ -3,7 +3,7 @@ import { promises as fs } from 'fs';
 import { homedir } from 'os';
 import { basename, join, resolve as resolvePath, sep } from 'path';
 
-import { commitMessageFor } from '@shared/embedded';
+import { commitMessageFor, type EmbeddedStack } from '@shared/embedded';
 import { IPC } from '@shared/ipcChannels';
 import type {
   EmbeddedAgentEvent,
@@ -36,6 +36,7 @@ import { AGENT_TARGETS, writeAgentConfigs } from '../mcp/agentConfig';
 import { ensureToken, markMcpStopped, writeMcpConfig } from '../mcp/mcpOps';
 import { startMcpServer, type RunningMcpServer } from '../mcp/server';
 import { createEmbeddedAgent, type EmbeddedAgent } from './agentQueue';
+import { normalizeAttachUrl, railsRoutes, waitForCssBuild } from './attach';
 import {
   commitFiles,
   discardFiles,
@@ -83,6 +84,8 @@ type Session = {
   agent: EmbeddedAgent | null;
   serverKey: string | null;
   url: string | null;
+  /** The running app Scamp attached to, instead of starting one. */
+  attachUrl: string | null;
   framework: EmbeddedPreflight['framework'];
   idioms: EmbeddedPreflight['idioms'];
   /** The MCP server the user's own agent connects to, while My agent is chosen. */
@@ -112,15 +115,19 @@ const GUEST_SCROLLBARS = `
 ::-webkit-scrollbar-thumb:hover { background-color: rgba(128, 128, 128, 0.7); }
 `;
 
+const stackOf = (framework: EmbeddedPreflight['framework']): EmbeddedStack =>
+  framework === 'rails' ? 'rails' : framework === 'server' ? 'server' : 'react';
+
 /** Embedded Scamp's own range, clear of the canvas's (39841 and up), so both can run. */
 const EMBEDDED_MCP_PORT = 39861;
 
-const newSession = (folder: string, win: BrowserWindow): Session => ({
+const newSession = (folder: string, win: BrowserWindow, attachUrl: string | null): Session => ({
   folder,
   window: win,
   agent: null,
   serverKey: null,
   url: null,
+  attachUrl,
   framework: null,
   idioms: [],
   mcp: null,
@@ -173,6 +180,7 @@ const startOwnAgentServer = async (session: Session): Promise<void> => {
       invoke: ownAgentInvoker({
         folder: session.folder,
         idioms: () => session.idioms,
+        stack: () => stackOf(session.framework),
         agent: () => session.agent,
         selection: () => session.selection,
         onSeen: () => {
@@ -293,9 +301,13 @@ const send = (contents: WebContents, channel: string, payload: unknown): void =>
   if (!contents.isDestroyed()) contents.send(channel, payload);
 };
 
-const preflight = async (folder: string): Promise<EmbeddedPreflight> =>
+const preflight = async (folder: string, attachUrl: string | null): Promise<EmbeddedPreflight> =>
   evaluatePreflight(
-    await gatherPreflightFacts(folder, { signedIn: agentSignedIn(), agentConnected: await agentConnected(), ownAgent: (await readWorker()) === 'own' })
+    await gatherPreflightFacts(
+      folder,
+      { signedIn: agentSignedIn(), agentConnected: await agentConnected(), ownAgent: (await readWorker()) === 'own' },
+      attachUrl
+    )
   );
 
 /** A project file by its project-relative path; null outside the project, in `node_modules`, or over 2MB. */
@@ -326,20 +338,24 @@ export const registerEmbeddedIpc = (): void => {
   });
 
   /** Bind this window to a chosen folder. */
-  ipcMain.handle(IPC.EmbeddedOpen, async (e, args: { folder: string }): Promise<EmbeddedPreflight | { error: string }> => {
+  ipcMain.handle(IPC.EmbeddedOpen, async (e, args: { folder: string; url?: string }): Promise<EmbeddedPreflight | { error: string }> => {
     const folder = typeof args?.folder === 'string' ? args.folder : '';
+    const attachUrl = typeof args?.url === 'string' && args.url.trim().length > 0 ? normalizeAttachUrl(args.url) : null;
+    if (typeof args?.url === 'string' && args.url.trim().length > 0 && attachUrl === null) return { error: 'Enter the app’s address, such as localhost:3000.' };
     const recent = await readRecent();
     if (!chosen.has(folder) && !recent.some((p) => p.folder === folder)) return { error: 'Choose the project folder in the dialog first.' };
     const win = BrowserWindow.fromWebContents(e.sender);
     if (win === null) return { error: 'The window closed.' };
     const before = sessions.get(e.sender.id);
     if (before !== undefined && before.folder !== folder) await endSession(before);
-    sessions.set(e.sender.id, newSession(folder, win));
+    sessions.set(e.sender.id, newSession(folder, win, attachUrl));
     // The window's terminal opens in this project, for running the user's own agent.
     allowTerminalRoot(e.sender.id, folder);
     win.setTitle(`Scamp — ${folder.split(/[\\/]/).pop() ?? folder}`);
-    const report = await preflight(folder);
-    await writeRecent(upsertRecent(recent, { folder, name: report.name || basename(folder), lastOpened: new Date().toISOString() }));
+    const report = await preflight(folder, attachUrl);
+    await writeRecent(
+      upsertRecent(recent, { folder, name: report.name || basename(folder), lastOpened: new Date().toISOString(), ...(attachUrl !== null ? { url: attachUrl } : {}) })
+    );
     return report;
   });
 
@@ -357,7 +373,7 @@ export const registerEmbeddedIpc = (): void => {
 
   ipcMain.handle(IPC.EmbeddedPreflight, async (e): Promise<EmbeddedPreflight | { error: string }> => {
     const session = sessionOf(e);
-    return session === null ? { error: 'Open a project first.' } : preflight(session.folder);
+    return session === null ? { error: 'Open a project first.' } : preflight(session.folder, session.attachUrl);
   });
 
   ipcMain.handle(IPC.EmbeddedGitInit, async (e): Promise<EmbeddedGitResult> => {
@@ -368,7 +384,7 @@ export const registerEmbeddedIpc = (): void => {
   ipcMain.handle(IPC.EmbeddedStart, async (e): Promise<EmbeddedStartResult> => {
     const session = sessionOf(e);
     if (session === null) return { ok: false, error: 'Open a project first.' };
-    const check = await preflight(session.folder);
+    const check = await preflight(session.folder, session.attachUrl);
     if (!check.canStart) return { ok: false, error: 'Fix the items marked on the setup screen first.' };
     const progress = (p: EmbeddedStartProgress): void => send(e.sender, IPC.EmbeddedStartProgress, p);
 
@@ -377,29 +393,35 @@ export const registerEmbeddedIpc = (): void => {
     if (!branch.ok) return { ok: false, error: branch.error };
     session.historyBase = await historyBase(session.folder);
     session.historyTip = await headSha(session.folder);
-    // Next.js runs as it is: sources come from React's debug info, resolved in `resolveSource`.
     session.framework = check.framework;
-    const next = check.framework === 'next';
-    if (!next) {
-      progress({ kind: 'phase', phase: 'configure' });
-      await writeInstrumentation(session.folder);
+    if (session.attachUrl !== null) {
+      // An attached app is the user's: nothing to configure, start, or stop.
+      session.url = session.attachUrl;
+    } else {
+      // Next.js runs as it is: sources come from React's debug info, resolved in `resolveSource`.
+      const next = check.framework === 'next';
+      if (!next) {
+        progress({ kind: 'phase', phase: 'configure' });
+        await writeInstrumentation(session.folder);
+      }
+      const key = serverKeyFor(session.folder);
+      session.serverKey = key;
+      const started = await startReactApp(
+        key,
+        session.folder,
+        (event) => progress(event.kind === 'log' ? { kind: 'log', text: event.text } : { kind: 'phase', phase: event.phase }),
+        next ? undefined : (port) => viteCommand(session.folder, port)
+      );
+      if (!started.ok) return started;
+      session.url = started.url;
     }
-
-    const key = serverKeyFor(session.folder);
-    session.serverKey = key;
-    const started = await startReactApp(
-      key,
-      session.folder,
-      (event) => progress(event.kind === 'log' ? { kind: 'log', text: event.text } : { kind: 'phase', phase: event.phase }),
-      next ? undefined : (port) => viteCommand(session.folder, port)
-    );
-    if (!started.ok) return started;
-    session.url = started.url;
+    const url = session.url;
 
     session.agent?.dispose();
     session.agent = createEmbeddedAgent({
       folder: session.folder,
       idioms: check.idioms,
+      stack: stackOf(check.framework),
       getProvider: embeddedAgentProvider,
       emit: (event: EmbeddedAgentEvent) => send(e.sender, IPC.EmbeddedAgentEvent, event),
       onRunStart: async (runId) => {
@@ -408,7 +430,14 @@ export const registerEmbeddedIpc = (): void => {
       onRunEnd: async (runId) => {
         const before = session.snapshots.get(runId);
         session.snapshots.delete(runId);
-        if (before !== undefined) session.runs.set(runId, await recordRun(session.folder, runId, before));
+        if (before === undefined) return;
+        const run = await recordRun(session.folder, runId, before);
+        session.runs.set(runId, run);
+        // No hot reload in an attached app: reload once its CSS watcher has caught up.
+        if (session.attachUrl !== null && run.files.length > 0) {
+          await waitForCssBuild(session.folder, Date.now() - 500);
+          send(e.sender, IPC.EmbeddedAgentEvent, { kind: 'reload' } satisfies EmbeddedAgentEvent);
+        }
       },
       writeDirect: async (item) => {
         const out = await directStyleWrite(item, (file) => readProjectFile(session.folder, file));
@@ -421,7 +450,7 @@ export const registerEmbeddedIpc = (): void => {
     const worker = await readWorker();
     session.agent.setWorker(worker);
     if (worker === 'own') await startOwnAgentServer(session).catch(() => undefined);
-    return { ok: true, url: started.url, branch: branch.branch };
+    return { ok: true, url, branch: branch.branch };
   });
 
   ipcMain.handle(IPC.EmbeddedStop, async (e): Promise<void> => {
@@ -432,6 +461,7 @@ export const registerEmbeddedIpc = (): void => {
 
   ipcMain.handle(IPC.EmbeddedRoutes, async (e): Promise<string[]> => {
     const session = sessionOf(e);
+    if (session?.framework === 'rails') return railsRoutes(session.folder);
     return session?.framework === 'next' ? nextRoutes(await listProjectFiles(session.folder)) : [];
   });
   ipcMain.handle(IPC.EmbeddedSetWorker, async (e, args: { worker: EmbeddedWorker }): Promise<EmbeddedOwnAgentStatus | null> => {

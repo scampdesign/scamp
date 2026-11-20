@@ -1,0 +1,35 @@
+<!-- BEGIN app/views/layouts/application.html.erb
+--><!DOCTYPE html>
+<html>
+  <head><title>Clinic</title><script src="/turbo.js"></script></head>
+  <body>
+    <nav class="shell"><a class="shell__link" href="/other">Other page</a></nav>
+    <!-- BEGIN app/views/patients/index.html.erb
+--><main class="patients">
+  <h1 class="patients__title">Patients</h1>
+  <ul class="cards">
+    <!-- BEGIN app/views/patients/_card.html.erb
+--><li class="card">
+  <div class="card__top">
+    <h2 class="card__name">Ada</h2>
+  </div>
+  <p class="card__note">Next visit</p>
+</li>
+<!-- END app/views/patients/_card.html.erb --><!-- BEGIN app/views/patients/_card.html.erb
+--><li class="card">
+  <div class="card__top">
+    <h2 class="card__name">Grace</h2>
+  </div>
+  <p class="card__note">Next visit</p>
+</li>
+<!-- END app/views/patients/_card.html.erb -->
+  </ul>
+  <!-- BEGIN app/components/confirm_dialog_component.html.erb --><div class="confirm">
+  <p class="confirm__text">Are you sure?</p>
+</div>
+<!-- END app/components/confirm_dialog_component.html.erb -->
+</main>
+<!-- END app/views/patients/index.html.erb -->
+  </body>
+</html>
+<!-- END app/views/layouts/application.html.erb -->

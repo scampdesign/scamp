@@ -1,3 +1,4 @@
+import { AgentConnect } from './AgentConnect';
 import { AppToolbar } from './AppToolbar';
 import { AppView } from './AppView';
 import { ArtboardHeader } from './ArtboardHeader';
@@ -23,6 +24,7 @@ export const EditorScreen = (): JSX.Element => {
         </div>
         <SidePanel />
       </div>
+      <AgentConnect />
     </div>
   );
 };
