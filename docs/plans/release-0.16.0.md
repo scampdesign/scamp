@@ -57,10 +57,11 @@ On the build, in Edit React Project:
 - [x] In `docs/CHANGELOG.md`, rename `### Unreleased` to
   `### 0.16.0 (2026-11-20)`.
 - [x] Commit as `release: 0.16.0`.
-- [ ] Push `main`, then tag `v0.16.0` and push the tag. The tag starts
+- [x] Push `main`, then tag `v0.16.0` and push the tag. The tag starts
   `.github/workflows/release.yml`.
-- [ ] Watch the workflow through `verify-feed`, then publish the draft
-  with `gh release edit v0.16.0 --draft=false --latest`.
+- [x] Watch the workflow through `verify-feed`, then publish the draft
+  with `gh release edit v0.16.0 --draft=false --latest`. Run 44836288695
+  passed every job on the first try; published with 12 assets.
 
 ## Known gaps, not blocking
 
