@@ -31,30 +31,32 @@ spec files, 12 tests, pass.
 
 ### Manual (Angie)
 
+Done by Angie, 2026-11-20.
+
 On the build, in Edit React Project:
 
-- [ ] Attach to `riq_railsapp` running on its port. Elements select and
+- [x] Attach to `riq_railsapp` running on its port. Elements select and
   show their template; an edit is written into the `.html.erb`, and the
   page reloads after the agent writes.
-- [ ] Open Scamp from the desktop, not a terminal, and attach to the Rails
+- [x] Open Scamp from the desktop, not a terminal, and attach to the Rails
   app. The path field lists its routes. If it doesn't, `bin/rails routes`
   couldn't find Ruby (a known gap; see below).
-- [ ] Click a Turbo link in the Rails app. Selecting still works on the
+- [x] Click a Turbo link in the Rails app. Selecting still works on the
   new page.
-- [ ] A Vite or Next.js project still opens and edits as in 0.15.0.
-- [ ] Select an element with a long component name. The buttons stay in
+- [x] A Vite or Next.js project still opens and edits as in 0.15.0.
+- [x] Select an element with a long component name. The buttons stay in
   view, and the **Apply to** line reads sensibly for This one and All N.
-- [ ] Choose **My agent**. The window opens; **Start Claude Code** and
+- [x] Choose **My agent**. The window opens; **Start Claude Code** and
   **Paste the prompt** work; once Claude Code connects, the window
   minimizes, and **Open terminal** brings it back with the session intact.
 
 ## Release
 
-- [ ] Merge PR #12 into `main`.
-- [ ] `npm version 0.16.0 --no-git-tag-version`.
-- [ ] In `docs/CHANGELOG.md`, rename `### Unreleased` to
-  `### 0.16.0 (<date>)`.
-- [ ] Commit as `release: 0.16.0`.
+- [x] Merge PR #12 into `main` (`5f2f6570`).
+- [x] `npm version 0.16.0 --no-git-tag-version`.
+- [x] In `docs/CHANGELOG.md`, rename `### Unreleased` to
+  `### 0.16.0 (2026-11-20)`.
+- [x] Commit as `release: 0.16.0`.
 - [ ] Push `main`, then tag `v0.16.0` and push the tag. The tag starts
   `.github/workflows/release.yml`.
 - [ ] Watch the workflow through `verify-feed`, then publish the draft
