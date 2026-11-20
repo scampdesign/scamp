@@ -15,6 +15,7 @@ import type {
   EmbeddedQueueItem,
   EmbeddedPseudoState,
   EmbeddedMatchedRule,
+  EmbeddedOwnAgentStatus,
   EmbeddedRawSource,
   EmbeddedStyleChange,
   EmbeddedTreeNode,
@@ -102,6 +103,10 @@ type State = {
   /** Elements with a state held in the page, frozen or forced. */
   held: EmbeddedHeld[];
   layersOpen: boolean;
+  /** The user's own agent, as main last reported it; null until asked. */
+  ownAgent: EmbeddedOwnAgentStatus | null;
+  /** The window for connecting the user's own agent, with its terminal, is open rather than minimized. */
+  agentConnectOpen: boolean;
   /** The panel's open tab; the title bar's branch name opens History. */
   panelTab: PanelTab;
   undo: UndoEntry[];
@@ -152,6 +157,8 @@ export const useEmbeddedStore = create<State & Actions>((set) => ({
   pseudo: 'none',
   held: [],
   layersOpen: true,
+  ownAgent: null,
+  agentConnectOpen: false,
   panelTab: 'style',
   dragNote: null,
   undo: [],

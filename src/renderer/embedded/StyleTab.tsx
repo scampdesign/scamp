@@ -4,6 +4,7 @@ import { IconArrowBarUp, IconBoxMargin, IconCopy, IconTrash } from '@tabler/icon
 import { scopeWords } from '@shared/embedded';
 import type { EmbeddedPseudoState } from '@shared/types';
 
+import { SegmentedControl } from '../src/components/controls/SegmentedControl';
 import { Tooltip } from '../src/components/controls/Tooltip';
 import { UiPanel } from '../src/components/UiPanel';
 import { CodeSection } from './CodeSection';
@@ -70,13 +71,12 @@ export const StyleTab = (): JSX.Element => {
   }
   const { element } = selection;
   const words = scopeWords(element);
+  const component = element.components[0];
   return (
     <div className={styles.tab} data-testid="embedded-style-tab">
       <div className={styles.head}>
         <div className={styles.titleRow}>
-          <div className={styles.tag}>
-            &lt;{element.tag}&gt;{element.components[0] !== undefined && <span className={styles.component}> in {element.components[0]}</span>}
-          </div>
+          <span className={styles.tag}>&lt;{element.tag}&gt;</span>
           <div className={styles.actions}>
             <IconButton icon={IconArrowBarUp} variant="bare" label="Select parent" tooltip="Select parent — Select the element this one is inside, to style or move it" onClick={selectParent} testId="embedded-select-parent" />
             <IconButton icon={IconCopy} variant="bare" label="Duplicate" tooltip="Duplicate — Cmd+D" onClick={() => void structureEdit('duplicate')} testId="embedded-duplicate" />
@@ -84,6 +84,13 @@ export const StyleTab = (): JSX.Element => {
             <IconButton icon={IconTrash} variant="bare" label="Delete" tooltip="Delete — Delete key" onClick={() => void structureEdit('delete')} testId="embedded-delete" />
           </div>
         </div>
+        {component !== undefined && (
+          <Tooltip label={`In ${component}`}>
+            <div className={styles.owner} data-testid="embedded-element-component">
+              in <span className={styles.component}>{component}</span>
+            </div>
+          </Tooltip>
+        )}
         {element.source !== null && <code className={styles.source} data-testid="embedded-source">{element.source}</code>}
         {element.source === null && resolving && <span className={styles.source}>Finding source…</span>}
         {element.source === null && !resolving && (
@@ -93,26 +100,32 @@ export const StyleTab = (): JSX.Element => {
               : 'Scamp couldn’t map this to a line. Your edits still work: the agent finds the element from its classes, text and components.'}
           </p>
         )}
-        {element.instanceCount > 1 && (
-          <div className={styles.scope} role="group" aria-label="Which instances this edit changes">
-            <Tooltip label={words.oneTip}>
-              <button type="button" aria-pressed={scope === 'instance'} onClick={() => setScope('instance')} data-testid="embedded-scope-one">
-                {words.one}
-              </button>
-            </Tooltip>
-            <Tooltip label={words.everyTip}>
-              <button type="button" aria-pressed={scope === 'all'} onClick={() => setScope('all')} data-testid="embedded-scope-all">
-                {words.every}
-              </button>
-            </Tooltip>
-          </div>
-        )}
-        <div className={styles.scope} role="group" aria-label="Which state of the element to show and style" data-testid="embedded-states">
-          {STATES.map(({ state, label }) => (
-            <button key={state} type="button" aria-pressed={pseudo === state} onClick={() => setPseudo(state)} data-testid={`embedded-state-${state}`}>
-              {label}
-            </button>
-          ))}
+        <div className={styles.controls}>
+          {element.instanceCount > 1 && (
+            <>
+              <span className={styles.label}>Apply to</span>
+              <SegmentedControl
+                value={scope}
+                onChange={setScope}
+                ariaLabel="Which instances this edit changes"
+                options={[
+                  { value: 'instance', label: words.one, testId: 'embedded-scope-one' },
+                  { value: 'all', label: words.every, testId: 'embedded-scope-all' },
+                ]}
+              />
+              <p className={styles.scopeNote} data-testid="embedded-scope-note">
+                {scope === 'all' ? words.everyNote : words.oneNote}
+              </p>
+            </>
+          )}
+          <span className={styles.label}>State</span>
+          <SegmentedControl
+            value={pseudo}
+            onChange={setPseudo}
+            ariaLabel="Which state of the element to show and style"
+            testId="embedded-states"
+            options={STATES.map(({ state, label }) => ({ value: state, label, testId: `embedded-state-${state}` }))}
+          />
         </div>
         {selection.also.length > 0 && (
           <div className={styles.stateNote} data-testid="embedded-also">

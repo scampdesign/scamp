@@ -74,8 +74,8 @@ test('attaches to a running Rails app, maps elements to templates, follows a Tur
     // A partial rendered twice: the template and its line, and both renderings as one partial.
     await clickInPage(embedded, '.card:nth-child(2) .card__name');
     await expect(embedded.getByTestId('embedded-source')).toHaveText('app/views/patients/_card.html.erb:3:5');
-    await expect(embedded.getByTestId('embedded-scope-one')).toHaveText('This _card');
-    await expect(embedded.getByTestId('embedded-scope-all')).toHaveText('Every _card · 2');
+    await expect(embedded.getByTestId('embedded-scope-all')).toHaveText('All 2');
+    await expect(embedded.getByTestId('embedded-scope-note')).toHaveText('Changes only this _card, number 2 of 2 in a list.');
 
     // A ViewComponent's template.
     await clickInPage(embedded, '.confirm__text');

@@ -145,8 +145,9 @@ right ERB or CSS file, and the page reloads showing it.
   no line, so pick one in main the way `refineLine` does for Next.js:
   score the template's lines by the element's classes, tag and text.
 - [x] Scope buttons, as for React components: a partial or component
-  rendered more than once on the page reads **This _card** and **Every
-  _card · 3** (count the `BEGIN` comments for that file). An element from
+  rendered more than once on the page is named in the line under **Apply
+  to**, such as "Changes only this _card" (count the `BEGIN` comments for
+  that file). An element from
   a `.each` inside one template stays "this one", and the agent says when
   it can't be done for only one.
 - [x] Show the template in the **Code** section of the Style tab: the file,

@@ -241,24 +241,28 @@ const scopeLine = (scope: EmbeddedEditScope, el: EmbeddedElementRef | null): str
   return 'Scope: this instance only. Leave the other instances as they are: override it where this one is used (a prop, a modifier class, or the call site), not in the shared definition.';
 };
 
-/** The scope buttons' words: named after the component when the instances are its own. */
-export const scopeWords = (el: EmbeddedElementRef): { one: string; every: string; oneTip: string; everyTip: string } => {
+/**
+ * The scope buttons' labels, short so they never crowd the panel, and the
+ * line under them saying what the chosen one changes, named after the
+ * component when the instances are its own.
+ */
+export const scopeWords = (el: EmbeddedElementRef): { one: string; every: string; oneNote: string; everyNote: string } => {
   const n = el.instanceCount;
   const name = el.instanceOf ?? null;
   const noun = name ?? 'one';
   return {
-    one: `This ${noun}`,
-    every: name === null ? `All ${n}` : `Every ${name} · ${n}`,
-    oneTip:
+    one: 'This one',
+    every: `All ${n}`,
+    oneNote:
       el.usedInList === true
-        ? `Changes only this ${noun}, number ${(el.instanceIndex ?? 0) + 1} of ${n} in a list`
+        ? `Changes only this ${noun}, number ${(el.instanceIndex ?? 0) + 1} of ${n} in a list.`
         : el.usedAt !== null && name !== null
-          ? `Changes only this ${noun}, where it’s used at ${el.usedAt}`
-          : `Changes only this ${noun}`,
-    everyTip:
+          ? `Changes only this ${noun}, where it’s used at ${el.usedAt}.`
+          : `Changes only this ${noun}.`,
+    everyNote:
       name === null
-        ? `Changes the shared code: all ${n} on this page`
-        : `Changes the ${name} component: all ${n} on this page, and anywhere else it’s used`,
+        ? `Changes the shared code: all ${n} on this page.`
+        : `Changes the ${name} component: all ${n} on this page, and anywhere else it’s used.`,
   };
 };
 

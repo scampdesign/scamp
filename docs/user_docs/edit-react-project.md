@@ -82,9 +82,9 @@ inside Scamp.
 
 In development, Rails can mark where each template, partial, and
 ViewComponent starts and ends in the page. Scamp reads those marks, so the
-**Style** tab shows the template an element comes from, and the scope
-buttons name the partial or component, such as **This _card** and
-**Every _card · 3**.
+**Style** tab shows the template an element comes from, and the line
+under **Apply to** names the partial or component, such as "Changes only
+this _card."
 
 If the setup screen shows **Turn on template comments**, add this line to
 `config/environments/development.rb`, and restart your app:
@@ -109,19 +109,19 @@ it before it writes.
 1. Change its styles in the panel. The page updates at once.
 
 When the same line of JSX draws more than one element, such as a card in
-a list, the **Style** tab shows two buttons. When the elements are
-instances of a component, the buttons name it: **This Card** and **Every
-Card · 3**, with how many are on this page.
+a list, the **Style** tab shows **Apply to**, with two choices, and a line
+under them that says what the chosen one changes:
 
-- **This Card** changes only the instance you selected. The agent changes
-  it where that card is used. If every card comes from one list, the
-  agent picks this one out by its place or its data in the list, or says
-  it can't.
-- **Every Card** changes the component itself, so every card changes,
-  on this page and on any other page that uses it.
+- **This one** changes only the element you selected. For a component's
+  instance, the agent changes it where that instance is used. If every
+  instance comes from one list, the agent picks this one out by its place
+  or its data in the list, or says it can't.
+- **All 3**, with how many are on this page, changes the shared code. For
+  a component, that's the component itself, so every instance changes, on
+  this page and on any other page that uses it.
 
-For a list inside one component, the buttons read **This one** and
-**All**. Hold the pointer over a button to see what it changes.
+The **State** row below it shows and styles a hover, focus, or active
+state. See [Style a hover, focus, or active state](#style-a-hover-focus-or-active-state).
 
 The panel shows each value as your code writes it where Scamp can read
 it: `auto`, `50%`, `1.5rem`, or a token such as `var(--accent)`, rather
@@ -327,22 +327,28 @@ don't need an API key.
 1. Click **Start**. Scamp connects to your agent through its MCP server
    and adds the connection to your agent's settings in the project, such
    as `.mcp.json` for Claude Code. Scamp keeps that file out of git.
-1. In the **Agent** tab, under **My agent**, there's a terminal open in
-   your project's folder. Click **Start Claude Code**, or start another
-   agent there. If it asks whether to use the `scamp` server, allow it.
+1. The **Connect your agent** window opens, with a terminal in your
+   project's folder. Click **Start Claude Code**, or start another agent
+   in the terminal. If it asks whether to use the `scamp` server, allow
+   it.
 1. Click **Paste the prompt**, and press **Enter**.
+
+When your agent connects, the window minimizes into the **Agent** tab,
+which shows whether your agent is connected and when it's writing. To see
+the terminal again, in the **Agent** tab, click **Open terminal**. The
+terminal keeps running while the window is minimized. To minimize it
+yourself, click the minimize button in its top-right corner.
 
 You can also use your agent in a terminal of your own: open it in the
 project's folder, and paste the line from **Copy**.
 
 Your agent then waits for your edits, writes each batch, and waits for
-more until you tell it to stop. The **Agent** tab shows whether it's
-connected and when it's writing. You review, accept, and discard its
+more until you tell it to stop. You review, accept, and discard its
 changes the same way.
 
 **Note:** If your project already tracks the agent's settings file in
-git, Scamp doesn't change it. The **Agent** tab shows a command to
-connect Claude Code yourself instead.
+git, Scamp doesn't change it. The **Connect your agent** window shows a
+command to connect Claude Code yourself instead.
 
 ## Review and keep changes
 
