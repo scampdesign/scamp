@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { promises as fs } from 'node:fs';
+import { mkdirSync, mkdtempSync, promises as fs } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { test, expect } from '../fixtures/app';
@@ -9,13 +10,19 @@ import { commitInput, panelInputByPrefix } from '../fixtures/panel';
 /**
  * The user's own agent writing Embedded Scamp's changes, with no API key:
  * choosing it on the setup screen, Scamp registering its MCP server in the
- * project (kept out of git), and the test standing in for Claude Code over
+ * project for Claude Code and Codex (kept out of git), and the test standing in for Claude Code over
  * MCP: take the batch, write the CSS Module, say done, and the Changes tab
  * reviews exactly that file. see docs/plans/embedded-agent-connection-plan.md
  */
 
-// Signed in, with no Anthropic key and no scripted agent.
-test.use({ appEnv: { SCAMP_E2E_SIGNED_IN: '1' } });
+// Signed in, with no Anthropic key and no scripted agent. A home with Codex installed and no folder trusted,
+// so the run doesn't depend on which agents this machine has.
+const home = mkdtempSync(path.join(tmpdir(), 'scamp-home-'));
+mkdirSync(path.join(home, '.codex'));
+test.use({ appEnv: { SCAMP_E2E_SIGNED_IN: '1', HOME: home, USERPROFILE: home } });
+test.afterAll(async () => {
+  await fs.rm(home, { recursive: true, force: true });
+});
 
 type McpConfig = { url: string; token: string };
 
@@ -45,12 +52,19 @@ test('with My agent chosen, the user’s agent takes the edits over MCP and Scam
     const mcp = JSON.parse(await fs.readFile(path.join(dir, '.scamp', 'mcp.json'), 'utf8')) as McpConfig;
     const claude = JSON.parse(await fs.readFile(path.join(dir, '.mcp.json'), 'utf8')) as { mcpServers: { scamp: { url: string } } };
     expect(claude.mcpServers.scamp.url).toBe(mcp.url);
-    expect(execFileSync('git', ['status', '--porcelain', '--untracked-files=all'], { cwd: dir, encoding: 'utf8' })).not.toContain('.mcp.json');
+    const codex = await fs.readFile(path.join(dir, '.codex', 'config.toml'), 'utf8');
+    expect(codex).toContain(`[mcp_servers.scamp]\nurl = "${mcp.url}"`);
+    const status = execFileSync('git', ['status', '--porcelain', '--untracked-files=all'], { cwd: dir, encoding: 'utf8' });
+    expect(status).not.toContain('.mcp.json');
+    expect(status).not.toContain('.codex');
 
     // Starting with My agent and nothing connected, the steps and a terminal open over the editor.
     const connect = embedded.getByTestId('embedded-agent-connect');
     await expect(connect).toBeVisible();
     await expect(connect).toContainText('Waiting to connect');
+    // Codex is installed but doesn't trust the folder: its button starts it with Scamp's server anyway.
+    await expect(embedded.getByTestId('embedded-terminal-start-codex')).toBeVisible();
+    await expect(connect).toContainText('choose Yes when it asks whether to trust this folder');
 
     // A terminal in the project's folder, whose session lives on while the window is minimized.
     const rows = embedded.locator('[data-testid="embedded-terminal"] .xterm-rows');

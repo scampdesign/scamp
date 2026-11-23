@@ -22,6 +22,19 @@ release time.
 
 ## Releases
 
+### Unreleased
+
+**Added**
+
+- **In Edit React Project, Codex connects the way Claude Code does.** When
+  you choose **My agent** and Codex is installed, Scamp adds its server to
+  the project's `.codex/config.toml`, and the **Connect your agent** window
+  has a **Start Codex** button. The button starts Codex already connected,
+  even in a folder Codex doesn't trust yet, and Codex doesn't ask before
+  each of Scamp's own tool calls. Before, you had to write Codex's
+  settings by hand. See
+  [Use your own agent](user_docs/edit-react-project.md#use-your-own-agent).
+
 ### 0.16.0 (2026-11-20)
 
 **Added**

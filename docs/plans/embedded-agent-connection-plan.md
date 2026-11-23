@@ -85,6 +85,11 @@ itself in each agent's config (`agentConfig.ts`).
   connected), minimizes into the Agent tab once the agent connects, and
   stays mounted while minimized, so the agent's session survives. It also
   polls the agent's status into the store, which the Agent tab reads.
+- Codex: `.codex/config.toml`, written as TOML (`src/main/mcp/codexConfig.ts`),
+  which Codex reads only in a trusted folder. **Start Codex** types a
+  `codex -c …` command that connects without the file, and the window says
+  to trust the folder when `~/.codex/config.toml` doesn't. See
+  `docs/plans/embedded-codex-connection-plan.md`.
 - Not in A1: design checks still need the Scamp Agent, and Accept still
   commits whole files (a user edit in a file the agent also changed goes
   with it), as with the Scamp Agent.

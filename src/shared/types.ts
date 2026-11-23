@@ -1793,6 +1793,10 @@ export type EmbeddedOwnAgentStatus = {
   skipped: Array<{ path: string; reason: string }>;
   /** Registers Scamp with Claude Code by hand, for when its config couldn't be written. */
   command: string | null;
+  /** Starts Codex with Scamp's server for this run only, whether or not its config was written. */
+  codexCommand: string | null;
+  /** Whether Codex trusts the project's folder, so reads its `.codex/config.toml`; null when Codex isn't installed. */
+  codexTrusted: boolean | null;
   /** The user's agent has reached Scamp this session. */
   seen: boolean;
   /** It holds a batch now. */

@@ -85,18 +85,17 @@ describe('the target table', () => {
 
   it('sends the token as a header on every target', () => {
     for (const target of AGENT_TARGETS) {
-      expect(target.entry(URL, TOKEN)['headers']).toEqual({
+      // Codex names the field `http_headers`.
+      expect(target.entry(URL, TOKEN)[target.id === 'codex' ? 'http_headers' : 'headers']).toEqual({
         'X-Scamp-Token': TOKEN,
       });
     }
   });
 
   it('omits the agents whose formats are unverified', () => {
-    // VS Code (`servers` key, uri-vs-url unresolved) and Codex (TOML) are
-    // held deliberately — a guessed format writes a silently ignored file.
-    const ids = AGENT_TARGETS.map((t) => t.id);
-    expect(ids).not.toContain('vscode');
-    expect(ids).not.toContain('codex');
+    // VS Code (`servers` key, uri-vs-url unresolved) is held deliberately —
+    // a guessed format writes a silently ignored file.
+    expect(AGENT_TARGETS.map((t) => t.id)).not.toContain('vscode');
   });
 });
 
@@ -318,6 +317,26 @@ describe('writeAgentConfigs', () => {
     const report = await run();
     expect(report.written).toContain('.cursor/mcp.json');
     expect(report.skipped.map((s) => s.path)).toContain('.mcp.json');
+  });
+
+  it('writes Codex’s config as TOML when Codex is installed, keeping the user’s settings', async () => {
+    await fs.mkdir(join(home, '.codex'));
+    await fs.mkdir(join(project, '.codex'));
+    await fs.writeFile(join(project, '.codex/config.toml'), 'model = "o3"\n');
+    const report = await run();
+    expect(report.written).toContain('.codex/config.toml');
+    expect(await read('.codex/config.toml')).toBe(
+      `model = "o3"\n\n[mcp_servers.scamp]\nurl = "${URL}"\nhttp_headers = { "X-Scamp-Token" = "${TOKEN}" }\ndefault_tools_approval_mode = "approve"\n`
+    );
+  });
+
+  it('leaves a Codex config it can’t merge exactly as it was', async () => {
+    await fs.mkdir(join(home, '.codex'));
+    await fs.mkdir(join(project, '.codex'));
+    await fs.writeFile(join(project, '.codex/config.toml'), 'mcp_servers.scamp.url = "x"\n');
+    const report = await run();
+    expect(report.skipped.map((s) => s.path)).toContain('.codex/config.toml');
+    expect(await read('.codex/config.toml')).toBe('mcp_servers.scamp.url = "x"\n');
   });
 
   it('gitignores everything it wrote', async () => {

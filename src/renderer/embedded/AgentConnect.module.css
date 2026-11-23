@@ -101,6 +101,13 @@
   font-weight: 600;
 }
 
+/* One button per agent, stacked in the step's button column. */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .action {
   height: 28px;
   border: 1px solid var(--border-strong);
