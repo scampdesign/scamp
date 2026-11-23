@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import { dirname, join, sep } from 'path';
 
+import { mergeTomlServerEntry } from './codexConfig';
 import { writePrivate } from './mcpOps';
 
 /**
@@ -31,6 +32,8 @@ export type AgentTarget = {
   serversKey: string;
   /** Renders our entry. Not uniform either — see the Gemini note below. */
   entry: (url: string, token: string) => Record<string, unknown>;
+  /** Codex's config is TOML; every other agent's is JSON. */
+  format?: 'toml';
   /** Home-relative paths that indicate this agent is installed. Empty =
    *  always write. */
   detect: ReadonlyArray<string>;
@@ -44,16 +47,18 @@ export type AgentTarget = {
  * would have registered a streamable-HTTP server as SSE and failed at
  * connect time, silently, only for Gemini users.
  *
+ * Codex (`.codex/config.toml`) reads a project's own config only in a
+ * folder the user trusts, and ignores it silently otherwise, so the window
+ * also checks trust and offers a launch command that needs no file. Verified
+ * on codex-cli 0.171.0; see docs/plans/embedded-codex-connection-plan.md
+ *
  * Deliberately absent, pending verification:
  *   - VS Code (`.vscode/mcp.json`, `servers` key) — the docs I could reach
  *     describe the extension-provider API, which uses `uri`, not the user
  *     `mcp.json` format. Guessing produces a file that is silently ignored.
  *     `.vscode/mcp.json` also permits comments, which our merge cannot
- *     preserve — another reason to hold.
- *   - Codex (`~/.codex/config.toml`) — TOML, and project-level support is
- *     unconfirmed. A TOML *writer* that preserves a user's existing file is
- *     a different job from a JSON merge.
- * Both are additive later; the copy button (Phase 6) covers them meanwhile.
+ *     preserve — another reason to hold. Additive later; the copy button
+ *     covers it meanwhile.
  */
 export const AGENT_TARGETS: ReadonlyArray<AgentTarget> = [
   {
@@ -93,6 +98,16 @@ export const AGENT_TARGETS: ReadonlyArray<AgentTarget> = [
     serversKey: 'mcpServers',
     entry: (url, token) => ({ url, headers: { 'X-Scamp-Token': token } }),
     detect: ['.kiro'],
+  },
+  {
+    id: 'codex',
+    label: 'Codex',
+    configPath: '.codex/config.toml',
+    serversKey: 'mcp_servers',
+    // `approve`: Scamp's tools read its queue and selection, and Codex would otherwise ask on every 50-second wait.
+    entry: (url, token) => ({ url, http_headers: { 'X-Scamp-Token': token }, default_tools_approval_mode: 'approve' }),
+    format: 'toml',
+    detect: ['.codex'],
   },
 ];
 
@@ -270,7 +285,10 @@ export const writeAgentConfigs = async (args: {
       // Absent is the normal first-run case.
     }
 
-    const merged = mergeServerEntry(existing, target, args.url, args.token);
+    const merged =
+      target.format === 'toml'
+        ? mergeTomlServerEntry(existing, target.configPath, target.serversKey, SERVER_KEY, target.entry(args.url, args.token))
+        : mergeServerEntry(existing, target, args.url, args.token);
     if (!merged.ok) {
       report.skipped.push({ path: target.configPath, reason: merged.reason });
       continue;

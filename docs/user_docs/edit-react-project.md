@@ -318,7 +318,7 @@ such as a build error after a change.
 
 ## Use your own agent
 
-If you use Claude Code, Cursor, Gemini CLI, or Kiro, it can write your
+If you use Claude Code, Codex, Cursor, Gemini CLI, or Kiro, it can write your
 changes instead of the Scamp Agent, signed in the way it already is. You
 don't need an API key.
 
@@ -326,11 +326,12 @@ don't need an API key.
    **Agent** tab, click **My agent**.
 1. Click **Start**. Scamp connects to your agent through its MCP server
    and adds the connection to your agent's settings in the project, such
-   as `.mcp.json` for Claude Code. Scamp keeps that file out of git.
+   as `.mcp.json` for Claude Code and `.codex/config.toml` for Codex.
+   Scamp keeps those files out of git.
 1. The **Connect your agent** window opens, with a terminal in your
-   project's folder. Click **Start Claude Code**, or start another agent
-   in the terminal. If it asks whether to use the `scamp` server, allow
-   it.
+   project's folder. Click **Start Claude Code** or **Start Codex**, or
+   start another agent in the terminal. If it asks whether to use the
+   `scamp` server, allow it.
 1. Click **Paste the prompt**, and press **Enter**.
 
 When your agent connects, the window minimizes into the **Agent** tab,
@@ -348,7 +349,12 @@ changes the same way.
 
 **Note:** If your project already tracks the agent's settings file in
 git, Scamp doesn't change it. The **Connect your agent** window shows a
-command to connect Claude Code yourself instead.
+command to connect Claude Code yourself instead, and **Start Codex**
+connects Codex either way.
+
+Codex reads `.codex/config.toml` only in a folder you trust. **Start
+Codex** connects without it. If you start Codex yourself and it asks
+whether to trust the folder, choose **Yes**.
 
 ## Review and keep changes
 

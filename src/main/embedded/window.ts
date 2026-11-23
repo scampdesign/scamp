@@ -32,7 +32,8 @@ import { agentConnected, agentSignedIn, embeddedAgentProvider } from '../ipc/age
 import { appFeatures } from '../ipc/auth';
 import { allowTerminalRoot, disposeTerminalsOf, forgetTerminalRoot } from '../ipc/terminal';
 import { startReactApp, stopReactApp } from '../reactImport/appServer';
-import { AGENT_TARGETS, writeAgentConfigs } from '../mcp/agentConfig';
+import { AGENT_TARGETS, SERVER_KEY, writeAgentConfigs } from '../mcp/agentConfig';
+import { codexLaunchCommand, codexTrusts } from '../mcp/codexConfig';
 import { ensureToken, markMcpStopped, writeMcpConfig } from '../mcp/mcpOps';
 import { startMcpServer, type RunningMcpServer } from '../mcp/server';
 import { createEmbeddedAgent, type EmbeddedAgent } from './agentQueue';
@@ -205,6 +206,9 @@ const startOwnAgentServer = async (session: Session): Promise<void> => {
   await excludeFromGit(session.folder, session.mcpReport.written);
 };
 
+const codexEntry = (url: string, token: string): Record<string, unknown> =>
+  AGENT_TARGETS.find((t) => t.id === 'codex')?.entry(url, token) ?? {};
+
 const ownAgentStatus = async (session: Session): Promise<EmbeddedOwnAgentStatus> => ({
   worker: session.agent?.worker() ?? (await readWorker()),
   url: session.mcp?.url ?? null,
@@ -215,6 +219,8 @@ const ownAgentStatus = async (session: Session): Promise<EmbeddedOwnAgentStatus>
     session.mcp === null || session.mcpToken === null
       ? null
       : `claude mcp add --transport http scamp ${session.mcp.url} --header "X-Scamp-Token: ${session.mcpToken}"`,
+  codexCommand: session.mcp === null || session.mcpToken === null ? null : codexLaunchCommand(SERVER_KEY, codexEntry(session.mcp.url, session.mcpToken)),
+  codexTrusted: await codexTrusts(homedir(), [session.folder, (await git(session.folder, ['rev-parse', '--show-toplevel'])).stdout.trim()]),
   seen: session.ownAgentSeen,
   working: (session.agent?.heldBatch() ?? null) !== null,
 });

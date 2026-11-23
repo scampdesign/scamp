@@ -86,6 +86,7 @@
     "src/main/mcp/server.ts",
     "src/main/mcp/mcpOps.ts",
     "src/main/mcp/agentConfig.ts",
+    "src/main/mcp/codexConfig.ts",
     "src/main/ipc/snapshotOps.ts",
     "src/main/ipc/readCapped.ts",
     "src/main/popupGate.ts",

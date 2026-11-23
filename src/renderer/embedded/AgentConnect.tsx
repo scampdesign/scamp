@@ -62,6 +62,7 @@ export const AgentConnect = (): JSX.Element | null => {
   };
 
   if (folder === null || status === null || status.worker !== 'own') return null;
+  const codexCommand = status.codexCommand;
   const state = status.working ? 'working' : status.seen ? 'connected' : 'waiting';
   return (
     <div className={styles.backdrop} hidden={!open} data-testid="embedded-agent-connect">
@@ -81,10 +82,20 @@ export const AgentConnect = (): JSX.Element | null => {
               Start your agent in the terminal below
               {status.written.length > 0 ? `. Scamp set it up in ${status.written.join(', ')}` : ''}. If it asks to use the{' '}
               <code>scamp</code> server, allow it.
+              {status.codexTrusted === false && (
+                <> If you start Codex yourself instead of with the button, choose Yes when it asks whether to trust this folder.</>
+              )}
             </div>
-            <button type="button" className={styles.action} onClick={() => write.current?.('claude\r')} data-testid="embedded-terminal-start-claude">
-              Start Claude Code
-            </button>
+            <div className={styles.actions}>
+              <button type="button" className={styles.action} onClick={() => write.current?.('claude\r')} data-testid="embedded-terminal-start-claude">
+                Start Claude Code
+              </button>
+              {status.codexTrusted !== null && codexCommand !== null && (
+                <button type="button" className={styles.action} onClick={() => write.current?.(`${codexCommand}\r`)} data-testid="embedded-terminal-start-codex">
+                  Start Codex
+                </button>
+              )}
+            </div>
           </li>
           <li>
             <div>
@@ -104,7 +115,7 @@ export const AgentConnect = (): JSX.Element | null => {
         <div className={styles.terminal} data-testid="embedded-terminal">
           <TerminalView cwd={folder} api={window.scampEmbedded} onReady={handleReady} />
         </div>
-        {status.skipped.length > 0 && status.command !== null && (
+        {status.skipped.some((s) => s.path === '.mcp.json') && status.command !== null && (
           <div className={styles.manual}>
             <p>
               Scamp didn’t change {status.skipped.map((s) => s.path).join(', ')}: {status.skipped[0]?.reason}. To connect Claude Code
